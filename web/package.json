@@ -31,5 +31,9 @@
 		"vite": "^4.0.0",
 		"vitest": "^0.25.3"
 	},
-	"type": "module"
+	"type": "module",
+	"dependencies": {
+		"@types/amqplib": "^0.10.1",
+		"amqplib": "^0.10.3"
+	}
 }
