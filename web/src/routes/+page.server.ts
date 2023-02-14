@@ -1,6 +1,6 @@
 import { fail } from '@sveltejs/kit';
 import type { Actions } from './$types'
-import { add } from '../data/backend-service'
+import { requestAdd } from '../data/message-queue-service'
 
 export const actions: Actions = {
   default: async ({ request }) => {
@@ -10,7 +10,7 @@ export const actions: Actions = {
     if (!number1 || !number2) {
       return fail(400, { success:false});
     }
-    const result = add(parseInt(number1.toString()), parseInt(number2.toString()));
-    return { result, success: true }
+    const ticket = requestAdd(parseInt(number1.toString()), parseInt(number2.toString()));
+    return { ticket, success: true }
   }
 };
