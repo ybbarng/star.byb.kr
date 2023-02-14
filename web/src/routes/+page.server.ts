@@ -1,5 +1,7 @@
 import { fail } from '@sveltejs/kit';
 import type { Actions } from './$types'
+import { add } from '../data/backend-service'
+
 export const actions: Actions = {
   default: async ({ request }) => {
     const data = await request.formData();
@@ -8,7 +10,7 @@ export const actions: Actions = {
     if (!number1 || !number2) {
       return fail(400, { success:false});
     }
-    const result = parseInt(number1.toString()) + parseInt(number2.toString());
+    const result = add(parseInt(number1.toString()), parseInt(number2.toString()));
     return { result, success: true }
   }
 };
