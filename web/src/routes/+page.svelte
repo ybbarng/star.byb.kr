@@ -8,7 +8,8 @@
 <h1>Find the stars in pictures</h1>
 <form method="POST">
 	<input type="number" name="number1" /> + <input type="number" name="number2" /> <button>=</button>
+	{data.result}
 	{#if form?.success}
-		{form.ticket}
+		& ticket: ${form.ticket}
 	{/if}
 </form>

@@ -1,4 +1,4 @@
-import type {Channel, Connection } from 'amqplib';
+import type {Channel, Connection, ConsumeMessage } from 'amqplib';
 import client from 'amqplib';
 
 class MessageQueueService {
@@ -10,12 +10,14 @@ class MessageQueueService {
   consumerChannel: Promise<Channel>;
   producerChannel: Promise<Channel>;
   ticketCounter: bigint;
+  onResult: ((result: number) => void) | null;
 
   constructor() {
     this.connection = this.initializeConnection();
     this.consumerChannel = this.initializeConsumer();
     this.producerChannel = this.initializeProducer();
     this.ticketCounter = 0n;
+    this.onResult = null;
   }
 
   async initializeConnection() {
@@ -27,6 +29,9 @@ class MessageQueueService {
     const connection = await this.connection;
     const channel = await connection.createChannel();
     await channel.assertQueue(this.CONSUMER_QUEUE);
+    await channel.consume(this.CONSUMER_QUEUE, (message) => {
+      this.consumeAdd(channel, message);
+    });
     return channel;
   }
 
@@ -50,7 +55,8 @@ class MessageQueueService {
     });
   }
 
-  public requestAdd(number1: number, number2: number): string {
+  public requestAdd(number1: number, number2: number, onResult: (result: number) => void): string {
+    this.onResult = onResult;
     const ticket = this.issueTicket();
     this.produceAdd(ticket, number1, number2);
     return ticket;
@@ -58,7 +64,25 @@ class MessageQueueService {
 
   private async produceAdd(ticket: string, number1: number, number2: number) {
     const channel = await this.producerChannel;
-    channel.sendToQueue(this.PRODUCER_QUEUE, Buffer.from(`${ticket}:${number1}+${number2}`))
+    const message = JSON.stringify({
+      ticket,
+      number1,
+      number2
+    });
+    console.log(`MessageQueueService [->] ${message}`);
+    channel.sendToQueue(this.PRODUCER_QUEUE, Buffer.from(message));
+  }
+
+  private consumeAdd(channel: Channel, message: ConsumeMessage | null) {
+    if (message == null) {
+      return;
+    }
+    console.log(`MessageQueueService [<-] ${message.content.toString()}`);
+    if (this.onResult) {
+      const data = JSON.parse(message.content.toString());
+      this.onResult(data.result);
+    }
+    channel.ack(message);
   }
 
   private issueTicket(): string {
@@ -74,6 +98,6 @@ process.on('exit', _ => {
   messageQueueService.destroy();
 });
 
-export const requestAdd = function(number1: number, number2: number): string {
-  return messageQueueService.requestAdd(number1, number2);
+export const requestAdd = function(number1: number, number2: number, onResult: (result: number) => void): string {
+  return messageQueueService.requestAdd(number1, number2, onResult);
 };
