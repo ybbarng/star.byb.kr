@@ -8,3 +8,8 @@ services:
       dockerfile: Dockerfile
     ports:
       - 5031:3000
+  worker:
+    image: python-worker
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
