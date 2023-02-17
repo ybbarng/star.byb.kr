@@ -1,5 +1,6 @@
 import json
 import os
+import time
 
 import pika
 
@@ -60,4 +61,5 @@ class MessageQueueService:
     self.produce_add_response(request['ticket'], self.add(request['number1'], request['number2']))
 
   def add(self, number1, number2):
+    time.sleep(10)
     return number1 + number2
