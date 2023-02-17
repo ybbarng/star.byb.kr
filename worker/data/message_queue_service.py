@@ -1,8 +1,15 @@
 import json
+import os
 
 import pika
 
-URL = 'amqp://ybbarng:passwordybbarng@localhost:5672';
+AMQP = {
+  "HOST": os.environ.get('AMQP_HOST'),
+  "PORT": os.environ.get('AMQP_PORT'),
+  "USERNAME": os.environ.get('AMQP_USERNAME'),
+  "PASSWORD": os.environ.get('AMQP_PASSWORD'),
+}
+URL = 'amqp://{USERNAME}:{PASSWORD}@{HOST}:{PORT}'.format(**AMQP);
 CONSUMER_QUEUE = 'request-add-queue'
 PRODUCER_QUEUE = 'response-add-queue'
 

@@ -7,9 +7,20 @@ services:
       context: ./web
       dockerfile: Dockerfile
     ports:
-      - 5031:3000
+      - ${WEB_PORT}:3000
+    environment:
+      AMQP_HOST: ${AMQP_HOST}
+      AMQP_PORT: ${AMQP_PORT}
+      AMQP_USERNAME: ${AMQP_USERNAME}
+      AMQP_PASSWORD: ${AMQP_PASSWORD}
+      ORIGIN: ${WEB_ORIGIN}
   worker:
     image: python-worker
     build:
       context: ./worker
       dockerfile: Dockerfile
+    environment:
+      AMQP_HOST: ${AMQP_HOST}
+      AMQP_PORT: ${AMQP_PORT}
+      AMQP_USERNAME: ${AMQP_USERNAME}
+      AMQP_PASSWORD: ${AMQP_PASSWORD}

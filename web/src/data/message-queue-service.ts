@@ -2,7 +2,7 @@ import type {Channel, Connection, ConsumeMessage } from 'amqplib';
 import client from 'amqplib';
 
 class MessageQueueService {
-  URL = 'amqp://ybbarng:passwordybbarng@localhost:5672';
+  URL = `amqp://${process.env.AMQP_USERNAME}:${process.env.AMQP_PASSWORD}@${process.env.AMQP_HOST}:${process.env.AMQP_PORT}`;
   PRODUCER_QUEUE = 'request-add-queue';
   CONSUMER_QUEUE = 'response-add-queue';
   
