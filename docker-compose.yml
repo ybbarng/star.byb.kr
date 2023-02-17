@@ -1,0 +1,10 @@
+version: "3.8"
+
+services:
+  web-node:
+    image: svelte-docker-node
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    ports:
+      - 5031:3000
