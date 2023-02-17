@@ -9,18 +9,32 @@ services:
     ports:
       - ${WEB_PORT}:3000
     environment:
-      AMQP_HOST: ${AMQP_HOST}
-      AMQP_PORT: ${AMQP_PORT}
+      AMQP_HOST: message-queue
+      AMQP_PORT: 5672
       AMQP_USERNAME: ${AMQP_USERNAME}
       AMQP_PASSWORD: ${AMQP_PASSWORD}
       ORIGIN: ${WEB_ORIGIN}
+    depends_on:
+      - message-queue
+    restart: always
   worker:
     image: python-worker
     build:
       context: ./worker
       dockerfile: Dockerfile
     environment:
-      AMQP_HOST: ${AMQP_HOST}
-      AMQP_PORT: ${AMQP_PORT}
+      AMQP_HOST: message-queue
+      AMQP_PORT: 5672
       AMQP_USERNAME: ${AMQP_USERNAME}
       AMQP_PASSWORD: ${AMQP_PASSWORD}
+    depends_on:
+      - message-queue
+    restart: always
+  message-queue:
+    image: rabbitmq:3-management
+    environment:
+      RABBITMQ_DEFAULT_USER: ${AMQP_USERNAME}
+      RABBITMQ_DEFAULT_PASS: ${AMQP_PASSWORD}
+    ports:
+      # HTTP management UI
+      - 15672:15672
