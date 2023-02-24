@@ -1,4 +1,4 @@
-from data.message_queue_service import MessageQueueService
+from add.message_queue_service import MessageQueueService
 
 
 if __name__ == '__main__':

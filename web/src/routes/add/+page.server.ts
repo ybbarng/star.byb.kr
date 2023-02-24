@@ -1,6 +1,6 @@
 import { fail } from '@sveltejs/kit';
-import type { Actions, PageServerLoad } from './$types'
-import { requestAdd } from '../data/message-queue-service'
+import type { Actions, PageServerLoad } from '../$types'
+import { requestAdd } from '../../add/message-queue-service'
 
 let realResult = -1;
 
