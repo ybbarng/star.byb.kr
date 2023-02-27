@@ -1,7 +1,9 @@
 import type {Channel, Connection, ConsumeMessage } from 'amqplib';
 import client from 'amqplib';
 
-class MessageQueueService {
+import type { MessageQueueService } from '../domain/message-queue-service';
+
+class AMPQMessageQueueService implements MessageQueueService {
   URL = `amqp://${process.env.AMQP_USERNAME}:${process.env.AMQP_PASSWORD}@${process.env.AMQP_HOST}:${process.env.AMQP_PORT}`;
   PRODUCER_QUEUE = 'request-add-queue';
   CONSUMER_QUEUE = 'response-add-queue';
@@ -10,7 +12,7 @@ class MessageQueueService {
   consumerChannel: Promise<Channel>;
   producerChannel: Promise<Channel>;
   ticketCounter: bigint;
-  onResult: ((result: number) => void) | null;
+  onResult: ((ticket: string, result: number) => void) | null;
 
   constructor() {
     this.connection = this.initializeConnection();
@@ -42,6 +44,10 @@ class MessageQueueService {
     return channel;
   }
 
+  registerOnResult(onResult: (ticket: string, result: number) => void): void {
+    this.onResult = onResult;
+  }
+
   destroy() {
     console.log(`MessageQueueService is destroyed.`);
     const closeConsumer = this.consumerChannel.then((channel: Channel) => {
@@ -55,11 +61,8 @@ class MessageQueueService {
     });
   }
 
-  public requestAdd(number1: number, number2: number, onResult: (result: number) => void): string {
-    this.onResult = onResult;
-    const ticket = this.issueTicket();
+  public requestAdd(ticket: string, number1: number, number2: number) {
     this.produceAdd(ticket, number1, number2);
-    return ticket;
   }
 
   private async produceAdd(ticket: string, number1: number, number2: number) {
@@ -80,24 +83,16 @@ class MessageQueueService {
     console.log(`MessageQueueService [<-] ${message.content.toString()}`);
     if (this.onResult) {
       const data = JSON.parse(message.content.toString());
-      this.onResult(data.result);
+      this.onResult(data.ticket, data.result);
     }
     channel.ack(message);
   }
-
-  private issueTicket(): string {
-    const ticketNumber = this.ticketCounter;
-    this.ticketCounter += 1n;
-    return ticketNumber.toString()
-  }
 }
 
-const messageQueueService = new MessageQueueService();
-
-process.on('exit', _ => {
-  messageQueueService.destroy();
-});
-
-export const requestAdd = function(number1: number, number2: number, onResult: (result: number) => void): string {
-  return messageQueueService.requestAdd(number1, number2, onResult);
-};
+export const getMessageQueueService = () => {
+ const messageQueueService  = new AMPQMessageQueueService();
+  process.on('exit', _ => {
+    messageQueueService.destroy();
+  });
+  return messageQueueService;
+}

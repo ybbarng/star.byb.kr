@@ -5,11 +5,12 @@
 	export let form;
 </script>
 
-<h1>Find the stars in pictures</h1>
+<h1>Try Add to test the system</h1>
 <form method="POST">
-	<input type="number" name="number1" /> + <input type="number" name="number2" /> <button>=</button>
-	{data.result}
 	{#if form?.success}
-		& ticket: ${form.ticket}
+		Your form has been submitted successfully. Your Ticket ID: ${form.ticket}
+	{:else}
+		<input type="number" name="number1" /> + <input type="number" name="number2" />
+		<button>=</button>
 	{/if}
 </form>
