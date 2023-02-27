@@ -29,6 +29,7 @@ class MessageQueueService:
       print('MessageQueueService [<-] ' + body.decode('UTF-8'))
       self.consume_add_request(body)
     channel = self.connection.channel()
+    channel.queue_declare(queue=CONSUMER_QUEUE, durable=True)
     channel.basic_consume(queue=CONSUMER_QUEUE, on_message_callback=on_message, auto_ack=True)
     channel.start_consuming()
     return channel
