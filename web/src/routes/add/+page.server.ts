@@ -1,6 +1,6 @@
 import { fail } from '@sveltejs/kit';
 import { dev } from '$app/environment';
-import type { Actions, PageServerLoad } from '../$types'
+import type { Actions } from './$types'
 
 import { getMessageQueueService } from '../../add/data/ampq-message-queue-service'
 import { MockMessageQueueService } from '../../add/data/mock-message-queue-service'
