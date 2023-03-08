@@ -9,15 +9,36 @@ export class PrismaAddTaskRepository implements AddTaskRepository {
     this.prisma = prisma;
   }
 
-  getAddTask(id: string): AddTask | null {
-    return null;
+  async getAddTask(id: string): Promise<AddTask | null> {
+    return await this.prisma.addTask.findUnique({
+      where: {
+        id
+      }
+    });
   }
 
-  getAllAddTasks(): AddTask[] {
-    return [];
+  async getAllAddTasks(): Promise<AddTask[]> {
+    return await this.prisma.addTask.findMany();
   }
 
-  saveAddTask(addTask: AddTask): boolean {
-    return false;
+  async createAddTask(id: string, parameter1: number, parameter2: number) {
+    await this.prisma.addTask.create({
+      data: {
+        id,
+        parameter1,
+        parameter2,
+      }
+    })
+  }
+
+  async updateResultOfAddTask(id: string, result: number) {
+    await this.prisma.addTask.update({
+      where: {
+        id
+      },
+      data: {
+        result
+      }
+    })
   }
 }

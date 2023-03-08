@@ -8,7 +8,7 @@ export class LoadAllAddTasksUseCase {
     this.addTaskRepository = addTaskRepository;
   }
 
-  public execute(): AddTask[] {
+  public async execute(): Promise<AddTask[]> {
     return this.addTaskRepository.getAllAddTasks();
   }
 }
