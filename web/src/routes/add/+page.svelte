@@ -1,8 +1,7 @@
-<script>
-	/** @type {import('./$types').PageData} */
-	export let data;
-	/** @type {import('./$types').ActionData} */
-	export let form;
+<script lang="ts">
+	import type { ActionData } from './$types';
+
+	export var form: ActionData;
 </script>
 
 <h1>Try Add to test the system</h1>

@@ -1,6 +1,7 @@
-<script>
-	/** @type {import('./$types').PageData} */
-	export let data;
+<script lang="ts">
+	import type { PageData } from './$types';
+
+	export var data: PageData;
 </script>
 
 <h1>AddTasks</h1>
