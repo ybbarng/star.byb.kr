@@ -37,7 +37,8 @@ export class PrismaAddTaskRepository implements AddTaskRepository {
         id
       },
       data: {
-        result
+        result,
+        resultAt: new Date()
       }
     })
   }
