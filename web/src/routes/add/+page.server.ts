@@ -1,7 +1,7 @@
 import { fail } from '@sveltejs/kit';
 import type { Actions } from './$types'
 
-import { addUseCase } from '../../add'
+import { addUseCase } from '$lib/server/add'
 
 export const actions: Actions = {
   default: async ({ request }) => {
