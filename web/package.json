@@ -36,6 +36,7 @@
 	"type": "module",
 	"dependencies": {
 		"@types/amqplib": "^0.10.1",
-		"amqplib": "^0.10.3"
+		"amqplib": "^0.10.3",
+		"uuid": "^9.0.0"
 	}
 }

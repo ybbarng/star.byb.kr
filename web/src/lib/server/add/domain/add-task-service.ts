@@ -1,12 +1,8 @@
-export class AddTaskService {
-	ticketCounter: bigint;
+import { v4 as uuidv4 } from 'uuid';
 
-	constructor() {
-		this.ticketCounter = 0n;
-	}
+export class AddTaskService {
+
 	issueTicket(): string {
-		const ticketNumber = this.ticketCounter;
-		this.ticketCounter += 1n;
-		return ticketNumber.toString();
+		return uuidv4();
 	}
 }
