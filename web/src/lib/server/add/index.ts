@@ -3,7 +3,7 @@ import { dev } from '$app/environment';
 import { getMessageQueueService } from './data/ampq-message-queue-service';
 import { MockMessageQueueService } from './data/mock-message-queue-service';
 import { AddUseCase } from './domain/add-use-case';
-import { AddTaskService } from './domain/add-task-service';
+import { TicketService } from './domain/ticket-service';
 import type { MessageQueueService } from './domain/message-queue-service';
 
 const buildMessageQueueService = (): MessageQueueService => {
@@ -14,4 +14,4 @@ const buildMessageQueueService = (): MessageQueueService => {
   }
 };
 
-export const addUseCase = new AddUseCase(new AddTaskService(), buildMessageQueueService());
+export const addUseCase = new AddUseCase(buildMessageQueueService(), new TicketService());

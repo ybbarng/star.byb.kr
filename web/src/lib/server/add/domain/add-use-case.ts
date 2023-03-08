@@ -1,19 +1,19 @@
 import type { MessageQueueService } from './message-queue-service';
-import type { AddTaskService } from './add-task-service';
+import type { TicketService } from './ticket-service';
 export class AddUseCase {
-  addTaskService: AddTaskService;
   messageQueueService: MessageQueueService;
+  ticketService: TicketService;
 
-  constructor(addTaskService: AddTaskService, messageQueueService: MessageQueueService) {
-    this.addTaskService = addTaskService;
+  constructor(messageQueueService: MessageQueueService, ticketService: TicketService) {
     this.messageQueueService = messageQueueService;
     this.messageQueueService.registerOnResult((ticket: string, result: number) => {
       console.log('ticket: ' + ticket + ' result: ' + result);
     });
+    this.ticketService = ticketService;
   }
 
   public execute(number1: number, number2: number): string {
-    const ticket = this.addTaskService.issueTicket();
+    const ticket = this.ticketService.issueTicket();
     this.messageQueueService.requestAdd(ticket, number1, number2);
     return ticket;
   }
