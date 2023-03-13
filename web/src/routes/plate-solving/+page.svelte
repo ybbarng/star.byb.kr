@@ -13,6 +13,13 @@
 <ul>
   <li>이미지 가로: {markedImage.width}</li>
   <li>이미지 세로: {markedImage.height}</li>
+  <li> 별 목록
+    <ul>
+      {#each markedImage.stars as star}
+        <li>x: {star.x}, y: {star.y}</li>
+      {/each}
+    </ul>
+  </li>
 </div>
 {/if}
 <div class="container">

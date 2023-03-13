@@ -9,7 +9,8 @@
   const onImageLoaded = () => {
     markedImage = {
       width: image.width,
-      height: image.height
+      height: image.height,
+      stars: []
     }
   }
   const onMouseClickedOnImage = (event) => {
@@ -17,6 +18,8 @@
     const x = event.clientX - rectOfCanvas.left;
     const y = event.clientY - rectOfCanvas.top;
     console.log(`Mouse clicked: (${x}, ${y})`)
+    markedImage.stars.push({x, y});
+    markedImage['stars'] = markedImage.stars;
   }
 </script>
 
