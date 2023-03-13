@@ -1,5 +1,8 @@
 <script lang="ts">
   var inputUploadImage: HTMLInputElement;
+  var image: HTMLImageElement;
+  var imageWidth = 0;
+  var imageHeight = 0;
   var files: File[];
   var imageDataUrl: string;
   const toDataUrl = (blob: File) => {
@@ -9,11 +12,25 @@
       imageDataUrl = e.target.result;
     }
   }
+  const onImageLoaded = () => {
+    imageWidth = image.width;
+    imageHeight = image.height;
+  }
 </script>
 <h1>천체 이미지 분석</h1>
 <p>천체 이미지 분석 페이지입니다.</p>
+{#if imageDataUrl && image && imageHeight > 0}
+<div id="image-info">
+<ul>
+  <li>이미지 가로: {imageWidth}</li>
+  <li>이미지 세로: {imageHeight}</li>
+</div>
+{/if}
 <div class="container">
-    <img id="image" src={imageDataUrl} alt="image to be solved"/>
+    <img id="image" src={imageDataUrl} alt="image to be solved"
+      bind:this={image}
+      on:load={() => onImageLoaded()}
+    />
     <input class="hidden" id="input-upload-image" type="file" accept=".png,.jpg"
       bind:files
       bind:this={inputUploadImage}
