@@ -1,6 +1,6 @@
 <script lang="ts">
-  import ImageUploader from '$lib/component/ImageUploader.svelte';
-  import StarMarker from '$lib/component/StarMarker.svelte';
+  import ImageUploader from '$lib/plate-solving/component/ImageUploader.svelte';
+  import StarMarker from '$lib/plate-solving/component/StarMarker.svelte';
   var imageDataUrl: string;
   var imageWidth = 0;
   var imageHeight = 0;
