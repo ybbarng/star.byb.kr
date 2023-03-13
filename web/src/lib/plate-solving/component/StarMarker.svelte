@@ -1,11 +1,16 @@
 <script lang="ts">
+  import type { MarkedImage } from '$lib/plate-solving/value-object/marked-image';
+  import type { Star } from '$lib/plate-solving/value-object/star'
+
   export var imageDataUrl: string;
   var image: HTMLImageElement;
-  export var imageWidth = 0;
-  export var imageHeight = 0;
+  export var markedImage: MarkedImage;
+
   const onImageLoaded = () => {
-    imageWidth = image.width;
-    imageHeight = image.height;
+    markedImage = {
+      width: image.width,
+      height: image.height
+    }
   }
   const onMouseClickedOnImage = (event) => {
     const rectOfCanvas = image.getBoundingClientRect();

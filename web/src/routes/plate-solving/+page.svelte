@@ -1,17 +1,18 @@
 <script lang="ts">
   import ImageUploader from '$lib/plate-solving/component/ImageUploader.svelte';
   import StarMarker from '$lib/plate-solving/component/StarMarker.svelte';
+  import type { MarkedImage } from '$lib/plate-solving/value-object/marked-image';
+
   var imageDataUrl: string;
-  var imageWidth = 0;
-  var imageHeight = 0;
+  var markedImage: MarkedImage;
 </script>
 <h1>천체 이미지 분석</h1>
 <p>천체 이미지 분석 페이지입니다.</p>
-{#if imageDataUrl && imageHeight > 0}
+{#if imageDataUrl && markedImage && markedImage.height > 0}
 <div id="image-info">
 <ul>
-  <li>이미지 가로: {imageWidth}</li>
-  <li>이미지 세로: {imageHeight}</li>
+  <li>이미지 가로: {markedImage.width}</li>
+  <li>이미지 세로: {markedImage.height}</li>
 </div>
 {/if}
 <div class="container">
@@ -20,8 +21,7 @@
   {:else}
     <StarMarker
       bind:imageDataUrl={imageDataUrl}
-      bind:imageWidth={imageWidth}
-      bind:imageHeight={imageHeight}
+      bind:markedImage={markedImage}
       />
   {/if}
 </div>
