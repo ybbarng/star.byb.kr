@@ -1,17 +1,10 @@
 <script lang="ts">
-  var inputUploadImage: HTMLInputElement;
+  import ImageUploader from '$lib/component/ImageUploader.svelte';
+  var imageDataUrl: string;
   var image: HTMLImageElement;
+  var imageDataUrl: string;
   var imageWidth = 0;
   var imageHeight = 0;
-  var files: File[];
-  var imageDataUrl: string;
-  const toDataUrl = (blob: File) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(blob);
-    reader.onload = (event) => {
-      imageDataUrl = event.target.result;
-    }
-  }
   const onImageLoaded = () => {
     imageWidth = image.width;
     imageHeight = image.height;
@@ -33,17 +26,15 @@
 </div>
 {/if}
 <div class="container">
+  {#if !imageDataUrl}
+    <ImageUploader bind:imageDataUrl={imageDataUrl} />
+  {:else}
     <img id="image" src={imageDataUrl} alt="image to be solved" draggable="false"
       bind:this={image}
       on:load={() => onImageLoaded()}
       on:mousedown={(event) => onMouseClickedOnImage(event)}
     />
-    <input class="hidden" id="input-upload-image" type="file" accept=".png,.jpg"
-      bind:files
-      bind:this={inputUploadImage}
-      on:change={() => toDataUrl(files[0])}
-      />
-    <button class="upload-btn" on:click={() => inputUploadImage.click()}>Upload</button>
+  {/if}
 </div>
 
 <style>
@@ -55,32 +46,5 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-    }
-
-    #avatar {
-        border-radius: 99999px;
-        height: 128px;
-        width: 128px;
-        margin-bottom: 10px;
-    }
-
-    .hidden {
-        display: none;
-    }
-
-    .upload-btn {
-        width: 128px;
-        height: 32px;
-        background-color: black;
-        font-family: sans-serif;
-        color: white;
-        font-weight: bold;
-        border: none;
-    }
-
-    .upload-btn:hover {
-        background-color: white;
-        color: black;
-        outline: black solid 2px;
     }
 </style>
