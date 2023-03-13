@@ -33,7 +33,7 @@
 </div>
 {/if}
 <div class="container">
-    <img id="image" src={imageDataUrl} alt="image to be solved"
+    <img id="image" src={imageDataUrl} alt="image to be solved" draggable="false"
       bind:this={image}
       on:load={() => onImageLoaded()}
       on:mousedown={(event) => onMouseClickedOnImage(event)}
