@@ -8,13 +8,19 @@
   const toDataUrl = (blob: File) => {
     const reader = new FileReader();
     reader.readAsDataURL(blob);
-    reader.onload = (e) => {
-      imageDataUrl = e.target.result;
+    reader.onload = (event) => {
+      imageDataUrl = event.target.result;
     }
   }
   const onImageLoaded = () => {
     imageWidth = image.width;
     imageHeight = image.height;
+  }
+  const onMouseClickedOnImage = (event) => {
+    const rectOfCanvas = image.getBoundingClientRect();
+    const x = event.clientX - rectOfCanvas.left;
+    const y = event.clientY - rectOfCanvas.top;
+    console.log(`Mouse clicked: (${x}, ${y})`)
   }
 </script>
 <h1>천체 이미지 분석</h1>
@@ -30,6 +36,7 @@
     <img id="image" src={imageDataUrl} alt="image to be solved"
       bind:this={image}
       on:load={() => onImageLoaded()}
+      on:mousedown={(event) => onMouseClickedOnImage(event)}
     />
     <input class="hidden" id="input-upload-image" type="file" accept=".png,.jpg"
       bind:files
