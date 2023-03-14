@@ -130,7 +130,7 @@ var config = {
   },
   constellations: {
     names: true,      // Show constellation names 
-    namesType: "iau", // Type of name Latin (iau, default), 3 letter designation (desig) or other language (see list below)
+    namesType: "ko", // Type of name Latin (iau, default), 3 letter designation (desig) or other language (see list below)
     nameStyle: { fill:"#cccc99", align: "center", baseline: "middle", 
                 font: ["14px Helvetica, Arial, sans-serif",  // Style for constellations
                         "12px Helvetica, Arial, sans-serif",  // Different fonts for diff.
