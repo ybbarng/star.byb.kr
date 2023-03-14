@@ -4,8 +4,13 @@
 
   import d3CelestialConfig from '../config/d3-celestial-config.ts';
 
+  const longitude = -165;
+  const latitude = 61.5;
+  const orientation = 50;
+
   onMount(async () => {
     if (browser) {
+      d3CelestialConfig.center = [longitude, latitude, orientation];
       Celestial.display(d3CelestialConfig);
     }
   });
