@@ -1,5 +1,5 @@
 /*  Uncomment for deeper data files */
-const config = { 
+const config = {
   width: 0,           // Default width, 0 = full parent element width; 
                       // height is determined by projection
   projection: "stereographic",    // Map projection used: see below
