@@ -4,8 +4,25 @@
 
   import d3CelestialConfig from '../config/d3-celestial-config.ts';
 
-  const longitude = -165;
-  const latitude = 61.5;
+  const mergeSexagesimal = (base: number, minutes: number, seconds: number) => {
+    const sign = base >= 0 ? 1 : -1;
+    return (base * sign + minutes / 60 + seconds / 3600) * sign;
+  }
+
+  const raHmsToDec = (hours: number, minutes: number, seconds: number) => {
+    const decimal = mergeSexagesimal(hours, minutes, seconds) * 360 / 24;
+    if (decimal > 180) {
+      return decimal - 360;
+    }
+    return decimal;
+  }
+
+  const decDmsToDec = (degrees: number, minutes: number, seconds: number) => {
+    return mergeSexagesimal(degrees, minutes, seconds);
+  }
+
+  const longitude = raHmsToDec(13, 48, 28.8);  // ra -180 ~ 180
+  const latitude = decDmsToDec(49, 11, 39.4);  // dec -90 ~ 90
   const orientation = 50;
 
   onMount(async () => {
