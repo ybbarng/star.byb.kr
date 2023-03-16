@@ -14,7 +14,7 @@ const config = {
                       // overrides center
   follow: "center",   // on which coordinates to center the map, default: zenith, if location enabled, 
                       // otherwise center
-  zoomlevel: 3,    // initial zoom level 0...zoomextend; 0|null = default, 1 = 100%, 0 < x <= zoomextend
+  zoomlevel: 1,    // initial zoom level 0...zoomextend; 0|null = default, 1 = 100%, 0 < x <= zoomextend
   zoomextend: 10,     // maximum zoom level
   adaptable: true,    // Sizes are increased with higher zoom-levels
   interactive: false,  // Enable zooming and rotation with mousewheel and dragging
