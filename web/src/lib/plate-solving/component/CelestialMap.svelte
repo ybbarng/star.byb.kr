@@ -21,9 +21,9 @@
     return mergeSexagesimal(degrees, minutes, seconds);
   }
 
-  const longitude = raHmsToDec(13, 48, 28.8);  // ra -180 ~ 180
-  const latitude = decDmsToDec(49, 11, 39.4);  // dec -90 ~ 90
-  const orientation = 50;
+  const longitude = raHmsToDec(4, 51, 6.0);  // ra -180 ~ 180
+  const latitude = decDmsToDec(7, 0, 3.7);  // dec -90 ~ 90
+  const orientation = 0; // 0 ~ 360
 
   onMount(async () => {
     if (browser) {
