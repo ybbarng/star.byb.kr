@@ -2,7 +2,7 @@
   import { browser } from '$app/environment';
   import { onMount } from 'svelte';
 
-  import d3CelestialConfig from '../config/d3-celestial-config';
+  import d3CelestialConfig from '../d3-celestial/config';
 
   const mergeSexagesimal = (base: number, minutes: number, seconds: number) => {
     const sign = base >= 0 ? 1 : -1;
