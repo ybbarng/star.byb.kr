@@ -11,7 +11,10 @@
   };
 
   const raHmsToDec = (hours: number, minutes: number, seconds: number) => {
-    const decimal = (mergeSexagesimal(hours, minutes, seconds) * 360) / 24;
+    return (mergeSexagesimal(hours, minutes, seconds) * 360) / 24;
+  };
+
+  const fitIn180 = (decimal: number) => {
     if (decimal > 180) {
       return decimal - 360;
     }
@@ -22,14 +25,28 @@
     return mergeSexagesimal(degrees, minutes, seconds);
   };
 
-  const longitude = raHmsToDec(4, 51, 6.0); // ra -180 ~ 180
-  const latitude = decDmsToDec(7, 0, 3.7); // dec -90 ~ 90
-  const orientation = 0; // 0 ~ 360
+  const calculateCenter = (points: number[][][]) => {
+    const center = points
+      .map(([x, y]: number[][]) => {
+        return [raHmsToDec(...x), decDmsToDec(...y)];
+      })
+      .reduce((acc: number[], current: number[]) => {
+        return [acc[0] + current[0], acc[1] + current[1]];
+      });
+    const longitude = fitIn180(center[0] / points.length);
+    const latitude = center[1] / points.length;
+    return [longitude, latitude];
+  };
+
   export var quadrilateralPoints: number[][][];
+
+  const [longitude, latitude] = calculateCenter(quadrilateralPoints);
+  const orientation = 0; // 0 ~ 360
+  console.log(`Center: (${longitude}, ${latitude})`);
 
   const _addQuadrilateral = () => {
     const points = quadrilateralPoints.map(([x, y]: number[][]) => {
-      return [raHmsToDec(...x), decDmsToDec(...y)];
+      return [fitIn180(raHmsToDec(...x)), decDmsToDec(...y)];
     });
     points.push(points[0]);
     addQuadrilateral(Celestial, points);
