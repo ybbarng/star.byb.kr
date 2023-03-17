@@ -18,3 +18,11 @@ model AddTask {
   parameter2 Int
   result     Int?
 }
+
+model PlateSolvingTask {
+  id        String    @id @default(uuid())
+  createdAt DateTime  @default(now())
+  resultAt  DateTime?
+  request   String
+  response  String?
+}
