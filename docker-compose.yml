@@ -17,11 +17,28 @@ services:
     depends_on:
       - message-queue
     restart: always
-  worker:
+  worker-add:
     image: python-worker
     build:
       context: ./worker
       dockerfile: Dockerfile
+      args:
+        - WORKER=add
+    environment:
+      AMQP_HOST: message-queue
+      AMQP_PORT: 5672
+      AMQP_USERNAME: ${AMQP_USERNAME}
+      AMQP_PASSWORD: ${AMQP_PASSWORD}
+    depends_on:
+      - message-queue
+    restart: always
+  worker-plate-solving:
+    image: python-worker
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+      args:
+        - WORKER=plate-solving
     environment:
       AMQP_HOST: message-queue
       AMQP_PORT: 5672

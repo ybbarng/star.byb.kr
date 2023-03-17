@@ -9,5 +9,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy all local files into the image.
 COPY . .
 
+ARG WORKER
+
 # Build.
-CMD [ "python", "-u", "worker.py" ]
+CMD [ "python", "-u", "worker.py", WORKER ]
