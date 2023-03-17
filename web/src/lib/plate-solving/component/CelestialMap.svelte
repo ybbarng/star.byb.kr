@@ -42,7 +42,6 @@
 
   const [longitude, latitude] = calculateCenter(quadrilateralPoints);
   const orientation = 0; // 0 ~ 360
-  console.log(`Center: (${longitude}, ${latitude})`);
 
   const _addQuadrilateral = () => {
     const points = quadrilateralPoints.map(([x, y]: number[][]) => {
