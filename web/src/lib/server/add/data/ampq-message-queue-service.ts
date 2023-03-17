@@ -11,14 +11,12 @@ class AMPQMessageQueueService implements MessageQueueService {
   connection: Promise<Connection>;
   consumerChannel: Promise<Channel>;
   producerChannel: Promise<Channel>;
-  ticketCounter: bigint;
   onResult: ((ticket: string, result: number) => void) | null;
 
   constructor() {
     this.connection = this.initializeConnection();
     this.consumerChannel = this.initializeConsumer();
     this.producerChannel = this.initializeProducer();
-    this.ticketCounter = 0n;
     this.onResult = null;
   }
 
