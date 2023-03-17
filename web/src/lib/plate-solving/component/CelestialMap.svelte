@@ -25,24 +25,7 @@
   const longitude = raHmsToDec(4, 51, 6.0); // ra -180 ~ 180
   const latitude = decDmsToDec(7, 0, 3.7); // dec -90 ~ 90
   const orientation = 0; // 0 ~ 360
-  const quadrilateralPoints = [
-    [
-      [3, 51, 6.0],
-      [-3, 0, 3.7]
-    ],
-    [
-      [5, 51, 6.0],
-      [-3, 0, 3.7]
-    ],
-    [
-      [5, 51, 6.0],
-      [12, 0, 3.7]
-    ],
-    [
-      [3, 51, 6.0],
-      [12, 0, 3.7]
-    ]
-  ];
+  export var quadrilateralPoints: number[][][];
 
   const _addQuadrilateral = () => {
     const points = quadrilateralPoints.map(([x, y]: number[][]) => {
