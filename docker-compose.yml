@@ -22,13 +22,12 @@ services:
     build:
       context: ./worker
       dockerfile: Dockerfile
-      args:
-        - WORKER=add
     environment:
       AMQP_HOST: message-queue
       AMQP_PORT: 5672
       AMQP_USERNAME: ${AMQP_USERNAME}
       AMQP_PASSWORD: ${AMQP_PASSWORD}
+      WORKER: add
     depends_on:
       - message-queue
     restart: always
@@ -37,13 +36,12 @@ services:
     build:
       context: ./worker
       dockerfile: Dockerfile
-      args:
-        - WORKER=plate-solving
     environment:
       AMQP_HOST: message-queue
       AMQP_PORT: 5672
       AMQP_USERNAME: ${AMQP_USERNAME}
       AMQP_PASSWORD: ${AMQP_PASSWORD}
+      WORKER: plate-solving
     depends_on:
       - message-queue
     restart: always
