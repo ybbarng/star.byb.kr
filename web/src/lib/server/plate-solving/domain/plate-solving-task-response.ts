@@ -1,3 +1,3 @@
 export type PlateSolvingTaskResponse = {
-  points: number[][][]
+  points: [number, number, number][][]
 }

@@ -25,9 +25,9 @@
     return mergeSexagesimal(degrees, minutes, seconds);
   };
 
-  const calculateCenter = (points: number[][][]) => {
+  const calculateCenter = (points: [number, number, number][][]) => {
     const center = points
-      .map(([x, y]: number[][]) => {
+      .map(([x, y]: [number, number, number][]) => {
         return [raHmsToDec(...x), decDmsToDec(...y)];
       })
       .reduce((acc: number[], current: number[]) => {
@@ -38,13 +38,13 @@
     return [longitude, latitude];
   };
 
-  export var quadrilateralPoints: number[][][];
+  export var quadrilateralPoints: [number, number, number][][];
 
   const [longitude, latitude] = calculateCenter(quadrilateralPoints);
   const orientation = 0; // 0 ~ 360
 
   const _addQuadrilateral = () => {
-    const points = quadrilateralPoints.map(([x, y]: number[][]) => {
+    const points = quadrilateralPoints.map(([x, y]: [number, number, number][]) => {
       return [fitIn180(raHmsToDec(...x)), decDmsToDec(...y)];
     });
     points.push(points[0]);
