@@ -1,26 +1,33 @@
 <script lang="ts">
   var inputUploadImage: HTMLInputElement;
-  var files: File[];
+  var files: FileList;
   export var imageDataUrl: string;
   const toDataUrl = (blob: File) => {
     const reader = new FileReader();
     reader.readAsDataURL(blob);
     reader.onload = (event) => {
+      if (!event.target || !event.target.result) {
+        return;
+      }
+      if (typeof event.target.result != 'string') {
+        console.error("The resulf of reading as data url is not string.");
+        return;
+      }
       imageDataUrl = event.target.result;
-    }
-  }
-  const onImageLoaded = () => {
-    imageWidth = image.width;
-    imageHeight = image.height;
-  }
+    };
+  };
 </script>
 
 <div class="image-uploader">
-  <input class="hidden" id="input-upload-image" type="file" accept=".png,.jpg"
+  <input
+    class="hidden"
+    id="input-upload-image"
+    type="file"
+    accept=".png,.jpg"
     bind:files
     bind:this={inputUploadImage}
     on:change={() => toDataUrl(files[0])}
-    />
+  />
   <button class="upload-btn" on:click={() => inputUploadImage.click()}>Upload</button>
 </div>
 
