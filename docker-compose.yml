@@ -6,6 +6,8 @@ services:
     build:
       context: ./web
       dockerfile: Dockerfile
+      args:
+        DATABASE_URL: ${WEB_DATABASE_URL}
     ports:
       - ${WEB_PORT}:3000
     environment:
@@ -14,6 +16,7 @@ services:
       AMQP_USERNAME: ${AMQP_USERNAME}
       AMQP_PASSWORD: ${AMQP_PASSWORD}
       ORIGIN: ${WEB_ORIGIN}
+      DATABASE_URL: ${WEB_DATABASE_URL}
     depends_on:
       - message-queue
     restart: always

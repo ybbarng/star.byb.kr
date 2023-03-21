@@ -10,6 +10,7 @@ RUN npm ci
 COPY . .
 
 # Build.
+RUN npx prisma generate
 RUN npm run build
 
 
@@ -24,6 +25,7 @@ RUN rm -rf ./*
 # Copy the resources from build image.
 COPY --from=build /usr/src/web/package.json .
 COPY --from=build /usr/src/web/build .
+COPY prisma .
 
 # Install dependencies for production.
 RUN npm install --production

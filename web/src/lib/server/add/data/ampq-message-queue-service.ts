@@ -15,12 +15,24 @@ class AMPQMessageQueueService implements MessageQueueService {
 
   constructor() {
     this.connection = this.initializeConnection();
+    this.connection.catch(error => {
+      console.error(error);
+    });
     this.consumerChannel = this.initializeConsumer();
+    this.consumerChannel.catch(error => {
+      console.error(error);
+    });
     this.producerChannel = this.initializeProducer();
+    this.producerChannel.catch(error => {
+      console.error(error);
+    });
     this.onResult = null;
   }
 
   async initializeConnection() {
+    if (!process.env.AMQP_HOST || !process.env.AMQP_PORT || !process.env.AMQP_USERNAME || !process.env.AMQP_PASSWORD) {
+      return Promise.reject("AMQP setting is invalidate.");
+    }
     console.log(`MessageQueueService is initialized.`);
     return client.connect(this.URL);
   }
