@@ -25,7 +25,8 @@ export class PrismaPlateSolvingTaskRepository implements PlateSolvingTaskReposit
   }
 
   async getAllPlateSolvingTasks(): Promise<PlateSolvingTask[]> {
-    return await this.prisma.plateSolvingTask.findMany().map((plateSolvingTaskEntry) => {
+    const plateSolvingTasks = await this.prisma.plateSolvingTask.findMany();
+    return plateSolvingTasks.map((plateSolvingTaskEntry) => {
       return {
         ...plateSolvingTaskEntry,
         request: JSON.parse(plateSolvingTaskEntry.request),
