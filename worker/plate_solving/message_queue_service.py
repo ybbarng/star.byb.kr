@@ -1,8 +1,9 @@
 import json
 import os
-import time
 
 import pika
+
+from plate_solving.plate_solver import PlateSolver
 
 AMQP = {
   "HOST": os.environ.get('AMQP_HOST'),
@@ -51,22 +52,7 @@ class MessageQueueService:
     response = {
       'ticket': ticket,
       'response': {
-        'points': [[
-            [3, 51, 6.0],
-            [-3, 0, 3.7]
-          ],
-          [
-            [5, 51, 6.0],
-            [-3, 0, 3.7]
-          ],
-          [
-            [5, 51, 6.0],
-            [12, 0, 3.7]
-          ],
-          [
-            [3, 51, 6.0],
-            [12, 0, 3.7]
-          ]]
+        'points': result
       }
     }
     data = json.dumps(response)
@@ -78,26 +64,4 @@ class MessageQueueService:
     self.produce_plate_solving_response(request['ticket'], self.plate_solving(request['request']))
 
   def plate_solving(self, request):
-    print("Request: ")
-    print(f"  width: {request['width']}")
-    print(f"  height: {request['height']}")
-    print(f"  stars: {request['height']}")
-    for star in request['stars']:
-      print(f"    ({star[0]}, {star[1]})")
-    time.sleep(10)
-    return [[
-      [3, 51, 6.0],
-      [-3, 0, 3.7]
-    ],
-    [
-      [5, 51, 6.0],
-      [-3, 0, 3.7]
-    ],
-    [
-      [5, 51, 6.0],
-      [12, 0, 3.7]
-    ],
-    [
-      [3, 51, 6.0],
-      [12, 0, 3.7]
-    ]]
+    return PlateSolver().solve(request)
