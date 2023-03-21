@@ -24,7 +24,7 @@
 <h1>천체 이미지 분석</h1>
 <p>천체 이미지 분석 페이지입니다.</p>
 <div class="container">
-  {#if !form && !imageDataUrl}
+  {#if (!form || !form.success) && !imageDataUrl }
     <ImageUploader bind:imageDataUrl />
   {:else if imageDataUrl}
     <StarMarker bind:imageDataUrl bind:markedImage />
@@ -41,7 +41,10 @@
       > 입니다.
     </p>
   {:else}
-    <p>에러가 발생했습니다.</p>
+    <p class="error">에러가 발생했습니다.</p>
+  {/if}
+  {#if form && !form.success}
+    <p class="error">에러가 발생했습니다: {form.reason}</p>
   {/if}
 </div>
 

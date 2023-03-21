@@ -13,14 +13,14 @@ export const actions: Actions = {
       return fail(400, { success:false});
     }
     const stars = JSON.parse(starsRaw);
-    if (!stars || stars.length == 0) {
-      return fail(400, { success:false});
+    if (!stars || stars.length < 3) {
+      return fail(400, { success:false, reason: "3개 이상의 별이 입력되어야 분석을 시작할 수 있습니다."});
     }
     const ticket = requestPlateSolvingUseCase.execute({
       width: parseInt(width),
       height: parseInt(height),
       stars
     });
-    return { ticket, success: true }
+    return { ticket, success: true, reason: "" }
   }
 };
