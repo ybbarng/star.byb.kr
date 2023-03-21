@@ -8,7 +8,6 @@ class PlateSolveUseCase:
     print(f"  stars: {request['height']}")
     for star in request['stars']:
       print(f"    ({star[0]}, {star[1]})")
-    time.sleep(10)
     return [[
       [3, 51, 6.0],
       [-3, 0, 3.7]
