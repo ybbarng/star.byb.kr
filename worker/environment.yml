@@ -3,4 +3,5 @@ channels:
   - defaults
 dependencies:
   - python=3.9
+  - pika
 prefix: /opt/miniconda3/envs/star.byb.kr
