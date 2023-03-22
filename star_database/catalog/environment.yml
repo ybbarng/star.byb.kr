@@ -1,0 +1,6 @@
+name: star.byb.kr-database-builder
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.9
