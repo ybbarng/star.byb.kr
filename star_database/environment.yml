@@ -1,6 +1,8 @@
 name: star.byb.kr-database-builder
 channels:
+  - anaconda
   - conda-forge
   - defaults
 dependencies:
+  - numpy=1.22.3
   - python=3.9
