@@ -4,5 +4,6 @@ channels:
   - conda-forge
   - defaults
 dependencies:
+  - healpy=1.16.2
   - numpy=1.22.3
   - python=3.9
