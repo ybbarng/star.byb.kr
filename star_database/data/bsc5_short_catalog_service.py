@@ -7,7 +7,7 @@ import re
 
 from domain.catalog_service import CatalogService
 
-from data.coordidate_service import CoordinateService
+from data.coordinate_service import CoordinateService
 
 
 class Bsc5ShortCatalogService(CatalogService):

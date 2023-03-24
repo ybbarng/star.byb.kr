@@ -1,5 +1,5 @@
 from data.bsc5_short_catalog_service import Bsc5ShortCatalogService
-from data.coordidate_service import CoordinateService
+from data.coordinate_service import CoordinateService
 
 from domain.build_star_database_use_case import BuildStarDatabaseUseCase
 
