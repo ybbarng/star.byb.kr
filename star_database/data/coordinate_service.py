@@ -1,7 +1,9 @@
-from math import cos, dist, radians, sin
+from math import cos, dist, radians, sin, acos
 
 from healpy import nside2npix, pix2vec, nside2resol
-from numpy import array
+from numpy import array, dot, subtract
+from numpy.linalg import norm
+from numpy.typing import ArrayLike
 
 from domain.coordinate_service import CoordinateService
 
@@ -21,6 +23,11 @@ class CoordinateService(CoordinateService):
                     group.append(point)
             groups.append(array(group))
         return groups
+
+    def find_angle_from_points(self, a: ArrayLike, b: ArrayLike, c: ArrayLike) -> float:
+        ba = subtract(a, b)
+        bc = subtract(c, b)
+        return acos(dot(ba, bc) / (norm(ba) * norm(bc)))
 
     def merge_sexagesimal(self, base: float, minute: float, second: float) -> float:
         sign = base / abs(base) if base != 0 else 1
