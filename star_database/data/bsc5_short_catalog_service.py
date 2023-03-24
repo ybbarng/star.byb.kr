@@ -19,6 +19,7 @@ class Bsc5ShortCatalogService(CatalogService):
     def load(self) -> array:
         """Load Catalog from basc5-short database and return each stars coordinates on celestial sphere"""
         stars = self.__open_file(bright=None)
+        stars = self.__remove_same_coordinates(stars)
         stars = [self.__parse_ra_dec(star) for star in stars]
         return array([self.__to_celestial_sphere_vector(star) for star in stars])
 
@@ -28,6 +29,20 @@ class Bsc5ShortCatalogService(CatalogService):
             if bright:
                 data = [star for star in data if float(star["V"]) <= bright]
             return data
+
+    def __remove_same_coordinates(self, stars) -> array:
+        """Remove the stars with duplicate coordinates.
+        """
+        unique_coordinates = {}
+        for star in stars:
+            name = star["HR"]
+            key = star["Dec"] + star["RA"]
+            try:
+                registered_star = unique_coordinates[key]
+                print(f"{name} is not added because the coordinate is already occupied by {registered_star['HR']}.")
+            except KeyError:
+                unique_coordinates[key] = star
+        return list(unique_coordinates.values())
 
     def __parse_ra_dec(self, star):
         """Parse the star from catalog format to get the right ascension and the declination
