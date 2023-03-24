@@ -37,10 +37,7 @@ class Bsc5ShortCatalogService(CatalogService):
         for star in stars:
             name = star["HR"]
             key = star["Dec"] + star["RA"]
-            try:
-                registered_star = unique_coordinates[key]
-                print(f"{name} is not added because the coordinate is already occupied by {registered_star['HR']}.")
-            except KeyError:
+            if key not in unique_coordinates:
                 unique_coordinates[key] = star
         return list(unique_coordinates.values())
 
