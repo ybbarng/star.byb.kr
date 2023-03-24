@@ -1,5 +1,6 @@
 from data.bsc5_short_catalog_service import Bsc5ShortCatalogService
 from data.coordinate_service import CoordinateService
+from data.combination_service import CombinationService
 
 from domain.build_star_database_use_case import BuildStarDatabaseUseCase
 
@@ -9,7 +10,8 @@ class StarDatabaseBuilder:
     coordinate_service = CoordinateService()
     self.build_star_database_use_case = BuildStarDatabaseUseCase(
       Bsc5ShortCatalogService(coordinate_service),
-      coordinate_service
+      coordinate_service,
+      CombinationService()
     )
   
   def build(self):

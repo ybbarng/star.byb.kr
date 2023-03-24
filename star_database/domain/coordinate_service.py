@@ -11,3 +11,7 @@ class CoordinateService(ABC):
     @abstractmethod
     def find_angle_from_points(self, a: ArrayLike, b: ArrayLike, c: ArrayLike) -> float:
         pass
+
+    @abstractmethod
+    def find_angles_of_triangles(self, a: ArrayLike, b: ArrayLike, c: ArrayLike) -> tuple[float, float, float]:
+        pass

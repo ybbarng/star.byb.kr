@@ -24,10 +24,19 @@ class CoordinateService(CoordinateService):
             groups.append(array(group))
         return groups
 
+    def find_angles_of_triangles(self, a: ArrayLike, b: ArrayLike, c: ArrayLike) -> tuple[float, float, float]:
+        angle_1 = self.find_angle_from_points(a, b, c)
+        angle_2 = self.find_angle_from_points(b, c, a)
+        angle_3 = self.find_angle_from_points(c, a, b)
+        return sorted((angle_1, angle_2, angle_3), reverse=True)
+
     def find_angle_from_points(self, a: ArrayLike, b: ArrayLike, c: ArrayLike) -> float:
         ba = subtract(a, b)
         bc = subtract(c, b)
-        return acos(dot(ba, bc) / (norm(ba) * norm(bc)))
+        try:
+            return acos(dot(ba, bc) / (norm(ba) * norm(bc)))
+        except ValueError:
+            print(f"a: {a}, b: {b}, c: {c}, ba: {ba}, bc: {bc}, acos({dot(ba, bc)} / {norm(ba) * norm(bc)}) = {dot(ba, bc) / (norm(ba) * norm(bc))}")
 
     def merge_sexagesimal(self, base: float, minute: float, second: float) -> float:
         sign = base / abs(base) if base != 0 else 1
