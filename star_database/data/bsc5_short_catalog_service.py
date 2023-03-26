@@ -1,4 +1,5 @@
 from itertools import combinations
+from typing import Callable
 
 from numpy import array
 
@@ -20,7 +21,7 @@ class Bsc5ShortCatalogService(CatalogService):
         """Load Catalog from basc5-short database and return each stars coordinates on celestial sphere"""
         stars = self.__open_file(bright=None)
         stars = self.__remove_same_coordinates(stars)
-        stars = [self.__parse_ra_dec(star) for star in stars]
+        stars = list(filter(lambda star: float(star["V"]) < 3.0, stars))
         return array([self.__to_celestial_sphere_vector(star) for star in stars])
 
     def __open_file(self, bright=None):
