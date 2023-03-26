@@ -17,12 +17,13 @@ class Bsc5ShortCatalogService(CatalogService):
     def __init__(self, coordinate_service: CoordinateService):
         self.__coordinate_service = coordinate_service
 
-    def load(self) -> array:
+    def load(self) -> list:
         """Load Catalog from basc5-short database and return each stars coordinates on celestial sphere"""
         stars = self.__open_file(bright=None)
         stars = self.__remove_same_coordinates(stars)
         stars = list(filter(lambda star: float(star["V"]) < 3.0, stars))
-        return array([self.__to_celestial_sphere_vector(star) for star in stars])
+        stars = [(self.__parse_ra_dec(star), star) for star in stars]
+        return list([(self.__to_celestial_sphere_vector(star[0]), star) for star in stars])
 
     def __open_file(self, bright=None):
         with open(self.__FILE_NAME) as f:

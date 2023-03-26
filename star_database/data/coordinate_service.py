@@ -12,16 +12,16 @@ class CoordinateService(CoordinateService):
     # Assumes the radius of celestial sphere is 1
     r = 1
 
-    def group_by_healpixes(self, nside: int, data: array) -> list[array]:
+    def group_by_healpixes(self, nside: int, data) -> list[array]:
         healpix_size = nside2resol(nside)
         groups = []
         for i in range(nside2npix(nside)):
             group = []
             healpix = pix2vec(nside, i)
-            for point in data:
+            for point, star in data:
                 if dist(point, healpix) < healpix_size:
-                    group.append(point)
-            groups.append(array(group))
+                    group.append((point, star))
+            groups.append(group)
         return groups
 
     def find_angles_of_triangles(self, a: ArrayLike, b: ArrayLike, c: ArrayLike) -> tuple[float, float, float]:

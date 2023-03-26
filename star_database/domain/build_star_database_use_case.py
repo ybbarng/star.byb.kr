@@ -10,7 +10,7 @@ class BuildStarDatabaseUseCase():
 
     def execute(self):
         print("Building star database is started.")
-        N_SIDE = 7
+        N_SIDE = 5
         stars = self.catalog_service.load()
         print(f"{len(stars)} data is loaded.")
         groups = self.coordinate_service.group_by_healpixes(N_SIDE, stars)
@@ -21,15 +21,17 @@ class BuildStarDatabaseUseCase():
         print(f"{len(triangles)} triangles are created.")
         angles = []
         for triangle in triangles:
-            angles.append(self.coordinate_service.find_angles_of_triangles(*triangle))
-        angles.sort(key = lambda angle: angle[0], reverse=True)
+            coordinates = [star[0] for star in triangle]
+            angles.append((self.coordinate_service.find_angles_of_triangles(*coordinates), triangle))
+        angles.sort(key = lambda angle: angle[0][0], reverse=True)
+        triangles = angles
         print("All the angles of triangles are calculated.")
 
         target = [1.504462873315192, 1.4235989684685986, 0.21353081180600306]
         threshold = 0.035 # 2 degree to rad
         print(f"target: {target}")
-        for angle in angles:
-            if angle[0] - target[0] < threshold and angle[0] - target[0] > -threshold:
-                if angle[1] - target[1] < threshold and angle[1] - target[1] > -threshold:
-                    if angle[2] - target[2] < threshold and angle[2] - target[2] > -threshold:
-                        print(angle)
+        for angles, stars in triangles:
+            if angles[0] - target[0] < threshold and angles[0] - target[0] > -threshold:
+                if angles[1] - target[1] < threshold and angles[1] - target[1] > -threshold:
+                    if angles[2] - target[2] < threshold and angles[2] - target[2] > -threshold:
+                        print(angles, stars)
