@@ -6,5 +6,5 @@ from domain.combination_service import CombinationService
 
 
 class CombinationService(CombinationService):
-    def get_combinations(self, group: list[array]) -> list[tuple[array, array, array]]:
-        return list(combinations(group, 3))
+    def get_combinations(self, group: list[array], size: int) -> list[tuple[array, array, array]]:
+        return list(combinations(group, size))

@@ -15,23 +15,26 @@ class BuildStarDatabaseUseCase():
         print(f"{len(stars)} data is loaded.")
         groups = self.coordinate_service.group_by_healpixes(N_SIDE, stars)
         print(f"{len(groups)} groups are created with N_SIDE: {N_SIDE}.")
-        triangles = []
+        platoon = []
         for group in groups:
-            triangles += self.combination_service.get_combinations(group)
-        print(f"{len(triangles)} triangles are created.")
-        angles = []
-        for triangle in triangles:
-            coordinates = [star[0] for star in triangle]
-            angles.append((self.coordinate_service.find_angles_of_triangles(*coordinates), triangle))
+            platoon += self.combination_service.get_combinations(group, 4)
+        print(f"{len(platoon)} squads in a platoon are created.")
+        platoon_with_angles = []
+        for squad in platoon:
+            coordinates = [star[0] for star in squad]
+            platoon_with_angles.append((self.coordinate_service.find_angles_of_polygon(*coordinates), squad))
         angles.sort(key = lambda angle: angle[0][0], reverse=True)
-        triangles = angles
-        print("All the angles of triangles are calculated.")
+        platoon = platoon_with_angles
+        print("All the angles of polygons are calculated.")
 
         target = [1.504462873315192, 1.4235989684685986, 0.21353081180600306]
         threshold = 0.035 # 2 degree to rad
         print(f"target: {target}")
-        for angles, stars in triangles:
-            if angles[0] - target[0] < threshold and angles[0] - target[0] > -threshold:
-                if angles[1] - target[1] < threshold and angles[1] - target[1] > -threshold:
-                    if angles[2] - target[2] < threshold and angles[2] - target[2] > -threshold:
-                        print(angles, stars)
+        for angles, stars in platoon:
+            is_valid = True
+            for i in len(target):
+                if angles[i] - target[i] > threshold or angles[i] - target[i] < -threshold:
+                    is_valid = False
+                    break
+            if is_valid:
+                print(angles, stars)
