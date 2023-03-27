@@ -13,5 +13,5 @@ class CoordinateService(ABC):
         pass
 
     @abstractmethod
-    def find_angles_of_triangles(self, a: ArrayLike, b: ArrayLike, c: ArrayLike) -> tuple[float, float, float]:
+    def find_angles_of_polygon(self, points: list[ArrayLike]) -> list[float]:
         pass

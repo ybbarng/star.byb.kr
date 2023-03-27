@@ -24,11 +24,12 @@ class CoordinateService(CoordinateService):
             groups.append(group)
         return groups
 
-    def find_angles_of_triangles(self, a: ArrayLike, b: ArrayLike, c: ArrayLike) -> tuple[float, float, float]:
-        angle_1 = self.find_angle_from_points(a, b, c)
-        angle_2 = self.find_angle_from_points(b, c, a)
-        angle_3 = self.find_angle_from_points(c, a, b)
-        return sorted((angle_1, angle_2, angle_3), reverse=True)
+    def find_angles_of_polygon(self, points: list[ArrayLike]) -> list[float]:
+        n_points = len(points)
+        angles = []
+        for i in range(n_points):
+            angles.append(self.find_angle_from_points(points[i % n_points], points[(i + 1) % n_points], points[(i + 2) % n_points]))
+        return sorted(angles, reverse=True)
 
     def find_angle_from_points(self, a: ArrayLike, b: ArrayLike, c: ArrayLike) -> float:
         ba = subtract(a, b)
