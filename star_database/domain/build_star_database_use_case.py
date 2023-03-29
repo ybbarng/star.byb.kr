@@ -57,8 +57,9 @@ class BuildStarDatabaseUseCase():
                 results.append(squad)
         target_matrix = array([image_stars[index][1] + [1] for angle, index in target])
         print(f"{len(results)} results are found.")
+        max_stars_found = 0
         for i, squad in enumerate(results):
-            print(f"Verify squad {i} is valid")
+            # Verify squad {i} is valid
             vectors = [star['vector'] for angle, star in squad]
             normal_vector = self.coordinate_service.find_plane_normal_vector(*vectors)
             rotation_matrix = self.coordinate_service.get_rotation_matrix(normal_vector)
@@ -69,8 +70,31 @@ class BuildStarDatabaseUseCase():
             # new_squad dot X = target_matrix
             # X = new_squad-1 dot target_matrix
             X = dot(pinv(new_squad), target_matrix)
-            print("new * X (must be same as target)")
-            print(dot(new_squad, X))
+
+            # Rotate neighbor stars on this plane
+            neighbors = []
+            for star in stars:
+                neighbors.append(list(dot(rotation_matrix, star['vector'])[:2]) + [1])
+            neighbors = array(neighbors)
+
+            # Transform rotated neighbor to the image coordinates
+            target_neighbors = dot(neighbors, X)
+
+            # find the neighbor exists in the image data
+            founds = []
+            for n in target_neighbors:
+                for i in image_stars:
+                    if (n[0] - i[1][0]) ** 2 + (n[1] - i[1][1]) ** 2 < 70:
+                        founds.append((n, i))
+            found_image_stars = set()
+            for found in founds:
+                found_image_stars.add(found[1][0])
+            if len(found_image_stars) > 3:
+                if max_stars_found < len(found_image_stars):
+                    max_stars_found = len(found_image_stars)
+                if len(found_image_stars) > 5:
+                    print(squad)
+        print(max_stars_found)
     
     def build_testset(self):
         image_dubhe = [474.5, 222.625]
