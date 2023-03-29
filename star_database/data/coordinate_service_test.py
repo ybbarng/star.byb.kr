@@ -1,7 +1,7 @@
 import unittest
 from math import pi 
 
-from numpy import array
+from numpy import array, dot
 from numpy.testing import assert_almost_equal
 
 from data.coordinate_service import CoordinateService
@@ -31,3 +31,11 @@ class CoordinateServiceTestCase(unittest.TestCase):
     assert_almost_equal(normal_vector[0], normal_vector[1])
     assert_almost_equal(normal_vector[1], normal_vector[2])
     assert_almost_equal(normal_vector[2], normal_vector[0])
+
+  def test_get_rotation_matrix(self):
+    normal_vector = array([0, 1, 0])
+    point = normal_vector
+    expected = array([0, 0, 1])
+    rotation_matrix = CoordinateService().get_rotation_matrix(normal_vector)
+    result = dot(rotation_matrix, point)
+    assert_almost_equal(result, expected, 5)

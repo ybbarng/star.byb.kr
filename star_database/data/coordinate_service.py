@@ -1,7 +1,7 @@
 from math import cos, dist, radians, sin, acos
 
 from healpy import nside2npix, pix2vec, nside2resol
-from numpy import array, cross, dot, subtract
+from numpy import array, cross, dot, identity, subtract
 from numpy.linalg import norm
 from numpy.typing import ArrayLike
 
@@ -50,6 +50,25 @@ class CoordinateService(CoordinateService):
         vector1 = point3 - point1
         vector2 = point2 - point1
         return cross(vector1, vector2)
+
+    def get_rotation_matrix(
+        self, normal_vector: ArrayLike
+    ) -> list[ArrayLike]:
+        # https://math.stackexchange.com/questions/180418/calculate-rotation-matrix-to-align-vector-a-to-vector-b-in-3d
+        from_vector = array(normal_vector)
+        from_vector = from_vector / norm(from_vector)
+        to_vector = array([0, 0, 1])
+        to_vector = to_vector / norm(to_vector)
+        v = cross(from_vector, to_vector)
+        c = dot(from_vector, to_vector)
+        skew_v = array([
+            [0, -v[2], v[1]],
+            [v[2], 0, -v[0]],
+            [-v[1], v[0], 0]
+        ])
+        s = 1 / (1 + c)
+        rotation_matrix = identity(3) + skew_v + dot(skew_v, skew_v) * s
+        return rotation_matrix
 
     def get_middle_vector(self, p1: ArrayLike, p2: ArrayLike) -> ArrayLike:
         vector = (p1 + p2) / 2
