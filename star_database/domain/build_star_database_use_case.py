@@ -1,4 +1,5 @@
-from numpy import dot
+from numpy import array, dot
+from numpy.linalg import pinv
 
 from domain.catalog_service import CatalogService
 from domain.coordinate_service import CoordinateService
@@ -54,22 +55,22 @@ class BuildStarDatabaseUseCase():
                     break
             if is_valid:
                 results.append(squad)
+        target_matrix = array([image_stars[index][1] + [1] for angle, index in target])
         print(f"{len(results)} results are found.")
         for i, squad in enumerate(results):
             print(f"Verify squad {i} is valid")
             vectors = [star['vector'] for angle, star in squad]
             normal_vector = self.coordinate_service.find_plane_normal_vector(*vectors)
             rotation_matrix = self.coordinate_service.get_rotation_matrix(normal_vector)
+            new_squad = []
             for angle, star in squad:
-                print(f"old angle: {angle}")
-            new_dots = []
-            for angle, star in squad:
-                new_dots.append(dot(rotation_matrix, star['vector'])[:2])
-            print(new_dots)
-            new_angles = list(self.coordinate_service.find_angles_of_polygon(new_dots))
-            for angle in new_angles:
-                print(f"new angles: {angle}")
-            return
+                new_squad.append(list(dot(rotation_matrix, star['vector'])[:2]) + [1])
+            new_squad = array(new_squad)
+            # new_squad dot X = target_matrix
+            # X = new_squad-1 dot target_matrix
+            X = dot(pinv(new_squad), target_matrix)
+            print("new * X (must be same as target)")
+            print(dot(new_squad, X))
     
     def build_testset(self):
         image_dubhe = [474.5, 222.625]
