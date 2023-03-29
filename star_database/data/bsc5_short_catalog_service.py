@@ -22,8 +22,10 @@ class Bsc5ShortCatalogService(CatalogService):
         stars = self.__open_file(bright=None)
         stars = self.__remove_same_coordinates(stars)
         stars = list(filter(lambda star: float(star["V"]) < 3.0, stars))
-        stars = [(self.__parse_ra_dec(star), star) for star in stars]
-        return list([(self.__to_celestial_sphere_vector(star[0]), star) for star in stars])
+        for star in stars:
+            star["radec_in_decimal"] = self.__parse_ra_dec(star)
+            star["vector"] = self.__to_celestial_sphere_vector(star["radec_in_decimal"])
+        return stars
 
     def __open_file(self, bright=None):
         with open(self.__FILE_NAME) as f:

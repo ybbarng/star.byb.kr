@@ -21,7 +21,7 @@ class BuildStarDatabaseUseCase():
         print(f"{len(platoon)} squads in a platoon are created.")
         platoon_with_angles = []
         for squad in platoon:
-            coordinates = [star[0] for star in squad]
+            coordinates = [star["vector"] for star in squad]
             squad_with_angles = list(zip(self.coordinate_service.find_angles_of_polygon(coordinates), squad))
             squad_with_angles.sort(key=lambda item: item[0], reverse=True)
             platoon_with_angles.append(squad_with_angles)

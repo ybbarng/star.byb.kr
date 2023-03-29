@@ -18,9 +18,9 @@ class CoordinateService(CoordinateService):
         for i in range(nside2npix(nside)):
             group = []
             healpix = pix2vec(nside, i)
-            for point, star in data:
-                if dist(point, healpix) < healpix_size:
-                    group.append((point, star))
+            for star in data:
+                if dist(star['vector'], healpix) < healpix_size:
+                    group.append(star)
             groups.append(group)
         return groups
 
