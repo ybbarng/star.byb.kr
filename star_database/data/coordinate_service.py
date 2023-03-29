@@ -28,8 +28,8 @@ class CoordinateService(CoordinateService):
         n_points = len(points)
         angles = []
         for i in range(n_points):
-            angles.append(self.find_angle_from_points(points[i % n_points], points[(i + 1) % n_points], points[(i + 2) % n_points]))
-        return sorted(angles, reverse=True)
+            angles.append(self.find_angle_from_points(points[(i - 1 + n_points) % n_points], points[i % n_points], points[(i + 1) % n_points]))
+        return angles
 
     def find_angle_from_points(self, a: ArrayLike, b: ArrayLike, c: ArrayLike) -> float:
         ba = subtract(a, b)

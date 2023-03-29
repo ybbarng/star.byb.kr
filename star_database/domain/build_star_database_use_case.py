@@ -22,28 +22,41 @@ class BuildStarDatabaseUseCase():
         platoon_with_angles = []
         for squad in platoon:
             coordinates = [star[0] for star in squad]
-            platoon_with_angles.append((self.coordinate_service.find_angles_of_polygon(coordinates), squad))
-        platoon_with_angles.sort(key = lambda angle: angle[0][0], reverse=True)
+            squad_with_angles = list(zip(self.coordinate_service.find_angles_of_polygon(coordinates), squad))
+            squad_with_angles.sort(key=lambda item: item[0], reverse=True)
+            platoon_with_angles.append(squad_with_angles)
+        platoon_with_angles.sort(key=lambda squad: squad[0][0], reverse=True)
         platoon = platoon_with_angles
         print("All the angles of polygons are calculated.")
 
-        target = self.build_target()['triangles'][0]
+        image_testset = self.build_testset()
+        image_stars = image_testset['stars']
+        image_stars = list(enumerate(image_stars))
+        selected_stars = [
+            image_stars[0],
+            image_stars[1],
+            image_stars[6],
+        ]
+        selected_star_ids, selected_star_coordinates = zip(*selected_stars)
+        target = list(zip(self.coordinate_service.find_angles_of_polygon(selected_star_coordinates), selected_star_ids))
+        # sort by angle
+        target.sort(key=lambda item: item[0], reverse=True)
         threshold = 0.016 # 5 degree to rad
         print(f"target: {target}")
         results = []
-        for angles, stars in platoon:
+        for squad in platoon:
             is_valid = True
             for i in range(len(target)):
-                if angles[i] - target[i] > threshold or angles[i] - target[i] < -threshold:
+                if squad[i][0] - target[i][0] > threshold or squad[i][0] - target[i][0] < -threshold:
                     is_valid = False
                     break
             if is_valid:
-                results.append((angles, stars))
+                results.append(squad)
         print(f"{len(results)} results are found:")
-        for angles, stars in results:
-            print(angles, stars)
+        for squad in results:
+            print(squad)
     
-    def build_target(self):
+    def build_testset(self):
         image_dubhe = [474.5, 222.625]
         image_merak = [451.5, 283.625]
         image_phecda = [357.5, 269.625]
@@ -54,8 +67,18 @@ class BuildStarDatabaseUseCase():
         image_width = 675
         image_height = 444
 
-        triangle = self.coordinate_service.find_angles_of_polygon([image_alkaid, image_dubhe, image_merak])
-        quadrilateral = self.coordinate_service.find_angles_of_polygon([image_alkaid, image_dubhe, image_merak, image_phecda])
+        stars = [
+            image_dubhe,
+            image_merak,
+            image_phecda,
+            image_megrez,
+            image_alioth,
+            image_mizar,
+            image_alkaid
+        ]
+
         return {
-            'triangles': [triangle]
+            'stars': stars,
+            'width': image_width,
+            'height': image_height
         }
