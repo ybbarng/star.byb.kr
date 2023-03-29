@@ -2,6 +2,7 @@ import unittest
 from math import pi 
 
 from numpy import array
+from numpy.testing import assert_almost_equal
 
 from data.coordinate_service import CoordinateService
 
@@ -20,32 +21,13 @@ class CoordinateServiceTestCase(unittest.TestCase):
     angle = CoordinateService().find_angle_from_points(a, b, c)
     self.assertAlmostEqual(angle, pi / 2)
 
-  def test_find_angle_from_points_compare_two_data(self):
-    catalog_alkaid = array([-0.58145959, -0.29479991, 0.75828607])
-    catalog_dubhe = array([-0.45911157, 0.11504759, 0.88089762])
-    catalog_merak = array([-0.5359151, 0.13899214, 0.83275218])
-    catalog_phecda = array([-0.59187286,  0.01593808,  0.80587375])
-
-    image_alkaid = array([174.5, 157.625])
-    image_dubhe = array([474.5, 222.625])
-    image_merak = array([451.5, 283.625])
-    image_phecda = array([357.5, 269.625])
-    catalog_angle = CoordinateService().find_angle_from_points(catalog_alkaid, catalog_dubhe, catalog_merak)
-    image_angle = CoordinateService().find_angle_from_points(image_alkaid, image_dubhe, image_merak)
-    print("A-D-M")
-    print(f"catalog: {catalog_angle}, image: {image_angle}, diff: {catalog_angle - image_angle}")
-
-    print("D-M-P")
-    catalog_angle = CoordinateService().find_angle_from_points(catalog_dubhe, catalog_merak, catalog_phecda)
-    image_angle = CoordinateService().find_angle_from_points(image_dubhe, image_merak, image_phecda)
-    print(f"catalog: {catalog_angle}, image: {image_angle}, diff: {catalog_angle - image_angle}")
-
-    print("M-P-A")
-    catalog_angle = CoordinateService().find_angle_from_points(catalog_merak, catalog_phecda, catalog_alkaid)
-    image_angle = CoordinateService().find_angle_from_points(image_merak, image_phecda, image_alkaid)
-    print(f"catalog: {catalog_angle}, image: {image_angle}, diff: {catalog_angle - image_angle}")
-
-    print("P-A-D")
-    catalog_angle = CoordinateService().find_angle_from_points(catalog_phecda, catalog_alkaid, catalog_dubhe)
-    image_angle = CoordinateService().find_angle_from_points(image_phecda, image_alkaid, image_dubhe)
-    print(f"catalog: {catalog_angle}, image: {image_angle}, diff: {catalog_angle - image_angle}")
+  def test_find_plane_normal_vector(self):
+    points = [
+      array([3, 0, 0]),
+      array([0, 3, 0]),
+      array([0, 0, 3]),
+    ]
+    normal_vector = CoordinateService().find_plane_normal_vector(*points)
+    assert_almost_equal(normal_vector[0], normal_vector[1])
+    assert_almost_equal(normal_vector[1], normal_vector[2])
+    assert_almost_equal(normal_vector[2], normal_vector[0])

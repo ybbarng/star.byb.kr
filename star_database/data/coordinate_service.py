@@ -1,7 +1,7 @@
 from math import cos, dist, radians, sin, acos
 
 from healpy import nside2npix, pix2vec, nside2resol
-from numpy import array, dot, subtract
+from numpy import array, cross, dot, subtract
 from numpy.linalg import norm
 from numpy.typing import ArrayLike
 
@@ -38,6 +38,22 @@ class CoordinateService(CoordinateService):
             return acos(dot(ba, bc) / (norm(ba) * norm(bc)))
         except ValueError:
             print(f"a: {a}, b: {b}, c: {c}, ba: {ba}, bc: {bc}, acos({dot(ba, bc)} / {norm(ba) * norm(bc)}) = {dot(ba, bc) / (norm(ba) * norm(bc))}")
+
+    def find_plane_normal_vector(self, point1: ArrayLike, point2: ArrayLike, point3: ArrayLike) -> ArrayLike:
+        # https://kitchingroup.cheme.cmu.edu/blog/2015/01/18/Equation-of-a-plane-through-three-points/
+        point1 = array(point1)
+        point2 = array(point2)
+        point3 = array(point3)
+        point1 = point1 / norm(point1)
+        point2 = point2 / norm(point2)
+        point3 = point3 / norm(point3)
+        vector1 = point3 - point1
+        vector2 = point2 - point1
+        return cross(vector1, vector2)
+
+    def get_middle_vector(self, p1: ArrayLike, p2: ArrayLike) -> ArrayLike:
+        vector = (p1 + p2) / 2
+        return vector / norm(vector)
 
     def merge_sexagesimal(self, base: float, minute: float, second: float) -> float:
         sign = base / abs(base) if base != 0 else 1
