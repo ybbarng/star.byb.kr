@@ -54,7 +54,18 @@ class BuildStarDatabaseUseCase():
                 results.append(squad)
         print(f"{len(results)} results are found:")
         for squad in results:
-            print(squad)
+            for i in range(len(target)):
+                print(f"For star {i}")
+                print("  Image")
+                print(f"    angle: {target[i][0]}")
+                print(f"    id: {target[i][1]}")
+                print(f"    coordinate: {image_stars[i][1]}")
+                print("  Database")
+                print(f"    angle: {squad[i][0]}")
+                print(f"    star: HR{squad[i][1]['HR']}" + f" ({squad[i][1]['N']})" if "N" in squad[i][1] else "")
+                print(f"    coordinate: {squad[i][1]['vector']}")
+                return
+            return
     
     def build_testset(self):
         image_dubhe = [474.5, 222.625]
