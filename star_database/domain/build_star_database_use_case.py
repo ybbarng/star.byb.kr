@@ -1,3 +1,5 @@
+from numpy import dot
+
 from domain.catalog_service import CatalogService
 from domain.coordinate_service import CoordinateService
 from domain.combination_service import CombinationService
@@ -52,19 +54,21 @@ class BuildStarDatabaseUseCase():
                     break
             if is_valid:
                 results.append(squad)
-        print(f"{len(results)} results are found:")
-        for squad in results:
-            for i in range(len(target)):
-                print(f"For star {i}")
-                print("  Image")
-                print(f"    angle: {target[i][0]}")
-                print(f"    id: {target[i][1]}")
-                print(f"    coordinate: {image_stars[i][1]}")
-                print("  Database")
-                print(f"    angle: {squad[i][0]}")
-                print(f"    star: HR{squad[i][1]['HR']}" + f" ({squad[i][1]['N']})" if "N" in squad[i][1] else "")
-                print(f"    coordinate: {squad[i][1]['vector']}")
-                return
+        print(f"{len(results)} results are found.")
+        for i, squad in enumerate(results):
+            print(f"Verify squad {i} is valid")
+            vectors = [star['vector'] for angle, star in squad]
+            normal_vector = self.coordinate_service.find_plane_normal_vector(*vectors)
+            rotation_matrix = self.coordinate_service.get_rotation_matrix(normal_vector)
+            for angle, star in squad:
+                print(f"old angle: {angle}")
+            new_dots = []
+            for angle, star in squad:
+                new_dots.append(dot(rotation_matrix, star['vector'])[:2])
+            print(new_dots)
+            new_angles = list(self.coordinate_service.find_angles_of_polygon(new_dots))
+            for angle in new_angles:
+                print(f"new angles: {angle}")
             return
     
     def build_testset(self):

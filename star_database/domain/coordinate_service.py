@@ -15,3 +15,11 @@ class CoordinateService(ABC):
     @abstractmethod
     def find_angles_of_polygon(self, points: list[ArrayLike]) -> list[float]:
         pass
+
+    @abstractmethod
+    def find_plane_normal_vector(self, point1: ArrayLike, point2: ArrayLike, point3: ArrayLike) -> ArrayLike:
+        pass
+
+    @abstractmethod
+    def get_rotation_matrix(self, normal_vector: ArrayLike) -> list[ArrayLike]:
+        pass
