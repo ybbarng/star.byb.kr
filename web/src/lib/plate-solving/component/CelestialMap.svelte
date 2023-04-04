@@ -73,21 +73,4 @@
     display: inline-block;
     position: relative;
   }
-
-  #map canvas {
-    display: inline-block;
-    position: absolute;
-    z-index: 0;
-    cursor: hand;
-    cursor: grab;
-    cursor: -moz-grab;
-    cursor: -webkit-grab;
-  }
-
-  #map canvas:active {
-    cursor: move;
-    cursor: grabbing;
-    cursor: -moz-grabbing;
-    cursor: -webkit-grabbing;
-  }
 </style>
