@@ -1,4 +1,7 @@
-from numpy import array, dot
+from copy import copy
+from itertools import combinations
+
+from numpy import allclose, array, dot
 from numpy.linalg import pinv
 
 from domain.catalog_service import CatalogService
@@ -13,7 +16,7 @@ class BuildStarDatabaseUseCase():
 
     def execute(self):
         print("Building star database is started.")
-        N_SIDE = 1
+        N_SIDE = 11
         stars = self.catalog_service.load()
         print(f"{len(stars)} data is loaded.")
         groups = self.coordinate_service.group_by_healpixes(N_SIDE, stars)
@@ -35,19 +38,43 @@ class BuildStarDatabaseUseCase():
         image_testset = self.build_testset()
         image_stars = image_testset['stars']
         image_stars = list(enumerate(image_stars))
-        selected_stars = [
-            image_stars[0],
-            image_stars[1],
-            image_stars[6],
-        ]
+        icombinations = list(combinations(range(0, len(image_stars)), r=3))
+
+        dstars = {}
+        for star in stars:
+            dstars[star["HR"]] = star
+        self.find(image_stars, dstars, platoon, {}, icombinations)
+    
+    def find(self, istars, dstars, platoon, assumes, icombinations):
+        combination = icombinations[0]
+        selected_stars = [istars[i] for i in combination]
         selected_star_ids, selected_star_coordinates = zip(*selected_stars)
         target = list(zip(self.coordinate_service.find_angles_of_polygon(selected_star_coordinates), selected_star_ids))
         # sort by angle
         target.sort(key=lambda item: item[0], reverse=True)
         threshold = 0.016 # 5 degree to rad
-        print(f"target: {target}")
         results = []
-        for squad in platoon:
+
+        assumed_stars = []
+        for i in combination:
+            if i in assumes:
+                assumed_stars.append(assumes[i])
+        # remove the squads not the assumed star 0 and 1 are exist
+        if len(assumed_stars) > 0:
+            new_platoon = []
+            for squad in platoon:
+                stars = [star["HR"] for angle, star in squad]
+                is_valid = True
+                for assumed_star in assumed_stars:
+                    if assumed_star not in stars:
+                        is_valid = False
+                        break
+                if is_valid:
+                    new_platoon.append(squad)
+        else:
+            new_platoon = platoon
+
+        for squad in new_platoon:
             is_valid = True
             for i in range(len(target)):
                 if squad[i][0] - target[i][0] > threshold or squad[i][0] - target[i][0] < -threshold:
@@ -55,46 +82,45 @@ class BuildStarDatabaseUseCase():
                     break
             if is_valid:
                 results.append(squad)
-        target_matrix = array([image_stars[index][1] + [1] for angle, index in target])
-        print(f"{len(results)} results are found.")
-        max_stars_found = 0
+
+        if len(results) == 0:
+            return
+
+        print(f"{len(results)} triangles are found.")
         for i, squad in enumerate(results):
-            # Verify squad {i} is valid
-            vectors = [star['vector'] for angle, star in squad]
-            normal_vector = self.coordinate_service.find_plane_normal_vector(*vectors)
-            rotation_matrix = self.coordinate_service.get_rotation_matrix(normal_vector)
-            new_squad = []
-            for angle, star in squad:
-                new_squad.append(list(dot(rotation_matrix, star['vector'])[:2]) + [1])
-            new_squad = array(new_squad)
-            # new_squad dot X = target_matrix
-            # X = new_squad-1 dot target_matrix
-            X = dot(pinv(new_squad), target_matrix)
-
-            # Rotate neighbor stars on this plane
-            neighbors = []
-            for star in stars:
-                neighbors.append(list(dot(rotation_matrix, star['vector'])[:2]) + [1])
-            neighbors = array(neighbors)
-
-            # Transform rotated neighbor to the image coordinates
-            target_neighbors = dot(neighbors, X)
-
-            # find the neighbor exists in the image data
-            founds = []
-            for n in target_neighbors:
-                for i in image_stars:
-                    if (n[0] - i[1][0]) ** 2 + (n[1] - i[1][1]) ** 2 < 70:
-                        founds.append((n, i))
-            found_image_stars = set()
-            for found in founds:
-                found_image_stars.add(found[1][0])
-            if len(found_image_stars) > 3:
-                if max_stars_found < len(found_image_stars):
-                    max_stars_found = len(found_image_stars)
-                if len(found_image_stars) > 5:
-                    print(squad)
-        print(max_stars_found)
+            new_assumes = copy(assumes)
+            is_valid = True
+            for j in range(len(target)):
+                for assume_i, assume_name in new_assumes.items():
+                    if assume_name == squad[j][1]["HR"]:
+                        if assume_i != target[j][1]:
+                            is_valid = False
+                            break
+            if not is_valid:
+                continue
+            new_assumes[target[0][1]] = squad[0][1]["HR"]
+            new_assumes[target[1][1]] = squad[1][1]["HR"]
+            new_assumes[target[2][1]] = squad[2][1]["HR"]
+            print(new_assumes)
+            new_icombinations = copy(icombinations)
+            while len(new_icombinations) > 1:
+                new_icombinations = new_icombinations[1:]
+                self.find(istars, dstars, platoon, new_assumes, new_icombinations)
+            else:
+                if len(new_assumes) == len(istars):
+                    if self.verify_assumes(istars, dstars, new_assumes):
+                        print("VERIFIED ASSUMES:")
+                        print(new_assumes)
+    
+    def verify_assumes(self, istars, dstars, assumes):
+        for combination in combinations(range(0, len(istars)), r=3):
+            from_istars = [istars[i][1] for i in combination]
+            from_dstars = [dstars[assumes[i]]['vector'] for i in combination]
+            istars_angles = self.coordinate_service.find_angles_of_polygon(from_istars)
+            dstars_angles = self.coordinate_service.find_angles_of_polygon(from_dstars)
+            if not allclose(istars_angles, dstars_angles):
+                return False
+        return True
     
     def build_testset(self):
         image_dubhe = [474.5, 222.625]
