@@ -52,35 +52,33 @@ export default function Page() {
       // Render the stars to the canvas
       ctx.beginPath();
       ctx.arc(cx, cy, radius, 0, 2 * Math.PI);
-      ctx.strokeStyle = 'green';
+      ctx.strokeStyle = 'red';
       ctx.lineWidth = 2;
       ctx.stroke();
     })
     updateProcessing(false)
   }
 
+  const aspectRatio = SAMPLE_WIDTH / SAMPLE_HEIGHT;
+
   return (
-    <div
-      style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        flexDirection: 'column',
-      }}
-    >
-      <img src={SAMPLE_SRC} width={SAMPLE_WIDTH} height={SAMPLE_HEIGHT} ref={imageElement} />
+    <div className="flex flex-col items-start p-4 gap-5">
       <button
         disabled={processing}
-        style={{width: SAMPLE_WIDTH, padding: 10}}
+        className="bg-blue-500 rounded-lg w-40 py-3 font-bold"
         onClick={onClick}
       >
-        {processing ? 'Processing...' : 'Take a photo'}
+        {processing ? '별 찾는 중...' : '별 찾기'}
       </button>
-      <canvas
-        ref={canvasElement}
-        width={SAMPLE_WIDTH}
-        height={SAMPLE_HEIGHT}
-      ></canvas>
+      <div className="columns-2">
+        <img src={SAMPLE_SRC} className="w-full" ref={imageElement} style={{
+          aspectRatio: aspectRatio,
+        }}/>
+        <canvas
+          className="grow w-full" ref={canvasElement} width={SAMPLE_WIDTH} height={SAMPLE_HEIGHT} style={{
+          aspectRatio: aspectRatio,
+        }} />
+      </div>
     </div>
   )
 }
