@@ -61,7 +61,7 @@ function findStars(cv, { msg, payload }) {
   cv.GaussianBlur(result, result, new cv.Size(5, 5), 0, 0, cv.BORDER_DEFAULT);
 
   // 적절한 임계값을 설정하여 별과 배경 분리
-  cv.threshold(result, result, 90, 255, cv.THRESH_BINARY);
+  cv.threshold(result, result, 120, 255, cv.THRESH_BINARY);
 
   // Find contours (to simulate blob detection)
   cv.findContours(result, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
