@@ -38,6 +38,17 @@ class CV {
     this.worker.onerror = (e) => (this._status[e.data.msg] = ['error', e])
     return this._dispatch({ msg: 'load' })
   }
+
+  /**
+   * We are going to use the _dispatch event we created before to
+   * call the postMessage with the msg and the image as payload.
+   *
+   * Thanks to what we've implemented in the _dispatch, this will
+   * return a promise with the processed image.
+   */
+  imageProcessing(payload) {
+    return this._dispatch({ msg: 'imageProcessing', payload })
+  }
 }
 
 // Export the same instant everywhere
