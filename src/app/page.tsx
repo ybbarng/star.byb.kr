@@ -41,13 +41,13 @@ export default function Page() {
       console.log("Can't find elements");
       return;
     }
-    setIsProcessing(true)
-
     const ctx = canvasElement.current.getContext('2d')
     if (!ctx) {
-      setIsProcessing(false)
+      console.log("Can't find context of canvas.");
       return;
     }
+    setIsProcessing(true)
+
     ctx.drawImage(imageElement.current, 0, 0, SAMPLE_WIDTH, SAMPLE_HEIGHT)
     const image = ctx.getImageData(0, 0, SAMPLE_WIDTH, SAMPLE_HEIGHT)
     // Processing image
