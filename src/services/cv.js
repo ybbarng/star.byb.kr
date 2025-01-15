@@ -52,6 +52,9 @@ class CV {
   findStars(payload) {
     return this._dispatch({ msg: 'findStars', payload })
   }
+  findTriangles(payload) {
+    return this._dispatch({ msg: 'findTriangles', payload })
+  }
 }
 
 // Export the same instant everywhere

@@ -50,7 +50,8 @@ export default function Page() {
 
     try {
       await loadImageToCanvas(context, imageElement.current);
-      await findStars(context);
+      const stars = await findStars(context);
+      await findTriangles(stars)
     } catch (error) {
       console.error(error);
     }
@@ -67,15 +68,47 @@ export default function Page() {
     const image = context.getImageData(0, 0, SAMPLE_WIDTH, SAMPLE_HEIGHT)
     // Processing image
     const result = await cv.findStars(image);
-    const stars = result.data.payload;
+    const stars: {cx: number, cy: number, radius: number}[] = result.data.payload;
     console.log(stars);
 
-    stars.forEach(({cx, cy, radius}: {cx: number, cy: number, radius: number}) => {
+    stars.forEach(({cx, cy, radius}) => {
       // Render the stars to the canvas
       context.beginPath();
       context.arc(cx, cy, radius, 0, 2 * Math.PI);
       context.strokeStyle = 'red';
       context.lineWidth = 2;
+      context.stroke();
+    })
+
+    return stars.map((star) => ({
+      x: star.cx,
+      y: star.cy
+    }));
+  }
+
+  async function findTriangles(context: CanvasRenderingContext2D, stars: {x: number, y: number}[]) {
+    interface Point {
+      x: number;
+      y: number;
+    }
+    const result = await cv.findTriangles({
+      points: stars,
+      width: SAMPLE_WIDTH,
+      height: SAMPLE_HEIGHT
+    });
+    const triangles = result.data.payload;
+    console.log(triangles);
+
+    // Draw triangles
+    context.strokeStyle = 'blue';
+    context.lineWidth = 1;
+
+    triangles.forEach(({p1, p2, p3}: {p1: Point, p2: Point, p3: Point}) => {
+      context.beginPath();
+      context.moveTo(p1.x, p1.y);
+      context.lineTo(p2.x, p2.y);
+      context.lineTo(p3.x, p3.y);
+      context.closePath();
       context.stroke();
     })
   }
