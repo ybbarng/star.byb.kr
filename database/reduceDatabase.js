@@ -1,0 +1,47 @@
+const run = (minBright) => {
+  let stars = load();
+  stars = reduce(stars);
+  save(stars);
+}
+
+const load = () => {
+  let stars = require('./bsc5-short.json');
+  console.log(`로드한 카탈로그에는 총 ${stars.length} 개의 별 정보가 있습니다.`);
+  return stars;
+}
+
+const reduce = (stars) => {
+  stars = stars.map(star => ({...star, V: star.V = parseInt(star.V, 10)}))
+    .filter(star => star.V <= minBright);
+  console.log(`밝기가 ${minBright} 이상인 별들만 남깁니다. 현재 별 수: ${stars.length}`);
+  stars = removeSameCoordinate(stars);
+  console.log(`데이터 중 중복된 좌표를 가지는 것들을 제거합니다. 현재 별 수: ${stars.length}`);
+  return stars;
+}
+
+const removeSameCoordinate = (stars) => {
+  const seen = new Set();
+  const uniqueStars = [];
+  stars.forEach((star) => {
+    const key = `${star.Dec}-${star.RA}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      uniqueStars.push(star);
+    }
+  })
+  return uniqueStars;
+}
+
+const save = (stars) => {
+  const fs = require('fs');
+  const path = require('path');
+  const outputName = "reduced-database.json";
+  const outputPath = path.join(__dirname, outputName);
+
+  fs.writeFileSync(outputPath, JSON.stringify(stars, null, 2), 'utf8');
+
+  console.log(`파일이 성공적으로 저장되었습니다: ${outputPath}`);
+}
+
+
+run(minBright=4);
