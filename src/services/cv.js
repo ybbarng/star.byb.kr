@@ -49,6 +49,9 @@ class CV {
   imageProcessing(payload) {
     return this._dispatch({ msg: 'imageProcessing', payload })
   }
+  findStars(payload) {
+    return this._dispatch({ msg: 'findStars', payload })
+  }
 }
 
 // Export the same instant everywhere

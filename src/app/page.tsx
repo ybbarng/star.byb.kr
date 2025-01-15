@@ -44,9 +44,18 @@ export default function Page() {
     // Load the model
     await cv.load()
     // Processing image
-    const processedImage = await cv.imageProcessing(image)
-    // Render the processed image to the canvas
-    ctx.putImageData(processedImage.data.payload, 0, 0)
+    const result = await cv.findStars(image);
+    const stars = result.data.payload;
+    console.log(stars);
+
+    stars.forEach(({cx, cy, radius}: {cx: number, cy: number, radius: number}) => {
+      // Render the stars to the canvas
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius, 0, 2 * Math.PI);
+      ctx.strokeStyle = 'green';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    })
     updateProcessing(false)
   }
 

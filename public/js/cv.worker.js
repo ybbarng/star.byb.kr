@@ -47,6 +47,41 @@ function imageDataFromMat(cv, mat) {
   return clampedArray
 }
 
+function findStars(cv, { msg, payload }) {
+  const image = cv.matFromImageData(payload);
+
+  let result = new cv.Mat();
+  let hierarchy = new cv.Mat();
+  let contours = new cv.MatVector();
+
+  // 회색조로 변경
+  cv.cvtColor(image, result, cv.COLOR_BGR2GRAY)
+
+  // 가우시안 블러를 적용하여 노이즈 제거
+  cv.GaussianBlur(result, result, new cv.Size(5, 5), 0, 0, cv.BORDER_DEFAULT);
+
+  // 적절한 임계값을 설정하여 별과 배경 분리
+  cv.threshold(result, result, 90, 255, cv.THRESH_BINARY);
+
+  // Find contours (to simulate blob detection)
+  cv.findContours(result, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
+
+  // find stars
+  const stars = [];
+  for (let i = 0; i < contours.size(); i++) {
+    let contour = contours.get(i);
+    let moments = cv.moments(contour);
+    if (moments.m00 > 0) {
+      let cx = moments.m10 / moments.m00; // Centroid x
+      let cy = moments.m01 / moments.m00; // Centroid y
+      let radius = Math.sqrt(cv.contourArea(contour) / Math.PI); // Approx radius
+      stars.push({cx, cy, radius});
+    }
+  }
+
+  postMessage({ msg, payload: stars })
+}
+
 /**
  * This exists to capture all the events that are thrown out of the worker
  * into the worker. Without this, there would be no communication possible
@@ -63,6 +98,8 @@ onmessage = async function (e) {
     }
     case 'imageProcessing':
       return imageProcessing(await cv, e.data)
+    case 'findStars':
+      return findStars(await cv, e.data)
     default:
       break
   }
