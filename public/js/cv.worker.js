@@ -1,40 +1,20 @@
 /**
- *  Here we will check from time to time if we can access the OpenCV
- *  functions. We will return in a callback if it's been resolved
- *  well (true) or if there has been a timeout (false).
- */
-function waitForOpencv(callbackFn, waitTimeMs = 30000, stepTimeMs = 100) {
-  if (cv.Mat) callbackFn(true)
-
-  let timeSpentMs = 0
-  const interval = setInterval(() => {
-    const limitReached = timeSpentMs > waitTimeMs
-    if (cv.Mat || limitReached) {
-      clearInterval(interval)
-      return callbackFn(!limitReached)
-    } else {
-      timeSpentMs += stepTimeMs
-    }
-  }, stepTimeMs)
-}
-
-/**
  * With OpenCV we have to work with the images as cv.Mat (matrices),
  * so you'll have to transform the ImageData to it.
  */
-function imageProcessing({ msg, payload }) {
+function imageProcessing(cv, { msg, payload }) {
   const img = cv.matFromImageData(payload)
   let result = new cv.Mat()
 
   // This converts the image to a greyscale.
   cv.cvtColor(img, result, cv.COLOR_BGR2GRAY)
-  postMessage({ msg, payload: imageDataFromMat(result) })
+  postMessage({ msg, payload: imageDataFromMat(cv, result) })
 }
 
 /**
  * This function converts again from cv.Mat to ImageData
  */
-function imageDataFromMat(mat) {
+function imageDataFromMat(cv, mat) {
   // converts the mat type to cv.CV_8U
   const img = new cv.Mat()
   const depth = mat.type() % 8
@@ -72,19 +52,17 @@ function imageDataFromMat(mat) {
  * into the worker. Without this, there would be no communication possible
  * with the project.
  */
-onmessage = function (e) {
+onmessage = async function (e) {
   switch (e.data.msg) {
     case 'load': {
       // Import Webassembly script
-      self.importScripts('./opencv.js')
-      waitForOpencv(function (success) {
-        if (success) postMessage({ msg: e.data.msg })
-        else throw new Error('Error on loading OpenCV')
-      })
+      self.importScripts('./opencv.js');
+      await cv;
+      postMessage({ msg: e.data.msg });
       break
     }
     case 'imageProcessing':
-      return imageProcessing(e.data)
+      return imageProcessing(await cv, e.data)
     default:
       break
   }
