@@ -41,15 +41,30 @@ export default function Page() {
       console.log("Can't find elements");
       return;
     }
-    const ctx = canvasElement.current.getContext('2d')
-    if (!ctx) {
+    const context = canvasElement.current.getContext('2d')
+    if (!context) {
       console.log("Can't find context of canvas.");
       return;
     }
     setIsProcessing(true)
 
-    ctx.drawImage(imageElement.current, 0, 0, SAMPLE_WIDTH, SAMPLE_HEIGHT)
-    const image = ctx.getImageData(0, 0, SAMPLE_WIDTH, SAMPLE_HEIGHT)
+    try {
+      await loadImageToCanvas(context, imageElement.current);
+      await findStars(context);
+    } catch (error) {
+      console.error(error);
+    }
+    finally {
+      setIsProcessing(false)
+    }
+  }
+
+  async function loadImageToCanvas(context: CanvasRenderingContext2D, imageElement: HTMLImageElement) {
+    context.drawImage(imageElement, 0, 0, SAMPLE_WIDTH, SAMPLE_HEIGHT)
+  }
+
+  async function findStars(context: CanvasRenderingContext2D) {
+    const image = context.getImageData(0, 0, SAMPLE_WIDTH, SAMPLE_HEIGHT)
     // Processing image
     const result = await cv.findStars(image);
     const stars = result.data.payload;
@@ -57,13 +72,12 @@ export default function Page() {
 
     stars.forEach(({cx, cy, radius}: {cx: number, cy: number, radius: number}) => {
       // Render the stars to the canvas
-      ctx.beginPath();
-      ctx.arc(cx, cy, radius, 0, 2 * Math.PI);
-      ctx.strokeStyle = 'red';
-      ctx.lineWidth = 2;
-      ctx.stroke();
+      context.beginPath();
+      context.arc(cx, cy, radius, 0, 2 * Math.PI);
+      context.strokeStyle = 'red';
+      context.lineWidth = 2;
+      context.stroke();
     })
-    setIsProcessing(false)
   }
 
   const aspectRatio = SAMPLE_WIDTH / SAMPLE_HEIGHT;
