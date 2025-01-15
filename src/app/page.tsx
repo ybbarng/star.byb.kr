@@ -1,11 +1,9 @@
 "use client";
 
-import {useEffect, useRef, useState} from 'react'
+import {ChangeEvent, useEffect, useRef, useState} from 'react'
 import cv from '../services/cv'
 import Delaunator from 'delaunator';
-import samples from "../services/samples"
-
-const sample = samples[0];
+import samples, {Sample} from "../services/samples"
 
 /**
  * What we're going to render is:
@@ -21,6 +19,7 @@ const sample = samples[0];
 export default function Page() {
   const [isOpenCvReady, setOpenCvReady] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
+  const [selectedSample, setSelectedSample] = useState<Sample>(samples[0]);
   const imageElement = useRef<HTMLImageElement>(null)
   const canvasElement = useRef<HTMLCanvasElement>(null)
 
@@ -36,7 +35,7 @@ export default function Page() {
    * In the onClick event we'll capture a frame within
    * the video to pass it to our service.
    */
-  async function onClick() {
+  async function run() {
     if (!imageElement.current || !canvasElement.current) {
       console.log("Can't find elements");
       return;
@@ -64,12 +63,17 @@ export default function Page() {
     }
   }
 
+  function handleSelectChange(event: ChangeEvent<HTMLSelectElement>) {
+    const selectedSample = samples[parseInt(event.target.value, 10)];
+    setSelectedSample(selectedSample);
+  }
+
   async function loadImageToCanvas(context: CanvasRenderingContext2D, imageElement: HTMLImageElement) {
-    context.drawImage(imageElement, 0, 0, sample.width, sample.height)
+    context.drawImage(imageElement, 0, 0, selectedSample.width, selectedSample.height)
   }
 
   async function findStars(context: CanvasRenderingContext2D) {
-    const image = context.getImageData(0, 0, sample.width, sample.height)
+    const image = context.getImageData(0, 0, selectedSample.width, selectedSample.height)
     // Processing image
     const result = await cv.findStars(image);
     const stars: {cx: number, cy: number, radius: number}[] = result.data.payload;
@@ -130,8 +134,8 @@ export default function Page() {
   async function findTrianglesByOpenCv(points: Point[]) {
     const result = await cv.findTriangles({
       points,
-      width: sample.width,
-      height: sample.height
+      width: selectedSample.width,
+      height: selectedSample.height
     });
     return result.data.payload as Triangle[];
   }
@@ -207,26 +211,42 @@ export default function Page() {
   }
 
 
-  const aspectRatio = sample.width / sample.height;
+  const aspectRatio = selectedSample.width / selectedSample.height;
   const buttonText = getButtonText(isOpenCvReady, isProcessing);
 
   return (
     <div className="flex flex-col items-start p-4 gap-5">
-      <button
-        disabled={!isOpenCvReady || isProcessing}
-        className="bg-blue-500 rounded-lg w-40 py-3 font-bold"
-        onClick={onClick}
-      >
-        {buttonText}
-      </button>
+      <div className="flex flex-row gap-4">
+        <form className="max-w-sm mx-auto">
+          <label htmlFor="samples" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">샘플을 선택하세요</label>
+          <select id="samples"
+                  className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                  onChange={handleSelectChange}
+          >
+            <option selected></option>
+            {
+              samples.map((sample, i) => (
+                <option key={i} value={i} selected={selectedSample.src === sample.src}>{sample.src.split("/").pop()}</option>
+              ))
+            }
+          </select>
+        </form>
+        <button
+          disabled={!isOpenCvReady || isProcessing}
+          className="bg-blue-500 rounded-lg w-40 py-1 font-bold"
+          onClick={run}
+        >
+          {buttonText}
+        </button>
+      </div>
       <div className="columns-2">
-        <img src={sample.src} className="w-full" ref={imageElement} style={{
+        <img src={selectedSample.src} className="w-full" ref={imageElement} style={{
           aspectRatio: aspectRatio,
         }}/>
         <canvas
-          className="grow w-full" ref={canvasElement} width={sample.width} height={sample.height} style={{
+          className="grow w-full" ref={canvasElement} width={selectedSample.width} height={selectedSample.height} style={{
           aspectRatio: aspectRatio,
-        }} />
+        }}/>
       </div>
     </div>
   )
@@ -236,5 +256,5 @@ function getButtonText(isOpenCvReady: boolean, isProcessing: boolean) {
   if (!isOpenCvReady) {
     return "준비 중...";
   }
-  return isProcessing ? "별 찾는 중...": "별 찾기";
+  return isProcessing ? "별 찾는 중..." : "별 찾기";
 }

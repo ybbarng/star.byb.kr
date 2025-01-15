@@ -1,4 +1,4 @@
-interface Sample {
+export interface Sample {
   src: string;
   width: number;
   height: number;
