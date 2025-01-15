@@ -91,9 +91,14 @@ export default function Page() {
     x: number;
     y: number;
   }
+  interface Triangle {
+    p1: Point;
+    p2: Point;
+    p3: Point;
+  }
   async function findTriangles(context: CanvasRenderingContext2D, stars: {x: number, y: number}[]) {
     const useOpenCv = false; // 에러가 발생함
-    let triangles: {p1: Point, p2: Point, p3: Point}[];
+    let triangles: Triangle[] = [];
     if (useOpenCv) {
       triangles = await findTrianglesByOpenCv(stars);
     }
@@ -120,7 +125,7 @@ export default function Page() {
       width: SAMPLE_WIDTH,
       height: SAMPLE_HEIGHT
     });
-    return result.data.payload as {p1: Point, p2: Point, p3: Point}[];
+    return result.data.payload as Triangle[];
   }
 
   async function findTrianglesByLibrary(points: Point[]) {
