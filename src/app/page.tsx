@@ -1,6 +1,6 @@
 "use client";
 
-import {useRef, useState} from 'react'
+import {useEffect, useRef, useState} from 'react'
 import cv from '../services/cv'
 
 const SAMPLE_SRC ="/samples/ursa-major.jpg";
@@ -19,9 +19,18 @@ const SAMPLE_HEIGHT =819;
  * show it to the user.
  */
 export default function Page() {
-  const [processing, updateProcessing] = useState(false)
+  const [isOpenCvReady, setOpenCvReady] = useState(false)
+  const [isProcessing, setIsProcessing] = useState(false)
   const imageElement = useRef<HTMLImageElement>(null)
   const canvasElement = useRef<HTMLCanvasElement>(null)
+
+  useEffect(() => {
+    const init = async () => {
+      await cv.load();
+      setOpenCvReady(true);
+    }
+    init();
+  }, [setOpenCvReady])
 
   /**
    * In the onClick event we'll capture a frame within
@@ -32,17 +41,15 @@ export default function Page() {
       console.log("Can't find elements");
       return;
     }
-    updateProcessing(true)
+    setIsProcessing(true)
 
     const ctx = canvasElement.current.getContext('2d')
     if (!ctx) {
-      updateProcessing(false)
+      setIsProcessing(false)
       return;
     }
     ctx.drawImage(imageElement.current, 0, 0, SAMPLE_WIDTH, SAMPLE_HEIGHT)
     const image = ctx.getImageData(0, 0, SAMPLE_WIDTH, SAMPLE_HEIGHT)
-    // Load the model
-    await cv.load()
     // Processing image
     const result = await cv.findStars(image);
     const stars = result.data.payload;
@@ -56,19 +63,20 @@ export default function Page() {
       ctx.lineWidth = 2;
       ctx.stroke();
     })
-    updateProcessing(false)
+    setIsProcessing(false)
   }
 
   const aspectRatio = SAMPLE_WIDTH / SAMPLE_HEIGHT;
+  const buttonText = getButtonText(isOpenCvReady, isProcessing);
 
   return (
     <div className="flex flex-col items-start p-4 gap-5">
       <button
-        disabled={processing}
+        disabled={!isOpenCvReady || isProcessing}
         className="bg-blue-500 rounded-lg w-40 py-3 font-bold"
         onClick={onClick}
       >
-        {processing ? '별 찾는 중...' : '별 찾기'}
+        {buttonText}
       </button>
       <div className="columns-2">
         <img src={SAMPLE_SRC} className="w-full" ref={imageElement} style={{
@@ -81,4 +89,11 @@ export default function Page() {
       </div>
     </div>
   )
+}
+
+function getButtonText(isOpenCvReady: boolean, isProcessing: boolean) {
+  if (!isOpenCvReady) {
+    return "준비 중...";
+  }
+  return isProcessing ? "별 찾는 중...": "별 찾기";
 }
