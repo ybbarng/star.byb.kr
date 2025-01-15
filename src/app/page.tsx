@@ -52,7 +52,11 @@ export default function Page() {
     try {
       await loadImageToCanvas(context, imageElement.current);
       const stars = await findStars(context);
-      await findTriangles(context, stars)
+      console.log(`별 수: ${stars.length}`);
+      const triangles = await findTriangles(context, stars)
+      console.log(`삼각형 수: ${triangles.length}`);
+      const quadrilaterals = await createQuadrilateralExtraction(context, triangles);
+      console.log(`사각형 수: ${quadrilaterals.length}`);
     } catch (error) {
       console.error(error);
     }
@@ -70,7 +74,6 @@ export default function Page() {
     // Processing image
     const result = await cv.findStars(image);
     const stars: {cx: number, cy: number, radius: number}[] = result.data.payload;
-    console.log(stars);
 
     stars.forEach(({cx, cy, radius}) => {
       // Render the stars to the canvas
@@ -96,6 +99,12 @@ export default function Page() {
     p2: Point;
     p3: Point;
   }
+  interface Quadrilateral {
+    p1: Point;
+    p2: Point;
+    p3: Point;
+    p4: Point;
+  }
   async function findTriangles(context: CanvasRenderingContext2D, stars: {x: number, y: number}[]) {
     const useOpenCv = false; // 에러가 발생함
     let triangles: Triangle[] = [];
@@ -103,7 +112,6 @@ export default function Page() {
       triangles = await findTrianglesByOpenCv(stars);
     }
     triangles = await findTrianglesByLibrary(stars);
-    console.log(triangles);
 
     // Draw triangles
     context.strokeStyle = 'blue';
@@ -117,6 +125,7 @@ export default function Page() {
       context.closePath();
       context.stroke();
     })
+    return triangles;
   }
 
   async function findTrianglesByOpenCv(points: Point[]) {
@@ -142,8 +151,60 @@ export default function Page() {
     return result;
   }
 
+  async function createQuadrilateralExtraction(context: CanvasRenderingContext2D, triangles: Triangle[]) {
+    // Store edges and their associated triangles
+    const edges: {[key: string]: Triangle[]} = {};
+    triangles.forEach((triangle) => {
+      const {p1, p2, p3} = triangle;
+      [[p1, p2], [p2, p3], [p3, p1]].forEach((points) => {
+        const edgeKey = getEdgeKey(points[0], points[1]);
+        if (!edges[edgeKey]) {
+          edges[edgeKey] = [];
+        }
+        edges[edgeKey].push(triangle);
+      })
+    });
+    const result: Quadrilateral[] = [];
+    for (const edgeKey in edges) {
+      if (edges[edgeKey].length !== 2) {
+        continue;
+      }
+      const tri1 = edges[edgeKey][0];
+      const tri2 = edges[edgeKey][1];
+      const quad = [...new Set([tri1.p1, tri1.p2, tri1.p3, tri2.p1, tri2.p2, tri2.p3])];
+      if (quad.length === 4) {
+        result.push({
+          p1: quad[0],
+          p2: quad[1],
+          p3: quad[2],
+          p4: quad[3],
+        })
+      }
+    }
+
+    // Draw triangles
+    context.strokeStyle = 'green';
+    context.lineWidth = 1;
+
+    result.forEach(({p1, p2, p3, p4}: Quadrilateral) => {
+      context.beginPath();
+      context.moveTo(p1.x, p1.y);
+      context.lineTo(p2.x, p2.y);
+      context.lineTo(p3.x, p3.y);
+      context.lineTo(p4.x, p4.y);
+      context.closePath();
+      context.stroke();
+    })
+    return result;
+  }
+
   function flattenPoints(points: Point[]) {
     return points.flatMap(point => [point.x, point.y]);
+  }
+
+  function getEdgeKey(p1: Point, p2: Point) {
+    const edge = [p1, p2].sort((a, b) => a.x - b.x || a.y - b.y);
+    return `${edge[0].x},${edge[0].y}-${edge[1].x},${edge[1].y}`;
   }
 
 
