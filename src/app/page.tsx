@@ -3,10 +3,9 @@
 import {useEffect, useRef, useState} from 'react'
 import cv from '../services/cv'
 import Delaunator from 'delaunator';
+import samples from "../services/samples"
 
-const SAMPLE_SRC ="/samples/ursa-major.jpg";
-const SAMPLE_WIDTH =1152;
-const SAMPLE_HEIGHT =819;
+const sample = samples[0];
 
 /**
  * What we're going to render is:
@@ -66,11 +65,11 @@ export default function Page() {
   }
 
   async function loadImageToCanvas(context: CanvasRenderingContext2D, imageElement: HTMLImageElement) {
-    context.drawImage(imageElement, 0, 0, SAMPLE_WIDTH, SAMPLE_HEIGHT)
+    context.drawImage(imageElement, 0, 0, sample.width, sample.height)
   }
 
   async function findStars(context: CanvasRenderingContext2D) {
-    const image = context.getImageData(0, 0, SAMPLE_WIDTH, SAMPLE_HEIGHT)
+    const image = context.getImageData(0, 0, sample.width, sample.height)
     // Processing image
     const result = await cv.findStars(image);
     const stars: {cx: number, cy: number, radius: number}[] = result.data.payload;
@@ -131,8 +130,8 @@ export default function Page() {
   async function findTrianglesByOpenCv(points: Point[]) {
     const result = await cv.findTriangles({
       points,
-      width: SAMPLE_WIDTH,
-      height: SAMPLE_HEIGHT
+      width: sample.width,
+      height: sample.height
     });
     return result.data.payload as Triangle[];
   }
@@ -208,7 +207,7 @@ export default function Page() {
   }
 
 
-  const aspectRatio = SAMPLE_WIDTH / SAMPLE_HEIGHT;
+  const aspectRatio = sample.width / sample.height;
   const buttonText = getButtonText(isOpenCvReady, isProcessing);
 
   return (
@@ -221,11 +220,11 @@ export default function Page() {
         {buttonText}
       </button>
       <div className="columns-2">
-        <img src={SAMPLE_SRC} className="w-full" ref={imageElement} style={{
+        <img src={sample.src} className="w-full" ref={imageElement} style={{
           aspectRatio: aspectRatio,
         }}/>
         <canvas
-          className="grow w-full" ref={canvasElement} width={SAMPLE_WIDTH} height={SAMPLE_HEIGHT} style={{
+          className="grow w-full" ref={canvasElement} width={sample.width} height={sample.height} style={{
           aspectRatio: aspectRatio,
         }} />
       </div>
