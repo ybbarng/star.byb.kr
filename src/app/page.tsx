@@ -216,7 +216,7 @@ export default function Page() {
 
   return (
     <div className="flex flex-col items-start p-4 gap-5">
-      <div className="flex flex-row gap-4">
+      <div className="flex flex-row gap-4 items-end">
         <form className="max-w-sm mx-auto">
           <label htmlFor="samples" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">샘플을 선택하세요</label>
           <select id="samples"
@@ -233,7 +233,7 @@ export default function Page() {
         </form>
         <button
           disabled={!isOpenCvReady || isProcessing}
-          className="bg-blue-500 rounded-lg w-40 py-1 font-bold"
+          className="bg-blue-500 rounded-lg w-40 h-10 font-bold"
           onClick={run}
         >
           {buttonText}
