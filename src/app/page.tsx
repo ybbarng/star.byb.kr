@@ -2,6 +2,7 @@
 
 import {useEffect, useRef, useState} from 'react'
 import cv from '../services/cv'
+import Delaunator from 'delaunator';
 
 const SAMPLE_SRC ="/samples/ursa-major.jpg";
 const SAMPLE_WIDTH =1152;
@@ -51,7 +52,7 @@ export default function Page() {
     try {
       await loadImageToCanvas(context, imageElement.current);
       const stars = await findStars(context);
-      await findTriangles(stars)
+      await findTriangles(context, stars)
     } catch (error) {
       console.error(error);
     }
@@ -86,17 +87,17 @@ export default function Page() {
     }));
   }
 
+  interface Point {
+    x: number;
+    y: number;
+  }
   async function findTriangles(context: CanvasRenderingContext2D, stars: {x: number, y: number}[]) {
-    interface Point {
-      x: number;
-      y: number;
+    const useOpenCv = false; // 에러가 발생함
+    let triangles: {p1: Point, p2: Point, p3: Point}[];
+    if (useOpenCv) {
+      triangles = await findTrianglesByOpenCv(stars);
     }
-    const result = await cv.findTriangles({
-      points: stars,
-      width: SAMPLE_WIDTH,
-      height: SAMPLE_HEIGHT
-    });
-    const triangles = result.data.payload;
+    triangles = await findTrianglesByLibrary(stars);
     console.log(triangles);
 
     // Draw triangles
@@ -112,6 +113,34 @@ export default function Page() {
       context.stroke();
     })
   }
+
+  async function findTrianglesByOpenCv(points: Point[]) {
+    const result = await cv.findTriangles({
+      points,
+      width: SAMPLE_WIDTH,
+      height: SAMPLE_HEIGHT
+    });
+    return result.data.payload as {p1: Point, p2: Point, p3: Point}[];
+  }
+
+  async function findTrianglesByLibrary(points: Point[]) {
+    const flattenedPoints = flattenPoints(points);
+    const delaunay = new Delaunator(flattenedPoints);
+    const triangles = delaunay.triangles;
+    const result = [];
+    for (let i = 0; i < triangles.length; i += 3) {
+        const p1 = points[triangles[i]];
+        const p2 = points[triangles[i + 1]];
+        const p3 = points[triangles[i + 2]];
+        result.push({p1, p2, p3});
+    }
+    return result;
+  }
+
+  function flattenPoints(points: Point[]) {
+    return points.flatMap(point => [point.x, point.y]);
+  }
+
 
   const aspectRatio = SAMPLE_WIDTH / SAMPLE_HEIGHT;
   const buttonText = getButtonText(isOpenCvReady, isProcessing);
