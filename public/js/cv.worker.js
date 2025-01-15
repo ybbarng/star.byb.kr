@@ -53,15 +53,20 @@ function findStars(cv, { msg, payload }) {
   let result = new cv.Mat();
   let hierarchy = new cv.Mat();
   let contours = new cv.MatVector();
+  let gray = new cv.Mat();
+  let blurred = new cv.Mat();
 
   // 회색조로 변경
-  cv.cvtColor(image, result, cv.COLOR_BGR2GRAY)
+  cv.cvtColor(image, gray, cv.COLOR_BGR2GRAY)
 
   // 가우시안 블러를 적용하여 노이즈 제거
-  cv.GaussianBlur(result, result, new cv.Size(5, 5), 0, 0, cv.BORDER_DEFAULT);
+  cv.GaussianBlur(gray, blurred, new cv.Size(51, 51), 0, 0, cv.BORDER_DEFAULT);
+
+  // 블러를 제거하여 명료하게 만들기
+  cv.subtract(gray, blurred, result);
 
   // 적절한 임계값을 설정하여 별과 배경 분리
-  cv.threshold(result, result, 120, 255, cv.THRESH_BINARY);
+  cv.threshold(result, result, 70, 255, cv.THRESH_BINARY);
 
   // Find contours (to simulate blob detection)
   cv.findContours(result, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
