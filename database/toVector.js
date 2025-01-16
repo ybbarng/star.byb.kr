@@ -48,8 +48,12 @@ function parseDMS(dms) {
   const minutes = parseInt(match[2], 10);
   const seconds = parseFloat(match[3]);
 
+  const rest = minutes / 60 + seconds / 3600;
   // 부호를 유지하며 도 단위로 변환
-  return degrees + minutes / 60 + seconds / 3600;
+  if (degrees > 0) {
+    return degrees + rest;
+  }
+  return degrees - rest;
 }
 
 function parseHMS(hms) {
