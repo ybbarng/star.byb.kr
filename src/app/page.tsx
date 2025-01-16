@@ -50,6 +50,11 @@ export default function Page() {
 
     try {
       await loadImageToCanvas(context, imageElement.current);
+      const doTestImageProcessing = true;
+      if (doTestImageProcessing) {
+        await testImageProcessing(context);
+        return;
+      }
       const stars = await findStars(context);
       console.log(`별 수: ${stars.length}`);
       const inDevToImproveBrightFirst = true;
@@ -74,6 +79,13 @@ export default function Page() {
 
   async function loadImageToCanvas(context: CanvasRenderingContext2D, imageElement: HTMLImageElement) {
     context.drawImage(imageElement, 0, 0, selectedSample.width, selectedSample.height)
+  }
+
+  async function testImageProcessing(context: CanvasRenderingContext2D) {
+    const image = context.getImageData(0, 0, selectedSample.width, selectedSample.height)
+    // Processing image
+    const result = await cv.testImageProcessing(image);
+    context.putImageData(result.data.payload, 0, 0)
   }
 
   async function findStars(context: CanvasRenderingContext2D) {

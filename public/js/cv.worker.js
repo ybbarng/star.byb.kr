@@ -2,7 +2,7 @@
  * With OpenCV we have to work with the images as cv.Mat (matrices),
  * so you'll have to transform the ImageData to it.
  */
-function imageProcessing(cv, { msg, payload }) {
+function testImageProcessing(cv, { msg, payload }) {
   const img = cv.matFromImageData(payload)
   let result = new cv.Mat()
 
@@ -126,8 +126,8 @@ onmessage = async function (e) {
       postMessage({ msg: e.data.msg });
       break
     }
-    case 'imageProcessing':
-      return imageProcessing(await cv, e.data)
+    case 'testImageProcessing':
+      return testImageProcessing(await cv, e.data)
     case 'findStars':
       return findStars(await cv, e.data)
     case 'findTriangles':
