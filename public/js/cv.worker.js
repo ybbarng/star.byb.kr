@@ -59,14 +59,12 @@ function imageDataFromMat(cv, mat) {
   return clampedArray
 }
 
-function findStars(cv, { msg, payload }) {
-  const image = cv.matFromImageData(payload);
+function _preprocessImage(cv, imageData) {
+  const image = cv.matFromImageData(imageData);
 
-  let result = new cv.Mat();
-  let hierarchy = new cv.Mat();
-  let contours = new cv.MatVector();
-  let gray = new cv.Mat();
-  let blurred = new cv.Mat();
+  const result = new cv.Mat();
+  const gray = new cv.Mat();
+  const blurred = new cv.Mat();
 
   // 회색조로 변경
   cv.cvtColor(image, gray, cv.COLOR_BGR2GRAY)
@@ -80,8 +78,19 @@ function findStars(cv, { msg, payload }) {
   // 적절한 임계값을 설정하여 별과 배경 분리
   cv.threshold(result, result, 70, 255, cv.THRESH_BINARY);
 
+  image.delete();
+  gray.delete();
+  blurred.delete();
+
+  return result;
+}
+
+function _findStars(cv, image) {
+  let hierarchy = new cv.Mat();
+  let contours = new cv.MatVector();
+
   // Find contours (to simulate blob detection)
-  cv.findContours(result, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
+  cv.findContours(image, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
 
   // find stars
   const stars = [];
@@ -95,7 +104,17 @@ function findStars(cv, { msg, payload }) {
       stars.push({cx, cy, radius});
     }
   }
+  hierarchy.delete();
+  contours.delete();
 
+  return stars;
+}
+
+function findStars(cv, { msg, payload }) {
+  const image = _preprocessImage(cv, payload);
+  const stars = _findStars(cv, image);
+
+  image.delete();
   postMessage({ msg, payload: stars })
 }
 

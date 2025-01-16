@@ -50,11 +50,7 @@ export default function Page() {
 
     try {
       await loadImageToCanvas(context, imageElement.current);
-      const doTestImageProcessing = true;
-      if (doTestImageProcessing) {
-        await testImageProcessing(context);
-        return;
-      }
+
       const stars = await findStars(context);
       console.log(`별 수: ${stars.length}`);
       const inDevToImproveBrightFirst = true;
