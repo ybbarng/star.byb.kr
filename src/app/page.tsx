@@ -127,12 +127,16 @@ export default function Page() {
     p4: Point;
   }
   async function findTriangles(context: CanvasRenderingContext2D, stars: {x: number, y: number}[]) {
-    const useOpenCv = false; // 에러가 발생함
     let triangles: Triangle[] = [];
-    if (useOpenCv) {
-      triangles = await findDelaunayTrianglesByOpenCv(stars);
+    const logic: "DELAUNAY_OPENCV" | "DELAUNAY_LIBRARY" = "DELAUNAY_LIBRARY";
+    switch (logic) {
+      case "DELAUNAY_OPENCV":
+        triangles = await findDelaunayTrianglesByOpenCv(stars);
+        break;
+      case "DELAUNAY_LIBRARY":
+        triangles = await findDelaunayTrianglesByLibrary(stars);
+        break;
     }
-    triangles = await findDelaunayTrianglesByLibrary(stars);
 
     // Draw triangles
     context.strokeStyle = 'blue';
