@@ -35,12 +35,20 @@ const removeSameCoordinate = (stars) => {
 const save = (stars) => {
   const fs = require('fs');
   const path = require('path');
+  const outputDir = "build";
   const outputName = "reduced-database.json";
-  const outputPath = path.join(__dirname, outputName);
+  const outputDirPath = path.join(__dirname, outputDir);
+  const outputFilePath = path.join(outputDirPath, outputName);
 
-  fs.writeFileSync(outputPath, JSON.stringify(stars, null, 2), 'utf8');
+  // 디렉토리가 없으면 생성
+  if (!fs.existsSync(outputDirPath)) {
+    fs.mkdirSync(outputDirPath, { recursive: true });
+    console.log(`디렉토리 생성 완료: ${outputDirPath}`);
+  }
 
-  console.log(`파일이 성공적으로 저장되었습니다: ${outputPath}`);
+  fs.writeFileSync(outputFilePath, JSON.stringify(stars, null, 2), 'utf8');
+
+  console.log(`파일이 성공적으로 저장되었습니다: ${outputFilePath}`);
 }
 
 
