@@ -89,6 +89,10 @@ export default function Page() {
       context.strokeStyle = 'red';
       context.lineWidth = 2;
       context.stroke();
+
+      context.font = "bold 20px Arial";
+      context.fillStyle = "#ff0000";
+      context.fillText(Number(radius.toFixed(2)).toString(10), cx + 10, cy + 10);
     })
 
     return stars.map((star) => ({
