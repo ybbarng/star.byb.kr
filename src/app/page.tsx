@@ -232,7 +232,6 @@ export default function Page() {
                   onChange={handleSelectChange}
                   value={samples.indexOf(selectedSample)}
           >
-            <option selected></option>
             {
               samples.map((sample, i) => (
                 <option key={i} value={i}>{sample.src.split("/").pop()}</option>
