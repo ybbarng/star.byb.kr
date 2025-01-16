@@ -51,6 +51,10 @@ export default function Page() {
       await loadImageToCanvas(context, imageElement.current);
       const stars = await findStars(context);
       console.log(`별 수: ${stars.length}`);
+      const inDevToImproveBrightFirst = true;
+      if (inDevToImproveBrightFirst) {
+        return;
+      }
       const triangles = await findTriangles(context, stars)
       console.log(`삼각형 수: ${triangles.length}`);
       const quadrilaterals = await createQuadrilateralExtraction(context, triangles);
