@@ -230,11 +230,12 @@ export default function Page() {
           <select id="samples"
                   className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
                   onChange={handleSelectChange}
+                  value={samples.indexOf(selectedSample)}
           >
             <option selected></option>
             {
               samples.map((sample, i) => (
-                <option key={i} value={i} selected={selectedSample.src === sample.src}>{sample.src.split("/").pop()}</option>
+                <option key={i} value={i}>{sample.src.split("/").pop()}</option>
               ))
             }
           </select>
