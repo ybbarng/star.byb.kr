@@ -5,9 +5,21 @@
 function testImageProcessing(cv, { msg, payload }) {
   const img = cv.matFromImageData(payload)
   let result = new cv.Mat()
+  let blurred = new cv.Mat();
 
   // This converts the image to a greyscale.
   cv.cvtColor(img, result, cv.COLOR_BGR2GRAY)
+
+  // 가우시안 블러를 적용하여 노이즈 제거
+  cv.GaussianBlur(result, blurred, new cv.Size(51, 51), 0, 0, cv.BORDER_DEFAULT);
+
+  // 블러를 제거하여 명료하게 만들기
+  cv.subtract(result, blurred, result);
+
+  // 적절한 임계값을 설정하여 별과 배경 분리
+  cv.threshold(result, result, 70, 255, cv.THRESH_BINARY);
+
+  cv.bitwise_not(result, result);
   postMessage({ msg, payload: imageDataFromMat(cv, result) })
 }
 
