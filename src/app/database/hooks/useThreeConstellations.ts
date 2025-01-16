@@ -1,5 +1,6 @@
 import {useEffect, useState} from "react";
 import * as THREE from "three";
+import {convertTo3DCoordinates} from "@/app/database/utils/coordinates";
 
 export const useThreeConstellations = () => {
   const [constellations, setConstellations] = useState<THREE.Line[]>([]);
@@ -13,20 +14,17 @@ export const useThreeConstellations = () => {
     const starData = bsc5dat.split('\n');
     const starCatalog: StarCatalog = {}
     starData.forEach((row: string) => {
+      const vector = convertTo3DCoordinates(
+        row.slice(83, 90),
+        row.slice(75, 83),
+      )
       const star = {
         id: Number(row.slice(0, 4)),
         name: row.slice(4, 14).trim(),
-        gLon: Number(row.slice(90, 96)),
-        gLat: Number(row.slice(96, 102)),
         mag: Number(row.slice(102, 107)),
         spectralClass: row.slice(129, 130),
-        v: new THREE.Vector3(),
+        v: new THREE.Vector3(vector.x * 100, vector.z * 100, vector.y * 100),
       }
-      star.v = new THREE.Vector3().setFromSphericalCoords(
-        100,
-        ((90 - star.gLat) / 180) * Math.PI,
-        (star.gLon / 180) * Math.PI
-      )
       starCatalog[star.id] = star
     });
     return starCatalog;
@@ -97,8 +95,6 @@ export const useThreeConstellations = () => {
 interface Star {
   id: number;
   name: string;
-  gLon: number;
-  gLat: number;
   mag: number;
   spectralClass: string;
   v: THREE.Vector3;

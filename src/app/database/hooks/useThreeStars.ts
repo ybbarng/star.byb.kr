@@ -12,9 +12,10 @@ export const useThreeStars = () => {
     const sizes: number[] = [];
     // 2. 3D 좌표 점 생성
     database.forEach((star) => {
+      // 천문학 좌표계를 three.js 좌표계로 사용하려면 이렇게 변환해야 함
       positions.push(star.x * 100);
-      positions.push(star.y * 100);
       positions.push(star.z * 100);
+      positions.push(star.y * 100);
       const size = (star.V * 26) / 255 + 0.18;
       colors.push(color.r, color.g, color.b, size);
       sizes.push(size);
