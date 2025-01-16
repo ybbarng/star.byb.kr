@@ -88,7 +88,9 @@ export default function Page() {
     const image = context.getImageData(0, 0, selectedSample.width, selectedSample.height)
     // Processing image
     const result = await cv.findStars(image);
-    const stars: {cx: number, cy: number, radius: number}[] = result.data.payload;
+    let stars: {cx: number, cy: number, radius: number}[] = result.data.payload;
+    stars =  stars.sort((a, b) => b.radius - a.radius);
+    stars = stars.slice(0, 100);
 
     stars.forEach(({cx, cy, radius}) => {
       // Render the stars to the canvas
