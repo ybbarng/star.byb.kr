@@ -19,9 +19,10 @@ import samples, {Sample} from "../services/samples"
 export default function Page() {
   const [isOpenCvReady, setOpenCvReady] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
-  const [selectedSample, setSelectedSample] = useState<Sample>(samples[9]);
+  const [selectedSampleId, setSelectedSampleId] = useState(9);
   const imageElement = useRef<HTMLImageElement>(null)
   const canvasElement = useRef<HTMLCanvasElement>(null)
+  const selectedSample = samples[selectedSampleId];
 
   useEffect(() => {
     const init = async () => {
@@ -68,8 +69,7 @@ export default function Page() {
   }
 
   function handleSelectChange(event: ChangeEvent<HTMLSelectElement>) {
-    const selectedSample = samples[parseInt(event.target.value, 10)];
-    setSelectedSample(selectedSample);
+    setSelectedSampleId(parseInt(event.target.value, 10));
   }
 
   async function loadImageToCanvas(context: CanvasRenderingContext2D, imageElement: HTMLImageElement) {
@@ -230,7 +230,7 @@ export default function Page() {
           <select id="samples"
                   className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
                   onChange={handleSelectChange}
-                  value={samples.indexOf(selectedSample)}
+                  value={selectedSampleId}
           >
             {
               samples.map((sample, i) => (
