@@ -53,10 +53,6 @@ export default function Page() {
 
       const stars = await findStars(context);
       console.log(`별 수: ${stars.length}`);
-      const inDevToImproveBrightFirst = true;
-      if (inDevToImproveBrightFirst) {
-        return;
-      }
       const triangles = await findTriangles(context, stars)
       console.log(`삼각형 수: ${triangles.length}`);
       const quadrilaterals = await createQuadrilateralExtraction(context, triangles);
@@ -128,13 +124,16 @@ export default function Page() {
   }
   async function findTriangles(context: CanvasRenderingContext2D, stars: {x: number, y: number}[]) {
     let triangles: Triangle[] = [];
-    const logic: "DELAUNAY_OPENCV" | "DELAUNAY_LIBRARY" = "DELAUNAY_LIBRARY";
+    const logic: "DELAUNAY_OPENCV" | "DELAUNAY_LIBRARY" | "HEURISTIC" = "HEURISTIC";
     switch (logic) {
       case "DELAUNAY_OPENCV":
         triangles = await findDelaunayTrianglesByOpenCv(stars);
         break;
       case "DELAUNAY_LIBRARY":
         triangles = await findDelaunayTrianglesByLibrary(stars);
+        break;
+      case "HEURISTIC":
+        triangles = await findTrianglesByHeuristic(stars);
         break;
     }
 
@@ -150,6 +149,33 @@ export default function Page() {
       context.closePath();
       context.stroke();
     })
+    return triangles;
+  }
+
+  async function findTrianglesByHeuristic(stars: Point[]) {
+    const WEIGHT = 20; // 높을수록 더 적게 삼각형이 생김
+    const added = new Set();
+    const triangles: Triangle[] = [];
+
+    for (let i = 0; i < stars.length; i = i + 10) {
+      const subset = stars.slice(0, i + 10);
+      for (let si1 = 0; si1 < subset.length - 2; si1++) {
+        for (let si2 = si1; si2 < subset.length - 1; si2++) {
+          for (let si3 = si2; si3 < subset.length; si3++) {
+            if (Math.random() < Math.pow(WEIGHT, -(i / 10))) {
+              const triangle = {p1: subset[si1], p2: subset[si2], p3: subset[si3]};
+              const key = `${si1}-${si2}-${si3}`;
+              console.log(key);
+              if (added.has(key)) {
+                continue;
+              }
+              added.add(key);
+              triangles.push(triangle);
+            }
+          }
+        }
+      }
+    }
     return triangles;
   }
 
