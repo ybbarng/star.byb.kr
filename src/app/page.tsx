@@ -130,9 +130,9 @@ export default function Page() {
     const useOpenCv = false; // 에러가 발생함
     let triangles: Triangle[] = [];
     if (useOpenCv) {
-      triangles = await findTrianglesByOpenCv(stars);
+      triangles = await findDelaunayTrianglesByOpenCv(stars);
     }
-    triangles = await findTrianglesByLibrary(stars);
+    triangles = await findDelaunayTrianglesByLibrary(stars);
 
     // Draw triangles
     context.strokeStyle = 'blue';
@@ -149,7 +149,7 @@ export default function Page() {
     return triangles;
   }
 
-  async function findTrianglesByOpenCv(points: Point[]) {
+  async function findDelaunayTrianglesByOpenCv(points: Point[]) {
     const result = await cv.findTriangles({
       points,
       width: selectedSample.width,
@@ -158,7 +158,7 @@ export default function Page() {
     return result.data.payload as Triangle[];
   }
 
-  async function findTrianglesByLibrary(points: Point[]) {
+  async function findDelaunayTrianglesByLibrary(points: Point[]) {
     const flattenedPoints = flattenPoints(points);
     const delaunay = new Delaunator(flattenedPoints);
     const triangles = delaunay.triangles;
