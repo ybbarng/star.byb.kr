@@ -11,33 +11,37 @@ export const useThreeHealpix = () => {
   const [borders, setBorders] = useState<THREE.Line[]>([]);
 
   useEffect(() => {
-    const borders: THREE.Line[] = [];
-    for (let ipix = 0; ipix < npix; ++ipix) {
-      const path: number[] = [];
-      for (let i = 0; i < nstep; i++) {
-        const ne = i / nstep;
-        const v = healpix.pixcoord2vec_nest(nside, ipix, ne, 0);
-        path.push(v[0] * R);
-        path.push(v[2] * R);
-        path.push(v[1] * R);
+    function initBorders() {
+      const borders: THREE.Line[] = [];
+      for (let ipix = 0; ipix < npix; ++ipix) {
+        const path: number[] = [];
+        for (let i = 0; i < nstep; i++) {
+          const ne = i / nstep;
+          const v = healpix.pixcoord2vec_nest(nside, ipix, ne, 0);
+          path.push(v[0] * R);
+          path.push(v[2] * R);
+          path.push(v[1] * R);
+        }
+        for (let i = 0; i <= nstep; i++) {
+          const nw = i / nstep;
+          const v = healpix.pixcoord2vec_nest(nside, ipix, 1, nw);
+          path.push(v[0] * R);
+          path.push(v[2] * R);
+          path.push(v[1] * R);
+        }
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute(
+          "position",
+          new THREE.Float32BufferAttribute(path, 3)
+        );
+        const material = new THREE.LineBasicMaterial({color: 0x1e40af});
+        const border = new THREE.Line(geometry, material);
+        borders.push(border);
       }
-      for (let i = 0; i <= nstep; i++) {
-        const nw = i / nstep;
-        const v = healpix.pixcoord2vec_nest(nside, ipix, 1, nw);
-        path.push(v[0] * R);
-        path.push(v[2] * R);
-        path.push(v[1] * R);
-      }
-      const geometry = new THREE.BufferGeometry();
-      geometry.setAttribute(
-        "position",
-        new THREE.Float32BufferAttribute(path, 3)
-      );
-      const material = new THREE.LineBasicMaterial({color: 0x1e40af});
-      const border = new THREE.Line(geometry, material);
-      borders.push(border);
+      setBorders(borders);
     }
-    setBorders(borders);
+
+    initBorders();
   }, []);
   return {
     borders
