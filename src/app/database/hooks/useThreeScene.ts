@@ -1,5 +1,6 @@
 import {RefObject, useEffect, useState} from "react";
 import * as THREE from "three";
+import {OrbitControls} from "three/examples/jsm/controls/OrbitControls";
 
 export const useThreeScene = (divRef: RefObject<HTMLDivElement | null>) => {
   const [scene, setScene] = useState<THREE.Scene | null>(null);
@@ -17,6 +18,10 @@ export const useThreeScene = (divRef: RefObject<HTMLDivElement | null>) => {
 
     // 카메라 위치 설정
     camera.position.z = 200;
+
+    const controls = new OrbitControls(camera, renderer.domElement)
+    controls.enableDamping = true
+    controls.zoomSpeed = 4
 
     // 애니메이션 함수
     const animate = () => {
