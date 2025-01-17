@@ -19,7 +19,7 @@ import samples, {Sample} from "../services/samples"
 export default function Page() {
   const [isOpenCvReady, setOpenCvReady] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
-  const [selectedSampleId, setSelectedSampleId] = useState(9);
+  const [selectedSampleId, setSelectedSampleId] = useState(13);
   const imageElement = useRef<HTMLImageElement>(null)
   const canvasElement = useRef<HTMLCanvasElement>(null)
   const selectedSample = samples[selectedSampleId];

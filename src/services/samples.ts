@@ -51,6 +51,26 @@ const samples: Sample[] = [
     height: 3000,
   },
   {
+    src: "/samples/20250117-carl-aurora-01.jpg",
+    width:3024,
+    height: 4032,
+  },
+  {
+    src: "/samples/20250117-carl-aurora-02.jpg",
+    width:3024,
+    height: 4032,
+  },
+  {
+    src: "/samples/20250117-carl-aurora-03.jpg",
+    width:3024,
+    height: 4032,
+  },
+  {
+    src: "/samples/20250117-carl-aurora-04.jpg",
+    width:3024,
+    height: 4032,
+  },
+  {
     src: "/samples/ursa-major.jpg",
     width: 1152,
     height: 819,
