@@ -23,6 +23,14 @@ export const useThreeScene = (divRef: RefObject<HTMLDivElement | null>) => {
     controls.enableDamping = true
     controls.zoomSpeed = 4
 
+    window.addEventListener('resize', onWindowResize, false)
+    function onWindowResize() {
+      camera.aspect = window.innerWidth / window.innerHeight
+      camera.updateProjectionMatrix()
+      renderer.setSize(window.innerWidth, window.innerHeight)
+      render()
+    }
+
     // 애니메이션 함수
     const animate = () => {
       requestAnimationFrame(animate);
@@ -32,9 +40,14 @@ export const useThreeScene = (divRef: RefObject<HTMLDivElement | null>) => {
     animate();
     setScene(scene);
 
+    function render() {
+      renderer.render(scene, camera)
+    }
+
     // 리소스 정리
     return () => {
       renderer.dispose();
+      window.removeEventListener('resize', onWindowResize);
     };
   }, [divRef]);
   return {
