@@ -8,9 +8,28 @@ export const useThreeHealpix = () => {
   const npix = healpix.nside2npix(nside);
   const R = 100;
 
+  const [centers, setCenters] = useState<THREE.Points>([]);
   const [borders, setBorders] = useState<THREE.Line[]>([]);
 
   useEffect(() => {
+    function initCenters() {
+      const positions: number[] = [];
+      for (let ipix = 0; ipix < npix; ipix++) {
+        const vector = healpix.pix2vec_nest(nside, ipix); // 픽셀 중심 벡터 계산
+        positions.push(vector[0] * R);
+        positions.push(vector[2] * R);
+        positions.push(vector[1] * R);
+      }
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+      const material = new THREE.PointsMaterial({
+        color: 0xdc2626,
+        size: 1,
+      });
+
+      const centers = new THREE.Points(geometry, material);
+      setCenters(centers);
+    }
     function initBorders() {
       const borders: THREE.Line[] = [];
       for (let ipix = 0; ipix < npix; ++ipix) {
@@ -41,9 +60,11 @@ export const useThreeHealpix = () => {
       setBorders(borders);
     }
 
+    initCenters();
     initBorders();
   }, []);
   return {
+    centers,
     borders
   };
 }

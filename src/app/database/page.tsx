@@ -12,7 +12,7 @@ export default function Page() {
   const { scene } = useThreeScene(mountRef);
   const { stars } = useThreeStars();
   const { constellations } = useThreeConstellations();
-  const { borders: healpixBorders } = useThreeHealpix();
+  const { centers: healpixCenters, borders: healpixBorders } = useThreeHealpix();
 
   useEffect(() => {
     if (!scene || !stars) {
@@ -37,15 +37,17 @@ export default function Page() {
   }, [scene, constellations, showConstellations]);
 
   useEffect(() => {
-    if (!scene || !healpixBorders) {
+    if (!scene || !healpixCenters || !healpixBorders) {
       return;
     }
     if (showHealpix) {
+      scene.add(healpixCenters);
       healpixBorders.forEach((border) => {
         scene.add(border);
       })
       return;
     }
+    scene.remove(healpixCenters);
     healpixBorders.forEach((border) => {
       scene.remove(border);
     })
