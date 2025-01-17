@@ -5,7 +5,7 @@ import * as healpix from '@hscmap/healpix';
 export const useThreeHealpix = () => {
   const nstep = 8; // 경계선의 한 선분을 구성할 점의 갯수
   const nside = 8; // healpix의 order. astrometry에서는 12 썼는데, 라이브러리의 버그인지 여기서는 2의 배수여야 각 영역이 깔끔하게 분리됨
-  const npix = 12 * nside * nside;
+  const npix = healpix.nside2npix(nside);
   const R = 100;
 
   const [borders, setBorders] = useState<THREE.Line[]>([]);
