@@ -1,6 +1,7 @@
 import {useEffect, useState} from "react";
 import * as THREE from "three";
-import database from "@hash/build/hashed-database.json";
+import database from "@hash/build/hashed-sample-database.json";
+import database30 from "@hash/build/hashed-database-30.json";
 import photo from "@hash/build/hashed-photo.json";
 
 
@@ -16,10 +17,11 @@ export enum GraphType {
 
 export const useThreeData = (graphType: GraphType) => {
   const [databaseData, setDatabaseData] = useState<THREE.Points | null>(null);
+  const [database30Data, setDatabase30Data] = useState<THREE.Points | null>(null);
   const [photoData, setPhotoData] = useState<THREE.Points | null>(null);
 
   useEffect(() => {
-    function createThreeData(data: Data, colorHex: number) {
+    function createThreeData(data: Data, colorHex: number, size=2) {
 
     const color = new THREE.Color().setHex( colorHex );
     const positions: number[] = [];
@@ -35,7 +37,6 @@ export const useThreeData = (graphType: GraphType) => {
       if (graphType === GraphType.YZX) {
         positions.push(row.hash[3] * 100);
       }
-      const size = 2;
       colors.push(color.r, color.g, color.b, size);
       sizes.push(size);
     })
@@ -54,12 +55,15 @@ export const useThreeData = (graphType: GraphType) => {
     }
     const databaseData = createThreeData(database, 0xfca5a5);
     setDatabaseData(databaseData);
+    const database30Data = createThreeData(database30, 0xccccccc, 1);
+    setDatabase30Data(database30Data);
     const photoData = createThreeData(photo, 0xbbf7d0);
     setPhotoData(photoData);
   }, []);
 
   return {
     databaseData,
+    database30Data,
     photoData,
   }
 }

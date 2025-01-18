@@ -12,6 +12,7 @@ const createQuadrilaterals = (stars) => {
       }
     }
   }
+  console.log(result.length);
   return result;
 }
 

@@ -8,7 +8,7 @@ const run = () => {
 }
 
 const load = () => {
-  let stars = require('./data/sample-database.json');
+  let stars = require('./data/vectors-database.json').splice(0, 30);
   console.log(`로드한 카탈로그에는 총 ${stars.length} 개의 별 정보가 있습니다.`);
   return stars;
 }
