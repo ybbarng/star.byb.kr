@@ -95,6 +95,19 @@ export default function Page() {
       context.closePath();
       context.stroke();
     })
+
+    // 사각형 한 개를 하이라이트
+    const {p1, p2, p3, p4} = result[0];
+    context.strokeStyle = 'green';
+    context.lineWidth = 4;
+    context.beginPath();
+    context.moveTo(p1.x, p1.y);
+    context.lineTo(p2.x, p2.y);
+    context.lineTo(p3.x, p3.y);
+    context.lineTo(p4.x, p4.y);
+    context.closePath();
+    context.stroke();
+
     return result;
   }
 
