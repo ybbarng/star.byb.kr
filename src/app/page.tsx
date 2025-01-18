@@ -53,6 +53,10 @@ export default function Page() {
 
       const stars = await findStars(context);
       console.log(`별 수: ${stars.length}`);
+      const test = true;
+      if (test) {
+        return;
+      }
       const triangles = await findTriangles(context, stars)
       console.log(`삼각형 수: ${triangles.length}`);
       const quadrilaterals = await createQuadrilateralExtraction(context, triangles);
@@ -96,9 +100,11 @@ export default function Page() {
       context.lineWidth = 2;
       context.stroke();
 
-      context.font = "bold 20px Arial";
-      context.fillStyle = "#ff0000";
-      context.fillText(Number(radius.toFixed(2)).toString(10), cx + 10, cy + 10);
+      if (radius > 1) {
+        context.font = "bold 20px Arial";
+        context.fillStyle = "#ff0000";
+        context.fillText(`(${cx.toFixed(2)}, ${cy.toFixed(2)})`, cx + 10, cy + 10);
+      }
     })
 
     return stars.map((star) => ({
