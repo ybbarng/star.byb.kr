@@ -1,5 +1,6 @@
 "use client";
 
+import samplePhoto from "@hash/data/sample-photo.json";
 import {useEffect, useRef } from 'react'
 import samples from "@/services/samples";
 
@@ -49,15 +50,7 @@ export default function Page() {
   }
 
   async function findStars(context: CanvasRenderingContext2D) {
-    const stars = [
-      [774.2253086419753, 552.6018518518518, 4.145929793656026],
-      [672.3654618473895, 615.3293172690762, 3.634537147509613],
-      [551.7619047619047, 487.30303030303025, 3.500704303147574],
-      [603, 402.77272727272725, 2.6462837142006137],
-      [560.2671755725191, 292.5979643765903, 4.566103102760415],
-      [533.1977011494253, 199.97701149425285, 4.803901200932928],
-      [411.6140350877193, 114.11779448621553, 4.600826820390231]
-    ]
+    const stars = samplePhoto;
 
     stars.forEach(([x, y, radius]) => {
       // Render the stars to the canvas
