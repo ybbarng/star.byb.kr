@@ -158,7 +158,7 @@ export default function Page() {
           aspectRatio: aspectRatio,
         }}></div>
       </div>
-      <img src={photo.src} className="invisible" ref={imageElement} style={{
+      <img src={photo.src} className="hidden" ref={imageElement} style={{
         aspectRatio: aspectRatio,
       }}/>
     </div>
