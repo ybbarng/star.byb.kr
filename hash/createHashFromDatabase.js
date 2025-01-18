@@ -1,3 +1,6 @@
+const quadrilateral = require("./quadrilateral");
+const hashLib = require("./hash");
+
 const run = () => {
   let stars = load();
   indexes = createHashFromDatabase(stars);
@@ -11,9 +14,9 @@ const load = () => {
 }
 
 const createHashFromDatabase = (stars) => {
-  let quadrilaterals = createQuadrilaterals(stars);
+  let quadrilaterals = quadrilateral.create(stars);
   quadrilaterals = quadrilaterals.map((quadrilateral) => {
-    const hash = calculateHash(quadrilateral);
+    const hash = hashLib.calculate(quadrilateral);
     return {
       ...quadrilateral,
       hash,
@@ -21,28 +24,6 @@ const createHashFromDatabase = (stars) => {
   })
 
   return quadrilaterals;
-}
-
-const createQuadrilaterals = (stars) => {
-  const result = [];
-  for (let s1 = 0; s1 < stars.length - 3; s1++) {
-    for (let s2 = s1; s2 < stars.length - 2; s2++) {
-      for (let s3 = s2; s3 < stars.length - 1; s3++) {
-        for (let s4 = s3; s4 < stars.length; s4++) {
-          result.push({
-            id: `${s1}-${s2}-${s3}-${s4}`,
-            stars: [stars[s1], stars[s2], stars[s3], stars[s4]],
-          });
-        }
-      }
-    }
-  }
-  return result;
-}
-
-const calculateHash = (quadrilateral) => {
-  const [s1, s2, s3, s4] = quadrilateral.stars;
-  return 0;
 }
 
 const save = (stars) => {
