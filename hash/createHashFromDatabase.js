@@ -98,7 +98,7 @@ const save = (stars) => {
   const fs = require('fs');
   const path = require('path');
   const outputDir = "build";
-  const outputName = "database-indexes.json";
+  const outputName = "hashed-database.json";
   const outputDirPath = path.join(__dirname, outputDir);
   const outputFilePath = path.join(outputDirPath, outputName);
 
