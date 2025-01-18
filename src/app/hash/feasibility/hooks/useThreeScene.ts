@@ -33,6 +33,9 @@ export const useThreeScene = (divRef: RefObject<HTMLDivElement | null>) => {
       render()
     }
 
+    const axesHelper = new THREE.AxesHelper( 100 );
+    scene.add( axesHelper );
+
     // 애니메이션 함수
     const animate = () => {
       requestAnimationFrame(animate);
@@ -41,6 +44,7 @@ export const useThreeScene = (divRef: RefObject<HTMLDivElement | null>) => {
 
     animate();
     setScene(scene);
+    scene.rotation.set(0.3, -0.3, -0.3);
 
     function render() {
       renderer.render(scene, camera)
