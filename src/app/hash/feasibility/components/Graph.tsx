@@ -18,5 +18,10 @@ export default function Graph({graphType}: Props) {
     scene.add(photoData);
   }, [scene, databaseData, photoData]);
 
-  return <div className="w-[500px] h-[500px]" ref={mountRef}/>;
+  return (
+    <div className="flex flex-col items-center justify-center gap-3">
+      <h1 className="text-4xl font-bold">{graphType} 그래프</h1>
+      <div className="w-[500px] h-[500px]" ref={mountRef}/>
+    </div>
+  );
 }

@@ -52,9 +52,9 @@ export const useThreeData = (graphType: GraphType) => {
 
     return new THREE.Points(geometry, material);
     }
-    const databaseData = createThreeData(database, 0xc2410c);
+    const databaseData = createThreeData(database, 0xfca5a5);
     setDatabaseData(databaseData);
-    const photoData = createThreeData(photo, 0x65a30d);
+    const photoData = createThreeData(photo, 0xbbf7d0);
     setPhotoData(photoData);
   }, []);
 
