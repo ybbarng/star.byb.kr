@@ -3,6 +3,8 @@
 import samplePhoto from "@hash/data/sample-photo.json";
 import {useEffect, useRef } from 'react'
 import samples from "@/services/samples";
+import {useThreeScene} from "@/app/hash/sample/hooks/useThreeScene";
+import {useThreeStars} from "@/app/hash/sample/hooks/useThreeStars";
 
 /**
  * What we're going to render is:
@@ -18,6 +20,9 @@ import samples from "@/services/samples";
 export default function Page() {
   const imageElement = useRef<HTMLImageElement>(null)
   const canvasElement = useRef<HTMLCanvasElement>(null)
+  const mountRef = useRef<HTMLDivElement>(null);
+  const { scene } = useThreeScene(mountRef);
+  const { stars } = useThreeStars();
   const photo = samples[13];
 
   useEffect(() => {
@@ -40,6 +45,14 @@ export default function Page() {
     }
     init();
   }, [imageElement, canvasElement])
+
+  useEffect(() => {
+    if (!scene || !stars) {
+      return;
+    }
+    console.log(stars);
+    scene.add(stars);
+  }, [scene, stars]);
 
   async function loadImageToCanvas(context: CanvasRenderingContext2D, imageElement: HTMLImageElement) {
     context.drawImage(imageElement, 0, 0, photo.width, photo.height)
@@ -141,6 +154,9 @@ export default function Page() {
           className="grow w-full" ref={canvasElement} width={photo.width} height={photo.height} style={{
           aspectRatio: aspectRatio,
         }}/>
+        <div className="grow w-full" width={photo.width} height={photo.height} ref={mountRef} style={{
+          aspectRatio: aspectRatio,
+        }}></div>
       </div>
       <img src={photo.src} className="invisible" ref={imageElement} style={{
         aspectRatio: aspectRatio,
