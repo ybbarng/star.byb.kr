@@ -9,7 +9,12 @@ interface Datum {
 };
 type Data = Datum[];
 
-export const useThreeData = () => {
+export enum GraphType {
+  "XYZ" = "XYZ",
+  "YZX" = "XZX"
+}
+
+export const useThreeData = (graphType: GraphType) => {
   const [databaseData, setDatabaseData] = useState<THREE.Points | null>(null);
   const [photoData, setPhotoData] = useState<THREE.Points | null>(null);
 
@@ -22,9 +27,14 @@ export const useThreeData = () => {
     const sizes: number[] = [];
     // 2. 3D 좌표 점 생성
     data.forEach((row) => {
-      positions.push(row.hash[0] * 100);
+      if (graphType === GraphType.XYZ) {
+        positions.push(row.hash[0] * 100);
+      }
       positions.push(row.hash[1] * 100);
       positions.push(row.hash[2] * 100);
+      if (graphType === GraphType.YZX) {
+        positions.push(row.hash[3] * 100);
+      }
       const size = 2;
       colors.push(color.r, color.g, color.b, size);
       sizes.push(size);
