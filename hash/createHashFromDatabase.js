@@ -22,8 +22,29 @@ const createHashFromDatabase = (stars) => {
       hash,
     }
   })
+  quadrilaterals.forEach((quadrilateral) => {
+    to2D(quadrilateral);
+  })
 
   return quadrilaterals;
+}
+
+const to2D = (quadrilateral) => {
+  const vectors = quadrilateral.stars.map((star) => {
+    return [star.x, star.y, star.z];
+  });
+  const center = findCenter(vectors);
+}
+
+const findCenter = (vectors) => {
+  const sum = vectors.reduce((acc, vec) => {
+    acc.x += vec[0];
+    acc.y += vec[1];
+    acc.z += vec[2];
+    return acc;
+  }, { x: 0, y: 0, z: 0 });
+  const norm = Math.sqrt(sum.x ** 2 + sum.y ** 2 + sum.z ** 2);
+  return [sum.x / norm, sum.y / norm, sum.z / norm];
 }
 
 const save = (stars) => {
