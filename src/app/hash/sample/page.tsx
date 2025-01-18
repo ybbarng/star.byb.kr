@@ -5,6 +5,7 @@ import {useEffect, useRef } from 'react'
 import samples from "@/services/samples";
 import {useThreeScene} from "@/app/hash/sample/hooks/useThreeScene";
 import {useThreeStars} from "@/app/hash/sample/hooks/useThreeStars";
+import "./style.css";
 
 /**
  * What we're going to render is:
@@ -22,7 +23,7 @@ export default function Page() {
   const canvasElement = useRef<HTMLCanvasElement>(null)
   const mountRef = useRef<HTMLDivElement>(null);
   const { scene } = useThreeScene(mountRef);
-  const { stars } = useThreeStars();
+  const { stars, labels } = useThreeStars();
   const photo = samples[13];
 
   useEffect(() => {
@@ -47,12 +48,15 @@ export default function Page() {
   }, [imageElement, canvasElement])
 
   useEffect(() => {
-    if (!scene || !stars) {
+    if (!scene || !stars || !labels) {
       return;
     }
     console.log(stars);
     scene.add(stars);
-  }, [scene, stars]);
+    labels.forEach((label) => {
+      scene.add(label);
+    })
+  }, [scene, stars, labels]);
 
   async function loadImageToCanvas(context: CanvasRenderingContext2D, imageElement: HTMLImageElement) {
     context.drawImage(imageElement, 0, 0, photo.width, photo.height)

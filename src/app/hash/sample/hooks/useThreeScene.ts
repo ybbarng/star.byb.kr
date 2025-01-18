@@ -1,6 +1,7 @@
 import {RefObject, useEffect, useState} from "react";
 import * as THREE from "three";
 import {OrbitControls} from "three/examples/jsm/controls/OrbitControls";
+import {CSS2DRenderer} from "three/examples/jsm/renderers/CSS2DRenderer";
 
 export const useThreeScene = (divRef: RefObject<HTMLDivElement | null>) => {
   const [scene, setScene] = useState<THREE.Scene | null>(null);
@@ -18,8 +19,15 @@ export const useThreeScene = (divRef: RefObject<HTMLDivElement | null>) => {
     renderer.setSize(width, height);
     divRef.current.appendChild(renderer.domElement);
 
+    const labelRenderer = new CSS2DRenderer();
+    labelRenderer.setSize(width, height);
+    labelRenderer.domElement.style.position = 'absolute';
+    labelRenderer.domElement.style.top = '0px';
+    labelRenderer.domElement.style.pointerEvents = 'none';
+    divRef.current.appendChild(labelRenderer.domElement);
+
     // 카메라 위치 설정
-    camera.position.z = 200;
+    camera.position.z = 150;
 
     const controls = new OrbitControls(camera, renderer.domElement)
     controls.enableDamping = true
@@ -30,13 +38,14 @@ export const useThreeScene = (divRef: RefObject<HTMLDivElement | null>) => {
       camera.aspect = width / height
       camera.updateProjectionMatrix()
       renderer.setSize(width, height)
+      labelRenderer.setSize(width, height);
       render()
     }
 
     // 애니메이션 함수
     const animate = () => {
       requestAnimationFrame(animate);
-      renderer.render(scene, camera);
+      render();
     };
 
     animate();
@@ -44,6 +53,7 @@ export const useThreeScene = (divRef: RefObject<HTMLDivElement | null>) => {
     scene.rotation.set(1.5, 1, -0.5);
 
     function render() {
+      labelRenderer.render(scene, camera);
       renderer.render(scene, camera)
     }
 

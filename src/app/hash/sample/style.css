@@ -1,0 +1,7 @@
+.starPosition {
+    font-family: monospace;
+    color: rgba(131, 255, 131, 0.52);
+    pointer-events: none;
+    font-size: 15px;
+    font-weight: bold;
+}
