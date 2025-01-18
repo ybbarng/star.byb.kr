@@ -34,10 +34,6 @@ export default function Page() {
 
       const stars = await findStars(context);
       console.log(`별 수: ${stars.length}`);
-      const test = true;
-      if (test) {
-        return;
-      }
 
       const quadrilaterals = await createQuadrilaterals(context, stars);
       console.log(`사각형 수: ${quadrilaterals.length}`);
