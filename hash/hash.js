@@ -1,3 +1,5 @@
+const math = require('mathjs');
+
 const calculateHash = (quadrilateral) => {
   if (quadrilateral.length !== 4) {
     throw new Error("해시를 계산하려면 4개의 점이 필요합니다.");
@@ -37,14 +39,41 @@ const findPointsOfMaxDistance = (points) => {
  * @param p2 (1, 1)이 될 점
  */
 const buildTransform = (p1, p2) => {
-  const [x1, y1] = p1;
-  const [x2, y2] = p2;
+  // 평행 이동 행렬 T: p1을 원점으로 이동
+  const T = math.matrix([
+    [1, 0, -p1[0]],
+    [0, 1, -p1[1]],
+    [0, 0, 1]
+  ]);
+
+  // 이후의 연산을 위해서 vector(p1, p2)를 준비
+  // 이 벡터 값은 T * p2 와 같다.
+  const v12 = [p2[0] - p1[0], p2[1] - p1[1]];
+
+  // 회전 행렬 R: v12를 회전시켜서 y=x 선분에 위치
+  const angle = -Math.atan2(v12[1] - v12[0], v12[0] + v12[1]);
+  const R = math.matrix([
+    [Math.cos(angle), -Math.sin(angle), 0],
+    [Math.sin(angle), Math.cos(angle), 0],
+    [0, 0, 1]
+  ]);
+
+  // 스케일 행렬 S: 회전한 v12를 (1, 1)로 위치시키기 위해 스케일
+  const hv12 = [v12[0], v12[1], 1];
+  const scale = 1 / math.multiply(R, hv12).get([0]);
+  const S = math.matrix([
+    [scale, 0, 0],
+    [0, scale, 0],
+    [0, 0, 1]
+  ]);
+
+  // 최종 변환 행렬 M 준비 완료
+  const M = math.multiply(S, R, T);
 
   return (point) => {
-    const [x, y] = point;
-    const tx = (x - x1) / (x2 - x1);
-    const ty = (y - y1) / (y2 - y1);
-    return [tx, ty];
+    const homogeneousPoint = [point[0], point[1], 1];
+    const transformedPoint = math.multiply(M, homogeneousPoint);
+    return [transformedPoint.get([0]), transformedPoint.get([1])];
   };
 }
 
