@@ -8,16 +8,16 @@ interface Props {
 export default function Graph({graphType}: Props) {
   const mountRef = useRef<HTMLDivElement>(null);
   const { scene } = useThreeScene(mountRef);
-  const { databaseData, database30Data, photoData } = useThreeData(graphType);
+  const { databaseData, databaseFullData, photoData } = useThreeData(graphType);
 
   useEffect(() => {
-    if (!scene || !databaseData || !database30Data || !photoData) {
+    if (!scene || !databaseData || !databaseFullData || !photoData) {
       return;
     }
-    scene.add(database30Data);
+    scene.add(databaseFullData);
     scene.add(databaseData);
     scene.add(photoData);
-  }, [scene, databaseData, database30Data, photoData]);
+  }, [scene, databaseData, databaseFullData, photoData]);
 
   return (
     <div className="flex flex-col items-center justify-center gap-3">
