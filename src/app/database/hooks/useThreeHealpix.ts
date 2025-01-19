@@ -8,7 +8,7 @@ export const useThreeHealpix = () => {
   const npix = healpix.nside2npix(nside);
   const R = 100;
 
-  const [centers, setCenters] = useState<THREE.Points>([]);
+  const [centers, setCenters] = useState<THREE.Points | null>(null);
   const [borders, setBorders] = useState<THREE.Line[]>([]);
 
   useEffect(() => {
