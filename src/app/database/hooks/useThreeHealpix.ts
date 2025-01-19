@@ -4,7 +4,12 @@ import * as healpix from '@hscmap/healpix';
 
 export const useThreeHealpix = () => {
   const nstep = 8; // 경계선의 한 선분을 구성할 점의 갯수
-  const nside = 8; // healpix의 order. astrometry에서는 12 썼는데, 라이브러리의 버그인지 여기서는 2의 배수여야 각 영역이 깔끔하게 분리됨
+  // nside = 2 ** order
+  // astrometry에서는 order를 12로 사용했다고 하는데,
+  // 여기서는 너무 좁은 영역이라 nside로 4, order로 2 사용
+  const nside = 8;
+  // nside가 8일 때는 310, 4일 때는 600 정도가 적절함
+  const arcmin = 600;
   const npix = healpix.nside2npix(nside);
   const R = 100;
 
@@ -70,7 +75,7 @@ export const useThreeHealpix = () => {
       const circles: THREE.LineLoop[] = [];
       for (let ipix = 0; ipix < npix; ipix++) {
         const vector = healpix.pix2vec_nest(nside, ipix); // 픽셀 중심 벡터 계산
-        const circlePoints = generateCirclePoints([vector[0], vector[2], vector[1]], R, 320, 20);
+        const circlePoints = generateCirclePoints([vector[0], vector[2], vector[1]], R, arcmin, 20);
         // 원을 라인으로 그리기
         const lineGeometry = new THREE.BufferGeometry().setFromPoints(circlePoints);
         const lineMaterial = new THREE.LineBasicMaterial({ color: 0x15803d });
