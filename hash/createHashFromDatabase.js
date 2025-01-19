@@ -1,28 +1,30 @@
 const quadrilateral = require("./quadrilateral");
 const hashLib = require("./hash");
+const cell = require("./cell");
+const fs = require('fs');
+const path = require('path');
+let stars = require('./data/vectors-database.json');
 
 const run = () => {
-  let stars = load();
+  console.log(`로드한 카탈로그에는 총 ${stars.length} 개의 별 정보가 있습니다.`);
   indexes = createHashFromDatabase(stars);
   save(indexes);
 }
 
-const load = () => {
-  let stars = require('./data/vectors-database.json').splice(0, 30);
-  console.log(`로드한 카탈로그에는 총 ${stars.length} 개의 별 정보가 있습니다.`);
-  return stars;
-}
-
 const createHashFromDatabase = (stars) => {
-  return quadrilateral.create(stars)
-    .map((quadrilateral) => {
-      const projectedQuadrilateral = to2D(quadrilateral);
-      const hash = hashLib.calculate(projectedQuadrilateral);
-      return {
-        ...quadrilateral,
-        hash,
-      }
-    });
+  const cells = cell.split(stars);
+  return cells.map((cell, i) => {
+    console.log(`${i}번째 Cell에 대한 사각형을 생성합니다. 영역 내 별의 갯수는 ${cell.length}개 입니다.`);
+    return quadrilateral.create(cell)
+      .map((quadrilateral) => {
+        const projectedQuadrilateral = to2D(quadrilateral);
+        const hash = hashLib.calculate(projectedQuadrilateral);
+        return {
+          ...quadrilateral,
+          hash,
+        }
+      });
+  }).flat();
 }
 
 const to2D = (quadrilateral) => {
@@ -95,8 +97,6 @@ function normalize(vec) {
 }
 
 const save = (stars) => {
-  const fs = require('fs');
-  const path = require('path');
   const outputDir = "build";
   const outputName = "hashed-database.json";
   const outputDirPath = path.join(__dirname, outputDir);

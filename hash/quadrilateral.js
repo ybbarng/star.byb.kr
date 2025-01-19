@@ -12,7 +12,7 @@ const createQuadrilaterals = (stars) => {
       }
     }
   }
-  console.log(result.length);
+  console.log(`${result.length}개의 사각형을 생성하였습니다.`);
   return result;
 }
 
