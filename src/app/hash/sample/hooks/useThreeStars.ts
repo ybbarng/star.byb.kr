@@ -1,6 +1,6 @@
 import {useEffect, useState} from "react";
 import * as THREE from "three";
-import database from "@hash/data/sample-database.json";
+import database from "@hash/sample/data/sample-database.json";
 import {CSS2DObject} from "three/examples/jsm/renderers/CSS2DRenderer";
 
 export const useThreeStars = () => {

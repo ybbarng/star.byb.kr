@@ -1,8 +1,8 @@
 import {useEffect, useState} from "react";
 import * as THREE from "three";
-import database from "@hash/build/hashed-sample-database.json";
+import database from "@hash/sample/build/hashed-sample-database.json";
 import database30 from "@hash/build/hashed-database-30.json";
-import photo from "@hash/build/hashed-photo.json";
+import photo from "@hash/sample/build/hashed-photo.json";
 
 
 interface Datum {

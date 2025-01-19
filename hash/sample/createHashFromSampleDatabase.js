@@ -1,5 +1,5 @@
-const quadrilateral = require("./quadrilateral");
-const hashLib = require("./hash");
+const quadrilateral = require("../quadrilateral");
+const hashLib = require("../hash");
 
 const run = () => {
   let stars = load();
