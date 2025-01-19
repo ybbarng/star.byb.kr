@@ -1,37 +1,22 @@
-const photoStars = require("../hash/sample/data/sample-photo.json");
 const quadrilateral = require("../hash/quadrilateral");
 const hashLib = require("../hash/hash");
 const hashes = require("../hash/build/hashed-database.json");
 const catalog = require("../database/build/reduced-database.json");
 
-// 테스트 편의를 위해, 별들의 이름을 추가
-const sampleNames = [
-  "Dubhe",
-  "Merak",
-  "Phecda",
-  "Megrez",
-  "Alioth",
-  "Mizar",
-  "Alkaid",
-]
+const samples = [
+  require("./samples/ursa-major.json")
+];
+
+const sample = samples[0];
 
 // 프론트에서는 감지된 밝기를 기준으로 별을 정렬해서 보내주므로, 이를 시뮬레이션 (샘플 데이터에서는 밝을수록 숫자가 큼)
-const stars = photoStars.map((data, i) => ({
-  label: sampleNames[i],
-  data,
-})).sort((a, b) => b.data[2] - a.data[2]);
-
-const photo = {
-  width: 1152,
-  height: 819,
-  stars
-};
+const stars = sample.stars.sort((a, b) => b.brightness - a.brightness);
 
 const quads = quadrilateral.create(stars)
   .map((quadrilateral) => {
     const hash = hashLib.calculate(quadrilateral.stars.map((item) => ({
       label: item.label,
-      vector: [item.data[0], item.data[1]],
+      vector: item.position,
     })));
     return {
       labels: hash.labels,
