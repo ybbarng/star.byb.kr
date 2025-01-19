@@ -13,6 +13,10 @@ export const useThreeHealpix = () => {
   const [circles, setCircles] = useState<THREE.Line[]>([]);
 
   useEffect(() => {
+    initCenters();
+    initBorders();
+    initCircles();
+
     function initCenters() {
       const positions: number[] = [];
       for (let ipix = 0; ipix < npix; ipix++) {
@@ -103,10 +107,6 @@ export const useThreeHealpix = () => {
 
       return points;
     }
-
-    initCenters();
-    initBorders();
-    initCircles();
   }, []);
   return {
     centers,
