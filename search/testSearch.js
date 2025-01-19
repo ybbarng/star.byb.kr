@@ -4,10 +4,11 @@ const hashes = require("../hash/build/hashed-database.json");
 const catalog = require("../database/build/reduced-database.json");
 
 const samples = [
-  require("./samples/ursa-major.json")
+  require("./samples/ursa-major.json"),
+  require("./samples/orion.json")
 ];
 
-const sample = samples[0];
+const sample = samples[1];
 
 // 프론트에서는 감지된 밝기를 기준으로 별을 정렬해서 보내주므로, 이를 시뮬레이션 (샘플 데이터에서는 밝을수록 숫자가 큼)
 const stars = sample.stars.sort((a, b) => b.brightness - a.brightness);

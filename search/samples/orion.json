@@ -1,0 +1,43 @@
+{
+  "width": 1584,
+  "height": 1056,
+  "stars": [
+    {
+      "label": "Betelgeuse",
+      "position": [	838.5,129.125],
+      "brightness": 1
+    },
+    {
+      "label": "Bellatrix",
+      "position": [1052.5,102.125],
+      "brightness": 1
+    },
+    {
+      "label": "Alnitak",
+      "position": [
+        1001.5,361.125
+      ],
+      "brightness": 1
+    },
+    {
+      "label": "Alnilam",
+      "position": [1027.5,331.125],
+      "brightness": 1
+    },
+    {
+      "label": "Mintaka",
+      "position": [1049.5,300.125],
+      "brightness": 1
+    },
+    {
+      "label": "Saiph",
+      "position": [1008.5,579.125],
+      "brightness": 1
+    },
+    {
+      "label": "Rigel",
+      "position": [1224.5,484.125],
+      "brightness": 1
+    }
+  ]
+}
