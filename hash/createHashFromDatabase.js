@@ -108,7 +108,10 @@ const save = (stars) => {
     console.log(`디렉토리 생성 완료: ${outputDirPath}`);
   }
 
-  fs.writeFileSync(outputFilePath, JSON.stringify(stars, null, 2), 'utf8');
+  // 바로 사용하면 데이터가 너무 커서 RangeError: Invalid string length 에러가 발생함.
+  const result = "[" + stars.map(el => JSON.stringify(el)).join(",") + "]";
+
+  fs.writeFileSync(outputFilePath, result, 'utf8');
 
   console.log(`파일이 성공적으로 저장되었습니다: ${outputFilePath}`);
 }
