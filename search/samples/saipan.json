@@ -1,0 +1,46 @@
+{
+  "width": 1440,
+  "height": 1920,
+  "stars": [
+    {
+      "label": "5571",
+      "position": [823,331.125],
+      "brightness": 1
+    },
+    {
+      "label": "5440",
+      "position": [950,322.125],
+      "brightness": 1
+    },
+    {
+      "label": "5469",
+      "position": [881,472.125],
+      "brightness": 1
+    },
+    {
+      "label": "5459 (α cen)",
+      "position": [810,837.125],
+      "brightness": 1
+    },
+    {
+      "label": "5267 (hadar)",
+      "position": [923,859.125],
+      "brightness": 1
+    },
+    {
+      "label": "5231",
+      "position": [1094,532.125],
+      "brightness": 1
+    },
+    {
+      "label": "5132",
+      "position": [1084,720.125],
+      "brightness": 1
+    },
+    {
+      "label": "4853 (Mimosa)",
+      "position": [1161,964.125],
+      "brightness": 1
+    }
+  ]
+}
