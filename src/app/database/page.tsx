@@ -12,7 +12,7 @@ export default function Page() {
   const { scene } = useThreeScene(mountRef);
   const { stars } = useThreeStars();
   const { constellations } = useThreeConstellations();
-  const { centers: healpixCenters, borders: healpixBorders } = useThreeHealpix();
+  const { centers: healpixCenters, borders: healpixBorders, circles: healpixCircles } = useThreeHealpix();
 
   useEffect(() => {
     if (!scene || !stars) {
@@ -37,12 +37,15 @@ export default function Page() {
   }, [scene, constellations, showConstellations]);
 
   useEffect(() => {
-    if (!scene || !healpixCenters || !healpixBorders) {
+    if (!scene || !healpixCenters || !healpixBorders || !healpixCircles) {
       return;
     }
     if (showHealpix) {
       scene.add(healpixCenters);
       healpixBorders.forEach((border) => {
+        scene.add(border);
+      })
+      healpixCircles.forEach((border) => {
         scene.add(border);
       })
       return;
@@ -51,7 +54,10 @@ export default function Page() {
     healpixBorders.forEach((border) => {
       scene.remove(border);
     })
-  }, [scene, healpixBorders, showHealpix]);
+    healpixCircles.forEach((border) => {
+      scene.remove(border);
+    })
+  }, [scene, healpixCenters, healpixBorders, healpixCircles, showHealpix]);
 
   return <div className="relative">
     <div ref={ mountRef } />
