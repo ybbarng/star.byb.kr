@@ -16,7 +16,7 @@ export const useThreeStars = () => {
       positions.push(star.x * 100);
       positions.push(star.z * 100);
       positions.push(star.y * 100);
-      const size = (star.V * 26) / 255 + 0.18;
+      const size = (1 - (star.V + 2) / 12) * 2;
       colors.push(color.r, color.g, color.b, size);
       sizes.push(size);
     })
