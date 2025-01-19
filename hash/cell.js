@@ -59,6 +59,7 @@ function filterStarsByAngle(stars, vector, maxArcmin) {
     }
   }
 
+  // 밝은 별이 앞에 오도록 정렬, V 값이 작을수록 밝은 별
   result.sort((s1, s2) => s1.V - s2.V);
   return result;
 }
