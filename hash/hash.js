@@ -4,13 +4,18 @@ const calculateHash = (quadrilateral) => {
   if (quadrilateral.length !== 4) {
     throw new Error("해시를 계산하려면 4개의 점이 필요합니다.");
   }
-  const [p1, p2] = findPointsOfMaxDistance(quadrilateral);
-  const transform = buildTransform(p1, p2);
-  const transformedPoints = quadrilateral.map(transform);
-  const [p3, p4] = findRest(transformedPoints);
-  const transformed = [[0, 0], [1, 1], p3, p4];
-  let [pA, pB, pC, pD] = removeSymmetric(transformed);
-  return [...pC, ...pD];
+  const labels = quadrilateral.map((item) => item.label);
+  const points = quadrilateral.map((item) => item.vector);
+  const [ip1, ip2] = findPointsOfMaxDistance(points);
+  const transform = buildTransform(points[ip1], points[ip2]);
+  const transformedPoints = points.map(transform);
+  const [ip3, ip4] = findRest(transformedPoints);
+  const transformed = [[0, 0], [1, 1], transformedPoints[ip3], transformedPoints[ip4]];
+  let [indexes, [pA, pB, pC, pD]] = removeSymmetric([ip1, ip2, ip3, ip4], transformed);
+  return {
+    labels: indexes.map(index => labels[index]),
+    hash: [...pC, ...pD],
+  }
 }
 
 const findPointsOfMaxDistance = (points) => {
@@ -25,8 +30,8 @@ const findPointsOfMaxDistance = (points) => {
       const distance = dx ** 2 + dy ** 2;
       if (distance > maxDistance) {
         maxDistance = distance;
-        p1 = points[i];
-        p2 = points[j];
+        p1 = i;
+        p2 = j;
       }
     }
   }
@@ -83,14 +88,16 @@ const findRest = (transformedPoints) => {
     (p) => !arePointsEqual(p, [0, 0]) && !arePointsEqual(p, [1, 1])
   );
   remainingPoints.sort((a, b) => a[0] - b[0]);
-
-  return remainingPoints;
+  return [
+    transformedPoints.indexOf(remainingPoints[0]),
+    transformedPoints.indexOf(remainingPoints[1]),
+  ]
 }
 
-const removeSymmetric = (transformedPoints) => {
+const removeSymmetric = (indexes, transformedPoints) => {
   const [p1, p2, p3, p4] = transformedPoints;
   if (p3[0] + p4[0] <= 1) {
-    return transformedPoints;
+    return [indexes, transformedPoints];
   }
   const result = [
     p2,
@@ -98,7 +105,7 @@ const removeSymmetric = (transformedPoints) => {
     [1 - p4[0], 1-p4[1]],
     [1 - p3[0], 1-p3[1]],
   ]
-  return result;
+  return [[indexes[1], indexes[0], indexes[3], indexes[2]], result];
 }
 
 function arePointsEqual(p1, p2, tolerance = 1e-6) {

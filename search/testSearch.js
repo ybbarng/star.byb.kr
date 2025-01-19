@@ -17,8 +17,8 @@ const sampleNames = [
 
 // 프론트에서는 감지된 밝기를 기준으로 별을 정렬해서 보내주므로, 이를 시뮬레이션 (샘플 데이터에서는 밝을수록 숫자가 큼)
 const stars = photoStars.map((data, i) => ({
-  name: sampleNames[i],
-  data
+  label: sampleNames[i],
+  data,
 })).sort((a, b) => b.data[2] - a.data[2]);
 
 const photo = {
@@ -29,11 +29,13 @@ const photo = {
 
 const quads = quadrilateral.create(stars)
   .map((quadrilateral) => {
-    const positions = quadrilateral.stars.map((star) => star.data);
-    const hash = hashLib.calculate(positions);
+    const hash = hashLib.calculate(quadrilateral.stars.map((item) => ({
+      label: item.label,
+      vector: [item.data[0], item.data[1]],
+    })));
     return {
-      ...quadrilateral,
-      hash,
+      labels: hash.labels,
+      hash: hash.hash,
     }
   });
 
@@ -75,5 +77,5 @@ quads.forEach(quad => {
     const name = dictionary.get(hr);
     return name ? name : `HR ${hr}`;
   })
-  console.log(`${quad.stars.map((star) => star.name).join(", ")} => ${candidate}`);
+  console.log(`${quad.labels} => ${candidate}`);
 });
