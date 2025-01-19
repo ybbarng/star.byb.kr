@@ -20,7 +20,7 @@ const createHashFromDatabase = (stars) => {
         const projectedQuadrilateral = to2D(quadrilateral);
         const hash = hashLib.calculate(projectedQuadrilateral);
         return {
-          ...quadrilateral,
+          stars: quadrilateral.stars.map((star) => star.HR),
           hash,
         }
       });

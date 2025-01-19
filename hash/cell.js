@@ -49,7 +49,13 @@ function filterStarsByAngle(stars, vector, maxArcmin) {
   for (const star of stars) {
     const angle = angleBetweenVectors(star, vector);  // 벡터 간 각도 계산
     if (angle <= maxAngle) {
-      result.push(star);  // 범위 내의 별을 추가
+      result.push({
+        HR: star.HR,
+        x: star.x,
+        y: star.y,
+        z: star.z,
+        V: star.V,
+      });  // 범위 내의 별을 추가
     }
   }
 
