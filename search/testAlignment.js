@@ -8,14 +8,6 @@ const run = (photo, database) => {
   const projectedDatabase = databaseQuad.map((star) => math.multiply(P, star).splice(0, 2));
   const photoQuad = photo.quad.map((star) => star.position)
   const T = calculateToPhotoTransform(photoQuad, projectedDatabase);
-  /*
-  console.log("사진");
-  console.log(photoQuad);
-  console.log("데이터베이스");
-  console.log(database.quad.map((star) => math.multiply(T, P, [star.x, star.y, star.z])));
-  console.log("데이터베이스 투영된 애들");
-  console.log(projectedDatabase.map((star) => math.multiply(T, [star[0], star[1], 1])));
-   */
 }
 
 const calculateProjectTransform = (quad) => {
@@ -23,7 +15,7 @@ const calculateProjectTransform = (quad) => {
   return plane.calculateProjectTransform(center);
 }
 
-function calculateToPhotoTransform(photo, database) {
+const calculateToPhotoTransform = (photo, database) => {
 
   // 각 quad의 중심점 계산
   const centroidPhoto = math.mean(photo, 0);
@@ -36,16 +28,11 @@ function calculateToPhotoTransform(photo, database) {
   // 사진과 데이터베이스의 스케일 차이 계산
   const scalePhoto = math.norm(centeredPhoto[0]);
   const scaleDatabase = math.norm(centeredDatabase[0]);
-  const scale = scalePhoto / scaleDatabase;
 
-  //
-  const H = centeredDatabase.reduce((acc, pointDatabase, i) => {
-    const pointPhoto = centeredPhoto[i];
-    return math.add(acc, math.multiply(math.transpose([pointDatabase]), [pointPhoto])); // Outer product
-  }, math.zeros([2, 2]));
+  const normalPhoto0 = math.divide(centeredPhoto[0], scalePhoto);
+  const normalDatabase0 = math.divide(centeredDatabase[0], scaleDatabase);
 
-  const { u, v } = SVDJS.SVD(H);
-  const r = math.multiply(u, math.transpose(v));
+  const angle = -calculateRotationAngle(normalPhoto0, normalDatabase0);
 
   const DtoZero = [
     [ 1, 0, -centroidDatabase[0] ],
@@ -53,25 +40,19 @@ function calculateToPhotoTransform(photo, database) {
     [ 0, 0, 1  ],
   ];
 
-  const R = [
-    [r[0][0], r[0][1], 0],
-    [r[1][0], r[1][1], 0],
+  const SDtoN = [
+    [1 / scaleDatabase, 0, 0],
+    [0, 1 / scaleDatabase, 0],
     [0, 0, 1],
   ]
 
-  const S = [
-    [scale, 0, 0],
-    [0, scale, 0],
+  const R = getRotationMatrix(angle);
+
+  const NtoSP = [
+    [scalePhoto, 0, 0],
+    [0, scalePhoto, 0],
     [0, 0, 1],
   ]
-
-  for (let i = 0; i < centeredDatabase.length; i++) {
-    const D = [...centeredDatabase[i], 1];
-    const P = centeredPhoto[i];
-    console.log("회전!");
-    console.log(P);
-    console.log(math.multiply(S, R, D));
-  }
 
 
   const zeroToP = [
@@ -81,9 +62,27 @@ function calculateToPhotoTransform(photo, database) {
   ]
 
   // Construct transformation matrix
-  return math.multiply(zeroToP, S, R, DtoZero);
+  return math.multiply(zeroToP, NtoSP, R, SDtoN, DtoZero);
 }
 
+const calculateRotationAngle = (A, B) => {
+  const dotProduct = math.dot(A, B);
+
+  const crossProduct = A[0] * B[1] - A[1] * B[0];
+
+  // 회전 각도
+  return Math.atan2(crossProduct, dotProduct);
+}
+
+
+// 회전 행렬 계산 함수
+const getRotationMatrix = (theta) => {
+  return math.matrix([
+    [Math.cos(theta), -Math.sin(theta), 0],
+    [Math.sin(theta), Math.cos(theta), 0],
+    [0, 0, 1]
+  ]);
+}
 
 // TEST: Phecda,Alkaid,Alioth,Mizar => 4554,5191,4905,5054
 const photo = {
