@@ -2,12 +2,17 @@ const SVDJS = require("svd-js");
 const math = require("mathjs");
 const plane = require("../hash/plane");
 
-const run = (photo, database) => {
+const run = (photo, database, test) => {
   const databaseQuad = database.quad.map((star) => [star.x, star.y, star.z]);
   const P = calculateProjectTransform(databaseQuad);
   const projectedDatabase = databaseQuad.map((star) => math.multiply(P, star).splice(0, 2));
   const photoQuad = photo.quad.map((star) => star.position)
   const T = calculateToPhotoTransform(photoQuad, projectedDatabase);
+  test.expected.forEach((expected, i) => {
+    console.log(`Test ${i}`);
+    console.log(expected);
+    console.log(math.multiply(T, P, test.given[i]));
+  })
 }
 
 const calculateProjectTransform = (quad) => {
@@ -177,4 +182,25 @@ const database = {
   ]
 }
 
-run(photo, database);
+const test = {
+  expected: [
+    [774.2253086419753, 552.6018518518518],
+    [672.3654618473895, 615.3293172690762],
+    [551.7619047619047, 487.30303030303025],
+    [603, 402.77272727272725],
+    [560.2671755725191, 292.5979643765903],
+    [533.1977011494253, 199.97701149425285],
+    [411.6140350877193, 114.11779448621553]
+  ],
+  given: [
+    [-0.4591115674024834, 0.11504758911126119, 0.8808976222677193],
+    [-0.5359150995023587, 0.1389921440572375, 0.832752178031225],
+    [-0.5918728610028255, 0.015938076508263857, 0.8058737457725911],
+    [-0.5429309331397354, -0.03660080679866315, 0.8389793696996983],
+    [-0.5442927591835712, -0.13074430028288353, 0.8286442664037894],
+    [-0.5365439818464228, -0.20575850700942397, 0.8184033188701267],
+    [-0.581459592054957, -0.29479990694318703, 0.7582860658574515],
+  ]
+}
+
+run(photo, database, test);
