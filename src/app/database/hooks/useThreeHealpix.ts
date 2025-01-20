@@ -3,11 +3,11 @@ import * as THREE from "three";
 import * as healpix from '@hscmap/healpix';
 
 export const useThreeHealpix = () => {
-  const nstep = 8; // 경계선의 한 선분을 구성할 점의 갯수
+  const nstep = 4; // 경계선의 한 선분을 구성할 점의 갯수
   // nside = 2 ** order
   // astrometry에서는 order를 12로 사용했다고 하는데,
   // 여기서는 너무 좁은 영역이라 nside로 4, order로 2 사용
-  const nside = 8;
+  const nside = 4;
   // nside가 8일 때는 310, 4일 때는 600 정도가 적절함
   const arcmin = 600;
   const npix = healpix.nside2npix(nside);
