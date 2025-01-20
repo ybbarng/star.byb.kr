@@ -1,4 +1,3 @@
-const SVDJS = require("svd-js");
 const math = require("mathjs");
 const plane = require("../hash/plane");
 
