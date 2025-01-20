@@ -9,7 +9,7 @@ const samples = [
   require("./samples/saipan.json")
 ];
 
-const sample = samples[2];
+const sample = samples[0];
 
 // 프론트에서는 감지된 밝기를 기준으로 별을 정렬해서 보내주므로, 이를 시뮬레이션 (샘플 데이터에서는 밝을수록 숫자가 큼)
 const stars = sample.stars.sort((a, b) => b.brightness - a.brightness);
@@ -64,5 +64,10 @@ quads.forEach(quad => {
     const name = dictionary.get(hr);
     return name ? name : `HR ${hr}`;
   })
-  console.log(`${quad.labels} => ${candidate}`);
+  const printName = false;
+  if (printName) {
+    console.log(`${quad.labels} => ${candidate}`);
+  } else {
+    console.log(`${quad.labels} => ${hashes[minIndex].stars}`);
+  }
 });
