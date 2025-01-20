@@ -16,7 +16,10 @@ const load = () => {
 const createHashFromDatabase = (stars) => {
   return quadrilateral.create(stars)
     .map((quadrilateral) => {
-      const projectedQuadrilateral = to2D(quadrilateral);
+      const vectors = quadrilateral.stars.map((star) => {
+        return [star.x, star.y, star.z];
+      });
+      const projectedQuadrilateral = to2D(vectors);
       const hash = hashLib.calculate(projectedQuadrilateral);
       return {
         ...quadrilateral,
@@ -25,10 +28,7 @@ const createHashFromDatabase = (stars) => {
     });
 }
 
-const to2D = (quadrilateral) => {
-  const vectors = quadrilateral.stars.map((star) => {
-    return [star.x, star.y, star.z];
-  });
+const to2D = (vectors) => {
   const center = findCenter(vectors);
   return project(vectors, center);
 }
