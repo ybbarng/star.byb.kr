@@ -2,7 +2,7 @@ const math = require("mathjs");
 
 const projectToTangentPlane = (vectors) => {
   const center = findCenter(vectors);
-  const T = projectTransform(center);
+  const T = calculateProjectTransform(center);
   return vectors.map(vector => math.multiply(T, vector));
 }
 
@@ -13,7 +13,7 @@ const findCenter = (vectors) => {
   return math.divide(center, math.norm(center));
 }
 
-const projectTransform = (center) => {
+const calculateProjectTransform = (center) => {
   // center 벡터 정규화
   const cUnit = math.divide(center, math.norm(center));
 
@@ -34,3 +34,5 @@ const projectTransform = (center) => {
 }
 
 exports.projectToTangentPlane = projectToTangentPlane;
+exports.findCenter = findCenter;
+exports.calculateProjectTransform = calculateProjectTransform;
