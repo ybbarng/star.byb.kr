@@ -46,14 +46,8 @@ class CV {
    * Thanks to what we've implemented in the _dispatch, this will
    * return a promise with the processed image.
    */
-  testImageProcessing(payload) {
-    return this._dispatch({ msg: 'testImageProcessing', payload })
-  }
   findStars(payload) {
     return this._dispatch({ msg: 'findStars', payload })
-  }
-  findTriangles(payload) {
-    return this._dispatch({ msg: 'findTriangles', payload })
   }
 }
 

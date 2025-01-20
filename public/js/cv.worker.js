@@ -118,31 +118,6 @@ function findStars(cv, { msg, payload }) {
   postMessage({ msg, payload: stars })
 }
 
-// Delaunay Triangulation
-function findTriangles(cv, { msg, payload }) {
-  const {points, width, height} = payload;
-
-  // Create a Subdiv2D object for Delaunay triangulation
-  let rect = new cv.Rect(0, 0, width, height);
-  let subdiv = new cv.Subdiv2D(rect); // 여기서 TypeError: cv.Subdiv2D is not a constructor 가 발생해서 실행 불가능
-
-  // Insert points into Subdiv2D
-  points.forEach(point => subdiv.insert(new cv.Point(point[0], point[1])));
-
-  // Get the list of triangles
-  let triangleList = new cv.Mat();
-  subdiv.getTriangleList(triangleList);
-  const result = [];
-  for (let i = 0; i < triangleList.rows; i++) {
-    const pt = triangleList.data32F.subarray(i * 6, i * 6 + 6);
-    const p1 = {x: pt[0], y: pt[1]};
-    const p2 = {x: pt[2], y: pt[3]};
-    const p3 = {x: pt[4], y: pt[5]};
-    result.push([p1, p2, p3]);
-  }
-  postMessage({ msg, payload: result })
-}
-
 /**
  * This exists to capture all the events that are thrown out of the worker
  * into the worker. Without this, there would be no communication possible
@@ -161,8 +136,6 @@ onmessage = async function (e) {
       return testImageProcessing(await cv, e.data)
     case 'findStars':
       return findStars(await cv, e.data)
-    case 'findTriangles':
-      return findTriangles(await cv, e.data)
     default:
       break
   }

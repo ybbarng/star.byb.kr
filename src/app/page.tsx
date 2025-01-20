@@ -2,8 +2,7 @@
 
 import {ChangeEvent, useEffect, useRef, useState} from 'react'
 import cv from '../services/cv'
-import Delaunator from 'delaunator';
-import samples, {Sample} from "../services/samples"
+import samples from "../services/samples"
 
 /**
  * What we're going to render is:
@@ -57,10 +56,6 @@ export default function Page() {
       if (test) {
         return;
       }
-      const triangles = await findTriangles(context, stars)
-      console.log(`삼각형 수: ${triangles.length}`);
-      const quadrilaterals = await createQuadrilateralExtraction(context, triangles);
-      console.log(`사각형 수: ${quadrilaterals.length}`);
     } catch (error) {
       console.error(error);
     }
@@ -75,13 +70,6 @@ export default function Page() {
 
   async function loadImageToCanvas(context: CanvasRenderingContext2D, imageElement: HTMLImageElement) {
     context.drawImage(imageElement, 0, 0, selectedSample.width, selectedSample.height)
-  }
-
-  async function testImageProcessing(context: CanvasRenderingContext2D) {
-    const image = context.getImageData(0, 0, selectedSample.width, selectedSample.height)
-    // Processing image
-    const result = await cv.testImageProcessing(image);
-    context.putImageData(result.data.payload, 0, 0)
   }
 
   async function findStars(context: CanvasRenderingContext2D) {
@@ -112,158 +100,6 @@ export default function Page() {
       y: star.cy
     }));
   }
-
-  interface Point {
-    x: number;
-    y: number;
-  }
-  interface Triangle {
-    p1: Point;
-    p2: Point;
-    p3: Point;
-  }
-  interface Quadrilateral {
-    p1: Point;
-    p2: Point;
-    p3: Point;
-    p4: Point;
-  }
-  async function findTriangles(context: CanvasRenderingContext2D, stars: {x: number, y: number}[]) {
-    let triangles: Triangle[] = [];
-    const logic: "DELAUNAY_OPENCV" | "DELAUNAY_LIBRARY" | "HEURISTIC" = "HEURISTIC";
-    switch (logic) {
-      case "DELAUNAY_OPENCV":
-        triangles = await findDelaunayTrianglesByOpenCv(stars);
-        break;
-      case "DELAUNAY_LIBRARY":
-        triangles = await findDelaunayTrianglesByLibrary(stars);
-        break;
-      case "HEURISTIC":
-        triangles = await findTrianglesByHeuristic(stars);
-        break;
-    }
-
-    // Draw triangles
-    context.strokeStyle = 'blue';
-    context.lineWidth = 1;
-
-    triangles.forEach(({p1, p2, p3}: {p1: Point, p2: Point, p3: Point}) => {
-      context.beginPath();
-      context.moveTo(p1.x, p1.y);
-      context.lineTo(p2.x, p2.y);
-      context.lineTo(p3.x, p3.y);
-      context.closePath();
-      context.stroke();
-    })
-    return triangles;
-  }
-
-  async function findTrianglesByHeuristic(stars: Point[]) {
-    const WEIGHT = 20; // 높을수록 더 적게 삼각형이 생김
-    const added = new Set();
-    const triangles: Triangle[] = [];
-
-    for (let i = 0; i < stars.length; i = i + 10) {
-      const subset = stars.slice(0, i + 10);
-      for (let si1 = 0; si1 < subset.length - 2; si1++) {
-        for (let si2 = si1; si2 < subset.length - 1; si2++) {
-          for (let si3 = si2; si3 < subset.length; si3++) {
-            if (Math.random() < Math.pow(WEIGHT, -(i / 10))) {
-              const triangle = {p1: subset[si1], p2: subset[si2], p3: subset[si3]};
-              const key = `${si1}-${si2}-${si3}`;
-              console.log(key);
-              if (added.has(key)) {
-                continue;
-              }
-              added.add(key);
-              triangles.push(triangle);
-            }
-          }
-        }
-      }
-    }
-    return triangles;
-  }
-
-  async function findDelaunayTrianglesByOpenCv(points: Point[]) {
-    const result = await cv.findTriangles({
-      points,
-      width: selectedSample.width,
-      height: selectedSample.height
-    });
-    return result.data.payload as Triangle[];
-  }
-
-  async function findDelaunayTrianglesByLibrary(points: Point[]) {
-    const flattenedPoints = flattenPoints(points);
-    const delaunay = new Delaunator(flattenedPoints);
-    const triangles = delaunay.triangles;
-    const result = [];
-    for (let i = 0; i < triangles.length; i += 3) {
-        const p1 = points[triangles[i]];
-        const p2 = points[triangles[i + 1]];
-        const p3 = points[triangles[i + 2]];
-        result.push({p1, p2, p3});
-    }
-    return result;
-  }
-
-  async function createQuadrilateralExtraction(context: CanvasRenderingContext2D, triangles: Triangle[]) {
-    // Store edges and their associated triangles
-    const edges: {[key: string]: Triangle[]} = {};
-    triangles.forEach((triangle) => {
-      const {p1, p2, p3} = triangle;
-      [[p1, p2], [p2, p3], [p3, p1]].forEach((points) => {
-        const edgeKey = getEdgeKey(points[0], points[1]);
-        if (!edges[edgeKey]) {
-          edges[edgeKey] = [];
-        }
-        edges[edgeKey].push(triangle);
-      })
-    });
-    const result: Quadrilateral[] = [];
-    for (const edgeKey in edges) {
-      if (edges[edgeKey].length !== 2) {
-        continue;
-      }
-      const tri1 = edges[edgeKey][0];
-      const tri2 = edges[edgeKey][1];
-      const quad = [...new Set([tri1.p1, tri1.p2, tri1.p3, tri2.p1, tri2.p2, tri2.p3])];
-      if (quad.length === 4) {
-        result.push({
-          p1: quad[0],
-          p2: quad[1],
-          p3: quad[2],
-          p4: quad[3],
-        })
-      }
-    }
-
-    // Draw triangles
-    context.strokeStyle = 'green';
-    context.lineWidth = 1;
-
-    result.forEach(({p1, p2, p3, p4}: Quadrilateral) => {
-      context.beginPath();
-      context.moveTo(p1.x, p1.y);
-      context.lineTo(p2.x, p2.y);
-      context.lineTo(p3.x, p3.y);
-      context.lineTo(p4.x, p4.y);
-      context.closePath();
-      context.stroke();
-    })
-    return result;
-  }
-
-  function flattenPoints(points: Point[]) {
-    return points.flatMap(point => [point.x, point.y]);
-  }
-
-  function getEdgeKey(p1: Point, p2: Point) {
-    const edge = [p1, p2].sort((a, b) => a.x - b.x || a.y - b.y);
-    return `${edge[0].x},${edge[0].y}-${edge[1].x},${edge[1].y}`;
-  }
-
 
   const aspectRatio = selectedSample.width / selectedSample.height;
   const buttonText = getButtonText(isOpenCvReady, isProcessing);
