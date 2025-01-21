@@ -7,3 +7,8 @@ export interface Star {
   RA: string; // "00h 05m 42.0s"
   V: string; // "5.51"
 }
+
+export interface Quadrilateral<T> {
+  id: string;
+  stars: [T, T, T, T];
+}
