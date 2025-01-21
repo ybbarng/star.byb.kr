@@ -2,9 +2,9 @@ import fs from "fs";
 
 type Module = "database";
 
-const ROOT = "../../../";
-const INPUT_DIR = "data/";
-const OUTPUT_DIR = "build/";
+const ROOT = ".";
+const INPUT_DIR = "data";
+const OUTPUT_DIR = "build";
 
 export const loadJson = (module: Module, fileName: string) => {
   const jsonFile = fs.readFileSync(
