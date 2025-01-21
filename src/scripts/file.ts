@@ -16,8 +16,13 @@ export const loadJson = (module: Module, fileName: string) => {
 };
 
 export const saveJson = (module: Module, fileName: string, payload: object) => {
-  fs.writeFileSync(
-    `${ROOT}/${OUTPUT_DIR}/${module}/${fileName}`,
-    JSON.stringify(payload),
-  );
+  const outputDirPath = `${ROOT}/${OUTPUT_DIR}/${module}`;
+
+  // 디렉토리가 없으면 생성
+  if (!fs.existsSync(outputDirPath)) {
+    fs.mkdirSync(outputDirPath, { recursive: true });
+    console.log(`디렉토리 생성 완료: ${outputDirPath}`);
+  }
+
+  fs.writeFileSync(`${outputDirPath}/${fileName}`, JSON.stringify(payload));
 };
