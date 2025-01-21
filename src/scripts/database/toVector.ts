@@ -1,19 +1,20 @@
-const run = () => {
-  let stars = load();
-  stars = toVectors(stars);
-  save(stars);
-};
+import { Star } from "./types";
+import * as file from "@/scripts/file";
 
-const load = () => {
-  let stars = require("../build/reduced-database.json");
+const run = () => {
+  let stars = file.loadJson("build/database", "reduced-database.json");
   console.log(
     `로드한 카탈로그에는 총 ${stars.length} 개의 별 정보가 있습니다.`,
   );
-
-  return stars;
+  stars = toVectors(stars);
+  file.save(
+    "build/database",
+    "vectors-database.json",
+    JSON.stringify(stars, null, 2),
+  );
 };
 
-const toVectors = (stars) => {
+const toVectors = (stars: Star[]) => {
   stars = stars.map((star) => ({
     ...star,
     ...convertTo3DCoordinates(star.Dec, star.RA),
@@ -22,7 +23,7 @@ const toVectors = (stars) => {
   return stars;
 };
 
-function convertTo3DCoordinates(dec, ra) {
+function convertTo3DCoordinates(dec: string, ra: string) {
   // 적위(Dec)를 라디안으로 변환
   const decDegrees = parseDMS(dec);
   const decRad = (decDegrees * Math.PI) / 180;
@@ -39,7 +40,7 @@ function convertTo3DCoordinates(dec, ra) {
   return { x, y, z };
 }
 
-function parseDMS(dms) {
+function parseDMS(dms: string) {
   // 도, 분, 초 형태를 정규식으로 분리
   const regex = /([+-]?\d+)°\s*(\d+)′\s*(\d+\.?\d*)″/;
   const match = dms.match(regex);
@@ -62,7 +63,7 @@ function parseDMS(dms) {
   return degrees - rest;
 }
 
-function parseHMS(hms) {
+function parseHMS(hms: string) {
   // 시, 분, 초 형태를 정규식으로 분리
   const regex = /(\d+)h\s*(\d+)m\s*(\d+\.?\d*)s/;
   const match = hms.match(regex);
@@ -78,24 +79,5 @@ function parseHMS(hms) {
   // 시 단위를 도 단위로 변환 (1시간 = 15도)
   return (hours + minutes / 60 + seconds / 3600) * 15;
 }
-
-const save = (stars) => {
-  const fs = require("fs");
-  const path = require("path");
-  const outputDir = "build";
-  const outputName = "vectors-database.json";
-  const outputDirPath = path.join(__dirname, outputDir);
-  const outputFilePath = path.join(outputDirPath, outputName);
-
-  // 디렉토리가 없으면 생성
-  if (!fs.existsSync(outputDirPath)) {
-    fs.mkdirSync(outputDirPath, { recursive: true });
-    console.log(`디렉토리 생성 완료: ${outputDirPath}`);
-  }
-
-  fs.writeFileSync(outputFilePath, JSON.stringify(stars, null, 2), "utf8");
-
-  console.log(`파일이 성공적으로 저장되었습니다: ${outputFilePath}`);
-};
 
 run();
