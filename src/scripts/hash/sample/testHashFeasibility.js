@@ -10,7 +10,7 @@ const run = () => {
 };
 
 const loadDatabase = () => {
-  let stars = require("./build/hashed-sample-database.json");
+  let stars = require("../../../../build/hash/sample/hashed-sample-database.json");
   console.log(
     `로드한 카탈로그에는 총 ${stars.length} 개의 별 정보가 있습니다.`,
   );

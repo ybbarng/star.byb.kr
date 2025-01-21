@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import * as THREE from "three";
+import photo from "../../../../../build/hash/sample/hashed-photo.json";
+import database from "../../../../../build/hash/sample/hashed-sample-database.json";
 import databaseFull from "@hash/build/hashed-database.json";
-import photo from "@hash/sample/build/hashed-photo.json";
-import database from "@hash/sample/build/hashed-sample-database.json";
 
 interface Datum {
   hash: number[];

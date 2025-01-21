@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import samplePhoto from "../../../../data/hash/sample/sample-photo.json";
 import { useThreeScene } from "@/app/hash/sample/hooks/useThreeScene";
 import { useThreeStars } from "@/app/hash/sample/hooks/useThreeStars";
 import samples from "@/services/samples";
-import samplePhoto from "@hash/sample/data/sample-photo.json";
 import "./style.css";
 
 /**
