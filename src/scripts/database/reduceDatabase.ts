@@ -7,7 +7,7 @@ const run = ({ minBright = 10 }: { minBright: number }) => {
     `로드한 카탈로그에는 총 ${stars.length} 개의 별 정보가 있습니다.`,
   );
   stars = reduce(stars, minBright);
-  file.saveJson(
+  file.save(
     "build/database",
     "reduced-database.json",
     JSON.stringify(stars, null, 2),

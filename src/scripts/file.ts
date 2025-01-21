@@ -12,7 +12,7 @@ export const loadJson = (path: Path, fileName: string) => {
   return JSON.parse(jsonFile);
 };
 
-export const saveJson = (path: Path, fileName: string, payload: string) => {
+export const save = (path: Path, fileName: string, payload: string) => {
   const outputDirPath = `${ROOT}/${path}`;
   const outputFilePath = `${outputDirPath}/${fileName}`;
 
