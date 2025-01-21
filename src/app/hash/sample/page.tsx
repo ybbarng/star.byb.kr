@@ -179,11 +179,11 @@ export default function Page() {
         />
         <div
           className="w-full grow"
-          width={photo.width}
-          height={photo.height}
           ref={mountRef}
           style={{
             aspectRatio: aspectRatio,
+            width: photo.width,
+            height: photo.height,
           }}
         ></div>
       </div>
