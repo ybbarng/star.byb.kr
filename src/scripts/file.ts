@@ -2,6 +2,8 @@ import fs from "fs";
 
 type Module = "database";
 
+// TODO: 프로젝트 루트를 정확하게 찾도록 변경하기
+// 지금은 항상 프로젝트 루트에서 스크립트를 실행한다고 가정
 const ROOT = ".";
 const INPUT_DIR = "data";
 const OUTPUT_DIR = "build";
