@@ -2,21 +2,25 @@ const run = () => {
   let stars = load();
   stars = toVectors(stars);
   save(stars);
-}
+};
 
 const load = () => {
-  let stars = require('./build/reduced-database.json');
-  console.log(`로드한 카탈로그에는 총 ${stars.length} 개의 별 정보가 있습니다.`);
+  let stars = require("./build/reduced-database.json");
+  console.log(
+    `로드한 카탈로그에는 총 ${stars.length} 개의 별 정보가 있습니다.`,
+  );
+
   return stars;
-}
+};
 
 const toVectors = (stars) => {
-  stars = stars.map(star => (
-    {...star,
-      ...convertTo3DCoordinates(star.Dec, star.RA)}
-  ))
+  stars = stars.map((star) => ({
+    ...star,
+    ...convertTo3DCoordinates(star.Dec, star.RA),
+  }));
+
   return stars;
-}
+};
 
 function convertTo3DCoordinates(dec, ra) {
   // 적위(Dec)를 라디안으로 변환
@@ -49,10 +53,12 @@ function parseDMS(dms) {
   const seconds = parseFloat(match[3]);
 
   const rest = minutes / 60 + seconds / 3600;
+
   // 부호를 유지하며 도 단위로 변환
   if (degrees > 0) {
     return degrees + rest;
   }
+
   return degrees - rest;
 }
 
@@ -74,8 +80,8 @@ function parseHMS(hms) {
 }
 
 const save = (stars) => {
-  const fs = require('fs');
-  const path = require('path');
+  const fs = require("fs");
+  const path = require("path");
   const outputDir = "build";
   const outputName = "vectors-database.json";
   const outputDirPath = path.join(__dirname, outputDir);
@@ -87,10 +93,9 @@ const save = (stars) => {
     console.log(`디렉토리 생성 완료: ${outputDirPath}`);
   }
 
-  fs.writeFileSync(outputFilePath, JSON.stringify(stars, null, 2), 'utf8');
+  fs.writeFileSync(outputFilePath, JSON.stringify(stars, null, 2), "utf8");
 
   console.log(`파일이 성공적으로 저장되었습니다: ${outputFilePath}`);
-}
-
+};
 
 run();

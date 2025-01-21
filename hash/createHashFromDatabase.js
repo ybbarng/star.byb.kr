@@ -1,31 +1,39 @@
-const quadrilateral = require("./quadrilateral");
-const hashLib = require("./hash");
+const fs = require("fs");
+const path = require("path");
 const cell = require("./cell");
-const fs = require('fs');
-const path = require('path');
-let stars = require('./data/vectors-database.json');
+let stars = require("./data/vectors-database.json");
+const hashLib = require("./hash");
+const quadrilateral = require("./quadrilateral");
 
 const run = () => {
-  console.log(`로드한 카탈로그에는 총 ${stars.length} 개의 별 정보가 있습니다.`);
+  console.log(
+    `로드한 카탈로그에는 총 ${stars.length} 개의 별 정보가 있습니다.`,
+  );
   indexes = createHashFromDatabase(stars);
   save(indexes);
-}
+};
 
 const createHashFromDatabase = (stars) => {
   const cells = cell.split(stars);
-  return cells.map((cell, i) => {
-    console.log(`${i}번째 Cell에 대한 사각형을 생성합니다. 영역 내 별의 갯수는 ${cell.length}개 입니다.`);
-    return quadrilateral.create(cell)
-      .map((quadrilateral) => {
+
+  return cells
+    .map((cell, i) => {
+      console.log(
+        `${i}번째 Cell에 대한 사각형을 생성합니다. 영역 내 별의 갯수는 ${cell.length}개 입니다.`,
+      );
+
+      return quadrilateral.create(cell).map((quadrilateral) => {
         const projectedQuadrilateral = to2D(quadrilateral);
         const hash = hashLib.calculate(projectedQuadrilateral);
+
         return {
           stars: hash.labels,
           hash: hash.hash,
-        }
+        };
       });
-  }).flat();
-}
+    })
+    .flat();
+};
 
 const to2D = (quadrilateral) => {
   const vectors = quadrilateral.stars.map((star) => {
@@ -34,22 +42,28 @@ const to2D = (quadrilateral) => {
   const center = findCenter(vectors);
   const projected = project(vectors, center);
   const hrs = quadrilateral.stars.map((star) => star.HR);
+
   return projected.map((projected, i) => ({
     label: hrs[i],
     vector: projected,
   }));
-}
+};
 
 const findCenter = (vectors) => {
-  const sum = vectors.reduce((acc, vec) => {
-    acc.x += vec[0];
-    acc.y += vec[1];
-    acc.z += vec[2];
-    return acc;
-  }, { x: 0, y: 0, z: 0 });
+  const sum = vectors.reduce(
+    (acc, vec) => {
+      acc.x += vec[0];
+      acc.y += vec[1];
+      acc.z += vec[2];
+
+      return acc;
+    },
+    { x: 0, y: 0, z: 0 },
+  );
   const norm = Math.sqrt(sum.x ** 2 + sum.y ** 2 + sum.z ** 2);
+
   return [sum.x / norm, sum.y / norm, sum.z / norm];
-}
+};
 
 const project = (points, center) => {
   // center 벡터 정규화
@@ -57,9 +71,10 @@ const project = (points, center) => {
   const cUnit = [center[0] / cNorm, center[1] / cNorm, center[2] / cNorm];
 
   // u 계산 (c와 직교하는 벡터 선택)
-  const arbitrary = cUnit[0] !== 0 || cUnit[2] !== 0
-    ? [ -cUnit[2], 0, cUnit[1] ]
-    : [ 0, -cUnit[2], cUnit[1] ]; // 특수 케이스
+  const arbitrary =
+    cUnit[0] !== 0 || cUnit[2] !== 0
+      ? [-cUnit[2], 0, cUnit[1]]
+      : [0, -cUnit[2], cUnit[1]]; // 특수 케이스
   let u = crossProduct(cUnit, arbitrary);
   u = normalize(u);
 
@@ -67,9 +82,10 @@ const project = (points, center) => {
   const v = crossProduct(cUnit, u);
 
   // 각 점 투영 후 평면 좌표 계산
-  return points.map(point => {
+  return points.map((point) => {
     // p를 평면에 투영
-    const dotProduct = point[0] * cUnit[0] + point[1] * cUnit[1] + point[2] * cUnit[2];
+    const dotProduct =
+      point[0] * cUnit[0] + point[1] * cUnit[1] + point[2] * cUnit[2];
     const pProj = [
       point[0] - dotProduct * cUnit[0],
       point[1] - dotProduct * cUnit[1],
@@ -82,7 +98,7 @@ const project = (points, center) => {
       pProj[0] * v[0] + pProj[1] * v[1] + pProj[2] * v[2],
     ];
   });
-}
+};
 
 function crossProduct(a, b) {
   return [
@@ -94,11 +110,8 @@ function crossProduct(a, b) {
 
 function normalize(vec) {
   const norm = Math.sqrt(vec[0] ** 2 + vec[1] ** 2 + vec[2] ** 2);
-  return [
-    vec[0] / norm,
-    vec[1] / norm,
-    vec[2] / norm,
-  ]
+
+  return [vec[0] / norm, vec[1] / norm, vec[2] / norm];
 }
 
 const save = (stars) => {
@@ -114,12 +127,11 @@ const save = (stars) => {
   }
 
   // 바로 사용하면 데이터가 너무 커서 RangeError: Invalid string length 에러가 발생함.
-  const result = "[" + stars.map(el => JSON.stringify(el)).join(",") + "]";
+  const result = "[" + stars.map((el) => JSON.stringify(el)).join(",") + "]";
 
-  fs.writeFileSync(outputFilePath, result, 'utf8');
+  fs.writeFileSync(outputFilePath, result, "utf8");
 
   console.log(`파일이 성공적으로 저장되었습니다: ${outputFilePath}`);
-}
-
+};
 
 run();

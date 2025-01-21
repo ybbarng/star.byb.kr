@@ -1,14 +1,8 @@
 "use client";
 
-import {ChangeEvent, useEffect, useRef, useState} from 'react'
-import cv from '../services/cv'
-
-
-
-
-
-
-import samples from "../services/samples"
+import { ChangeEvent, useEffect, useRef, useState } from "react";
+import cv from "@/services/cv";
+import samples from "@/services/samples";
 
 /**
  * What we're going to render is:
@@ -22,20 +16,21 @@ import samples from "../services/samples"
  * show it to the user.
  */
 export default function Page() {
-  const [isOpenCvReady, setOpenCvReady] = useState(false)
-  const [isProcessing, setIsProcessing] = useState(false)
-  const [selectedSampleId, setSelectedSampleId] = useState(13)
-  const imageElement = useRef<HTMLImageElement>(null)
-  const canvasElement = useRef<HTMLCanvasElement>(null)
+  const [isOpenCvReady, setOpenCvReady] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [selectedSampleId, setSelectedSampleId] = useState(13);
+  const imageElement = useRef<HTMLImageElement>(null);
+  const canvasElement = useRef<HTMLCanvasElement>(null);
   const selectedSample = samples[selectedSampleId];
 
   useEffect(() => {
     const init = async () => {
       await cv.load();
       setOpenCvReady(true);
-    }
+    };
+
     init();
-  }, [setOpenCvReady])
+  }, [setOpenCvReady]);
 
   /**
    * In the onClick event we'll capture a frame within
@@ -44,14 +39,19 @@ export default function Page() {
   async function run() {
     if (!imageElement.current || !canvasElement.current) {
       console.log("Can't find elements");
+
       return;
     }
-    const context = canvasElement.current.getContext('2d')
+
+    const context = canvasElement.current.getContext("2d");
+
     if (!context) {
       console.log("Can't find context of canvas.");
+
       return;
     }
-    setIsProcessing(true)
+
+    setIsProcessing(true);
 
     try {
       await loadImageToCanvas(context, imageElement.current);
@@ -59,14 +59,14 @@ export default function Page() {
       const stars = await findStars(context);
       console.log(`별 수: ${stars.length}`);
       const test = true;
+
       if (test) {
         return;
       }
     } catch (error) {
       console.error(error);
-    }
-    finally {
-      setIsProcessing(false)
+    } finally {
+      setIsProcessing(false);
     }
   }
 
@@ -74,36 +74,55 @@ export default function Page() {
     setSelectedSampleId(parseInt(event.target.value, 10));
   }
 
-  async function loadImageToCanvas(context: CanvasRenderingContext2D, imageElement: HTMLImageElement) {
-    context.drawImage(imageElement, 0, 0, selectedSample.width, selectedSample.height)
+  async function loadImageToCanvas(
+    context: CanvasRenderingContext2D,
+    imageElement: HTMLImageElement,
+  ) {
+    context.drawImage(
+      imageElement,
+      0,
+      0,
+      selectedSample.width,
+      selectedSample.height,
+    );
   }
 
   async function findStars(context: CanvasRenderingContext2D) {
-    const image = context.getImageData(0, 0, selectedSample.width, selectedSample.height)
+    const image = context.getImageData(
+      0,
+      0,
+      selectedSample.width,
+      selectedSample.height,
+    );
     // Processing image
     const result = await cv.findStars(image);
-    let stars: {cx: number, cy: number, radius: number}[] = result.data.payload;
-    stars =  stars.sort((a, b) => b.radius - a.radius);
+    let stars: { cx: number; cy: number; radius: number }[] =
+      result.data.payload;
+    stars = stars.sort((a, b) => b.radius - a.radius);
     stars = stars.slice(0, 100);
 
-    stars.forEach(({cx, cy, radius}) => {
+    stars.forEach(({ cx, cy, radius }) => {
       // Render the stars to the canvas
       context.beginPath();
       context.arc(cx, cy, radius, 0, 2 * Math.PI);
-      context.strokeStyle = 'red';
+      context.strokeStyle = "red";
       context.lineWidth = 2;
       context.stroke();
 
       if (radius > 1) {
         context.font = "bold 20px Arial";
         context.fillStyle = "#ff0000";
-        context.fillText(`(${cx.toFixed(2)}, ${cy.toFixed(2)})`, cx + 10, cy + 10);
+        context.fillText(
+          `(${cx.toFixed(2)}, ${cy.toFixed(2)})`,
+          cx + 10,
+          cy + 10,
+        );
       }
-    })
+    });
 
     return stars.map((star) => ({
       x: star.cx,
-      y: star.cy
+      y: star.cy,
     }));
   }
 
@@ -111,46 +130,63 @@ export default function Page() {
   const buttonText = getButtonText(isOpenCvReady, isProcessing);
 
   return (
-    <div className="flex flex-col items-start p-4 gap-5">
-      <div className="flex flex-row gap-4 items-end">
-        <form className="max-w-sm mx-auto">
-          <label htmlFor="samples" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">샘플을 선택하세요</label>
-          <select id="samples"
-                  className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                  onChange={handleSelectChange}
-                  value={selectedSampleId}
+    <div className="flex flex-col items-start gap-5 p-4">
+      <div className="flex flex-row items-end gap-4">
+        <form className="mx-auto max-w-sm">
+          <label
+            htmlFor="samples"
+            className="mb-2 block text-sm font-medium text-gray-900 dark:text-white"
           >
-            {
-              samples.map((sample, i) => (
-                <option key={i} value={i}>{sample.src.split("/").pop()}</option>
-              ))
-            }
+            샘플을 선택하세요
+          </label>
+          <select
+            id="samples"
+            className="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"
+            onChange={handleSelectChange}
+            value={selectedSampleId}
+          >
+            {samples.map((sample, i) => (
+              <option key={i} value={i}>
+                {sample.src.split("/").pop()}
+              </option>
+            ))}
           </select>
         </form>
         <button
           disabled={!isOpenCvReady || isProcessing}
-          className="bg-blue-500 rounded-lg w-40 h-10 font-bold"
+          className="h-10 w-40 rounded-lg bg-blue-500 font-bold"
           onClick={run}
         >
           {buttonText}
         </button>
       </div>
       <div className="columns-2">
-        <img src={selectedSample.src} className="w-full" ref={imageElement} style={{
-          aspectRatio: aspectRatio,
-        }}/>
+        <img
+          src={selectedSample.src}
+          className="w-full"
+          ref={imageElement}
+          style={{
+            aspectRatio: aspectRatio,
+          }}
+        />
         <canvas
-          className="grow w-full" ref={canvasElement} width={selectedSample.width} height={selectedSample.height} style={{
-          aspectRatio: aspectRatio,
-        }}/>
+          className="w-full grow"
+          ref={canvasElement}
+          width={selectedSample.width}
+          height={selectedSample.height}
+          style={{
+            aspectRatio: aspectRatio,
+          }}
+        />
       </div>
     </div>
-  )
+  );
 }
 
 function getButtonText(isOpenCvReady: boolean, isProcessing: boolean) {
   if (!isOpenCvReady) {
     return "준비 중...";
   }
+
   return isProcessing ? "별 찾는 중..." : "별 찾기";
 }

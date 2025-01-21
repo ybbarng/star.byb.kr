@@ -1,7 +1,8 @@
 export function convertTo3DCoordinates(dec: string, ra: string) {
   if (dec.trim().length < 1 || ra.trim().length < 1) {
-    return {x: 0, y: 0, z: 0}
+    return { x: 0, y: 0, z: 0 };
   }
+
   // 적위(Dec)를 라디안으로 변환
   const decDegrees = parseDMS(dec);
   const decRad = (decDegrees * Math.PI) / 180;
@@ -33,10 +34,12 @@ function parseDMS(dms: string) {
   const seconds = parseFloat(match[3]);
 
   const rest = minutes / 60 + seconds / 3600;
+
   // 부호를 유지하며 도 단위로 변환
   if (degrees > 0) {
     return degrees + rest;
   }
+
   return degrees - rest;
 }
 

@@ -1,4 +1,4 @@
-import {useEffect, useState} from "react";
+import { useEffect, useState } from "react";
 import * as THREE from "three";
 import database from "@database/build/vectors-database.json";
 
@@ -6,7 +6,7 @@ export const useThreeStars = () => {
   const [stars, setStars] = useState<THREE.Points | null>(null);
 
   useEffect(() => {
-    const color = new THREE.Color().setHex( 0xFFFFFF );
+    const color = new THREE.Color().setHex(0xffffff);
     const positions: number[] = [];
     const colors: number[] = [];
     const sizes: number[] = [];
@@ -19,25 +19,35 @@ export const useThreeStars = () => {
       const size = (1 - (star.V + 2) / 12) * 2;
       colors.push(color.r, color.g, color.b, size);
       sizes.push(size);
-    })
+    });
     const starsGeometry = new THREE.BufferGeometry();
-    starsGeometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-    starsGeometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 4));
-    starsGeometry.setAttribute('size', new THREE.Float32BufferAttribute(sizes, 1));
+    starsGeometry.setAttribute(
+      "position",
+      new THREE.Float32BufferAttribute(positions, 3),
+    );
+    starsGeometry.setAttribute(
+      "color",
+      new THREE.Float32BufferAttribute(colors, 4),
+    );
+    starsGeometry.setAttribute(
+      "size",
+      new THREE.Float32BufferAttribute(sizes, 1),
+    );
 
     const starsMaterial = new THREE.ShaderMaterial({
       vertexShader: vertexShader(),
       fragmentShader: fragmentShader(),
       transparent: true,
-    })
+    });
 
     const point = new THREE.Points(starsGeometry, starsMaterial);
     setStars(point);
   }, []);
+
   return {
     stars,
-  }
-}
+  };
+};
 
 function vertexShader() {
   return `
@@ -52,7 +62,6 @@ function vertexShader() {
     }
   `;
 }
-
 
 function fragmentShader() {
   return `

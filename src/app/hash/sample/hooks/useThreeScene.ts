@@ -1,7 +1,7 @@
-import {RefObject, useEffect, useState} from "react";
+import { RefObject, useEffect, useState } from "react";
 import * as THREE from "three";
-import {OrbitControls} from "three/examples/jsm/controls/OrbitControls";
-import {CSS2DRenderer} from "three/examples/jsm/renderers/CSS2DRenderer";
+import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
+import { CSS2DRenderer } from "three/examples/jsm/renderers/CSS2DRenderer";
 
 export const useThreeScene = (divRef: RefObject<HTMLDivElement | null>) => {
   const [scene, setScene] = useState<THREE.Scene | null>(null);
@@ -10,6 +10,7 @@ export const useThreeScene = (divRef: RefObject<HTMLDivElement | null>) => {
     if (!divRef.current) {
       return;
     }
+
     const width = divRef.current.clientWidth;
     const height = divRef.current.clientHeight;
     // 1. 씬, 카메라, 렌더러 설정
@@ -21,25 +22,26 @@ export const useThreeScene = (divRef: RefObject<HTMLDivElement | null>) => {
 
     const labelRenderer = new CSS2DRenderer();
     labelRenderer.setSize(width, height);
-    labelRenderer.domElement.style.position = 'absolute';
-    labelRenderer.domElement.style.top = '0px';
-    labelRenderer.domElement.style.pointerEvents = 'none';
+    labelRenderer.domElement.style.position = "absolute";
+    labelRenderer.domElement.style.top = "0px";
+    labelRenderer.domElement.style.pointerEvents = "none";
     divRef.current.appendChild(labelRenderer.domElement);
 
     // 카메라 위치 설정
     camera.position.z = 150;
 
-    const controls = new OrbitControls(camera, renderer.domElement)
-    controls.enableDamping = true
-    controls.zoomSpeed = 4
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.zoomSpeed = 4;
 
-    window.addEventListener('resize', onWindowResize, false)
+    window.addEventListener("resize", onWindowResize, false);
+
     function onWindowResize() {
-      camera.aspect = width / height
-      camera.updateProjectionMatrix()
-      renderer.setSize(width, height)
+      camera.aspect = width / height;
+      camera.updateProjectionMatrix();
+      renderer.setSize(width, height);
       labelRenderer.setSize(width, height);
-      render()
+      render();
     }
 
     // 애니메이션 함수
@@ -54,16 +56,17 @@ export const useThreeScene = (divRef: RefObject<HTMLDivElement | null>) => {
 
     function render() {
       labelRenderer.render(scene, camera);
-      renderer.render(scene, camera)
+      renderer.render(scene, camera);
     }
 
     // 리소스 정리
     return () => {
       renderer.dispose();
-      window.removeEventListener('resize', onWindowResize);
+      window.removeEventListener("resize", onWindowResize);
     };
   }, [divRef]);
+
   return {
     scene,
-  }
-}
+  };
+};

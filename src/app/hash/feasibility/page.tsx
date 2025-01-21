@@ -1,7 +1,7 @@
 "use client";
 
 import Graph from "@/app/hash/feasibility/components/Graph";
-import {GraphType} from "@/app/hash/feasibility/hooks/useThreeData";
+import { GraphType } from "@/app/hash/feasibility/hooks/useThreeData";
 
 /**
  * What we're going to render is:
@@ -15,13 +15,12 @@ import {GraphType} from "@/app/hash/feasibility/hooks/useThreeData";
  * show it to the user.
  */
 export default function Page() {
-
   return (
-    <div className="flex flex-col items-start p-4 gap-5">
+    <div className="flex flex-col items-start gap-5 p-4">
       <div className="columns-2">
         <Graph graphType={GraphType.XYZ} />
         <Graph graphType={GraphType.YZX} />
       </div>
     </div>
-  )
+  );
 }
