@@ -15,7 +15,7 @@ export const loadJson = (module: Module, fileName: string) => {
   return JSON.parse(jsonFile);
 };
 
-export const saveJson = (module: Module, fileName: string, payload: object) => {
+export const saveJson = (module: Module, fileName: string, payload: string) => {
   const outputDirPath = `${ROOT}/${OUTPUT_DIR}/${module}`;
   const outputFilePath = `${outputDirPath}/${fileName}`;
 
@@ -25,6 +25,6 @@ export const saveJson = (module: Module, fileName: string, payload: object) => {
     console.log(`디렉토리 생성 완료: ${outputDirPath}`);
   }
 
-  fs.writeFileSync(`${outputDirPath}/${fileName}`, JSON.stringify(payload));
+  fs.writeFileSync(`${outputDirPath}/${fileName}`, payload, "utf8");
   console.log(`파일이 성공적으로 저장되었습니다: ${outputFilePath}`);
 };
