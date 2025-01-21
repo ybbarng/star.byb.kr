@@ -17,6 +17,7 @@ export const loadJson = (module: Module, fileName: string) => {
 
 export const saveJson = (module: Module, fileName: string, payload: object) => {
   const outputDirPath = `${ROOT}/${OUTPUT_DIR}/${module}`;
+  const outputFilePath = `${outputDirPath}/${fileName}`;
 
   // 디렉토리가 없으면 생성
   if (!fs.existsSync(outputDirPath)) {
@@ -25,4 +26,5 @@ export const saveJson = (module: Module, fileName: string, payload: object) => {
   }
 
   fs.writeFileSync(`${outputDirPath}/${fileName}`, JSON.stringify(payload));
+  console.log(`파일이 성공적으로 저장되었습니다: ${outputFilePath}`);
 };
