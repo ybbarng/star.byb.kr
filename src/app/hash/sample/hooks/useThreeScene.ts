@@ -1,7 +1,7 @@
 import { RefObject, useEffect, useState } from "react";
 import * as THREE from "three";
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
-import { CSS2DRenderer } from "three/examples/jsm/renderers/CSS2DRenderer";
+import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+import { CSS2DRenderer } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 
 export const useThreeScene = (divRef: RefObject<HTMLDivElement | null>) => {
   const [scene, setScene] = useState<THREE.Scene | null>(null);
