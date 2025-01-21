@@ -1,5 +1,5 @@
-import hashLib from "./hash";
-import { create as createQuadrilateral } from "./quadrilateral";
+import * as hashLib from "./hash";
+import * as quadrilateral from "./quadrilateral";
 import * as file from "@/scripts/file";
 import { Quadrilateral } from "@/scripts/hash/types";
 
@@ -17,16 +17,16 @@ const run = () => {
 type PhotoStar = [number, number, number];
 
 const createHashFromPhoto = (stars: PhotoStar[]) => {
-  return createQuadrilateral<PhotoStar>(stars).map(
-    (quadrilateral: Quadrilateral<PhotoStar>) => {
+  return quadrilateral
+    .create<PhotoStar>(stars)
+    .map((quadrilateral: Quadrilateral<PhotoStar>) => {
       const hash = hashLib.calculate(quadrilateral.stars);
 
       return {
         ...quadrilateral,
         hash,
       };
-    },
-  );
+    });
 };
 
 run();
