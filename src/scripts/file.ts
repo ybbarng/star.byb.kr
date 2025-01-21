@@ -1,24 +1,19 @@
 import fs from "fs";
 
-type Module = "database";
+type Path = "data/database" | "build/database";
 
 // TODO: 프로젝트 루트를 정확하게 찾도록 변경하기
 // 지금은 항상 프로젝트 루트에서 스크립트를 실행한다고 가정
 const ROOT = ".";
-const INPUT_DIR = "data";
-const OUTPUT_DIR = "build";
 
-export const loadJson = (module: Module, fileName: string) => {
-  const jsonFile = fs.readFileSync(
-    `${ROOT}/${INPUT_DIR}/${module}/${fileName}`,
-    "utf8",
-  );
+export const loadJson = (path: Path, fileName: string) => {
+  const jsonFile = fs.readFileSync(`${ROOT}/${path}/${fileName}`, "utf8");
 
   return JSON.parse(jsonFile);
 };
 
-export const saveJson = (module: Module, fileName: string, payload: string) => {
-  const outputDirPath = `${ROOT}/${OUTPUT_DIR}/${module}`;
+export const saveJson = (path: Path, fileName: string, payload: string) => {
+  const outputDirPath = `${ROOT}/${path}`;
   const outputFilePath = `${outputDirPath}/${fileName}`;
 
   // 디렉토리가 없으면 생성

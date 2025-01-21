@@ -1,13 +1,13 @@
 import * as file from "@/scripts/file";
 
 const run = ({ minBright = 10 }: { minBright: number }) => {
-  let stars = file.loadJson("database", "bsc5-short.json");
+  let stars = file.loadJson("data/database", "bsc5-short.json");
   console.log(
     `로드한 카탈로그에는 총 ${stars.length} 개의 별 정보가 있습니다.`,
   );
   stars = reduce(stars, minBright);
   file.saveJson(
-    "database",
+    "build/database",
     "reduced-database.json",
     JSON.stringify(stars, null, 2),
   );
