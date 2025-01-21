@@ -2,6 +2,12 @@
 
 import {ChangeEvent, useEffect, useRef, useState} from 'react'
 import cv from '../services/cv'
+
+
+
+
+
+
 import samples from "../services/samples"
 
 /**
@@ -18,7 +24,7 @@ import samples from "../services/samples"
 export default function Page() {
   const [isOpenCvReady, setOpenCvReady] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
-  const [selectedSampleId, setSelectedSampleId] = useState(13);
+  const [selectedSampleId, setSelectedSampleId] = useState(13)
   const imageElement = useRef<HTMLImageElement>(null)
   const canvasElement = useRef<HTMLCanvasElement>(null)
   const selectedSample = samples[selectedSampleId];

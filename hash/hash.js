@@ -9,7 +9,7 @@ const calculateHash = (quadrilateral) => {
   const [ip1, ip2] = findPointsOfMaxDistance(points);
   const transform = buildTransform(points[ip1], points[ip2]);
   const transformedPoints = points.map(transform);
-  const [ip3, ip4] = findRest(transformedPoints);
+  const [ip3, ip4] = findRest(transformedPoints)
   const transformed = [[0, 0], [1, 1], transformedPoints[ip3], transformedPoints[ip4]];
   let [indexes, [pA, pB, pC, pD]] = removeSymmetric([ip1, ip2, ip3, ip4], transformed);
   return {
