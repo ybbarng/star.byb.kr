@@ -1,4 +1,4 @@
-const catalog = require("../database/build/reduced-database.json");
+const catalog = require("../build/reduced-database.json");
 const hashes = require("../hash/build/hashed-database.json");
 const hashLib = require("../hash/hash");
 const quadrilateral = require("../hash/quadrilateral");

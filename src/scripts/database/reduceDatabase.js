@@ -5,7 +5,7 @@ const run = () => {
 };
 
 const load = () => {
-  const stars = require("./bsc5-short.json");
+  const stars = require("../../../data/database/bsc5-short.json");
   console.log(
     `로드한 카탈로그에는 총 ${stars.length} 개의 별 정보가 있습니다.`,
   );

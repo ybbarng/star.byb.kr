@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import * as THREE from "three";
-import database from "@database/build/vectors-database.json";
+import database from "../../../../build/vectors-database.json";
 
 export const useThreeStars = () => {
   const [stars, setStars] = useState<THREE.Points | null>(null);
