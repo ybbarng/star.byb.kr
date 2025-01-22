@@ -32,7 +32,7 @@ export default function Page() {
    * In the onClick event we'll capture a frame within
    * the video to pass it to our service.
    */
-  async function run() {
+  async function detectStars() {
     if (!imageElement.current || !canvasElement.current) {
       console.log("Can't find elements");
 
@@ -132,7 +132,7 @@ export default function Page() {
   }, [stars]);
 
   const aspectRatio = selectedSample.width / selectedSample.height;
-  const buttonText = getButtonText(isOpenCvReady, isProcessing);
+  const detectButtonText = getDetectButtonText(isOpenCvReady, isProcessing);
 
   return (
     <div className="flex flex-col items-start gap-5 p-4">
@@ -160,9 +160,9 @@ export default function Page() {
         <button
           disabled={!isOpenCvReady || isProcessing}
           className="h-10 w-40 rounded-lg bg-blue-500 font-bold"
-          onClick={run}
+          onClick={detectStars}
         >
-          {buttonText}
+          {detectButtonText}
         </button>
       </div>
       <div className="columns-2">
@@ -188,7 +188,7 @@ export default function Page() {
   );
 }
 
-function getButtonText(isOpenCvReady: boolean, isProcessing: boolean) {
+function getDetectButtonText(isOpenCvReady: boolean, isProcessing: boolean) {
   if (!isOpenCvReady) {
     return "준비 중...";
   }
