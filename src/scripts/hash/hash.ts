@@ -1,6 +1,11 @@
-const math = require("mathjs");
+import * as math from "mathjs";
+import {
+  NamedQuadrilateral2D,
+  Point2D,
+  Quadrilateral2D,
+} from "@/scripts/hash/types";
 
-const calculateHash = (quadrilateral) => {
+export const calculateHash = (quadrilateral: NamedQuadrilateral2D) => {
   if (quadrilateral.length !== 4) {
     throw new Error("해시를 계산하려면 4개의 점이 필요합니다.");
   }
@@ -11,13 +16,13 @@ const calculateHash = (quadrilateral) => {
   const transform = buildTransform(points[ip1], points[ip2]);
   const transformedPoints = points.map(transform);
   const [ip3, ip4] = findRest(transformedPoints);
-  const transformed = [
+  const transformed: Quadrilateral2D = [
     [0, 0],
     [1, 1],
     transformedPoints[ip3],
     transformedPoints[ip4],
   ];
-  let [indexes, [pA, pB, pC, pD]] = removeSymmetric(
+  const [indexes, [, , pC, pD]] = removeSymmetric(
     [ip1, ip2, ip3, ip4],
     transformed,
   );
@@ -28,7 +33,7 @@ const calculateHash = (quadrilateral) => {
   };
 };
 
-const findPointsOfMaxDistance = (points) => {
+const findPointsOfMaxDistance = (points: Point2D[]): [number, number] => {
   let maxDistance = -Infinity;
   let p1 = null,
     p2 = null;
@@ -48,6 +53,10 @@ const findPointsOfMaxDistance = (points) => {
     }
   }
 
+  if (p1 === null || p2 === null) {
+    throw Error("가장 긴 거리의 두 점을 찾는데 실패했습니다.");
+  }
+
   return [p1, p2];
 };
 
@@ -56,7 +65,7 @@ const findPointsOfMaxDistance = (points) => {
  * @param p1 원점이 될 점
  * @param p2 (1, 1)이 될 점
  */
-const buildTransform = (p1, p2) => {
+const buildTransform = (p1: Point2D, p2: Point2D) => {
   // 평행 이동 행렬 T: p1을 원점으로 이동
   const T = math.matrix([
     [1, 0, -p1[0]],
@@ -88,7 +97,7 @@ const buildTransform = (p1, p2) => {
   // 최종 변환 행렬 M 준비 완료
   const M = math.multiply(S, R, T);
 
-  return (point) => {
+  return (point: Point2D): Point2D => {
     const homogeneousPoint = [point[0], point[1], 1];
     const transformedPoint = math.multiply(M, homogeneousPoint);
 
@@ -96,7 +105,7 @@ const buildTransform = (p1, p2) => {
   };
 };
 
-const findRest = (transformedPoints) => {
+const findRest = (transformedPoints: Point2D[]): number[] => {
   // 3. 나머지 두 점 중 x 좌표가 작은 점을 p3, 큰 점을 p4로 설정
   const remainingPoints = transformedPoints.filter(
     (p) => !arePointsEqual(p, [0, 0]) && !arePointsEqual(p, [1, 1]),
@@ -109,22 +118,28 @@ const findRest = (transformedPoints) => {
   ];
 };
 
-const removeSymmetric = (indexes, transformedPoints) => {
+const removeSymmetric = (
+  indexes: [number, number, number, number],
+  transformedPoints: Quadrilateral2D,
+): [[number, number, number, number], Quadrilateral2D] => {
   const [p1, p2, p3, p4] = transformedPoints;
 
   if (p3[0] + p4[0] <= 1) {
     return [indexes, transformedPoints];
   }
 
-  const result = [p2, p1, [1 - p4[0], 1 - p4[1]], [1 - p3[0], 1 - p3[1]]];
+  const result: Quadrilateral2D = [
+    p2,
+    p1,
+    [1 - p4[0], 1 - p4[1]],
+    [1 - p3[0], 1 - p3[1]],
+  ];
 
   return [[indexes[1], indexes[0], indexes[3], indexes[2]], result];
 };
 
-function arePointsEqual(p1, p2, tolerance = 1e-6) {
+function arePointsEqual(p1: Point2D, p2: Point2D, tolerance = 1e-6) {
   return (
     Math.abs(p1[0] - p2[0]) < tolerance && Math.abs(p1[1] - p2[1]) < tolerance
   );
 }
-
-exports.calculate = calculateHash;
