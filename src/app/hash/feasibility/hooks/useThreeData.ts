@@ -65,7 +65,11 @@ export const useThreeData = (graphType: GraphType) => {
 
     const databaseData = createThreeData(database, 0xfca5a5);
     setDatabaseData(databaseData);
-    const databaseFullData = createThreeData(databaseFull, 0xccccccc, 1);
+    const databaseFullData = createThreeData(
+      databaseFull as Data,
+      0xccccccc,
+      1,
+    );
     setDatabaseFullData(databaseFullData);
     const photoData = createThreeData(photo, 0xbbf7d0);
     setPhotoData(photoData);
