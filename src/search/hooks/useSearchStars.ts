@@ -29,6 +29,7 @@ type CandidateOutput = [
 interface Candidate {
   input: CandidateInput;
   output: CandidateOutput;
+  distance: number;
 }
 
 const hashes = _hashes as HashedQuad[];
@@ -108,9 +109,10 @@ export default function useSearchStars() {
           hr,
           label: getName(hr),
         })) as CandidateOutput,
+        distance: minDistance * 1000,
       });
     });
-    setCandidates(candidates);
+    setCandidates(candidates.sort((ca, cb) => ca.distance - cb.distance));
   };
 
   return {

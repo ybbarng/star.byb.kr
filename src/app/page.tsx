@@ -144,7 +144,10 @@ export default function Page() {
 
   useEffect(() => {
     candidates.map((candidate) => {
-      console.log(candidate.output.map((item) => item.label).join(", "));
+      console.log(
+        candidate.distance,
+        candidate.output.map((item) => item.label).join(", "),
+      );
     });
   }, [candidates]);
 
