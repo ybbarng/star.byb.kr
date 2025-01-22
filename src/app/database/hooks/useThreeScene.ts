@@ -54,7 +54,6 @@ export const useThreeScene = (divRef: RefObject<HTMLDivElement | null>) => {
 
     // 2. 새로운 Z축 정의 (v1)
     const zAxis = v1.clone().normalize();
-    console.log(zAxis);
 
     // 3. 새로운 Y축 정의 (v2 - v1)
     const temp = v2.clone().sub(v1); // v2 - v1
@@ -63,40 +62,6 @@ export const useThreeScene = (divRef: RefObject<HTMLDivElement | null>) => {
     // zAxis에 투영된 성분을 제거하여 z축과 y축을 직교하게 함
     const projectionOntoZ = zAxis.clone().multiplyScalar(yAxis.dot(zAxis));
     yAxis = yAxis.sub(projectionOntoZ).normalize();
-
-    // 3. 새로운 X축 정의 (zAxis x yAxis)
-    const xAxis = new THREE.Vector3().crossVectors(yAxis, zAxis).normalize();
-
-    const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute(
-      "position",
-      new THREE.Float32BufferAttribute(
-        new THREE.Vector3(v1.x * 100, v1.y * 100, v1.z * 100),
-        3,
-      ),
-    );
-    const material = new THREE.PointsMaterial({
-      color: 0xdc2626,
-      size: 1,
-    });
-
-    const center = new THREE.Points(geometry, material);
-    scene.add(center);
-
-    const geometry2 = new THREE.BufferGeometry();
-    geometry2.setAttribute(
-      "position",
-      new THREE.Float32BufferAttribute(
-        new THREE.Vector3(v2.x * 100, v2.y * 100, v2.z * 100),
-        3,
-      ),
-    );
-    const material2 = new THREE.PointsMaterial({
-      color: 0x26dc26,
-      size: 1,
-    });
-    const p2 = new THREE.Points(geometry2, material2);
-    scene.add(p2);
 
     camera.position.set(zAxis.x * 200, zAxis.y * 200, zAxis.z * 200);
     camera.up.set(yAxis.x, yAxis.y, yAxis.z);
@@ -110,26 +75,6 @@ export const useThreeScene = (divRef: RefObject<HTMLDivElement | null>) => {
 
     const innerSphere = createInnerSphere();
     scene.add(innerSphere);
-
-    const arrowX = new THREE.ArrowHelper(
-      xAxis,
-      new THREE.Vector3(0, 0, 0),
-      105,
-      0xff0000,
-    );
-    const arrowY = new THREE.ArrowHelper(
-      yAxis,
-      new THREE.Vector3(0, 0, 0),
-      105,
-      0x00ff00,
-    );
-    const arrowZ = new THREE.ArrowHelper(
-      zAxis,
-      new THREE.Vector3(0, 0, 0),
-      105,
-      0x0000ff,
-    );
-    scene.add(arrowX, arrowY, arrowZ);
 
     function createInnerSphere() {
       const geometry = new THREE.SphereGeometry(98, 32, 32);
