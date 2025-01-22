@@ -1,46 +1,80 @@
-const math = require("mathjs");
-const plane = require("../hash/plane");
+import * as math from "mathjs";
+import { Matrix } from "mathjs";
+import * as plane from "@/scripts/hash/plane";
+import { Point2D, Point3D, StarVector } from "@/scripts/hash/types";
 
-const run = (photo, database, test) => {
-  const databaseQuad = database.quad.map((star) => [star.x, star.y, star.z]);
+interface PhotoStar {
+  label: string;
+  position: Point2D;
+  brightness: number;
+}
+
+interface Photo {
+  width: number;
+  height: number;
+  quad: PhotoStar[];
+}
+
+interface Database {
+  quad: StarVector[];
+}
+
+interface TestSet {
+  expected: Point2D[];
+  given: Point3D[];
+}
+
+const run = (photo: Photo, database: Database, testSet: TestSet) => {
+  const databaseQuad: Point3D[] = database.quad.map((star) => [
+    star.x,
+    star.y,
+    star.z,
+  ]);
   const P = calculateProjectTransform(databaseQuad);
-  const projectedDatabase = databaseQuad.map((star) =>
-    math.multiply(P, star).splice(0, 2),
+  const projectedDatabase = databaseQuad.map(
+    (star) => math.multiply(P, star).splice(0, 2) as Point2D,
   );
   const photoQuad = photo.quad.map((star) => star.position);
   const T = calculateToPhotoTransform(photoQuad, projectedDatabase);
-  test.expected.forEach((expected, i) => {
+  testSet.expected.forEach((expected, i) => {
     console.log(`Test ${i}`);
     console.log(expected);
-    console.log(math.multiply(T, P, test.given[i]));
+    console.log(
+      toCartesian(
+        (math.multiply(T, P, testSet.given[i]) as Matrix).toArray() as Point3D,
+      ),
+    );
   });
 };
 
-const calculateProjectTransform = (quad) => {
+const calculateProjectTransform = (quad: Point3D[]) => {
   const center = plane.findCenter(quad);
 
   return plane.calculateProjectTransform(center);
 };
 
-const calculateToPhotoTransform = (photo, database) => {
+const calculateToPhotoTransform = (photo: Point2D[], database: Point2D[]) => {
   // 각 quad의 중심점 계산
-  const centroidPhoto = math.mean(photo, 0);
-  const centroidDatabase = math.mean(database, 0);
+  const centroidPhoto = math.mean(photo, 0) as unknown as Point2D;
+  const centroidDatabase = math.mean(database, 0) as unknown as Point2D;
 
   // 중심점이 원점이 되도록 이동
-  const centeredPhoto = photo.map((point) =>
-    math.subtract(point, centroidPhoto),
+  const centeredPhoto = photo.map(
+    (point) => math.subtract(point, centroidPhoto) as Point2D,
   );
-  const centeredDatabase = database.map((point) =>
-    math.subtract(point, centroidDatabase),
+  const centeredDatabase = database.map(
+    (point) => math.subtract(point, centroidDatabase) as Point2D,
   );
 
   // 사진과 데이터베이스의 스케일 차이 계산
   const scalePhoto = math.norm(centeredPhoto[0]);
-  const scaleDatabase = math.norm(centeredDatabase[0]);
+  const scaleDatabase = math.norm(centeredDatabase[0]) as number;
 
-  const normalPhoto0 = math.divide(centeredPhoto[0], scalePhoto);
-  const normalDatabase0 = math.divide(centeredDatabase[0], scaleDatabase);
+  const normalPhoto0 = math.divide(centeredPhoto[0], scalePhoto) as Point2D;
+  const normalDatabase0 = math.divide(
+    centeredDatabase[0],
+    scaleDatabase,
+  ) as Point2D;
 
   const angle = -calculateRotationAngle(normalPhoto0, normalDatabase0);
 
@@ -74,7 +108,7 @@ const calculateToPhotoTransform = (photo, database) => {
   return math.multiply(zeroToP, NtoSP, R, SDtoN, DtoZero);
 };
 
-const calculateRotationAngle = (A, B) => {
+const calculateRotationAngle = (A: Point2D, B: Point2D) => {
   const dotProduct = math.dot(A, B);
 
   const crossProduct = A[0] * B[1] - A[1] * B[0];
@@ -84,7 +118,7 @@ const calculateRotationAngle = (A, B) => {
 };
 
 // 회전 행렬 계산 함수
-const getRotationMatrix = (theta) => {
+const getRotationMatrix = (theta: number) => {
   return math.matrix([
     [Math.cos(theta), -Math.sin(theta), 0],
     [Math.sin(theta), Math.cos(theta), 0],
@@ -92,8 +126,12 @@ const getRotationMatrix = (theta) => {
   ]);
 };
 
+export const toCartesian = (vector: Point3D): Point2D => {
+  return [vector[0] / vector[2], vector[1] / vector[2]];
+};
+
 // TEST: Phecda,Alkaid,Alioth,Mizar => 4554,5191,4905,5054
-const photo = {
+const photo: Photo = {
   width: 1152,
   height: 819,
   quad: [
@@ -121,7 +159,7 @@ const photo = {
 };
 
 // from vectors-database.json
-const database = {
+const database: Database = {
   quad: [
     {
       B: "γ",
@@ -132,7 +170,7 @@ const database = {
       HR: "4554",
       K: "10000",
       RA: "11h 53m 49.8s",
-      V: 2,
+      V: "2.44",
       x: -0.5918728610028255,
       y: 0.015938076508263857,
       z: 0.8058737457725911,
@@ -146,7 +184,7 @@ const database = {
       HR: "5191",
       K: "24000",
       RA: "13h 47m 32.4s",
-      V: 1,
+      V: "1.86",
       x: -0.581459592054957,
       y: -0.29479990694318703,
       z: 0.7582860658574515,
@@ -160,7 +198,7 @@ const database = {
       HR: "4905",
       K: "10000",
       RA: "12h 54m 01.7s",
-      V: 1,
+      V: "1.77",
       x: -0.5442927591835712,
       y: -0.13074430028288353,
       z: 0.8286442664037894,
@@ -174,7 +212,7 @@ const database = {
       HR: "5054",
       K: "9750",
       RA: "13h 23m 55.5s",
-      V: 2,
+      V: "2.27",
       x: -0.5365439818464228,
       y: -0.20575850700942397,
       z: 0.8184033188701267,
@@ -182,7 +220,7 @@ const database = {
   ],
 };
 
-const test = {
+const testSet: TestSet = {
   expected: [
     [774.2253086419753, 552.6018518518518],
     [672.3654618473895, 615.3293172690762],
@@ -203,4 +241,4 @@ const test = {
   ],
 };
 
-run(photo, database, test);
+run(photo, database, testSet);
