@@ -14,5 +14,6 @@ export interface Quadrilateral<T> {
 }
 
 export type Point2D = [number, number];
+export type Point3D = [number, number, number];
 export type Quadrilateral2D = [Point2D, Point2D, Point2D, Point2D];
 export type Hash = [number, number, number, number];
