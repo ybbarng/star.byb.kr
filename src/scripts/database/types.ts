@@ -1,4 +1,6 @@
 export interface Star {
+  B?: string; // "α"
+  N?: string; // "Alpheratz"
   C?: string; // "Peg"
   Dec: string; // "+13° 23′ 46″"
   F?: string; // "86"
