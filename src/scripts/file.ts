@@ -2,8 +2,10 @@ import fs from "fs";
 
 type Path =
   | "build/database"
+  | "build/hash"
   | "build/hash/sample"
   | "data/database"
+  | "data/hash"
   | "data/hash/sample";
 
 // TODO: 프로젝트 루트를 정확하게 찾도록 변경하기
