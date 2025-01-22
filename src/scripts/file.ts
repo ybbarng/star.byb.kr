@@ -6,7 +6,8 @@ type Path =
   | "build/hash/sample"
   | "data/database"
   | "data/hash"
-  | "data/hash/sample";
+  | "data/hash/sample"
+  | "data/search";
 
 // TODO: 프로젝트 루트를 정확하게 찾도록 변경하기
 // 지금은 항상 프로젝트 루트에서 스크립트를 실행한다고 가정
