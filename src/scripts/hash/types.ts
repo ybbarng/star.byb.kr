@@ -11,6 +11,14 @@ export interface StarVector {
   z: number; // -0.09945000136187948
 }
 
+export interface SimpleStarVector {
+  HR: string; // "4"
+  x: number; // 0.9947729755573012
+  y: number; // 0.023160836124704105
+  z: number; // -0.09945000136187948
+  V: string; // "5.51"
+}
+
 export interface Quadrilateral<T> {
   id: string;
   stars: [T, T, T, T];
