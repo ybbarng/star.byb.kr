@@ -85,6 +85,26 @@ export const useThreeScene = (divRef: RefObject<HTMLDivElement | null>) => {
     const innerSphere = createInnerSphere();
     scene.add(innerSphere);
 
+    const arrowX = new THREE.ArrowHelper(
+      xAxis,
+      new THREE.Vector3(0, 0, 0),
+      105,
+      0xff0000,
+    );
+    const arrowY = new THREE.ArrowHelper(
+      yAxis,
+      new THREE.Vector3(0, 0, 0),
+      105,
+      0x00ff00,
+    );
+    const arrowZ = new THREE.ArrowHelper(
+      zAxis,
+      new THREE.Vector3(0, 0, 0),
+      105,
+      0x0000ff,
+    );
+    scene.add(arrowX, arrowY, arrowZ);
+
     function createInnerSphere() {
       const geometry = new THREE.SphereGeometry(98, 32, 32);
       const material = new THREE.MeshBasicMaterial({
