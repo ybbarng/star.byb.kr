@@ -133,6 +133,7 @@ export default function Page() {
 
   const aspectRatio = selectedSample.width / selectedSample.height;
   const detectButtonText = getDetectButtonText(isOpenCvReady, isProcessing);
+  const plateSolvingButtonText = getPlateSolvingButtonText(stars.length > 0);
 
   return (
     <div className="flex flex-col items-start gap-5 p-4">
@@ -164,6 +165,13 @@ export default function Page() {
         >
           {detectButtonText}
         </button>
+        <button
+          disabled={stars.length < 1}
+          className="h-10 w-40 rounded-lg bg-blue-500 font-bold"
+          onClick={detectStars}
+        >
+          {plateSolvingButtonText}
+        </button>
       </div>
       <div className="columns-2">
         <img
@@ -194,4 +202,12 @@ function getDetectButtonText(isOpenCvReady: boolean, isProcessing: boolean) {
   }
 
   return isProcessing ? "별 찾는 중..." : "별 찾기";
+}
+
+function getPlateSolvingButtonText(hasStars: boolean) {
+  if (!hasStars) {
+    return "별 찾기를 먼저 하세요.";
+  }
+
+  return "플레이트 솔빙";
 }
