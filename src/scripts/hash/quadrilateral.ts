@@ -1,5 +1,7 @@
-const createQuadrilaterals = (stars) => {
-  const result = [];
+import { Quadrilateral } from "@/scripts/hash/types";
+
+export const create = <T>(stars: T[]): Quadrilateral<T>[] => {
+  const result: Quadrilateral<T>[] = [];
 
   for (let s1 = 0; s1 < stars.length - 3; s1++) {
     for (let s2 = s1 + 1; s2 < stars.length - 2; s2++) {
@@ -18,5 +20,3 @@ const createQuadrilaterals = (stars) => {
 
   return result;
 };
-
-exports.create = createQuadrilaterals;
