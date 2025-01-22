@@ -1,12 +1,12 @@
-const hashes = require("../build/hash/hashed-database.json");
+const hashes = require("../../../build/hash/hashed-database.json");
 const catalog = require("../build/reduced-database.json");
-const hashLib = require("../src/scripts/hash/hash");
-const quadrilateral = require("../src/scripts/hash/quadrilateral");
+const hashLib = require("../hash/hash");
+const quadrilateral = require("../hash/quadrilateral");
 
 const samples = [
-  require("./samples/ursa-major.json"),
-  require("./samples/orion.json"),
-  require("./samples/saipan.json"),
+  require("../../../data/search/ursa-major.json"),
+  require("../../../data/search/orion.json"),
+  require("../../../data/search/saipan.json"),
 ];
 
 const sample = samples[0];
