@@ -35,7 +35,7 @@ const run = (photo: Photo, database: Database, testSet: TestSet) => {
     (star) => math.multiply(P, star).splice(0, 2) as Point2D,
   );
   const photoQuad = photo.quad.map((star) => star.position);
-  const T = calculateToPhotoTransform(photoQuad, projectedDatabase);
+  const T = calculateToPhotoTransform(photoQuad, projectedDatabase) as Matrix;
   testSet.expected.forEach((expected, i) => {
     console.log(`Test ${i}`);
     console.log(expected);
@@ -45,6 +45,15 @@ const run = (photo: Photo, database: Database, testSet: TestSet) => {
       ),
     );
   });
+
+  console.log("Center of photo: ");
+  console.log(
+    math.multiply(math.inv(P), math.inv(T), [
+      photo.width / 2,
+      photo.height / 2,
+      1,
+    ]) as Matrix,
+  );
 };
 
 const calculateProjectTransform = (quad: Point3D[]) => {

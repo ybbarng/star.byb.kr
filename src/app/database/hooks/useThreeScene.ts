@@ -44,6 +44,41 @@ export const useThreeScene = (divRef: RefObject<HTMLDivElement | null>) => {
       renderer.render(scene, camera);
     };
 
+    // [ -0.5657188370629972, -0.03898483875185704, 0.8321347812191403 ]
+    // 1. 주어진 벡터와 Z축 정의
+    const v = new THREE.Vector3(
+      -0.5657188370629972,
+      0.8321347812191403,
+      -0.03898483875185704,
+    ).normalize(); // 주어진 벡터
+    const zAxis = new THREE.Vector3(0, 0, 1); // Z축 벡터
+
+    // 2. 회전축(axis)와 회전 각도(angle) 계산
+    const axis = new THREE.Vector3().crossVectors(v, zAxis).normalize(); // 회전축
+    const angle = Math.acos(v.dot(zAxis)); // 회전 각도 (라디안)
+
+    // 3. scene에 회전 적용
+    if (axis.length() > 0) {
+      // axis가 유효한 경우
+      scene.rotateOnAxis(axis, angle);
+    }
+
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute(
+      "position",
+      new THREE.Float32BufferAttribute(
+        new THREE.Vector3(v.x * 100, v.y * 100, v.z * 100),
+        3,
+      ),
+    );
+    const material = new THREE.PointsMaterial({
+      color: 0xdc2626,
+      size: 1,
+    });
+
+    const center = new THREE.Points(geometry, material);
+    scene.add(center);
+
     animate();
     setScene(scene);
 
