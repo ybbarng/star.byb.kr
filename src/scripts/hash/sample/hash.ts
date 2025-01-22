@@ -13,7 +13,7 @@ export const calculate = (quadrilateral: Quadrilateral2D): Hash => {
   const transformed: Quadrilateral2D = [[0, 0], [1, 1], p3, p4];
   const [, , pC, pD] = removeSymmetric(transformed);
 
-  return [...pC, ...pD];
+  return [pC[0], pC[1], pD[0], pD[1]];
 };
 
 const findPointsOfMaxDistance = (points: Point2D[]): [Point2D, Point2D] => {
