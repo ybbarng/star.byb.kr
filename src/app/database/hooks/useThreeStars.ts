@@ -1,6 +1,6 @@
+import database from "@build/database/vectors-database.json";
 import { useEffect, useState } from "react";
 import * as THREE from "three";
-import database from "../../../../build/vectors-database.json";
 
 export const useThreeStars = () => {
   const [stars, setStars] = useState<THREE.Points | null>(null);
@@ -16,7 +16,7 @@ export const useThreeStars = () => {
       positions.push(star.x * 100);
       positions.push(star.z * 100);
       positions.push(star.y * 100);
-      const size = (1 - (star.V + 2) / 12) * 2;
+      const size = (1 - (Number(star.V) + 2) / 12) * 2;
       colors.push(color.r, color.g, color.b, size);
       sizes.push(size);
     });
