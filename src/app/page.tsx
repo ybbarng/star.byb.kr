@@ -69,7 +69,7 @@ export default function Page() {
     search({
       width: selectedSample.width,
       height: selectedSample.height,
-      stars: stars.slice(0, 7).map((star) => [star.x, star.y]),
+      stars: stars.slice(0, 10).map((star) => [star.x, star.y]),
     });
   }
 
@@ -143,7 +143,9 @@ export default function Page() {
   }, [stars]);
 
   useEffect(() => {
-    console.log(candidates);
+    candidates.map((candidate) => {
+      console.log(candidate.output.map((item) => item.label).join(", "));
+    });
   }, [candidates]);
 
   const aspectRatio = selectedSample.width / selectedSample.height;
