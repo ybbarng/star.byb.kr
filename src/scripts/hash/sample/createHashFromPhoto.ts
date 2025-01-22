@@ -1,6 +1,6 @@
 import * as hashLib from "./hash";
-import * as quadrilateral from "./quadrilateral";
 import * as file from "@/scripts/file";
+import * as quadrilateral from "@/scripts/hash/quadrilateral";
 import { Quadrilateral, Quadrilateral2D } from "@/scripts/hash/types";
 
 const run = () => {

@@ -1,7 +1,7 @@
 import * as hashLib from "./hash";
-import * as quadrilateral from "./quadrilateral";
 import * as file from "@/scripts/file";
 import * as plane from "@/scripts/hash/plane";
+import * as quadrilateral from "@/scripts/hash/quadrilateral";
 import {
   Point3D,
   Quadrilateral,
