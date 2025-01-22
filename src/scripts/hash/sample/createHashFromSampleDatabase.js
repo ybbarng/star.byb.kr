@@ -1,4 +1,4 @@
-const plane = require("../../../../hash/plane");
+const plane = require("../plane");
 const hashLib = require("./hash");
 const quadrilateral = require("./quadrilateral");
 

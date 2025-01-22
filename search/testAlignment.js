@@ -1,5 +1,5 @@
 const math = require("mathjs");
-const plane = require("../hash/plane");
+const plane = require("../src/scripts/hash/plane");
 
 const run = (photo, database, test) => {
   const databaseQuad = database.quad.map((star) => [star.x, star.y, star.z]);
