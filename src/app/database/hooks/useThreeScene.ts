@@ -47,6 +47,19 @@ export const useThreeScene = (divRef: RefObject<HTMLDivElement | null>) => {
     animate();
     setScene(scene);
 
+    const innerSphere = createInnerSphere();
+    scene.add(innerSphere);
+
+    function createInnerSphere() {
+      const geometry = new THREE.SphereGeometry(98, 32, 32);
+      const material = new THREE.MeshBasicMaterial({
+        color: 0x000000,
+        side: THREE.BackSide,
+      });
+
+      return new THREE.Mesh(geometry, material);
+    }
+
     function render() {
       renderer.render(scene, camera);
     }
