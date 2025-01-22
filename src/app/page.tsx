@@ -1,6 +1,7 @@
 "use client";
 
 import { ChangeEvent, useEffect, useRef, useState } from "react";
+import useSearchStars from "@/search/hooks/useSearchStars";
 import cv from "@/services/cv";
 import samples from "@/services/samples";
 
@@ -15,6 +16,8 @@ export default function Page() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedSampleId, setSelectedSampleId] = useState(13);
   const [stars, setStars] = useState<Star[]>([]);
+  const { search, candidates } = useSearchStars();
+
   const imageElement = useRef<HTMLImageElement>(null);
   const canvasElement = useRef<HTMLCanvasElement>(null);
   const selectedSample = samples[selectedSampleId];
@@ -60,6 +63,14 @@ export default function Page() {
     } finally {
       setIsProcessing(false);
     }
+  }
+
+  async function plateSolving() {
+    search({
+      width: selectedSample.width,
+      height: selectedSample.height,
+      stars: stars.slice(0, 7).map((star) => [star.x, star.y]),
+    });
   }
 
   function handleSelectChange(event: ChangeEvent<HTMLSelectElement>) {
@@ -131,6 +142,10 @@ export default function Page() {
     });
   }, [stars]);
 
+  useEffect(() => {
+    console.log(candidates);
+  }, [candidates]);
+
   const aspectRatio = selectedSample.width / selectedSample.height;
   const detectButtonText = getDetectButtonText(isOpenCvReady, isProcessing);
   const plateSolvingButtonText = getPlateSolvingButtonText(stars.length > 0);
@@ -168,7 +183,7 @@ export default function Page() {
         <button
           disabled={stars.length < 1}
           className="h-10 w-40 rounded-lg bg-blue-500 font-bold"
-          onClick={detectStars}
+          onClick={plateSolving}
         >
           {plateSolvingButtonText}
         </button>
