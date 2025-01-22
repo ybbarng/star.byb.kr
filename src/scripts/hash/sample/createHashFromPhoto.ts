@@ -1,7 +1,7 @@
 import * as hashLib from "./hash";
 import * as quadrilateral from "./quadrilateral";
 import * as file from "@/scripts/file";
-import { Quadrilateral } from "@/scripts/hash/types";
+import { Quadrilateral, Quadrilateral2D } from "@/scripts/hash/types";
 
 const run = () => {
   const stars = file.loadJson("data/hash/sample", "sample-photo.json");
@@ -20,7 +20,13 @@ const createHashFromPhoto = (stars: PhotoStar[]) => {
   return quadrilateral
     .create<PhotoStar>(stars)
     .map((quadrilateral: Quadrilateral<PhotoStar>) => {
-      const hash = hashLib.calculate(quadrilateral.stars);
+      const quad: Quadrilateral2D = [
+        [quadrilateral.stars[0][0], quadrilateral.stars[0][1]],
+        [quadrilateral.stars[1][0], quadrilateral.stars[1][1]],
+        [quadrilateral.stars[2][0], quadrilateral.stars[2][1]],
+        [quadrilateral.stars[3][0], quadrilateral.stars[3][1]],
+      ];
+      const hash = hashLib.calculate(quad);
 
       return {
         ...quadrilateral,
