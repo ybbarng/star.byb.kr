@@ -1,7 +1,7 @@
+const hashes = require("../build/hash/hashed-database.json");
 const catalog = require("../build/reduced-database.json");
-const hashes = require("../hash/build/hashed-database.json");
-const hashLib = require("../hash/hash");
-const quadrilateral = require("../hash/quadrilateral");
+const hashLib = require("../src/scripts/hash/hash");
+const quadrilateral = require("../src/scripts/hash/quadrilateral");
 
 const samples = [
   require("./samples/ursa-major.json"),

@@ -1,7 +1,7 @@
 const fs = require("fs");
 const path = require("path");
+let stars = require("../../../data/hash/vectors-database.json");
 const cell = require("./cell");
-let stars = require("./data/vectors-database.json");
 const hashLib = require("./hash");
 const quadrilateral = require("./quadrilateral");
 
