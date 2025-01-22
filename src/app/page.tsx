@@ -4,21 +4,17 @@ import { ChangeEvent, useEffect, useRef, useState } from "react";
 import cv from "@/services/cv";
 import samples from "@/services/samples";
 
-/**
- * What we're going to render is:
- *
- * 1. A video component so the user can see what's on the camera.
- *
- * 2. A button to generate an image of the video, load OpenCV and
- * process the image.
- *
- * 3. A canvas to allow us to capture the image of the video and
- * show it to the user.
- */
+interface Star {
+  x: number;
+  y: number;
+  radius: number;
+}
+
 export default function Page() {
   const [isOpenCvReady, setOpenCvReady] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedSampleId, setSelectedSampleId] = useState(13);
+  const [stars, setStars] = useState<Star[]>([]);
   const imageElement = useRef<HTMLImageElement>(null);
   const canvasElement = useRef<HTMLCanvasElement>(null);
   const selectedSample = samples[selectedSampleId];
@@ -58,11 +54,7 @@ export default function Page() {
 
       const stars = await findStars(context);
       console.log(`별 수: ${stars.length}`);
-      const test = true;
-
-      if (test) {
-        return;
-      }
+      setStars(stars);
     } catch (error) {
       console.error(error);
     } finally {
@@ -101,10 +93,32 @@ export default function Page() {
     stars = stars.sort((a, b) => b.radius - a.radius);
     stars = stars.slice(0, 100);
 
-    stars.forEach(({ cx, cy, radius }) => {
+    return stars.map((star) => ({
+      x: star.cx,
+      y: star.cy,
+      radius: star.radius,
+    }));
+  }
+
+  useEffect(() => {
+    if (!canvasElement.current) {
+      console.log("Can't find elements");
+
+      return;
+    }
+
+    const context = canvasElement.current.getContext("2d");
+
+    if (!context) {
+      console.log("Can't find context of canvas.");
+
+      return;
+    }
+
+    stars.forEach(({ x, y, radius }) => {
       // Render the stars to the canvas
       context.beginPath();
-      context.arc(cx, cy, radius, 0, 2 * Math.PI);
+      context.arc(x, y, radius, 0, 2 * Math.PI);
       context.strokeStyle = "red";
       context.lineWidth = 2;
       context.stroke();
@@ -112,19 +126,10 @@ export default function Page() {
       if (radius > 1) {
         context.font = "bold 20px Arial";
         context.fillStyle = "#ff0000";
-        context.fillText(
-          `(${cx.toFixed(2)}, ${cy.toFixed(2)})`,
-          cx + 10,
-          cy + 10,
-        );
+        context.fillText(`(${x.toFixed(2)}, ${y.toFixed(2)})`, x + 10, y + 10);
       }
     });
-
-    return stars.map((star) => ({
-      x: star.cx,
-      y: star.cy,
-    }));
-  }
+  }, [stars]);
 
   const aspectRatio = selectedSample.width / selectedSample.height;
   const buttonText = getButtonText(isOpenCvReady, isProcessing);
