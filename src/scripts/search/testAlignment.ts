@@ -54,6 +54,14 @@ const run = (photo: Photo, database: Database, testSet: TestSet) => {
       1,
     ]) as Matrix,
   );
+  console.log("(center, center - 10)");
+  console.log(
+    math.multiply(math.inv(P), math.inv(T), [
+      photo.width / 2,
+      photo.height / 2 - 10,
+      1,
+    ]) as Matrix,
+  );
 };
 
 const calculateProjectTransform = (quad: Point3D[]) => {
