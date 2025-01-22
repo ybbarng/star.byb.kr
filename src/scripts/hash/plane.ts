@@ -1,11 +1,11 @@
 import * as math from "mathjs";
-import { Point3D } from "@/scripts/hash/types";
+import { Point2D, Point3D } from "@/scripts/hash/types";
 
 export const projectToTangentPlane = (vectors: Point3D[]) => {
   const center = findCenter(vectors);
   const T = calculateProjectTransform(center);
 
-  return vectors.map((vector) => math.multiply(T, vector));
+  return vectors.map((vector) => toCartesian(math.multiply(T, vector)));
 };
 
 export const findCenter = (vectors: Point3D[]): Point3D => {
@@ -36,6 +36,13 @@ export const calculateProjectTransform = (center: Point3D) => {
   const transformMatrix = math.transpose([u, v, cUnit]); // 행렬의 열벡터가 [u, v, c]
 
   return math.inv(transformMatrix); // 역행렬을 적용하여 좌표 변환
+};
+
+/**
+ * 동차 좌표를 2차원 좌표로 변환합니다.
+ */
+export const toCartesian = (vector: Point3D): Point2D => {
+  return [vector[0] / vector[2], vector[1] / vector[2]];
 };
 
 const mean = (vectors: Point3D[]): Point3D => {
