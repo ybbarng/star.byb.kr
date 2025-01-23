@@ -171,7 +171,7 @@ export default function Page() {
     stars.forEach(({ x, y, radius }) => {
       // Render the stars to the canvas
       context.beginPath();
-      context.arc(x, y, radius, 0, 2 * Math.PI);
+      context.arc(x, y, 5, 0, 2 * Math.PI);
       context.strokeStyle = "red";
       context.lineWidth = 2;
       context.stroke();
@@ -212,14 +212,14 @@ export default function Page() {
     nearestStars.forEach(({ label, vector }) => {
       const [x, y] = vector;
       context.beginPath();
-      context.arc(x, y, 3, 0, 2 * Math.PI);
-      context.strokeStyle = "blue";
+      context.arc(x, y, 10, 0, 2 * Math.PI);
+      context.strokeStyle = "oklch(.606 .25 292.717)";
       context.lineWidth = 3;
       context.stroke();
 
       context.font = "bold 20px Arial";
-      context.fillStyle = "#ff0000";
-      context.fillText(label, x + 10, y + 10);
+      context.fillStyle = "oklch(.606 .25 292.717)";
+      context.fillText(label, x + 16, y + 7);
     });
   }, [
     canvasElement,
