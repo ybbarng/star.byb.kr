@@ -15,6 +15,7 @@ export default function Page() {
   const [isOpenCvReady, setOpenCvReady] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedSampleId, setSelectedSampleId] = useState(13);
+  const [selectedCandidateIndex, setSelectedCandidateIndex] = useState(-1);
   const [stars, setStars] = useState<Star[]>([]);
   const { search, candidates } = useSearchStars();
 
@@ -74,7 +75,11 @@ export default function Page() {
   }
 
   function handleSelectChange(event: ChangeEvent<HTMLSelectElement>) {
-    setSelectedSampleId(parseInt(event.target.value, 10));
+    setSelectedSampleId(Number(event.target.value));
+  }
+
+  function handleSelectCandidateChange(event: ChangeEvent<HTMLSelectElement>) {
+    setSelectedCandidateIndex(Number(event.target.value));
   }
 
   async function loadImageToCanvas(
@@ -192,6 +197,28 @@ export default function Page() {
         >
           {plateSolvingButtonText}
         </button>
+        {candidates.length > 0 && (
+          <form className="mx-auto max-w-sm">
+            <label
+              htmlFor="samples"
+              className="mb-2 block text-sm font-medium text-gray-900 dark:text-white"
+            >
+              후보 별 사각형을 선택하세요
+            </label>
+            <select
+              id="candidates"
+              className="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"
+              onChange={handleSelectCandidateChange}
+              value={selectedCandidateIndex}
+            >
+              {candidates.map((candidate, i) => (
+                <option key={i} value={i}>
+                  {candidate.output.map((star) => star.label).join(", ")}
+                </option>
+              ))}
+            </select>
+          </form>
+        )}
       </div>
       <div className="columns-2">
         <img
