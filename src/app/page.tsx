@@ -153,6 +153,8 @@ export default function Page() {
     candidates.map((candidate) => {
       console.log(
         candidate.distance,
+        candidate.input.map((item) => item).join(", "),
+        " -> ",
         candidate.output.map((item) => item.label).join(", "),
       );
     });
