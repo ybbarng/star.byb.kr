@@ -6,6 +6,11 @@ export interface Sample {
 
 const samples: Sample[] = [
   {
+    src: "/samples/big-dipper.jpg",
+    width: 1152,
+    height: 819,
+  },
+  {
     src: "/samples/20190617-jarrod-saipan.jpg",
     width: 1440,
     height: 1920,
@@ -69,11 +74,6 @@ const samples: Sample[] = [
     src: "/samples/20250117-carl-aurora-04.jpg",
     width: 3024,
     height: 4032,
-  },
-  {
-    src: "/samples/ursa-major.jpg",
-    width: 1152,
-    height: 819,
   },
 ];
 

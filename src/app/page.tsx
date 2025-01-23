@@ -16,7 +16,7 @@ interface Star {
 export default function Page() {
   const [isOpenCvReady, setOpenCvReady] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [selectedSampleId, setSelectedSampleId] = useState(13);
+  const [selectedSampleId, setSelectedSampleId] = useState(0);
   const [selectedCandidateIndex, setSelectedCandidateIndex] = useState<
     number | undefined
   >(undefined);
