@@ -9,7 +9,7 @@ export interface Photo {
 export type CandidateInput = [number, number, number, number];
 
 export interface CandidateOutputItem {
-  hr: number;
+  hr: string;
   label: string;
 }
 

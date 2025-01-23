@@ -1,7 +1,7 @@
 import { Star } from "@/scripts/database/types";
 import * as hashLib from "@/scripts/hash/hash";
 import * as quadrilateral from "@/scripts/hash/quadrilateral";
-import { Hash, NamedPoint2D, NamedQuadrilateral2D } from "@/scripts/hash/types";
+import { Hash, NamedPoint2D } from "@/scripts/hash/types";
 import {
   Candidate,
   CandidateInput,
@@ -14,10 +14,10 @@ const hashes = _hashes as HashedQuad[];
 
 interface HashedQuad {
   hash: Hash;
-  stars: [number, number, number, number];
+  stars: [string, string, string, string];
 }
 
-const dictionary = new Map();
+const dictionary = new Map<string, string | undefined>();
 catalog.map((star: Star) => {
   dictionary.set(star.HR, star.N);
 });
@@ -74,7 +74,7 @@ const findCandidates = (photo: Photo) => {
 
     const found = hashes[minIndex].stars;
 
-    const getName = (hr: number) => {
+    const getName = (hr: string) => {
       const name = dictionary.get(hr);
 
       return name ? name : `HR ${hr}`;
