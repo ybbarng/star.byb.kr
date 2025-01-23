@@ -150,7 +150,7 @@ export default function Page() {
       }
     });
 
-    if (candidates.length < 1 || !selectedCandidateIndex) {
+    if (candidates.length < 1 || selectedCandidateIndex === undefined) {
       return;
     }
 
