@@ -1,7 +1,9 @@
 "use client";
 
 import { ChangeEvent, useEffect, useRef, useState } from "react";
+import useFindNearestStars from "@/search/hooks/useFindNearestStars";
 import useSearchStars from "@/search/hooks/useSearchStars";
+import { NearestStar2D, Point2D } from "@/search/type";
 import cv from "@/services/cv";
 import samples from "@/services/samples";
 
@@ -19,7 +21,9 @@ export default function Page() {
     number | undefined
   >(undefined);
   const [stars, setStars] = useState<Star[]>([]);
+  const [nearestStars, setNearestStars] = useState<NearestStar2D[]>([]);
   const { search, candidates } = useSearchStars();
+  const { find: findNearestStars } = useFindNearestStars();
 
   const imageElement = useRef<HTMLImageElement>(null);
   const canvasElement = useRef<HTMLCanvasElement>(null);
@@ -118,6 +122,35 @@ export default function Page() {
     }));
   }
 
+  async function handleFindNearestStarsButtonClicked() {
+    if (
+      !selectedSample ||
+      candidates.length === 0 ||
+      selectedCandidateIndex === undefined
+    ) {
+      return;
+    }
+
+    const selectedCandidate = candidates[selectedCandidateIndex];
+    const selectedPhotoStars = selectedCandidate.input
+      .map((starIndex) => stars[starIndex])
+      .map((star) => ({
+        position: [star.x, star.y] as Point2D,
+      }));
+    const candidateStars = selectedCandidate.output.map((item) => ({
+      hr: item.hr,
+    }));
+    const nearestStars = findNearestStars({
+      photo: {
+        width: selectedSample.width,
+        height: selectedSample.height,
+        quad: selectedPhotoStars,
+      },
+      candidate: candidateStars,
+    });
+    setNearestStars(nearestStars);
+  }
+
   useEffect(() => {
     if (!canvasElement.current || !imageElement.current) {
       console.log("Can't find elements");
@@ -171,7 +204,31 @@ export default function Page() {
     context.lineTo(p4.x, p4.y);
     context.closePath();
     context.stroke();
-  }, [canvasElement, imageElement, stars, candidates, selectedCandidateIndex]);
+
+    if (nearestStars.length < 1) {
+      return;
+    }
+
+    nearestStars.forEach(({ label, vector }) => {
+      const [x, y] = vector;
+      context.beginPath();
+      context.arc(x, y, 3, 0, 2 * Math.PI);
+      context.strokeStyle = "blue";
+      context.lineWidth = 3;
+      context.stroke();
+
+      context.font = "bold 20px Arial";
+      context.fillStyle = "#ff0000";
+      context.fillText(label, x + 10, y + 10);
+    });
+  }, [
+    canvasElement,
+    imageElement,
+    stars,
+    candidates,
+    selectedCandidateIndex,
+    nearestStars,
+  ]);
 
   useEffect(() => {
     candidates.map((candidate) => {
@@ -246,6 +303,14 @@ export default function Page() {
               ))}
             </select>
           </form>
+        )}
+        {selectedCandidateIndex !== undefined && (
+          <button
+            className="h-10 w-40 rounded-lg bg-blue-500 font-bold"
+            onClick={handleFindNearestStarsButtonClicked}
+          >
+            주변 별 찾기
+          </button>
         )}
       </div>
       <div className="columns-2">

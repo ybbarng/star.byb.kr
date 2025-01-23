@@ -25,3 +25,9 @@ export interface Candidate {
   output: CandidateOutput;
   distance: number;
 }
+
+export interface NearestStar2D {
+  hr: string;
+  label: string;
+  vector: Point2D;
+}
