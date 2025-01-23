@@ -54,7 +54,7 @@ export default function Page() {
     setIsProcessing(true);
 
     try {
-      await loadImageToCanvas(context, imageElement.current);
+      loadImageToCanvas(context, imageElement.current);
 
       const stars = await findStars(context);
       console.log(`별 수: ${stars.length}`);
@@ -82,7 +82,7 @@ export default function Page() {
     setSelectedCandidateIndex(Number(event.target.value));
   }
 
-  async function loadImageToCanvas(
+  function loadImageToCanvas(
     context: CanvasRenderingContext2D,
     imageElement: HTMLImageElement,
   ) {
@@ -117,7 +117,7 @@ export default function Page() {
   }
 
   useEffect(() => {
-    if (!canvasElement.current) {
+    if (!canvasElement.current || !imageElement.current) {
       console.log("Can't find elements");
 
       return;
@@ -130,6 +130,8 @@ export default function Page() {
 
       return;
     }
+
+    loadImageToCanvas(context, imageElement.current);
 
     stars.forEach(({ x, y, radius }) => {
       // Render the stars to the canvas
@@ -145,7 +147,7 @@ export default function Page() {
         context.fillText(`(${x.toFixed(2)}, ${y.toFixed(2)})`, x + 10, y + 10);
       }
     });
-  }, [stars]);
+  }, [canvasElement, imageElement, stars]);
 
   useEffect(() => {
     candidates.map((candidate) => {
