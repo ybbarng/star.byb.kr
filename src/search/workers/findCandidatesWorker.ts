@@ -1,7 +1,7 @@
 import { Star } from "@/scripts/database/types";
 import * as hashLib from "@/scripts/hash/hash";
 import * as quadrilateral from "@/scripts/hash/quadrilateral";
-import { Hash, NamedQuadrilateral2D } from "@/scripts/hash/types";
+import { Hash, NamedPoint2D, NamedQuadrilateral2D } from "@/scripts/hash/types";
 import {
   Candidate,
   CandidateInput,
@@ -33,13 +33,12 @@ const calculateDistance = (v1: number[], v2: number[]) => {
 };
 
 const findCandidates = (photo: Photo) => {
-  const quads = quadrilateral.create(photo.stars).map((quadrilateral) => {
-    const hash = hashLib.calculateHash(
-      quadrilateral.stars.map((vector, i) => ({
-        label: String(i),
-        vector,
-      })) as NamedQuadrilateral2D,
-    );
+  const namedStars: NamedPoint2D[] = photo.stars.map((star, i) => ({
+    label: String(i),
+    vector: star,
+  }));
+  const quads = quadrilateral.create(namedStars).map((quadrilateral) => {
+    const hash = hashLib.calculateHash(quadrilateral.stars);
 
     return {
       labels: hash.labels,
