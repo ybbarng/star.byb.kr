@@ -15,7 +15,9 @@ export default function Page() {
   const [isOpenCvReady, setOpenCvReady] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedSampleId, setSelectedSampleId] = useState(13);
-  const [selectedCandidateIndex, setSelectedCandidateIndex] = useState(-1);
+  const [selectedCandidateIndex, setSelectedCandidateIndex] = useState<
+    number | undefined
+  >(undefined);
   const [stars, setStars] = useState<Star[]>([]);
   const { search, candidates } = useSearchStars();
 
@@ -147,7 +149,29 @@ export default function Page() {
         context.fillText(`(${x.toFixed(2)}, ${y.toFixed(2)})`, x + 10, y + 10);
       }
     });
-  }, [canvasElement, imageElement, stars]);
+
+    if (candidates.length < 0 || !selectedCandidateIndex) {
+      return;
+    }
+
+    const selectedCandidate = candidates[selectedCandidateIndex];
+
+    const [i1, i2, i3, i4] = selectedCandidate.input;
+    const p1 = stars[i1];
+    const p2 = stars[i2];
+    const p3 = stars[i3];
+    const p4 = stars[i4];
+
+    context.strokeStyle = "green";
+    context.lineWidth = 4;
+    context.beginPath();
+    context.moveTo(p1.x, p1.y);
+    context.lineTo(p2.x, p2.y);
+    context.lineTo(p3.x, p3.y);
+    context.lineTo(p4.x, p4.y);
+    context.closePath();
+    context.stroke();
+  }, [canvasElement, imageElement, stars, candidates, selectedCandidateIndex]);
 
   useEffect(() => {
     candidates.map((candidate) => {
