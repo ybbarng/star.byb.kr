@@ -75,6 +75,11 @@ const samples: Sample[] = [
     width: 3024,
     height: 4032,
   },
+  {
+    src: "/samples/cafe-orion.jpg",
+    width: 1280,
+    height: 742,
+  },
 ];
 
 export default samples;
