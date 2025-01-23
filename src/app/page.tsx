@@ -176,7 +176,7 @@ export default function Page() {
       context.lineWidth = 2;
       context.stroke();
 
-      if (radius > 1) {
+      if (radius > 1 && nearestStars.length < 1) {
         context.font = "bold 20px Arial";
         context.fillStyle = "#ff0000";
         context.fillText(`(${x.toFixed(2)}, ${y.toFixed(2)})`, x + 10, y + 10);
