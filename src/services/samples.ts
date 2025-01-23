@@ -80,6 +80,11 @@ const samples: Sample[] = [
     width: 1280,
     height: 742,
   },
+  {
+    src: "/samples/google-unknown.jpg",
+    width: 699,
+    height: 699,
+  },
 ];
 
 export default samples;
