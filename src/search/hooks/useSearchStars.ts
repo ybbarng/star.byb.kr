@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Star } from "@/scripts/database/types";
 import * as hashLib from "@/scripts/hash/hash";
 import * as quadrilateral from "@/scripts/hash/quadrilateral";
@@ -36,6 +36,28 @@ const hashes = _hashes as HashedQuad[];
 
 export default function useSearchStars() {
   const [candidates, setCandidates] = useState<Candidate[]>([]);
+  const workerRef = useRef<Worker | undefined>(undefined);
+
+  useEffect(() => {
+    const worker = new Worker(
+      new URL("@/search/workers/findCandidatesWorker.ts", import.meta.url),
+    );
+
+    worker.onmessage = (messageEvent) => {
+      console.log(messageEvent.data);
+    };
+
+    worker.onerror = (errorEvent) => {
+      console.error(errorEvent.message);
+    };
+
+    workerRef.current = worker;
+
+    return () => {
+      worker.terminate();
+      workerRef.current = undefined;
+    };
+  }, []);
 
   const dictionary = useMemo(() => {
     const dictionary = new Map();
@@ -57,6 +79,7 @@ export default function useSearchStars() {
   };
 
   const search = (photo: Photo) => {
+    workerRef.current?.postMessage({ fn: "test" });
     const quads = quadrilateral.create(photo.stars).map((quadrilateral) => {
       const hash = hashLib.calculateHash(
         quadrilateral.stars.map((vector, i) => ({
