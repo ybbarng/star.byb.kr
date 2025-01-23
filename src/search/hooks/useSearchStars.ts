@@ -12,6 +12,13 @@ export default function useSearchStars() {
     [setCandidates],
   );
 
+  const onProgress = useCallback(
+    ({ total, progress }: { total: number; progress: number }) => {
+      console.log(`onProgress: ${progress} / ${total}`);
+    },
+    [],
+  );
+
   useEffect(() => {
     const worker = new Worker(
       new URL("@/search/workers/findCandidatesWorker.ts", import.meta.url),
@@ -21,6 +28,9 @@ export default function useSearchStars() {
       switch (messageEvent.data.fn) {
         case "onCandidatesFound":
           onCandidatesFound(messageEvent.data.payload);
+          break;
+        case "onProgress":
+          onProgress(messageEvent.data.payload);
           break;
       }
     };

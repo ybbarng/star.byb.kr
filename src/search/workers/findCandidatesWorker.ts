@@ -49,7 +49,9 @@ const findCandidates = (photo: Photo) => {
 
   const candidates: Candidate[] = [];
 
-  quads.forEach((quad) => {
+  const total = quads.length;
+  quads.forEach((quad, i) => {
+    postMessage({ fn: "onProgress", payload: { total, progress: i } });
     let minDistance = Number.MAX_VALUE;
     let minIndex = -1;
 
