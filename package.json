@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@hscmap/healpix": "^1.4.12",
+    "clsx": "^2.1.1",
     "mathjs": "^14.0.1",
     "next": "15.1.4",
     "react": "^19.0.0",
