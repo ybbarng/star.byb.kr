@@ -1,4 +1,5 @@
 import { ChangeEvent, useEffect, useState } from "react";
+import StepMover from "@/plate-solver/StepMover";
 import samples from "@/services/samples";
 
 enum ImageType {
@@ -55,6 +56,12 @@ export default function SelectPhotoStep() {
           <img src={previewSrc} className="max-h-[800px]" />
         </div>
       )}
+      <StepMover
+        disableNext={
+          (imageType === ImageType.SAMPLE && Number.isNaN(selectedSampleId)) ||
+          (imageType === ImageType.UPLOAD && !uploadedImage)
+        }
+      />
     </div>
   );
 }
