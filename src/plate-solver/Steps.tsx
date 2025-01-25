@@ -8,10 +8,18 @@ export default function Steps() {
   const current = useStepsStore((state) => state.current);
 
   return (
-    <ul className="steps">
+    <ul className="steps w-full">
       {steps.map((step, i) => {
         return (
-          <li key={step} className={cn("step", current >= i && "step-primary")}>
+          <li
+            key={step}
+            className={cn(
+              "step",
+              current >= i && "step-primary",
+              current === i && "font-bold",
+              current !== i && "text-neutral-300",
+            )}
+          >
             {step}
           </li>
         );
