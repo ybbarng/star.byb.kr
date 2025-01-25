@@ -3,18 +3,24 @@ import samples from "@/services/samples";
 
 export default function SelectPhotoStep() {
   const [selectedSampleId, setSelectedSampleId] = useState(0);
+  const selectedSample = samples[selectedSampleId];
 
   return (
-    <div className="flex w-full flex-col lg:flex-row">
-      <div className="card bg-base-300 rounded-box grid h-32 flex-grow place-items-center">
-        <SampleSelect
-          selectedSampleId={selectedSampleId}
-          setSelectedSampleId={setSelectedSampleId}
-        />
+    <div className="flex w-full flex-col gap-4">
+      <div className="flex w-full flex-col lg:flex-row">
+        <div className="card bg-base-300 rounded-box grid h-32 flex-grow place-items-center">
+          <SampleSelect
+            selectedSampleId={selectedSampleId}
+            setSelectedSampleId={setSelectedSampleId}
+          />
+        </div>
+        <div className="divider lg:divider-horizontal">또는</div>
+        <div className="card bg-base-300 rounded-box grid h-32 flex-grow place-items-center">
+          파일 업로드
+        </div>
       </div>
-      <div className="divider lg:divider-horizontal">또는</div>
-      <div className="card bg-base-300 rounded-box grid h-32 flex-grow place-items-center">
-        파일 업로드
+      <div className="flex justify-center">
+        <img src={selectedSample.src} className="max-h-[800px]" />
       </div>
     </div>
   );
