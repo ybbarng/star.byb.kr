@@ -1,9 +1,9 @@
-import Steps from "@/plate-solver/Steps";
+import PageHeader from "@/plate-solver/PageHeader";
 
 export default function PlateSolverPage() {
   return (
     <div>
-      <Steps />
+      <PageHeader />
       <div>Plate solver!</div>
     </div>
   );
