@@ -1,10 +1,11 @@
+import PageBody from "@/plate-solver/PageBody";
 import PageHeader from "@/plate-solver/PageHeader";
 
 export default function PlateSolverPage() {
   return (
-    <div>
+    <div className="flex flex-col gap-8">
       <PageHeader />
-      <div>Plate solver!</div>
+      <PageBody />
     </div>
   );
 }
