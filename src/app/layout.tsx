@@ -21,7 +21,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${pretendard.className} p-10 antialiased`}>
+      <body className={`${pretendard.className} p-8 antialiased`}>
         {children}
       </body>
     </html>

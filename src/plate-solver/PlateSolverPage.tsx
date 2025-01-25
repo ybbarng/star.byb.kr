@@ -3,7 +3,7 @@ import PageHeader from "@/plate-solver/PageHeader";
 
 export default function PlateSolverPage() {
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-6">
       <PageHeader />
       <PageBody />
     </div>
