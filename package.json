@@ -11,10 +11,12 @@
   "dependencies": {
     "@hscmap/healpix": "^1.4.12",
     "clsx": "^2.1.1",
+    "konva": "^9.3.18",
     "mathjs": "^14.0.1",
     "next": "15.1.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-konva": "^19.0.2",
     "three": "^0.172.0",
     "tsx": "^4.19.2",
     "zustand": "^5.0.3"
