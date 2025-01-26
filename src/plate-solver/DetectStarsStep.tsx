@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import StepMover from "@/plate-solver/StepMover";
 import { useContextStore } from "@/plate-solver/store/context";
 import cv from "@/services/cv";
 
@@ -12,6 +13,7 @@ interface CanvasStar {
 
 export default function DetectStarStep() {
   const image = useContextStore((state) => state.image);
+  const setPhotoStars = useContextStore((state) => state.setPhotoStars);
   const canvasElement = useRef<HTMLCanvasElement>(null);
   const [canvasStars, setCanvasStars] = useState<CanvasStar[]>([]);
 
@@ -111,24 +113,42 @@ export default function DetectStarStep() {
     });
   }, [canvasElement, image, canvasStars]);
 
+  const onBeforeNext = async () => {
+    setPhotoStars(
+      canvasStars.map((star) => ({
+        x: star.x,
+        y: star.y,
+      })),
+    );
+  };
+
   if (!image || !image.width) {
     return (
-      <div className="flex h-[800px] w-full items-center justify-center">
-        <span className="loading loading-spinner loading-lg"></span>
+      <div className="flex w-full flex-col gap-4">
+        <div className="flex h-[800px] w-full items-center justify-center">
+          <span className="loading loading-spinner loading-lg"></span>
+        </div>
+        <StepMover disableNext={true} />
       </div>
     );
   }
 
   return (
-    <div className="flex justify-center">
-      <canvas
-        className="max-h-[800px]"
-        ref={canvasElement}
-        width={image.width}
-        height={image.height}
-        style={{
-          aspectRatio: image.width / image.height,
-        }}
+    <div className="flex w-full flex-col gap-4">
+      <div className="flex justify-center">
+        <canvas
+          className="max-h-[800px]"
+          ref={canvasElement}
+          width={image.width}
+          height={image.height}
+          style={{
+            aspectRatio: image.width / image.height,
+          }}
+        />
+      </div>
+      <StepMover
+        disableNext={canvasStars.length < 1}
+        onBeforeNext={onBeforeNext}
       />
     </div>
   );
