@@ -1,8 +1,8 @@
 "use client";
 
 import Konva from "konva";
-import { useEffect, useState } from "react";
-import { Stage, Layer } from "react-konva";
+import { useEffect, useRef, useState } from "react";
+import { Stage, Layer, Rect } from "react-konva";
 import SelectableStarMarker from "@/plate-solver/SelectableStarMarker";
 import StepMover from "@/plate-solver/StepMover";
 import { useContextStore } from "@/plate-solver/store/context";
@@ -16,10 +16,27 @@ interface CanvasStar {
   isSelected: boolean;
 }
 
+interface SelectArea {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  visible: boolean;
+}
+
 export default function DetectStarStep() {
   const image = useContextStore((state) => state.image);
   const setPhotoStars = useContextStore((state) => state.setPhotoStars);
   const [canvasStars, setCanvasStars] = useState<CanvasStar[]>([]);
+  const [isSelecting, setIsSelecting] = useState(false);
+  const [selectArea, setSelectArea] = useState<SelectArea>({
+    x1: 0,
+    x2: 0,
+    y1: 0,
+    y2: 0,
+    visible: false,
+  });
+  const stageRef = useRef<Konva.Stage>(null);
 
   useEffect(() => {
     detectStars();
@@ -149,6 +166,68 @@ export default function DetectStarStep() {
     addStar(e.evt.offsetX - 1, e.evt.offsetY - 3);
   };
 
+  const handleDragStart = () => {
+    if (!stageRef.current) {
+      return;
+    }
+
+    const position = stageRef.current.getPointerPosition();
+
+    if (!position) {
+      return;
+    }
+
+    setIsSelecting(true);
+
+    setSelectArea({
+      x1: position.x,
+      y1: position.y,
+      x2: position.x,
+      y2: position.y,
+      visible: false,
+    });
+  };
+
+  const handleDragMove = () => {
+    if (!stageRef.current || !isSelecting) {
+      return;
+    }
+
+    const position = stageRef.current.getPointerPosition();
+
+    if (!position) {
+      return;
+    }
+
+    setSelectArea({
+      ...selectArea,
+      x2: position.x,
+      y2: position.y,
+      visible: true,
+    });
+  };
+
+  const handleDragEnd = () => {
+    if (!stageRef.current || !isSelecting) {
+      return;
+    }
+
+    const position = stageRef.current.getPointerPosition();
+
+    if (!position) {
+      return;
+    }
+
+    setIsSelecting(false);
+
+    setSelectArea({
+      ...selectArea,
+      x2: position.x,
+      y2: position.y,
+      visible: false,
+    });
+  };
+
   const onBeforeNext = async () => {
     setPhotoStars(
       canvasStars.map((star) => ({
@@ -178,9 +257,16 @@ export default function DetectStarStep() {
           }}
         >
           <Stage
+            ref={stageRef}
             width={image.width}
             height={image.height}
             onDblClick={handleDoubleClick}
+            onMouseDown={handleDragStart}
+            onTouchStart={handleDragStart}
+            onMouseMove={handleDragMove}
+            onTouchMove={handleDragMove}
+            onMouseUp={handleDragEnd}
+            onTouchEnd={handleDragEnd}
           >
             <Layer>
               {canvasStars.map((star) => (
@@ -195,6 +281,15 @@ export default function DetectStarStep() {
                   select={selectStar}
                 />
               ))}
+              <Rect
+                x={Math.min(selectArea.x1, selectArea.x2)}
+                y={Math.min(selectArea.y1, selectArea.y2)}
+                width={Math.abs(selectArea.x1 - selectArea.x2)}
+                height={Math.abs(selectArea.y1 - selectArea.y2)}
+                visible={selectArea.visible}
+                fill="rgba(0,0,255,0.5)"
+                listening={false}
+              />
             </Layer>
           </Stage>
         </div>
