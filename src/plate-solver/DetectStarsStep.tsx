@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import Konva from "konva";
+import { useEffect, useState } from "react";
+import { Stage, Layer, Ring, Image } from "react-konva";
 import StepMover from "@/plate-solver/StepMover";
 import { useContextStore } from "@/plate-solver/store/context";
 import cv from "@/services/cv";
@@ -9,6 +11,8 @@ interface CanvasStar {
   x: number;
   y: number;
   radius: number;
+  id: string;
+  isDragging: boolean;
 }
 
 export default function DetectStarStep() {
@@ -32,7 +36,13 @@ export default function DetectStarStep() {
 
       const stars = await findStars(imageData);
       console.log(`별 수: ${stars.length}`);
-      setCanvasStars(stars);
+      setCanvasStars(
+        stars.map((star) => ({
+          ...star,
+          id: crypto.randomUUID(),
+          isDragging: false,
+        })),
+      );
     } catch (error) {
       console.error(error);
     }
@@ -71,6 +81,29 @@ export default function DetectStarStep() {
     }));
   }
 
+  const handleDragStart = (e: Konva.KonvaEventObject<DragEvent>) => {
+    const id = e.target.id();
+    setCanvasStars(
+      canvasStars.map((star) => {
+        return {
+          ...star,
+          isDragging: star.id === id,
+        };
+      }),
+    );
+  };
+
+  const handleDragEnd = () => {
+    setCanvasStars(
+      canvasStars.map((star) => {
+        return {
+          ...star,
+          isDragging: false,
+        };
+      }),
+    );
+  };
+
   const onBeforeNext = async () => {
     setPhotoStars(
       canvasStars.map((star) => ({
@@ -94,6 +127,33 @@ export default function DetectStarStep() {
   return (
     <div className="flex w-full flex-col gap-4">
       <div className="flex justify-center">
+        <Stage width={image.width} height={image.height}>
+          <Layer>
+            <Image image={image} />
+            {canvasStars.map((star) => (
+              <Ring
+                key={star.id}
+                id={star.id}
+                x={star.x}
+                y={star.y}
+                innerRadius={15}
+                outerRadius={20}
+                fill="oklch(0.704 0.191 22.216)"
+                opacity={0.8}
+                draggable
+                shadowColor="black"
+                shadowBlur={10}
+                shadowOpacity={0.6}
+                shadowOffsetX={star.isDragging ? 10 : 5}
+                shadowOffsetY={star.isDragging ? 10 : 5}
+                scaleX={star.isDragging ? 1.2 : 1}
+                scaleY={star.isDragging ? 1.2 : 1}
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
+              />
+            ))}
+          </Layer>
+        </Stage>
       </div>
       <StepMover
         disableNext={canvasStars.length < 1}

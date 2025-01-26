@@ -102,7 +102,7 @@ export default function ChooseCandidateStep() {
       // Render the stars to the canvas
       context.beginPath();
       context.arc(x, y, 5, 0, 2 * Math.PI);
-      context.strokeStyle = "red";
+      context.strokeStyle = "oklch(0.704 0.191 22.216)";
       context.lineWidth = 2;
       context.stroke();
     });
