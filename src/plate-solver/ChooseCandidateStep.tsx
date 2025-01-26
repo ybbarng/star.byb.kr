@@ -238,7 +238,7 @@ function CandidateSelect(props: CandidateSelectProps) {
     <ul className="menu bg-base-200 rounded-box h-[800px] w-100 flex-row overflow-x-clip overflow-y-scroll">
       {props.candidates.map((candidate, i) => {
         return (
-          <li key={candidate} className="w-full">
+          <li key={`${candidate}-${i}`} className="w-full">
             <a
               className={cn(
                 props.selectedCandidateIndex === i && "menu-active",
