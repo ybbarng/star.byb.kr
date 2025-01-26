@@ -81,6 +81,33 @@ export default function DetectStarStep() {
     }));
   }
 
+  const addStar = (x: number, y: number) => {
+    setCanvasStars([
+      ...canvasStars,
+      {
+        id: crypto.randomUUID(),
+        x,
+        y,
+        radius: 1.5,
+        isDragging: false,
+      },
+    ]);
+  };
+
+  const removeStar = (id: string) => {
+    setCanvasStars(canvasStars.filter((star) => star.id !== id));
+  };
+
+  const handleDoubleClickImage = (e: Konva.KonvaEventObject<DragEvent>) => {
+    // 이벤트에서 얻어온 값과 마우스 포인터로 클릭한 곳의 오차가 있어서 보정
+    addStar(e.evt.offsetX - 1, e.evt.offsetY - 3);
+  };
+
+  const handleDoubleClickRing = (e: Konva.KonvaEventObject<DragEvent>) => {
+    const id = e.target.id();
+    removeStar(id);
+  };
+
   const handleDragStart = (e: Konva.KonvaEventObject<DragEvent>) => {
     const id = e.target.id();
     setCanvasStars(
@@ -129,7 +156,7 @@ export default function DetectStarStep() {
       <div className="flex justify-center">
         <Stage width={image.width} height={image.height}>
           <Layer>
-            <Image image={image} />
+            <Image image={image} onDblClick={handleDoubleClickImage} />
             {canvasStars.map((star) => (
               <Ring
                 key={star.id}
@@ -148,6 +175,7 @@ export default function DetectStarStep() {
                 shadowOffsetY={star.isDragging ? 10 : 5}
                 scaleX={star.isDragging ? 1.2 : 1}
                 scaleY={star.isDragging ? 1.2 : 1}
+                onDblClick={handleDoubleClickRing}
                 onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd}
               />
