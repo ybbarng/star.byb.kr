@@ -14,7 +14,6 @@ interface CanvasStar {
 export default function DetectStarStep() {
   const image = useContextStore((state) => state.image);
   const setPhotoStars = useContextStore((state) => state.setPhotoStars);
-  const canvasElement = useRef<HTMLCanvasElement>(null);
   const [canvasStars, setCanvasStars] = useState<CanvasStar[]>([]);
 
   useEffect(() => {
@@ -22,24 +21,16 @@ export default function DetectStarStep() {
   }, []);
 
   async function detectStars() {
-    if (!image || !canvasElement.current) {
+    if (!image) {
       console.log("DOM을 찾지 못했습니다.");
 
       return;
     }
 
-    const context = canvasElement.current.getContext("2d");
-
-    if (!context) {
-      console.log("Canvas의 context를 얻지 못했습니다.");
-
-      return;
-    }
-
     try {
-      loadImageToCanvas(context, image);
+      const imageData = loadImageData(image);
 
-      const stars = await findStars(context, image.width, image.height);
+      const stars = await findStars(imageData);
       console.log(`별 수: ${stars.length}`);
       setCanvasStars(stars);
     } catch (error) {
@@ -47,27 +38,27 @@ export default function DetectStarStep() {
     }
   }
 
-  function loadImageToCanvas(
-    context: CanvasRenderingContext2D,
-    imageElement: HTMLImageElement,
-  ) {
-    context.drawImage(
-      imageElement,
-      0,
-      0,
-      imageElement.width,
-      imageElement.height,
-    );
+  function loadImageData(imageElement: HTMLImageElement) {
+    const width = imageElement.width;
+    const height = imageElement.height;
+
+    const canvas = document.createElement("canvas");
+    const context = canvas.getContext("2d");
+
+    if (context === null) {
+      throw new Error("canvas의 context를 얻을 수 없습니다.");
+    }
+
+    canvas.width = width;
+    canvas.height = height;
+    context.drawImage(imageElement, 0, 0, width, height);
+
+    return context.getImageData(0, 0, width, height);
   }
 
-  async function findStars(
-    context: CanvasRenderingContext2D,
-    width: number,
-    height: number,
-  ) {
-    const image = context.getImageData(0, 0, width, height);
+  async function findStars(imageData: ImageData) {
     // Processing image
-    const result = await cv.findStars(image);
+    const result = await cv.findStars(imageData);
     let stars: { cx: number; cy: number; radius: number }[] =
       result.data.payload;
     stars = stars.sort((a, b) => b.radius - a.radius);
@@ -79,39 +70,6 @@ export default function DetectStarStep() {
       radius: star.radius,
     }));
   }
-
-  useEffect(() => {
-    if (!canvasElement.current || !image) {
-      console.log("Can't find elements");
-
-      return;
-    }
-
-    const context = canvasElement.current.getContext("2d");
-
-    if (!context) {
-      console.log("Can't find context of canvas.");
-
-      return;
-    }
-
-    loadImageToCanvas(context, image);
-
-    canvasStars.forEach(({ x, y, radius }) => {
-      // Render the stars to the canvas
-      context.beginPath();
-      context.arc(x, y, 5, 0, 2 * Math.PI);
-      context.strokeStyle = "red";
-      context.lineWidth = 2;
-      context.stroke();
-
-      if (radius > 1) {
-        context.font = "bold 20px Arial";
-        context.fillStyle = "#ff0000";
-        context.fillText(`(${x.toFixed(2)}, ${y.toFixed(2)})`, x + 10, y + 10);
-      }
-    });
-  }, [canvasElement, image, canvasStars]);
 
   const onBeforeNext = async () => {
     setPhotoStars(
@@ -136,15 +94,6 @@ export default function DetectStarStep() {
   return (
     <div className="flex w-full flex-col gap-4">
       <div className="flex justify-center">
-        <canvas
-          className="max-h-[800px]"
-          ref={canvasElement}
-          width={image.width}
-          height={image.height}
-          style={{
-            aspectRatio: image.width / image.height,
-          }}
-        />
       </div>
       <StepMover
         disableNext={canvasStars.length < 1}
