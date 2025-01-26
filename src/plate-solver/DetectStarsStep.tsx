@@ -2,7 +2,8 @@
 
 import Konva from "konva";
 import { useEffect, useState } from "react";
-import { Stage, Layer, Ring, Image } from "react-konva";
+import { Stage, Layer } from "react-konva";
+import SelectableStarMarker from "@/plate-solver/SelectableStarMarker";
 import StepMover from "@/plate-solver/StepMover";
 import { useContextStore } from "@/plate-solver/store/context";
 import cv from "@/services/cv";
@@ -12,7 +13,6 @@ interface CanvasStar {
   y: number;
   radius: number;
   id: string;
-  isDragging: boolean;
 }
 
 export default function DetectStarStep() {
@@ -40,7 +40,6 @@ export default function DetectStarStep() {
         stars.map((star) => ({
           ...star,
           id: crypto.randomUUID(),
-          isDragging: false,
         })),
       );
     } catch (error) {
@@ -89,9 +88,26 @@ export default function DetectStarStep() {
         x,
         y,
         radius: 1.5,
-        isDragging: false,
       },
     ]);
+  };
+
+  const onPositionUpdate = (id: string, x: number, y: number) => {
+    setCanvasStars(
+      canvasStars.map((star) => {
+        if (star.id === id) {
+          return {
+            ...star,
+            x,
+            y,
+          };
+        }
+
+        return {
+          ...star,
+        };
+      }),
+    );
   };
 
   const removeStar = (id: string) => {
@@ -101,44 +117,6 @@ export default function DetectStarStep() {
   const handleDoubleClickImage = (e: Konva.KonvaEventObject<DragEvent>) => {
     // 이벤트에서 얻어온 값과 마우스 포인터로 클릭한 곳의 오차가 있어서 보정
     addStar(e.evt.offsetX - 1, e.evt.offsetY - 3);
-  };
-
-  const handleDoubleClickRing = (e: Konva.KonvaEventObject<DragEvent>) => {
-    const id = e.target.id();
-    removeStar(id);
-  };
-
-  const handleDragStart = (e: Konva.KonvaEventObject<DragEvent>) => {
-    const id = e.target.id();
-    setCanvasStars(
-      canvasStars.map((star) => {
-        return {
-          ...star,
-          isDragging: star.id === id,
-        };
-      }),
-    );
-  };
-
-  const handleDragEnd = (e: Konva.KonvaEventObject<DragEvent>) => {
-    const id = e.target.id();
-    setCanvasStars(
-      canvasStars.map((star) => {
-        if (star.id === id) {
-          return {
-            ...star,
-            x: e.target.x(),
-            y: e.target.y(),
-            isDragging: false,
-          };
-        }
-
-        return {
-          ...star,
-          isDragging: false,
-        };
-      }),
-    );
   };
 
   const onBeforeNext = async () => {
@@ -161,6 +139,8 @@ export default function DetectStarStep() {
     );
   }
 
+  console.log(canvasStars?.[0]);
+
   return (
     <div className="flex w-full flex-col gap-4">
       <div className="flex justify-center">
@@ -176,26 +156,13 @@ export default function DetectStarStep() {
           >
             <Layer>
               {canvasStars.map((star) => (
-                <Ring
+                <SelectableStarMarker
                   key={star.id}
                   id={star.id}
                   x={star.x}
                   y={star.y}
-                  innerRadius={12}
-                  outerRadius={25}
-                  fill="oklch(0.704 0.191 22.216)"
-                  opacity={0.5}
-                  draggable
-                  shadowColor="black"
-                  shadowBlur={10}
-                  shadowOpacity={0.6}
-                  shadowOffsetX={star.isDragging ? 10 : 5}
-                  shadowOffsetY={star.isDragging ? 10 : 5}
-                  scaleX={star.isDragging ? 1.2 : 1}
-                  scaleY={star.isDragging ? 1.2 : 1}
-                  onDblClick={handleDoubleClickRing}
-                  onDragStart={handleDragStart}
-                  onDragEnd={handleDragEnd}
+                  onPositionUpdate={onPositionUpdate}
+                  remove={removeStar}
                 />
               ))}
             </Layer>
