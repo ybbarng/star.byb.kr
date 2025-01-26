@@ -11,7 +11,12 @@ export default function ChooseCandidateStep() {
   const [selectedCandidateIndex, setSelectedCandidateIndex] = useState<
     number | undefined
   >(undefined);
-  const { find: findCandidates, candidates } = useFindCandidates();
+  const {
+    find: findCandidates,
+    candidates,
+    progress,
+    total,
+  } = useFindCandidates();
   const candidateNames = useMemo(() => {
     return candidates.map((candidate) => {
       return candidate.output.map((star) => `[${star.label}]`).join("-");
@@ -110,11 +115,16 @@ export default function ChooseCandidateStep() {
   return (
     <div className="flex w-full flex-col gap-4">
       <div className="flex flex-row">
-        <CandidateSelect
-          selectedCandidateIndex={selectedCandidateIndex || -1}
-          setSelectedCandidateIndex={setSelectedCandidateIndex}
-          candidates={candidateNames}
-        />
+        {candidates.length < 1 && (
+          <CandidatesProgress progress={progress} total={total} />
+        )}
+        {candidates.length > 0 && (
+          <CandidateSelect
+            selectedCandidateIndex={selectedCandidateIndex || -1}
+            setSelectedCandidateIndex={setSelectedCandidateIndex}
+            candidates={candidateNames}
+          />
+        )}
         <div className="flex grow justify-center">
           <canvas
             className="max-h-[800px]"
@@ -132,6 +142,34 @@ export default function ChooseCandidateStep() {
   );
 }
 
+interface CandidatesProgressProps {
+  progress: number;
+  total: number;
+}
+
+function CandidatesProgress({ progress, total }: CandidatesProgressProps) {
+  return (
+    <div className="bg-base-200 rounded-box flex h-[800px] w-100 flex-row items-center justify-center">
+      <div className="flex flex-col items-center justify-center gap-2">
+        <div className="text-xl">로딩 중입니다.</div>
+        {total === 0 && (
+          <span className="loading loading-spinner loading-lg"></span>
+        )}
+        {total !== 0 && (
+          <>
+            <div>{`${progress} / ${total}`}</div>
+            <progress
+              className="progress progress-primary w-56"
+              value={progress}
+              max={total}
+            ></progress>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 interface CandidateSelectProps {
   selectedCandidateIndex: number;
   setSelectedCandidateIndex: (selectedCandidateIndex: number) => void;
@@ -139,14 +177,6 @@ interface CandidateSelectProps {
 }
 
 function CandidateSelect(props: CandidateSelectProps) {
-  if (props.candidates.length < 1) {
-    return (
-      <div className="bg-base-200 rounded-box flex h-[800px] w-100 flex-row items-center justify-center">
-        <span className="loading loading-spinner loading-lg"></span>
-      </div>
-    );
-  }
-
   return (
     <ul className="menu bg-base-200 rounded-box h-[800px] w-100 flex-row overflow-x-clip overflow-y-scroll">
       {props.candidates.map((candidate, i) => {

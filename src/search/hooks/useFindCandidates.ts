@@ -3,6 +3,8 @@ import { Candidate, Photo } from "@/search/type";
 
 export default function useFindCandidates() {
   const [candidates, setCandidates] = useState<Candidate[]>([]);
+  const [progress, setProgress] = useState(0);
+  const [total, setTotal] = useState(0);
   const workerRef = useRef<Worker | undefined>(undefined);
 
   const onCandidatesFound = useCallback(
@@ -15,6 +17,8 @@ export default function useFindCandidates() {
   const onProgress = useCallback(
     ({ total, progress }: { total: number; progress: number }) => {
       console.log(`onProgress: ${progress} / ${total}`);
+      setProgress(progress);
+      setTotal(total);
     },
     [],
   );
@@ -54,5 +58,7 @@ export default function useFindCandidates() {
   return {
     find,
     candidates,
+    progress,
+    total,
   };
 }
