@@ -144,7 +144,7 @@ export default function DetectStarStep() {
     );
   };
 
-  const handleDoubleClickImage = (e: Konva.KonvaEventObject<DragEvent>) => {
+  const handleDoubleClick = (e: Konva.KonvaEventObject<DragEvent>) => {
     // 이벤트에서 얻어온 값과 마우스 포인터로 클릭한 곳의 오차가 있어서 보정
     addStar(e.evt.offsetX - 1, e.evt.offsetY - 3);
   };
@@ -180,7 +180,7 @@ export default function DetectStarStep() {
           <Stage
             width={image.width}
             height={image.height}
-            onDblClick={handleDoubleClickImage}
+            onDblClick={handleDoubleClick}
           >
             <Layer>
               {canvasStars.map((star) => (
