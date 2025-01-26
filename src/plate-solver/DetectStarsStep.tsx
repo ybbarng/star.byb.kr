@@ -154,34 +154,43 @@ export default function DetectStarStep() {
   return (
     <div className="flex w-full flex-col gap-4">
       <div className="flex justify-center">
-        <Stage width={image.width} height={image.height}>
-          <Layer>
-            <Image image={image} onDblClick={handleDoubleClickImage} />
-            {canvasStars.map((star) => (
-              <Ring
-                key={star.id}
-                id={star.id}
-                x={star.x}
-                y={star.y}
-                innerRadius={12}
-                outerRadius={25}
-                fill="oklch(0.704 0.191 22.216)"
-                opacity={0.5}
-                draggable
-                shadowColor="black"
-                shadowBlur={10}
-                shadowOpacity={0.6}
-                shadowOffsetX={star.isDragging ? 10 : 5}
-                shadowOffsetY={star.isDragging ? 10 : 5}
-                scaleX={star.isDragging ? 1.2 : 1}
-                scaleY={star.isDragging ? 1.2 : 1}
-                onDblClick={handleDoubleClickRing}
-                onDragStart={handleDragStart}
-                onDragEnd={handleDragEnd}
-              />
-            ))}
-          </Layer>
-        </Stage>
+        <div
+          style={{
+            backgroundImage: `url(${image.src})`,
+          }}
+        >
+          <Stage
+            width={image.width}
+            height={image.height}
+            onDblClick={handleDoubleClickImage}
+          >
+            <Layer>
+              {canvasStars.map((star) => (
+                <Ring
+                  key={star.id}
+                  id={star.id}
+                  x={star.x}
+                  y={star.y}
+                  innerRadius={12}
+                  outerRadius={25}
+                  fill="oklch(0.704 0.191 22.216)"
+                  opacity={0.5}
+                  draggable
+                  shadowColor="black"
+                  shadowBlur={10}
+                  shadowOpacity={0.6}
+                  shadowOffsetX={star.isDragging ? 10 : 5}
+                  shadowOffsetY={star.isDragging ? 10 : 5}
+                  scaleX={star.isDragging ? 1.2 : 1}
+                  scaleY={star.isDragging ? 1.2 : 1}
+                  onDblClick={handleDoubleClickRing}
+                  onDragStart={handleDragStart}
+                  onDragEnd={handleDragEnd}
+                />
+              ))}
+            </Layer>
+          </Stage>
+        </div>
       </div>
       <StepMover
         disableNext={canvasStars.length < 1}
