@@ -1,8 +1,8 @@
 "use client";
 
 import { ChangeEvent, useEffect, useRef, useState } from "react";
+import useFindCandidates from "@/search/hooks/useFindCandidates";
 import useFindNearestStars from "@/search/hooks/useFindNearestStars";
-import useSearchStars from "@/search/hooks/useSearchStars";
 import { NearestStar2D, Point2D } from "@/search/type";
 import cv from "@/services/cv";
 import samples from "@/services/samples";
@@ -22,7 +22,7 @@ export default function Page() {
   >(undefined);
   const [stars, setStars] = useState<Star[]>([]);
   const [nearestStars, setNearestStars] = useState<NearestStar2D[]>([]);
-  const { search, candidates } = useSearchStars();
+  const { find: findCandidates, candidates } = useFindCandidates();
   const { find: findNearestStars } = useFindNearestStars();
 
   const imageElement = useRef<HTMLImageElement>(null);
@@ -73,7 +73,7 @@ export default function Page() {
   }
 
   async function plateSolving() {
-    search({
+    findCandidates({
       width: selectedSample.width,
       height: selectedSample.height,
       stars: stars.slice(0, 10).map((star) => [star.x, star.y]),

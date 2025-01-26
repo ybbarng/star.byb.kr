@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Candidate, Photo } from "@/search/type";
 
-export default function useSearchStars() {
+export default function useFindCandidates() {
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const workerRef = useRef<Worker | undefined>(undefined);
 
@@ -47,12 +47,12 @@ export default function useSearchStars() {
     };
   }, []);
 
-  const search = (photo: Photo) => {
+  const find = (photo: Photo) => {
     workerRef.current?.postMessage({ fn: "findCandidates", payload: photo });
   };
 
   return {
-    search,
+    find,
     candidates,
   };
 }
