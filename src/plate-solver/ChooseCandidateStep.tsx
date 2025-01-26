@@ -2,11 +2,14 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import StepMover from "@/plate-solver/StepMover";
 import { useContextStore } from "@/plate-solver/store/context";
 import useFindCandidates from "@/search/hooks/useFindCandidates";
+import useFindNearestStars from "@/search/hooks/useFindNearestStars";
+import { NearestStar2D, Point2D } from "@/search/type";
 import { cn } from "@/utils/cn";
 
 export default function ChooseCandidateStep() {
   const image = useContextStore((state) => state.image);
   const photoStars = useContextStore((state) => state.photoStars);
+  const [nearestStars, setNearestStars] = useState<NearestStar2D[]>([]);
   const canvasElement = useRef<HTMLCanvasElement>(null);
   const [selectedCandidateIndex, setSelectedCandidateIndex] = useState<
     number | undefined
@@ -17,6 +20,7 @@ export default function ChooseCandidateStep() {
     progress,
     total,
   } = useFindCandidates();
+  const { find: findNearestStars } = useFindNearestStars();
   const candidateNames = useMemo(() => {
     return candidates.map((candidate) => {
       return candidate.output.map((star) => `[${star.label}]`).join("-");
@@ -47,6 +51,35 @@ export default function ChooseCandidateStep() {
       imageElement.height,
     );
   }
+
+  useEffect(() => {
+    if (
+      !image ||
+      candidates.length === 0 ||
+      selectedCandidateIndex === undefined
+    ) {
+      return;
+    }
+
+    const selectedCandidate = candidates[selectedCandidateIndex];
+    const selectedPhotoStars = selectedCandidate.input
+      .map((starIndex) => photoStars[starIndex])
+      .map((star) => ({
+        position: [star.x, star.y] as Point2D,
+      }));
+    const candidateStars = selectedCandidate.output.map((item) => ({
+      hr: item.hr,
+    }));
+    const nearestStars = findNearestStars({
+      photo: {
+        width: image.width,
+        height: image.height,
+        quad: selectedPhotoStars,
+      },
+      candidate: candidateStars,
+    });
+    setNearestStars(nearestStars);
+  }, [image, photoStars, candidates, selectedCandidateIndex]);
 
   useEffect(() => {
     if (!canvasElement.current || !image) {
@@ -95,7 +128,31 @@ export default function ChooseCandidateStep() {
     context.lineTo(p4.x, p4.y);
     context.closePath();
     context.stroke();
-  }, [canvasElement, image, photoStars, candidates, selectedCandidateIndex]);
+
+    if (nearestStars.length < 1) {
+      return;
+    }
+
+    nearestStars.forEach(({ label, vector }) => {
+      const [x, y] = vector;
+      context.beginPath();
+      context.arc(x, y, 10, 0, 2 * Math.PI);
+      context.strokeStyle = "oklch(.606 .25 292.717)";
+      context.lineWidth = 3;
+      context.stroke();
+
+      context.font = "bold 20px Arial";
+      context.fillStyle = "oklch(.606 .25 292.717)";
+      context.fillText(label, x + 16, y + 7);
+    });
+  }, [
+    canvasElement,
+    image,
+    photoStars,
+    candidates,
+    selectedCandidateIndex,
+    nearestStars,
+  ]);
 
   const onBeforeNext = async () => {
     // TODO: save candidates
