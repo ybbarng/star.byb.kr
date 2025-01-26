@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useContextStore } from "@/plate-solver/store/context";
 import cv from "@/services/cv";
 
-interface Star {
+interface CanvasStar {
   x: number;
   y: number;
   radius: number;
@@ -13,7 +13,7 @@ interface Star {
 export default function DetectStarStep() {
   const image = useContextStore((state) => state.image);
   const canvasElement = useRef<HTMLCanvasElement>(null);
-  const [stars, setStars] = useState<Star[]>([]);
+  const [canvasStars, setCanvasStars] = useState<CanvasStar[]>([]);
 
   useEffect(() => {
     detectStars();
@@ -39,7 +39,7 @@ export default function DetectStarStep() {
 
       const stars = await findStars(context, image.width, image.height);
       console.log(`별 수: ${stars.length}`);
-      setStars(stars);
+      setCanvasStars(stars);
     } catch (error) {
       console.error(error);
     }
@@ -95,7 +95,7 @@ export default function DetectStarStep() {
 
     loadImageToCanvas(context, image);
 
-    stars.forEach(({ x, y, radius }) => {
+    canvasStars.forEach(({ x, y, radius }) => {
       // Render the stars to the canvas
       context.beginPath();
       context.arc(x, y, 5, 0, 2 * Math.PI);
@@ -109,7 +109,7 @@ export default function DetectStarStep() {
         context.fillText(`(${x.toFixed(2)}, ${y.toFixed(2)})`, x + 10, y + 10);
       }
     });
-  }, [canvasElement, image, stars]);
+  }, [canvasElement, image, canvasStars]);
 
   if (!image || !image.width) {
     return (
