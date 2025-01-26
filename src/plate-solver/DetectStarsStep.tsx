@@ -163,10 +163,10 @@ export default function DetectStarStep() {
                 id={star.id}
                 x={star.x}
                 y={star.y}
-                innerRadius={15}
-                outerRadius={20}
+                innerRadius={12}
+                outerRadius={25}
                 fill="oklch(0.704 0.191 22.216)"
-                opacity={0.8}
+                opacity={0.5}
                 draggable
                 shadowColor="black"
                 shadowBlur={10}
