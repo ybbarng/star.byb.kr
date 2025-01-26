@@ -25,6 +25,24 @@ export default function DetectStarStep() {
     detectStars();
   }, []);
 
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (canvasStars.length < 1) {
+        return;
+      }
+
+      if (event.key === "Delete" || event.key === "Backspace") {
+        setCanvasStars(canvasStars.filter((star) => !star.isSelected));
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [canvasStars]);
+
   async function detectStars() {
     if (!image) {
       console.log("DOM을 찾지 못했습니다.");
@@ -150,8 +168,6 @@ export default function DetectStarStep() {
       </div>
     );
   }
-
-  console.log(canvasStars?.[0]);
 
   return (
     <div className="flex w-full flex-col gap-4">
