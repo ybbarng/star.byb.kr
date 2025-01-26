@@ -1,5 +1,6 @@
 "use client";
 
+import ChooseCandidateStep from "@/plate-solver/ChooseCandidateStep";
 import DetectStarStep from "@/plate-solver/DetectStarsStep";
 import SelectPhotoStep from "@/plate-solver/SelectPhotoStep";
 import { useStepsStore } from "@/plate-solver/store/steps";
@@ -16,4 +17,4 @@ export default function PageBody() {
   );
 }
 
-const StepPages = [SelectPhotoStep, DetectStarStep];
+const StepPages = [SelectPhotoStep, DetectStarStep, ChooseCandidateStep];
