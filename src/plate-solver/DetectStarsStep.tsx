@@ -219,13 +219,25 @@ export default function DetectStarStep() {
     }
 
     setIsSelecting(false);
-
     setSelectArea({
       ...selectArea,
       x2: position.x,
       y2: position.y,
       visible: false,
     });
+
+    const select = stageRef.current.find(".select")[0];
+    const stars = stageRef.current.find(".star");
+    const box = select.getClientRect();
+    const selected = stars
+      .filter((star) => Konva.Util.haveIntersection(box, star.getClientRect()))
+      .map((star) => star.id());
+    setCanvasStars(
+      canvasStars.map((star) => ({
+        ...star,
+        isSelected: selected.includes(star.id),
+      })),
+    );
   };
 
   const onBeforeNext = async () => {
@@ -282,6 +294,7 @@ export default function DetectStarStep() {
                 />
               ))}
               <Rect
+                name="select"
                 x={Math.min(selectArea.x1, selectArea.x2)}
                 y={Math.min(selectArea.y1, selectArea.y2)}
                 width={Math.abs(selectArea.x1 - selectArea.x2)}

@@ -56,6 +56,7 @@ export default function SelectableStarMarker(props: Props) {
         id={props.id}
         x={props.x}
         y={props.y}
+        name="star"
         innerRadius={12}
         outerRadius={25}
         fill="oklch(0.704 0.191 22.216)"
