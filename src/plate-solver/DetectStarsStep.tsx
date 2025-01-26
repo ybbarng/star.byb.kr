@@ -13,6 +13,7 @@ interface CanvasStar {
   y: number;
   radius: number;
   id: string;
+  isSelected: boolean;
 }
 
 export default function DetectStarStep() {
@@ -40,6 +41,7 @@ export default function DetectStarStep() {
         stars.map((star) => ({
           ...star,
           id: crypto.randomUUID(),
+          isSelected: false,
         })),
       );
     } catch (error) {
@@ -88,6 +90,7 @@ export default function DetectStarStep() {
         x,
         y,
         radius: 1.5,
+        isSelected: false,
       },
     ]);
   };
@@ -112,6 +115,15 @@ export default function DetectStarStep() {
 
   const removeStar = (id: string) => {
     setCanvasStars(canvasStars.filter((star) => star.id !== id));
+  };
+
+  const selectStar = (id: string) => {
+    setCanvasStars(
+      canvasStars.map((star) => ({
+        ...star,
+        isSelected: star.id === id,
+      })),
+    );
   };
 
   const handleDoubleClickImage = (e: Konva.KonvaEventObject<DragEvent>) => {
@@ -161,8 +173,10 @@ export default function DetectStarStep() {
                   id={star.id}
                   x={star.x}
                   y={star.y}
+                  isSelected={star.isSelected}
                   onPositionUpdate={onPositionUpdate}
                   remove={removeStar}
+                  select={selectStar}
                 />
               ))}
             </Layer>
