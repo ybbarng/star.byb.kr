@@ -121,7 +121,7 @@ export default function DetectStarStep() {
     setCanvasStars(
       canvasStars.map((star) => ({
         ...star,
-        isSelected: star.id === id,
+        isSelected: star.id === id ? true : star.isSelected,
       })),
     );
   };
