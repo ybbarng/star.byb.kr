@@ -120,9 +120,19 @@ export default function DetectStarStep() {
     );
   };
 
-  const handleDragEnd = () => {
+  const handleDragEnd = (e: Konva.KonvaEventObject<DragEvent>) => {
+    const id = e.target.id();
     setCanvasStars(
       canvasStars.map((star) => {
+        if (star.id === id) {
+          return {
+            ...star,
+            x: e.target.x(),
+            y: e.target.y(),
+            isDragging: false,
+          };
+        }
+
         return {
           ...star,
           isDragging: false,
