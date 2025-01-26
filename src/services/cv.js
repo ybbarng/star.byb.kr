@@ -6,12 +6,16 @@ class CV {
    */
   _dispatch(event) {
     const { msg } = event;
-    this._status[msg] = ["loading"];
-    this.worker.postMessage(event);
+    const messageId = crypto.randomUUID();
+    this._status[messageId] = ["loading"];
+    this.worker.postMessage({
+      ...event,
+      messageId,
+    });
 
     return new Promise((res, rej) => {
       let interval = setInterval(() => {
-        const status = this._status[msg];
+        const status = this._status[messageId];
         if (status[0] === "done") res(status[1]);
         if (status[0] === "error") rej(status[1]);
 
@@ -36,8 +40,14 @@ class CV {
     this.worker = new Worker("/js/cv.worker.js"); // load worker
 
     // Capture events and save [status, event] inside the _status object
-    this.worker.onmessage = (e) => (this._status[e.data.msg] = ["done", e]);
-    this.worker.onerror = (e) => (this._status[e.data.msg] = ["error", e]);
+    this.worker.onmessage = (e) => {
+      console.log(e.data.messageId);
+      this._status[e.data.messageId] = ["done", e];
+    };
+
+    this.worker.onerror = (e) => {
+      this._status[e.data.messageId] = ["error", e];
+    };
 
     return this._dispatch({ msg: "load" });
   }

@@ -2,7 +2,7 @@
  * With OpenCV we have to work with the images as cv.Mat (matrices),
  * so you'll have to transform the ImageData to it.
  */
-function testImageProcessing(cv, { msg, payload }) {
+function testImageProcessing(cv, payload) {
   const img = cv.matFromImageData(payload);
   let result = new cv.Mat();
   let blurred = new cv.Mat();
@@ -27,7 +27,8 @@ function testImageProcessing(cv, { msg, payload }) {
   cv.threshold(result, result, 70, 255, cv.THRESH_BINARY);
 
   cv.bitwise_not(result, result);
-  postMessage({ msg, payload: imageDataFromMat(cv, result) });
+
+  return imageDataFromMat(cv, result);
 }
 
 /**
@@ -128,12 +129,13 @@ function _findStars(cv, image) {
   return stars;
 }
 
-function findStars(cv, { msg, payload }) {
+function findStars(cv, payload) {
   const image = _preprocessImage(cv, payload);
   const stars = _findStars(cv, image);
 
   image.delete();
-  postMessage({ msg, payload: stars });
+
+  return stars;
 }
 
 /**
@@ -147,14 +149,22 @@ onmessage = async function (e) {
       // Import Webassembly script
       self.importScripts("./opencv.js");
       await cv;
-      postMessage({ msg: e.data.msg });
+      postMessage({ msg: e.data.msg, messageId: e.data.messageId });
       break;
     }
 
-    case "testImageProcessing":
-      return testImageProcessing(await cv, e.data);
-    case "findStars":
-      return findStars(await cv, e.data);
+    case "testImageProcessing": {
+      const payload = testImageProcessing(await cv, e.data.payload);
+      postMessage({ ...e.data, payload });
+      break;
+    }
+
+    case "findStars": {
+      const payload = findStars(await cv, e.data.payload);
+      postMessage({ ...e.data, payload });
+      break;
+    }
+
     default:
       break;
   }
