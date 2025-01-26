@@ -1,5 +1,6 @@
 import { ChangeEvent, useEffect, useState } from "react";
 import StepMover from "@/plate-solver/StepMover";
+import { useContextStore } from "@/plate-solver/store/context";
 import samples from "@/services/samples";
 
 enum ImageType {
@@ -13,6 +14,7 @@ export default function SelectPhotoStep() {
   const selectedSample = samples[selectedSampleId];
   const [uploadedImage, setUploadedImage] = useState<File>();
   const [uploadedUrl, setUploadedUrl] = useState<string>();
+  const setImage = useContextStore((state) => state.setImage);
 
   useEffect(() => {
     if (!uploadedImage) {
@@ -28,6 +30,16 @@ export default function SelectPhotoStep() {
 
   const previewSrc =
     imageType === ImageType.SAMPLE ? selectedSample.src : uploadedUrl;
+
+  const onBeforeNext = () => {
+    if (!previewSrc) {
+      return;
+    }
+
+    const image = new Image();
+    image.src = previewSrc;
+    setImage(image);
+  };
 
   return (
     <div className="flex w-full flex-col gap-4">
@@ -61,6 +73,7 @@ export default function SelectPhotoStep() {
           (imageType === ImageType.SAMPLE && Number.isNaN(selectedSampleId)) ||
           (imageType === ImageType.UPLOAD && !uploadedImage)
         }
+        onBeforeNext={onBeforeNext}
       />
     </div>
   );
