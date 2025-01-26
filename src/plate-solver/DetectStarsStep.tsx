@@ -232,6 +232,11 @@ export default function DetectStarStep() {
     const selected = stars
       .filter((star) => Konva.Util.haveIntersection(box, star.getClientRect()))
       .map((star) => star.id());
+
+    if (selected.length < 1) {
+      return;
+    }
+
     setCanvasStars(
       canvasStars.map((star) => ({
         ...star,
