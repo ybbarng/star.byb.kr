@@ -31,7 +31,7 @@ export default function SelectPhotoStep() {
   const previewSrc =
     imageType === ImageType.SAMPLE ? selectedSample.src : uploadedUrl;
 
-  const onBeforeNext = () => {
+  const onBeforeNext = async () => {
     if (!previewSrc) {
       return;
     }
@@ -39,6 +39,21 @@ export default function SelectPhotoStep() {
     const image = new Image();
     image.src = previewSrc;
     setImage(image);
+    const { promise, resolve, reject } = Promise.withResolvers<void>();
+    const worker = window.setInterval(() => {
+      try {
+        if (image.width) {
+          window.clearInterval(worker);
+          resolve();
+        }
+      } catch (e) {
+        console.error(e);
+        window.clearInterval(worker);
+        reject(e);
+      }
+    }, 100);
+
+    return promise;
   };
 
   return (

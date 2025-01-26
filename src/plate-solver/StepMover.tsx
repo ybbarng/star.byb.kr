@@ -3,7 +3,7 @@ import { useStepsStore } from "@/plate-solver/store/steps";
 interface Props {
   disablePrev?: boolean;
   disableNext?: boolean;
-  onBeforeNext?: () => void;
+  onBeforeNext?: () => Promise<void>;
 }
 
 export default function StepMover(props: Props) {
@@ -12,9 +12,9 @@ export default function StepMover(props: Props) {
   const moveToPrev = useStepsStore((state) => state.moveToPrev);
   const moveToNext = useStepsStore((state) => state.moveToNext);
 
-  const handleMoveToNext = () => {
+  const handleMoveToNext = async () => {
     if (props.onBeforeNext) {
-      props.onBeforeNext();
+      await props.onBeforeNext();
     }
 
     moveToNext();
