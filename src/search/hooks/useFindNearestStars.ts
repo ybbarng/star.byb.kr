@@ -45,7 +45,7 @@ export default function useFindNearestStars() {
       const star: StarVector | undefined = catalog.get(hr);
 
       if (!star) {
-        throw new Error(`카탈로그에서 별 HR ${hr}을 찾을 수 업습니다.`);
+        throw new Error(`카탈로그에서 별 HR ${hr}을 찾을 수 없습니다.`);
       }
 
       return [star.x, star.y, star.z];
