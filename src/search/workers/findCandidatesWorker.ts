@@ -48,26 +48,7 @@ const tree = new kdtree.kdTree(
   ["x", "y", "z", "w"],
 );
 
-const findNearestQuadByBruteForce = (quad: number[]) => {
-  let minDistance = Number.MAX_VALUE;
-  let minIndex = -1;
-
-  for (let i = 0; i < hashes.length; i += 1) {
-    const index = hashes[i];
-    const distance = calculateDistance(index.hash, quad);
-
-    if (minDistance < distance) {
-      continue;
-    }
-
-    minDistance = distance;
-    minIndex = i;
-  }
-
-  return minIndex;
-};
-
-const findNearestQuadsByKdTree = (quad: number[]) => {
+const findNearestQuads = (quad: number[]) => {
   const nearest = tree.nearest(
     {
       i: 0,
@@ -80,16 +61,6 @@ const findNearestQuadsByKdTree = (quad: number[]) => {
   );
 
   return nearest[0][0].i;
-};
-
-const findNearestQuads = (quad: number[]) => {
-  const useBruteForce = false;
-
-  if (useBruteForce) {
-    return findNearestQuadByBruteForce(quad);
-  }
-
-  return findNearestQuadsByKdTree(quad);
 };
 
 const findCandidates = (photo: Photo) => {
