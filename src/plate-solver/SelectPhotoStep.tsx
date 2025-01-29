@@ -37,7 +37,13 @@ export default function SelectPhotoStep() {
     }
 
     const image = new Image();
-    image.src = previewSrc;
+
+    if (imageType === ImageType.UPLOAD && uploadedImage) {
+      image.src = URL.createObjectURL(uploadedImage);
+    } else {
+      image.src = previewSrc;
+    }
+
     setImage(image);
     const { promise, resolve, reject } = Promise.withResolvers<void>();
     const worker = window.setInterval(() => {
