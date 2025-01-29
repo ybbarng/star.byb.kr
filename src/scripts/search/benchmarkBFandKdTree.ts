@@ -108,7 +108,7 @@ const benchmark = (
 
 const run = (testQuad: number[]) => {
   benchmark(testQuad, 1, true);
-  benchmark(testQuad, 10000, false);
+  benchmark(testQuad, 3000, false);
 };
 
 const testSet = [
