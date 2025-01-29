@@ -11,6 +11,7 @@
   "dependencies": {
     "@hscmap/healpix": "^1.4.12",
     "clsx": "^2.1.1",
+    "kd-tree-javascript": "^1.0.3",
     "konva": "^9.3.18",
     "mathjs": "^14.0.1",
     "next": "15.1.4",
@@ -24,6 +25,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4.0.0",
+    "@types/kd-tree-javascript": "^1.0.3",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
