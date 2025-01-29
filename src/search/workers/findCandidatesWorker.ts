@@ -1,3 +1,4 @@
+import * as kdtree from "kd-tree-javascript";
 import { Star } from "@/scripts/database/types";
 import * as hashLib from "@/scripts/hash/hash";
 import * as quadrilateral from "@/scripts/hash/quadrilateral";
@@ -32,6 +33,21 @@ const calculateDistance = (v1: number[], v2: number[]) => {
     .reduce((sum, a) => sum + a, 0);
 };
 
+const tree = new kdtree.kdTree(
+  hashes.map((hash, i) => {
+    return {
+      i,
+      x: hash.hash[0],
+      y: hash.hash[1],
+      z: hash.hash[2],
+      w: hash.hash[3],
+    };
+  }),
+  (p1, p2) =>
+    calculateDistance([p1.x, p1.y, p1.z, p1.w], [p2.x, p2.y, p2.z, p2.w]),
+  ["x", "y", "z", "w"],
+);
+
 const findNearestQuadByBruteForce = (quad: number[]) => {
   let minDistance = Number.MAX_VALUE;
   let minIndex = -1;
@@ -49,6 +65,31 @@ const findNearestQuadByBruteForce = (quad: number[]) => {
   }
 
   return minIndex;
+};
+
+const findNearestQuadsByKdTree = (quad: number[]) => {
+  const nearest = tree.nearest(
+    {
+      i: 0,
+      x: quad[0],
+      y: quad[1],
+      z: quad[2],
+      w: quad[3],
+    },
+    1,
+  );
+
+  return nearest[0][0].i;
+};
+
+const findNearestQuads = (quad: number[]) => {
+  const useBruteForce = false;
+
+  if (useBruteForce) {
+    return findNearestQuadByBruteForce(quad);
+  }
+
+  return findNearestQuadsByKdTree(quad);
 };
 
 const findCandidates = (photo: Photo) => {
@@ -70,7 +111,7 @@ const findCandidates = (photo: Photo) => {
   const total = quads.length;
   quads.forEach((quad, i) => {
     postMessage({ fn: "onProgress", payload: { total, progress: i } });
-    const minIndex = findNearestQuadByBruteForce(quad.hash);
+    const minIndex = findNearestQuads(quad.hash);
 
     if (minIndex === -1) {
       console.log("검색 결과가 없습니다.");
