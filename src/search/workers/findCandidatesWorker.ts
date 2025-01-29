@@ -32,6 +32,25 @@ const calculateDistance = (v1: number[], v2: number[]) => {
     .reduce((sum, a) => sum + a, 0);
 };
 
+const findNearestQuadByBruteForce = (quad: number[]) => {
+  let minDistance = Number.MAX_VALUE;
+  let minIndex = -1;
+
+  for (let i = 0; i < hashes.length; i += 1) {
+    const index = hashes[i];
+    const distance = calculateDistance(index.hash, quad);
+
+    if (minDistance < distance) {
+      continue;
+    }
+
+    minDistance = distance;
+    minIndex = i;
+  }
+
+  return minIndex;
+};
+
 const findCandidates = (photo: Photo) => {
   const namedStars: NamedPoint2D[] = photo.stars.map((star, i) => ({
     label: String(i),
@@ -51,20 +70,7 @@ const findCandidates = (photo: Photo) => {
   const total = quads.length;
   quads.forEach((quad, i) => {
     postMessage({ fn: "onProgress", payload: { total, progress: i } });
-    let minDistance = Number.MAX_VALUE;
-    let minIndex = -1;
-
-    for (let i = 0; i < hashes.length; i += 1) {
-      const index = hashes[i];
-      const distance = calculateDistance(index.hash, quad.hash);
-
-      if (minDistance < distance) {
-        continue;
-      }
-
-      minDistance = distance;
-      minIndex = i;
-    }
+    const minIndex = findNearestQuadByBruteForce(quad.hash);
 
     if (minIndex === -1) {
       console.log("검색 결과가 없습니다.");
@@ -73,6 +79,7 @@ const findCandidates = (photo: Photo) => {
     }
 
     const found = hashes[minIndex].stars;
+    const minDistance = calculateDistance(hashes[minIndex].hash, quad.hash);
 
     const getName = (hr: string) => {
       const name = dictionary.get(hr);
