@@ -13,10 +13,12 @@ type Path =
 // 지금은 항상 프로젝트 루트에서 스크립트를 실행한다고 가정
 const ROOT = ".";
 
-export const loadJson = (path: Path, fileName: string) => {
-  const jsonFile = fs.readFileSync(`${ROOT}/${path}/${fileName}`, "utf8");
+export const load = (path: Path, fileName: string) => {
+  return fs.readFileSync(`${ROOT}/${path}/${fileName}`, "utf8");
+};
 
-  return JSON.parse(jsonFile);
+export const loadJson = (path: Path, fileName: string) => {
+  return JSON.parse(load(path, fileName));
 };
 
 export const save = (path: Path, fileName: string, payload: string) => {
