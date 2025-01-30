@@ -3,13 +3,12 @@ import StepMover from "@/plate-solver/StepMover";
 import { useContextStore } from "@/plate-solver/store/context";
 import useFindCandidates from "@/search/hooks/useFindCandidates";
 import useFindNearestStars from "@/search/hooks/useFindNearestStars";
-import { NearestStar2D, Point2D } from "@/search/type";
+import { Point2D } from "@/search/type";
 import { cn } from "@/utils/cn";
 
 export default function ChooseCandidateStep() {
   const image = useContextStore((state) => state.image);
   const photoStars = useContextStore((state) => state.photoStars);
-  const [nearestStars, setNearestStars] = useState<NearestStar2D[]>([]);
   const canvasElement = useRef<HTMLCanvasElement>(null);
   const [selectedCandidateIndex, setSelectedCandidateIndex] = useState<
     number | undefined
@@ -20,7 +19,7 @@ export default function ChooseCandidateStep() {
     progress,
     total,
   } = useFindCandidates();
-  const { find: findNearestStars } = useFindNearestStars();
+  const { find: findNearestStars, nearestStars } = useFindNearestStars();
   const candidateNames = useMemo(() => {
     return candidates.map((candidate) => {
       return candidate.output.map((star) => `[${star.label}]`).join("-");
@@ -70,7 +69,7 @@ export default function ChooseCandidateStep() {
     const candidateStars = selectedCandidate.output.map((item) => ({
       hr: item.hr,
     }));
-    const nearestStars = findNearestStars({
+    findNearestStars({
       photo: {
         width: image.width,
         height: image.height,
@@ -78,7 +77,6 @@ export default function ChooseCandidateStep() {
       },
       candidate: candidateStars,
     });
-    setNearestStars(nearestStars);
   }, [image, photoStars, candidates, selectedCandidateIndex]);
 
   useEffect(() => {
