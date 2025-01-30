@@ -4,6 +4,7 @@ import { useState } from "react";
 import * as plane from "@/scripts/hash/plane";
 import { Point2D, Point3D, StarVector } from "@/scripts/hash/types";
 import { NearestStar2D } from "@/search/type";
+import { toCartesian } from "@/search/utils/vector";
 import _catalog from "@build/database/vectors-database.json";
 
 interface PhotoStar {
@@ -154,10 +155,6 @@ export default function useFindNearestStars() {
       [Math.sin(theta), Math.cos(theta), 0],
       [0, 0, 1],
     ]);
-  };
-
-  const toCartesian = (vector: Point3D): Point2D => {
-    return [vector[0] / vector[2], vector[1] / vector[2]];
   };
 
   const filterNearestStars = (
