@@ -81,7 +81,7 @@ export const useThreeConstellations = () => {
           points,
         );
         const constellationMaterial = new THREE.LineBasicMaterial({
-          color: 0x008888,
+          color: 0xffdf20,
         });
         const constellationLine = new THREE.Line(
           constellationGeometry,

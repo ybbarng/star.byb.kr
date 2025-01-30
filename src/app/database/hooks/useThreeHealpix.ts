@@ -73,7 +73,7 @@ export const useThreeHealpix = () => {
           "position",
           new THREE.Float32BufferAttribute(path, 3),
         );
-        const material = new THREE.LineBasicMaterial({ color: 0x1e40af });
+        const material = new THREE.LineBasicMaterial({ color: 0x333333 });
         const border = new THREE.Line(geometry, material);
         borders.push(border);
       }
