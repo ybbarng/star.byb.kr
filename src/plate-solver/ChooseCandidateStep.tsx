@@ -164,6 +164,20 @@ export default function ChooseCandidateStep() {
         context.lineTo(...stars[i + 1]);
         context.stroke();
       }
+
+      const visibleStars = stars.filter(
+        (star) =>
+          star[0] >= 0 &&
+          star[0] < image.width &&
+          star[1] >= 0 &&
+          star[1] < image.height,
+      );
+      const center = visibleStars
+        .reduce((sum, star) => [sum[0] + star[0], sum[1] + star[1]], [0, 0])
+        .map((value) => value / visibleStars.length);
+      context.font = "bold 20px Arial";
+      context.fillStyle = "oklch(0.905 0.182 98.111)";
+      context.fillText(label, center[0], center[1]);
     });
   }, [
     canvasElement,
