@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import ChooseCandidateStep from "@/plate-solver/ChooseCandidateStep";
+import PlateSolvingStep from "@/plate-solver/PlateSolvingStep";
 import SelectPhotoStep from "@/plate-solver/SelectPhotoStep";
 import { useStepsStore } from "@/plate-solver/store/steps";
 
@@ -24,4 +24,4 @@ export default function PageBody() {
   );
 }
 
-const StepPages = [SelectPhotoStep, DetectStarStep, ChooseCandidateStep];
+const StepPages = [SelectPhotoStep, DetectStarStep, PlateSolvingStep];

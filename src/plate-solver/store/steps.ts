@@ -8,7 +8,7 @@ interface StepsState {
 }
 
 export const useStepsStore = create<StepsState>()((set) => ({
-  steps: ["사진 선택", "별 감지", "후보 찾기", "주변 별 표시"],
+  steps: ["사진 선택", "별 감지", "Plate Solving"],
   current: 0,
   moveToPrev: () =>
     set((state) => {

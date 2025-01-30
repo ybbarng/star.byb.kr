@@ -6,7 +6,7 @@ import useFindNearestStars from "@/search/hooks/useFindNearestStars";
 import { Point2D } from "@/search/type";
 import { cn } from "@/utils/cn";
 
-export default function ChooseCandidateStep() {
+export default function PlateSolvingStep() {
   const image = useContextStore((state) => state.image);
   const photoStars = useContextStore((state) => state.photoStars);
   const canvasElement = useRef<HTMLCanvasElement>(null);
