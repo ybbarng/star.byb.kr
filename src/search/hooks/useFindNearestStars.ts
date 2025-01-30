@@ -3,6 +3,7 @@ import { Matrix } from "mathjs";
 import { useState } from "react";
 import * as plane from "@/scripts/hash/plane";
 import { Point2D, Point3D, StarVector } from "@/scripts/hash/types";
+import { useFindConstellations } from "@/search/hooks/useFindConstellations";
 import { NearestStar2D } from "@/search/type";
 import { toCartesian } from "@/search/utils/vector";
 import _catalog from "@build/database/vectors-database.json";
@@ -40,6 +41,8 @@ _catalog.forEach((star: StarVector) => {
 
 export default function useFindNearestStars() {
   const [nearestStars, setNearestStars] = useState<NearestStar2D[]>([]);
+  const { find: findNearestConstellations, nearestConstellations } =
+    useFindConstellations();
 
   const find = ({ photo, candidate }: CalculateAlignmentParams) => {
     const databaseQuad: Point3D[] = candidate.map(({ hr }) => {
@@ -76,6 +79,11 @@ export default function useFindNearestStars() {
         ),
       })),
     );
+
+    findNearestConstellations({
+      center: centerOfPhotoVector,
+      matrix: math.multiply(T, P) as Matrix,
+    });
   };
 
   const calculateProjectTransform = (quad: Point3D[]) => {
@@ -186,5 +194,6 @@ export default function useFindNearestStars() {
   return {
     find,
     nearestStars,
+    nearestConstellations,
   };
 }

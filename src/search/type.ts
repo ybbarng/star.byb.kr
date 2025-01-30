@@ -31,3 +31,8 @@ export interface NearestStar2D {
   label: string;
   vector: Point2D;
 }
+
+export interface NearestConstellation2D {
+  label: string;
+  stars: Point2D[];
+}

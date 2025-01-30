@@ -19,7 +19,11 @@ export default function ChooseCandidateStep() {
     progress,
     total,
   } = useFindCandidates();
-  const { find: findNearestStars, nearestStars } = useFindNearestStars();
+  const {
+    find: findNearestStars,
+    nearestStars,
+    nearestConstellations,
+  } = useFindNearestStars();
   const candidateNames = useMemo(() => {
     return candidates.map((candidate) => {
       return candidate.output.map((star) => `[${star.label}]`).join("-");
@@ -143,6 +147,24 @@ export default function ChooseCandidateStep() {
       context.fillStyle = "oklch(.606 .25 292.717)";
       context.fillText(label, x + 16, y + 7);
     });
+
+    console.log(nearestConstellations.length);
+
+    if (nearestConstellations.length < 1) {
+      return;
+    }
+
+    nearestConstellations.forEach(({ label, stars }) => {
+      context.strokeStyle = "oklch(0.905 0.182 98.111)";
+      context.lineWidth = 1;
+
+      for (let i = 0; i < stars.length - 1; i++) {
+        context.beginPath();
+        context.moveTo(...stars[i]);
+        context.lineTo(...stars[i + 1]);
+        context.stroke();
+      }
+    });
   }, [
     canvasElement,
     image,
@@ -150,6 +172,7 @@ export default function ChooseCandidateStep() {
     candidates,
     selectedCandidateIndex,
     nearestStars,
+    nearestConstellations,
   ]);
 
   const onBeforeNext = async () => {
