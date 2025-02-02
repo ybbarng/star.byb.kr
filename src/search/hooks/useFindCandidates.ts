@@ -1,9 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Candidate, Photo } from "@/search/type";
 
-const worker = new Worker(
-  new URL("@/search/workers/findCandidatesWorker.ts", import.meta.url),
-);
+let worker: Worker;
 
 export default function useFindCandidates() {
   const [candidates, setCandidates] = useState<Candidate[]>([]);
@@ -28,6 +26,12 @@ export default function useFindCandidates() {
   );
 
   useEffect(() => {
+    if (!worker) {
+      worker = new Worker(
+        new URL("@/search/workers/findCandidatesWorker.ts", import.meta.url),
+      );
+    }
+
     worker.onmessage = (messageEvent) => {
       switch (messageEvent.data.fn) {
         case "onCandidatesFound":
