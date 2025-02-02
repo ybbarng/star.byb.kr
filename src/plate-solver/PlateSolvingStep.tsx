@@ -206,7 +206,7 @@ export default function PlateSolvingStep() {
 
   return (
     <div className="flex size-full flex-col justify-stretch gap-4">
-      <div className="flex flex-row overflow-hidden">
+      <div className="flex h-full flex-row overflow-hidden">
         {candidates.length < 1 && (
           <CandidatesProgress progress={progress} total={total} />
         )}
@@ -241,7 +241,7 @@ interface CandidatesProgressProps {
 
 function CandidatesProgress({ progress, total }: CandidatesProgressProps) {
   return (
-    <div className="bg-base-200 rounded-box flex max-h-full w-100 flex-row items-center justify-center">
+    <div className="bg-base-200 rounded-box flex h-full w-100 shrink-0 flex-row items-center justify-center">
       <div className="flex flex-col items-center justify-center gap-2">
         <div className="text-xl">로딩 중입니다.</div>
         {total === 0 && (
