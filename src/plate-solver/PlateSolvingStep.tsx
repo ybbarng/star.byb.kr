@@ -270,7 +270,7 @@ interface CandidateSelectProps {
 
 function CandidateSelect(props: CandidateSelectProps) {
   return (
-    <ul className="menu bg-base-200 rounded-box h-full w-100 flex-row overflow-x-clip overflow-y-scroll">
+    <ul className="menu bg-base-200 rounded-box h-full w-100 shrink-0 flex-row overflow-x-clip overflow-y-scroll">
       {props.candidates.map((candidate, i) => {
         return (
           <li key={`${candidate}-${i}`} className="w-full">
