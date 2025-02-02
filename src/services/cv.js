@@ -37,7 +37,7 @@ class CV {
    */
   load() {
     this._status = {};
-    this.worker = new Worker("/js/cv.worker.js"); // load worker
+    this.worker = new window.Worker("/js/cv.worker.js"); // load worker
 
     // Capture events and save [status, event] inside the _status object
     this.worker.onmessage = (e) => {
