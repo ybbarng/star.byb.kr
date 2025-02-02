@@ -50,6 +50,16 @@ export default function DetectStarStep() {
 
       if (event.key === "Delete" || event.key === "Backspace") {
         setCanvasStars(canvasStars.filter((star) => !star.isSelected));
+
+        return;
+      }
+
+      if (event.key === "Escape") {
+        setCanvasStars(
+          canvasStars.map((star) => ({ ...star, isSelected: false })),
+        );
+
+        return;
       }
     };
 
