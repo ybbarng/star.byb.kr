@@ -84,10 +84,10 @@ export default function SelectPhotoStep() {
           <ImageUpload setUploadedImage={setUploadedImage} />
         </div>
       </div>
-      <div className="grow">
+      <div className="flex-1 overflow-hidden">
         {previewSrc && (
-          <div className="flex justify-center">
-            <img src={previewSrc} className="max-h-[800px]" />
+          <div className="flex size-full justify-center">
+            <img src={previewSrc} className="max-h-full" />
           </div>
         )}
       </div>
