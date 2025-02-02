@@ -266,50 +266,52 @@ export default function DetectStarStep() {
   }
 
   return (
-    <div className="flex w-full flex-col gap-4">
-      <div className="flex justify-center">
-        <div
-          style={{
-            backgroundImage: `url(${image.src})`,
-          }}
-        >
-          <Stage
-            ref={stageRef}
-            width={image.width}
-            height={image.height}
-            onDblClick={handleDoubleClick}
-            onMouseDown={handleDragStart}
-            onTouchStart={handleDragStart}
-            onMouseMove={handleDragMove}
-            onTouchMove={handleDragMove}
-            onMouseUp={handleDragEnd}
-            onTouchEnd={handleDragEnd}
+    <div className="flex h-full w-full flex-col gap-4">
+      <div className="flex h-full w-full justify-center overflow-auto">
+        <div>
+          <div
+            style={{
+              backgroundImage: `url(${image.src})`,
+            }}
           >
-            <Layer>
-              {canvasStars.map((star) => (
-                <SelectableStarMarker
-                  key={star.id}
-                  id={star.id}
-                  x={star.x}
-                  y={star.y}
-                  isSelected={star.isSelected}
-                  onPositionUpdate={onPositionUpdate}
-                  remove={removeStar}
-                  select={selectStar}
+            <Stage
+              ref={stageRef}
+              width={image.width}
+              height={image.height}
+              onDblClick={handleDoubleClick}
+              onMouseDown={handleDragStart}
+              onTouchStart={handleDragStart}
+              onMouseMove={handleDragMove}
+              onTouchMove={handleDragMove}
+              onMouseUp={handleDragEnd}
+              onTouchEnd={handleDragEnd}
+            >
+              <Layer>
+                {canvasStars.map((star) => (
+                  <SelectableStarMarker
+                    key={star.id}
+                    id={star.id}
+                    x={star.x}
+                    y={star.y}
+                    isSelected={star.isSelected}
+                    onPositionUpdate={onPositionUpdate}
+                    remove={removeStar}
+                    select={selectStar}
+                  />
+                ))}
+                <Rect
+                  name="select"
+                  x={Math.min(selectArea.x1, selectArea.x2)}
+                  y={Math.min(selectArea.y1, selectArea.y2)}
+                  width={Math.abs(selectArea.x1 - selectArea.x2)}
+                  height={Math.abs(selectArea.y1 - selectArea.y2)}
+                  visible={selectArea.visible}
+                  fill="rgba(0,0,255,0.5)"
+                  listening={false}
                 />
-              ))}
-              <Rect
-                name="select"
-                x={Math.min(selectArea.x1, selectArea.x2)}
-                y={Math.min(selectArea.y1, selectArea.y2)}
-                width={Math.abs(selectArea.x1 - selectArea.x2)}
-                height={Math.abs(selectArea.y1 - selectArea.y2)}
-                visible={selectArea.visible}
-                fill="rgba(0,0,255,0.5)"
-                listening={false}
-              />
-            </Layer>
-          </Stage>
+              </Layer>
+            </Stage>
+          </div>
         </div>
       </div>
       <StepMover

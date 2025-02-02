@@ -63,7 +63,7 @@ export default function SelectPhotoStep() {
   };
 
   return (
-    <div className="flex w-full flex-col gap-4">
+    <div className="flex h-full w-full flex-col gap-4">
       <div className="flex w-full flex-col lg:flex-row">
         <div
           className="card bg-base-300 rounded-box focus:bg-primary/30 grid h-24 flex-grow place-items-center"
@@ -84,11 +84,13 @@ export default function SelectPhotoStep() {
           <ImageUpload setUploadedImage={setUploadedImage} />
         </div>
       </div>
-      {previewSrc && (
-        <div className="flex justify-center">
-          <img src={previewSrc} className="max-h-[800px]" />
-        </div>
-      )}
+      <div className="grow">
+        {previewSrc && (
+          <div className="flex justify-center">
+            <img src={previewSrc} className="max-h-[800px]" />
+          </div>
+        )}
+      </div>
       <StepMover
         disableNext={
           (imageType === ImageType.SAMPLE && Number.isNaN(selectedSampleId)) ||

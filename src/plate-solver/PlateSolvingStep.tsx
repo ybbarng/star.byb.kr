@@ -195,8 +195,8 @@ export default function PlateSolvingStep() {
 
   if (!image || !image.width) {
     return (
-      <div className="flex w-full flex-col gap-4">
-        <div className="flex h-[800px] w-full items-center justify-center">
+      <div className="flex size-full flex-col gap-4">
+        <div className="flex size-full items-center justify-center">
           <span className="loading loading-spinner loading-lg"></span>
         </div>
         <StepMover disableNext={true} />
@@ -205,8 +205,8 @@ export default function PlateSolvingStep() {
   }
 
   return (
-    <div className="flex w-full flex-col gap-4">
-      <div className="flex flex-row">
+    <div className="flex size-full flex-col justify-stretch gap-4">
+      <div className="flex flex-row overflow-hidden">
         {candidates.length < 1 && (
           <CandidatesProgress progress={progress} total={total} />
         )}
@@ -219,7 +219,7 @@ export default function PlateSolvingStep() {
         )}
         <div className="flex grow justify-center">
           <canvas
-            className="max-h-[800px]"
+            className="max-h-full"
             ref={canvasElement}
             width={image.width}
             height={image.height}
@@ -241,7 +241,7 @@ interface CandidatesProgressProps {
 
 function CandidatesProgress({ progress, total }: CandidatesProgressProps) {
   return (
-    <div className="bg-base-200 rounded-box flex h-[800px] w-100 flex-row items-center justify-center">
+    <div className="bg-base-200 rounded-box flex max-h-full w-100 flex-row items-center justify-center">
       <div className="flex flex-col items-center justify-center gap-2">
         <div className="text-xl">로딩 중입니다.</div>
         {total === 0 && (
@@ -270,7 +270,7 @@ interface CandidateSelectProps {
 
 function CandidateSelect(props: CandidateSelectProps) {
   return (
-    <ul className="menu bg-base-200 rounded-box h-[800px] w-100 flex-row overflow-x-clip overflow-y-scroll">
+    <ul className="menu bg-base-200 rounded-box h-full w-100 flex-row overflow-x-clip overflow-y-scroll">
       {props.candidates.map((candidate, i) => {
         return (
           <li key={`${candidate}-${i}`} className="w-full">

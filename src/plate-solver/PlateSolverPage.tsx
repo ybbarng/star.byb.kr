@@ -17,9 +17,11 @@ export default function PlateSolverPage() {
   }, []);
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex size-full flex-col gap-6">
       <PageHeader />
-      <PageBody />
+      <div className="flex-1 overflow-hidden">
+        <PageBody />
+      </div>
     </div>
   );
 }
