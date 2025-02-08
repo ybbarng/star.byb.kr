@@ -1,8 +1,8 @@
 "use client";
 import { useEffect, useRef } from "react";
-import { useThreeConstellations } from "@/app/database/hooks/useThreeConstellations";
-import { useThreeScene } from "@/app/database/hooks/useThreeScene";
-import { useThreeStars } from "@/app/database/hooks/useThreeStars";
+import { useThreeConstellations } from "@/app/demo/catalog/hooks/useThreeConstellations";
+import { useThreeScene } from "@/app/demo/catalog/hooks/useThreeScene";
+import { useThreeStars } from "@/app/demo/catalog/hooks/useThreeStars";
 
 export default function Page() {
   const mountRef = useRef<HTMLDivElement>(null);
