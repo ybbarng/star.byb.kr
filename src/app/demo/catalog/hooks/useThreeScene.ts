@@ -18,7 +18,7 @@ export const useThreeScene = (divRef: RefObject<HTMLDivElement | null>) => {
       1,
       1000,
     );
-    camera.position.z = 200;
+    camera.position.z = 165;
     const renderer = new THREE.WebGLRenderer();
     renderer.setSize(window.innerWidth, window.innerHeight);
     divRef.current.appendChild(renderer.domElement);
