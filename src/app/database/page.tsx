@@ -74,7 +74,7 @@ export default function Page() {
     <div className="relative">
       <div ref={mountRef} />
 
-      <div className="absolute left-4 top-4 flex flex-row gap-4">
+      <div className="absolute top-4 left-4 flex flex-row gap-4">
         <div className="mb-4 flex items-center">
           <input
             id="show-constellations"
