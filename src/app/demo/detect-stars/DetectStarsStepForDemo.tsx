@@ -267,11 +267,12 @@ export default function DetectStarStepForDemo() {
 
   return (
     <div className="flex h-full w-full flex-col gap-4">
-      <div className="overflow flex h-full w-full justify-center">
-        <div>
+      <div className="overflow flex h-full w-full justify-center gap-4">
+        <div className="flex-1">
           <div
             style={{
               backgroundImage: `url(${image.src})`,
+              backgroundRepeat: "no-repeat",
             }}
           >
             <Stage
@@ -312,6 +313,16 @@ export default function DetectStarStepForDemo() {
               </Layer>
             </Stage>
           </div>
+        </div>
+        <div>
+          <h2 className="font-bold">별 목록</h2>
+          <ul className="mt-1 ml-2">
+            {canvasStars.map((star) => (
+              <li key={star.id}>
+                [{star.x}, {star.y}]
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
     </div>
