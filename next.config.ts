@@ -7,6 +7,10 @@ const nextConfig: NextConfig = {
 
     return config;
   },
+  devIndicators: {
+    appIsrStatus: false, // defaults to true
+    buildActivity: false, // defaults to true
+  },
 };
 
 export default nextConfig;
