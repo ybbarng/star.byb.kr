@@ -18,6 +18,7 @@ export const useThreeScene = (divRef: RefObject<HTMLDivElement | null>) => {
       1,
       1000,
     );
+    camera.position.z = 200;
     const renderer = new THREE.WebGLRenderer();
     renderer.setSize(window.innerWidth, window.innerHeight);
     divRef.current.appendChild(renderer.domElement);
@@ -36,35 +37,6 @@ export const useThreeScene = (divRef: RefObject<HTMLDivElement | null>) => {
       requestAnimationFrame(animate);
       renderer.render(scene, camera);
     };
-
-    // [ -0.5657188370629972, -0.03898483875185704, 0.8321347812191403 ]
-    // [ -0.5631362255583447, -0.046464995646676444, 0.8325142706465549 ]
-    // 1. 주어진 벡터와 Z축 정의
-    // 1. 벡터 정의
-    const v1 = new THREE.Vector3(
-      -0.5657188370629972,
-      0.8321347812191403,
-      -0.03898483875185704,
-    );
-    const v2 = new THREE.Vector3(
-      -0.5631362255583447,
-      0.8325142706465549,
-      -0.046464995646676444,
-    ); // 주어진 벡터 v2
-
-    // 2. 새로운 Z축 정의 (v1)
-    const zAxis = v1.clone().normalize();
-
-    // 3. 새로운 Y축 정의 (v2 - v1)
-    const temp = v2.clone().sub(v1); // v2 - v1
-    let yAxis = temp.clone().normalize();
-
-    // zAxis에 투영된 성분을 제거하여 z축과 y축을 직교하게 함
-    const projectionOntoZ = zAxis.clone().multiplyScalar(yAxis.dot(zAxis));
-    yAxis = yAxis.sub(projectionOntoZ).normalize();
-
-    camera.position.set(zAxis.x * 200, zAxis.y * 200, zAxis.z * 200);
-    camera.up.set(yAxis.x, yAxis.y, yAxis.z);
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
