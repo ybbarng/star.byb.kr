@@ -1,0 +1,36 @@
+"use client";
+import { useEffect, useRef } from "react";
+import { useThreeConstellations } from "@/app/demo/hooks/useThreeConstellations";
+import { useThreeScene } from "@/app/demo/hooks/useThreeScene";
+import { useThreeStars } from "@/app/demo/hooks/useThreeStars";
+
+export default function Page() {
+  const mountRef = useRef<HTMLDivElement>(null);
+  const { scene } = useThreeScene(mountRef);
+  const { stars } = useThreeStars();
+  const { constellations } = useThreeConstellations();
+
+  useEffect(() => {
+    if (!scene || !stars) {
+      return;
+    }
+
+    scene.add(stars);
+  }, [scene, stars]);
+
+  useEffect(() => {
+    if (!scene || !constellations) {
+      return;
+    }
+
+    constellations.forEach((constellation) => {
+      scene.add(constellation);
+    });
+  }, [scene, constellations]);
+
+  return (
+    <div className="relative">
+      <div ref={mountRef} />
+    </div>
+  );
+}
