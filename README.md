@@ -29,3 +29,8 @@ npx tsx src/scripts/database/buildConstellations.ts
 ```sh
 npm run dev
 ```
+
+### 링크
+
+* [Plate Solver](http://localhost:5025/plate-solver)
+* [발표 슬라이드](http://localhost:5025/presentation/index.html)
