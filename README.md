@@ -1,8 +1,24 @@
 # star.byb.kr
-
 나만의 작고 소중한 Plate Solver
 
-## 기본 사용법
+## 간단 사용법
+
+> **Warning**
+>  [nvm을 설치](https://github.com/nvm-sh/nvm)해주세요.
+
+터미널을 열고 아래의 스크립트를 실행하세요.
+
+```sh
+git clone https://github.com/ybbarng/star.byb.kr.git
+cd star.byb.kr
+npm install
+./build_database.sh
+npm run dev
+```
+
+웹브라우저에서 [홈페이지](http://localhost:5025)를 열어주세요.
+
+## 사용법
 
 ### 설치
 
@@ -12,6 +28,8 @@ npm run dev
 ```
 
 ### 데이터베이스 파일 준비
+
+아래 내용은 `./build_database.sh` 파일에 동일하게 작성되어 있습니다.
 
 ```sh
 # 기본 데이터베이스의 별이 너무 많으므로 4등급 이상의 별만 사용
