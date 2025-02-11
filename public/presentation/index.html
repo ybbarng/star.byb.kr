@@ -448,7 +448,29 @@
           <iframe src='http://localhost:5025/plate-solver' style='height:100%;width:100%'></iframe>
         </section>
         <section class="fullscreen-slide">
-          <img src="resources/restart-05.svg"/>
+          <div class="r-stack">
+            <img src="resources/restart-05.svg"/>
+            <img class="fragment" src="resources/wip-04.svg"/>
+          </div>
+        </section>
+        <section class="title-body-slide">
+          <h1>아무나 이 발표의 삽질과 흑마법을 확인할 수 있게 하기</h1>
+          <div class="body" style="display: flex; flex-direction: column; gap: 1em; align-items: start;">
+            <div> 1. nvm 설치</div>
+            <div style="width: 100%;">
+              <div style="text-align: left;">
+               2. 터미널에서 아래 스크립트 실행
+              </div>
+              <pre><code data-trim data-noescape>
+git clone https://github.com/ybbarng/star.byb.kr.git
+cd star.byb.kr
+npm install
+./build_database.sh
+npm run dev
+  </code></pre>
+              </div>
+            <div>3. 웹브라우저에서 http://localhost:5025 열기</div>
+          </div>
         </section>
         <section class="section-header-slide">
           <h1>감사합니다.</h1>
