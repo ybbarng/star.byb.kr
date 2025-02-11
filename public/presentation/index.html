@@ -1,0 +1,497 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <title>Dev Seminar - Brice</title>
+
+    <link rel="stylesheet" href="/presentation/dist/reset.css">
+    <link rel="stylesheet" href="/presentation/dist/reveal.css">
+    <link rel="stylesheet" href="/presentation/dist/theme/ybbarng.css">
+
+    <!-- Theme used for syntax highlighted code -->
+    <link rel="stylesheet" href="/presentation/plugin/highlight/monokai.css">
+  </head>
+  <body>
+    <div class="reveal">
+      <div class="slides">
+        <section class="title-slide">
+          <h1>Dev Seminar</h1>
+          <h2>
+            <p>2025-XX-XX</p>
+            <p>Supply Frontend</p>
+            <p>Brice</p>
+          </h2>
+          <aside class="notes">
+            자기 소개
+          </aside>
+        </section>
+        <section class="title-slide" data-background-image="resources/harvard_computers.jpg">
+          <h1 class="darker"><p>Plate Solver 만들기<sup>V2</sup></p></h1>
+          <h2 class="darker">
+            <p>2025-XX-XX</p>
+            <p>Supply Frontend</p>
+            <p>Brice</p>
+          </h2>
+          <aside class="notes">
+            오늘 발표 주제는 Plate Solver 만들기 두 번째 시도입니다.
+            <br>
+            배경 이미지에 여성들이 무엇인가를 하고 있는게 보이는데, 나중에 설명하겠습니다.
+          </aside>
+        </section>
+        <section>
+          <div style="position: relative; height: 100%; width: 100%;">
+            <img src="resources/slide_intro_to_plate_solving.png" style="width: 60%; position: absolute; left: 0; top: 0;">
+            <img class="fragment" src="resources/slide_night_of_counting_stars_of_dev.png" style="width: 60%; position: absolute; right: 0; bottom: 0;">
+          </div>
+        </section>
+        <section class="fullscreen-slide">
+          <div class="r-stack">
+            <img src="resources/plate-solving-berry-01.svg"/>
+            <img class="fragment" src="resources/plate-solving-berry-02.svg"/>
+            <img class="fragment" src="resources/plate-solving-berry-03.svg"/>
+            <img class="fragment" src="resources/plate-solving-berry-04.svg"/>
+            <img class="fragment" src="resources/plate-solving-berry-05.svg"/>
+            <img class="fragment" src="resources/plate-solving-berry-06.svg"/>
+            <img class="fragment" src="resources/plate-solving-berry-07.svg"/>
+            <img class="fragment" src="resources/plate-solving-berry-08.svg"/>
+            <img class="fragment" src="resources/plate-solving-berry-09.svg"/>
+            <img class="fragment" src="resources/plate-solving-berry-10.svg"/>
+            <img class="fragment" src="resources/plate-solving-berry-11.svg"/>
+            <img class="fragment" src="resources/plate-solving-berry-12.svg"/>
+            <img class="fragment" src="resources/plate-solving-berry-13.svg"/>
+            <img class="fragment" src="resources/plate-solving-berry-14.svg"/>
+            <img class="fragment" src="resources/plate-solving-berry-15.svg"/>
+            <img class="fragment" src="resources/plate-solving-berry-16.svg"/>
+            <img class="fragment" src="resources/plate-solving-berry-17.svg"/>
+            <img class="fragment" src="resources/plate-solving-berry-18.svg"/>
+            <div class="fragment" style="width: 100%; height: 100%;">
+              <iframe src="https://stellarium-web.org" frameborder='0' scrolling="no" style="width: 90%; height: 90%;"></iframe>
+            </div>
+            <img class="fragment" src="resources/plate-solving-berry-19.svg"/>
+            <img class="fragment" src="resources/plate-solving-berry-20.svg"/>
+            <img class="fragment" src="resources/plate-solving-berry-21.svg"/>
+            <img class="fragment" src="resources/plate-solving-berry-22.svg"/>
+            <img class="fragment" src="resources/plate-solving-berry-23.svg"/>
+          </div>
+        </section>
+        <section class="title-body-slide">
+          <h1>버즈빌은 해외로 워크샵을 가곤 했다는 전설이 있다.</h1>
+          <img src="resources/plate-solving-saipan-01.jpg"/>
+        </section>
+        <section class="fullscreen-slide">
+          <div class="r-stack">
+            <img src="resources/plate-solving-saipan-02.svg"/>
+            <img class="fragment" src="resources/plate-solving-saipan-03.svg"/>
+            <img class="fragment" src="resources/plate-solving-saipan-04.svg"/>
+            <img class="fragment" src="resources/plate-solving-saipan-05.svg"/>
+            <img class="fragment" src="resources/plate-solving-saipan-06.svg"/>
+            <img class="fragment" src="resources/plate-solving-saipan-07.svg"/>
+          </div>
+        </section>
+        <section class="fullscreen-slide">
+          <div class="r-stack">
+            <img src="resources/plate-solving-galaxy-01.svg"/>
+            <img class="fragment" src="resources/plate-solving-galaxy-02.svg"/>
+            <img class="fragment" src="resources/plate-solving-galaxy-03.svg"/>
+          </div>
+        </section>
+        <section class="fullscreen-slide">
+          <div class="r-stack">
+            <img src="resources/plate-solving-nike-01.svg"/>
+            <img class="fragment" src="resources/plate-solving-nike-02.svg"/>
+            <img class="fragment" src="resources/plate-solving-nike-03.svg"/>
+          </div>
+        </section>
+        <section class="fullscreen-slide">
+            <img src="resources/plate-solving-meaning.svg"/>
+        </section>
+        <section class="fullscreen-slide">
+          <div class="r-stack">
+            <img src="resources/plate-solving-meaning-01.svg"/>
+            <img class="fragment" src="resources/plate-solving-meaning-02.svg"/>
+            <img class="fragment" src="resources/plate-solving-meaning-03.svg"/>
+          </div>
+        </section>
+        <section class="section-header-slide">
+          <h1>Computer</h1>
+        </section>
+        <section class="section-header-slide">
+          <h1>Compute + er</h1>
+        </section>
+        <section class="fullscreen-slide">
+          <div class="r-stack">
+            <img src="resources/harvard-computers-01.svg"/>
+            <img class="fragment" src="resources/harvard-computers-02.svg"/>
+            <img class="fragment" src="resources/harvard-computers-03.svg"/>
+            <img class="fragment" src="resources/harvard-computers-04.svg"/>
+            <img class="fragment" src="resources/harvard-computers-05.svg"/>
+            <img class="fragment" src="resources/harvard-computers-06.svg"/>
+          </div>
+        </section>
+        <section class="fullscreen-slide">
+          <img src="resources/dream.svg"/>
+        </section>
+        <section class="fullscreen-slide">
+          <div class="r-stack">
+            <img src="resources/dream-challenge-01.svg"/>
+            <img class="fragment" src="resources/dream-challenge-02.svg"/>
+            <img class="fragment" src="resources/dream-challenge-03.svg"/>
+            <img class="fragment" src="resources/dream-challenge-04.svg"/>
+          </div>
+        </section>
+        <section class="title-body-slide">
+          <h1>그 후...</h1>
+          <div class="body">
+            <ul>
+              <li>2023년 1Q 드림 챌린지: Plate Solver 만들기</li>
+              <li class="fragment text-neutral-400" data-fragment-index="1">2023년 2Q 버즈 챌린지: 프랑스어 공부
+                <span class="small">(가장 쉬운 독학 프랑스어 첫걸음 도서 매달 최소 10일분 공부하기)</span>
+              </li>
+              <li class="fragment text-neutral-400" data-fragment-index="1">2023년 3Q 버즈 챌린지: 프랑스어 공부
+                <span class="small">(GO! 독학 프랑스어 단어장 - 매달 10일분 씩 암기)</span>
+              </li>
+              <li class="fragment text-neutral-400" data-fragment-index="1">2023년 4Q 버즈 챌린지: 프랑스어 공부
+                <span class="small">(GO! 독학 프랑스어 단어장 - 보너스와 추가 표현 암기)</span>
+              </li>
+              <li class="fragment text-neutral-400" data-fragment-index="1">2024년 1Q 버즈 챌린지: 프랑스어 책 읽기
+                <span class="small">(Le Petit Prince)</span>
+              </li>
+              <li class="fragment text-neutral-400" data-fragment-index="1">2024년 2Q 버즈 챌린지: 프랑스어 공부
+                <span class="small">(Le Petit Prince를 읽고 정리한 1933개 단어 및 표현 암기)</span>
+              </li>
+              <li class="fragment text-neutral-400" data-fragment-index="1">2024년 3Q 버즈 챌린지: 프랑스어 공부
+                <span class="small">(꼬마 니콜라 인강 매달 11개씩 공부하기)</span>
+              </li>
+              <li class="fragment text-neutral-400" data-fragment-index="1">2024년 4Q 버즈 챌린지: 프랑스어 책 읽기
+                <span class="small">(Harry Potter à l'école des sorciers)</span>
+              </li>
+              <li class="fragment text-neutral-400" data-fragment-index="1">2025년 1Q 버즈 챌린지: 프랑스어 책 읽기
+                <span class="small">(Harry Potter et la Chambre des secrets)</span>
+              </li>
+            </ul>
+          </div>
+        </section>
+        <section class="title-body-slide" data-background-image="resources/aurora-bg.jpg">
+          <h1>2024년 3월 ~ 4월 오로라&개기일식 여행</h1>
+        </section>
+        <section class="fullscreen-slide">
+          <div class="r-stack">
+            <img src="resources/aurora-01.svg"/>
+            <img class="fragment" src="resources/aurora-02.svg"/>
+          </div>
+        </section>
+        <section class="fullscreen-slide">
+          <div class="r-stack">
+            <img src="resources/restart-01.svg"/>
+            <img class="fragment" src="resources/restart-02.svg"/>
+            <img class="fragment" src="resources/restart-03.svg"/>
+            <img class="fragment" src="resources/restart-04.svg"/>
+            <img class="fragment" src="resources/restart-05.svg"/>
+            <img class="fragment" src="resources/restart-06.svg"/>
+            <img class="fragment" src="resources/restart-07.svg"/>
+            <img class="fragment" src="resources/restart-08.svg"/>
+            <img class="fragment" src="resources/restart-09.svg"/>
+            <img class="fragment" src="resources/restart-10.svg"/>
+            <img class="fragment" src="resources/restart-11.svg"/>
+            <img class="fragment" src="resources/restart-12.svg"/>
+          </div>
+        </section>
+        <section class="fullscreen-slide">
+          <div class="r-stack">
+            <img src="resources/opencv-01.svg"/>
+            <img class="fragment" src="resources/opencv-02.svg"/>
+            <img class="fragment" src="resources/opencv-03.svg"/>
+            <img class="fragment" src="resources/opencv-04.svg"/>
+            <img class="fragment" src="resources/opencv-05.svg"/>
+          </div>
+        </section>
+        <section class="fullscreen-slide">
+          <!-- 데모 후보 -->
+          <div class="r-stack">
+            <img src="resources/ai-driven-01.svg"/>
+            <img class="fragment" src="resources/ai-driven-02.svg"/>
+            <img class="fragment" src="resources/ai-driven-03.svg"/>
+            <img class="fragment" src="resources/ai-driven-04.svg"/>
+            <img class="fragment" src="resources/ai-driven-05.svg"/>
+            <img class="fragment" src="resources/ai-driven-06.svg"/>
+            <img class="fragment" src="resources/ai-driven-07.svg"/>
+          </div>
+        </section>
+        <section class="section-header-slide">
+          <img src="resources/start.jpg" style="width: 100%;"/>
+        </section>
+        <section class="title-body-slide">
+          <h1>Plate Solving 절차</h1>
+          <div class="body">
+            <ol>
+              <li>사진 업로드 또는 선택</li>
+              <li>사진에서 별로 추정되는 것을 감지</li>
+              <li>데이터베이스에서 별 데이터 찾기</li>
+              <li>주변 별 정보 표시</li>
+            </ol>
+          </div>
+        </section>
+        <section class="title-body-slide">
+          <h1>1. 사진 업로드 또는 선택</h1>
+          <div class="body">
+            <div class="r-stack">
+              <img src="resources/upload-01.png" style="height: 100%;" />
+              <!--<img class="fragment" src="resources/upload-02.png" style="height: 100%;" />-->
+            </div>
+          </div>
+        </section>
+        <section class="title-body-slide">
+          <h1>1. 사진 업로드 또는 선택</h1>
+          <div class="body">
+            <iframe src="http://localhost:5025/demo/upload-photo" frameborder='0' scrolling="no" style="width: 100%; height: 100%;"></iframe>
+          </div>
+        </section>
+        <section class="fullscreen-slide">
+          <div class="r-stack">
+            <img src="resources/detect-star-01.svg"/>
+            <img class="fragment" src="resources/detect-star-02.svg"/>
+            <img class="fragment" src="resources/detect-star-03.svg"/>
+            <img class="fragment" src="resources/detect-star-04.svg"/>
+            <img class="fragment" src="resources/detect-star-05.svg"/>
+            <img class="fragment" src="resources/detect-star-06.svg"/>
+            <img class="fragment" src="resources/detect-star-07.svg"/>
+            <img class="fragment" src="resources/detect-star-08.svg"/>
+            <!--<img class="fragment" src="resources/detect-star-09.svg"/>
+            <img class="fragment" src="resources/detect-star-10.svg"/>-->
+          </div>
+        </section>
+        <section class="title-body-slide">
+          <h1>2. 사진에서 별로 추정되는 것을 감지</h1>
+          <div class="body">
+            <iframe src="http://localhost:5025/demo/detect-stars" frameborder='0' scrolling="no" style="width: 100%; height: 100%;"></iframe>
+          </div>
+        </section>
+        <section class="fullscreen-slide">
+          <div class="r-stack">
+            <img src="resources/find-star-from-database-01.svg"/>
+            <img class="fragment" src="resources/find-star-from-database-02.svg"/>
+            <img class="fragment" src="resources/find-star-from-database-03.svg"/>
+            <img class="fragment" src="resources/find-star-from-database-04.svg"/>
+            <img class="fragment" src="resources/find-star-from-database-05.svg"/>
+            <img class="fragment" src="resources/find-star-from-database-06.svg"/>
+            <img class="fragment" src="resources/find-star-from-database-07.svg"/>
+          </div>
+        </section>
+        <section class="title-body-slide">
+          <h1>3. 데이터베이스에서 별 데이터 찾기 <span style="color: #FF0">★★★★★★★★★★</span></h1>
+          <div class="body">
+            <ol>
+              <li>별 카탈로그 준비하기</li>
+              <li>"특징"으로 별을 쉽게 검색할 수 있는 데이터베이스 만들기</li>
+              <li>2차원 좌표 목록에서 "특징" 추출하기</li>
+              <li>가장 가까운 "특징"을 가지는 별을 데이터베이스에서 찾기</li>
+              <li>별 좌표를 사진 좌표로 변환하는 방법 계산하기</li>
+            </ol>
+          </div>
+        </section>
+        <section class="fullscreen-slide">
+          <div class="r-stack">
+            <img src="resources/prepare-catalog-01.svg"/>
+            <img class="fragment" src="resources/prepare-catalog-02.svg"/>
+            <img class="fragment" src="resources/prepare-catalog-03.svg"/>
+            <img class="fragment" src="resources/prepare-catalog-04.svg"/>
+            <!-- <img class="fragment" src="resources/prepare-catalog-05.svg"/> -->
+            <div class="fragment circle" style="width: 50%; height: 89%; margin-left: 40%; margin-right: 10%;">
+              <iframe src="http://localhost:5025/demo/catalog" frameborder='0' scrolling="no"></iframe>
+            </div>
+          </div>
+        </section>
+        <section class="fullscreen-slide">
+          <div class="r-stack">
+            <img src="resources/find-star-from-database-feature-marked.svg"/>
+          </div>
+        </section>
+        <section class="fullscreen-slide">
+          <div class="r-stack">
+            <img src="resources/what-is-this-constellation-01.svg"/>
+            <img class="fragment" src="resources/what-is-this-constellation-02.svg"/>
+            <img class="fragment" src="resources/what-is-this-constellation-03.svg"/>
+            <img class="fragment" src="resources/what-is-this-constellation-04.svg"/>
+            <img class="fragment" src="resources/what-is-this-constellation-05.svg"/>
+            <img class="fragment" src="resources/what-is-this-constellation-06.svg"/>
+          </div>
+        </section>
+        <section class="fullscreen-slide">
+          <div class="r-stack">
+            <img src="resources/feature-01.svg"/>
+            <img class="fragment" src="resources/feature-02.svg"/>
+            <img class="fragment" src="resources/feature-03.svg"/>
+          </div>
+        </section>
+        <section class="fullscreen-slide">
+          <div class="r-stack">
+            <img src="resources/feature.svg"/>
+          </div>
+        </section>
+        <section class="fullscreen-slide">
+          <div class="r-stack">
+            <img src="resources/triangle.svg"/>
+          </div>
+        </section>
+        <section class="fullscreen-slide">
+          <div class="r-stack">
+            <img src="resources/quad-01.svg"/>
+            <img class="fragment" src="resources/quad-02.svg"/>
+            <img class="fragment" src="resources/quad-03.svg"/>
+            <img class="fragment" src="resources/quad-04.svg"/>
+            <img class="fragment" src="resources/quad-05.svg"/>
+            <img class="fragment" src="resources/quad-06.svg"/>
+            <img class="fragment" src="resources/quad-07.svg"/>
+          </div>
+        </section>
+        <section class="fullscreen-slide">
+          <div class="r-stack">
+            <img src="resources/create-quad-01.svg"/>
+            <img class="fragment" src="resources/create-quad-02.svg"/>
+            <img class="fragment" src="resources/create-quad-03.svg"/>
+            <img class="fragment" src="resources/create-quad-04.svg"/>
+            <img class="fragment" src="resources/create-quad-05.svg"/>
+            <img class="fragment" src="resources/create-quad-06.svg"/>
+            <img class="fragment" src="resources/create-quad-07.svg"/>
+            <img class="fragment" src="resources/create-quad-08.svg"/>
+          </div>
+        </section>
+        <section class="fullscreen-slide">
+          <div class="r-stack">
+            <img src="resources/split-into-groups-01.svg"/>
+            <img class="fragment" src="resources/split-into-groups-02.svg"/>
+            <!-- <img class="fragment" src="resources/split-into-groups-03.svg"/> -->
+          </div>
+        </section>
+        <section class="title-body-slide">
+          <h1>적당히 가까운 그룹으로 나누기</h1>
+          <div class="body" style="display: flex; flex-direction: row; gap: 1em;">
+            <div class="circle" style="width: 17em; height: 17em;">
+              <iframe src="http://localhost:5025/demo/healpix" frameborder='0' scrolling="no"></iframe>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 1em; flex-grow: 1;" >
+              <img src="resources/split-into-groups-demo-01.png"/>
+              <img src="resources/split-into-groups-demo-02.png"/>
+            </div>
+          </div>
+        </section>
+        <section class="title-body-slide">
+          <h1>3. 데이터베이스에서 별 데이터 찾기 <span style="color: #FF0">★★★★★★★★★★</span></h1>
+          <div class="body">
+            <ol>
+              <li>별 카탈로그 준비하기</li>
+              <li>"특징"으로 별을 쉽게 검색할 수 있는 데이터베이스 만들기</li>
+              <li>2차원 좌표 목록에서 "특징" 추출하기</li>
+              <li>가장 가까운 "특징"을 가지는 별을 데이터베이스에서 찾기</li>
+              <li>별 좌표를 사진 좌표로 변환하는 방법 계산하기</li>
+            </ol>
+          </div>
+        </section>
+        <section class="title-body-slide">
+          <h1>3. 데이터베이스에서 별 데이터 찾기 <span style="color: #FF0">★★★★★★★★★★</span></h1>
+          <div class="body">
+            <ol>
+              <li>별 카탈로그 준비하기</li>
+              <li>quad로 별을 쉽게 검색할 수 있는 데이터베이스 만들기</li>
+              <li>2차원 좌표 목록에서 quad 추출하기</li>
+              <li>가장 가까운 quad를 가지는 별을 데이터베이스에서 찾기</li>
+              <li>별 좌표를 사진 좌표로 변환하는 방법 계산하기</li>
+            </ol>
+          </div>
+        </section>
+        <section class="fullscreen-slide">
+          <div class="r-stack">
+            <img src="resources/find-nearest-quad-01.svg"/>
+            <img class="fragment" src="resources/find-nearest-quad-02.svg"/>
+            <img class="fragment" src="resources/find-nearest-quad-03.svg"/>
+          </div>
+        </section>
+        <section class="fullscreen-slide">
+          <div class="r-stack">
+            <img src="resources/find-transform-matrix-01.svg"/>
+            <img class="fragment" src="resources/find-transform-matrix-02.svg"/>
+            <img class="fragment" src="resources/find-transform-matrix-03.svg"/>
+            <img class="fragment" src="resources/find-transform-matrix-04.svg"/>
+            <img class="fragment" src="resources/find-transform-matrix-05.svg"/>
+            <img class="fragment" src="resources/find-transform-matrix-06.svg"/>
+            <img class="fragment" src="resources/find-transform-matrix-07.svg"/>
+            <img class="fragment" src="resources/find-transform-matrix-08.svg"/>
+            <img class="fragment" src="resources/find-transform-matrix-09.svg"/>
+            <img class="fragment" src="resources/find-transform-matrix-10.svg"/>
+          </div>
+        </section>
+        <section class="fullscreen-slide">
+          <div class="r-stack">
+            <img src="resources/show-nearest-stars-01.svg"/>
+            <img class="fragment" src="resources/show-nearest-stars-02.svg"/>
+            <img class="fragment" src="resources/show-nearest-stars-03.svg"/>
+            <img class="fragment" src="resources/show-nearest-stars-04.svg"/>
+          </div>
+        </section>
+        <section class="section-header-slide">
+          <h1>남은 일</h1>
+        </section>
+        <section class="fullscreen-slide">
+          <div class="r-stack">
+            <img src="resources/wip-01.svg"/>
+            <img class="fragment" src="resources/wip-02.svg"/>
+            <img class="fragment" src="resources/wip-03.svg"/>
+            <img class="fragment" src="resources/wip-04.svg"/>
+          </div>
+        </section>
+        <section class="section-header-slide">
+          <h1>시연</h1>
+        </section>
+        <section class="fullscreen-slide">
+          <iframe src='http://localhost:5025/plate-solver' style='height:100%;width:100%'></iframe>
+        </section>
+        <section class="fullscreen-slide">
+          <img src="resources/restart-05.svg"/>
+        </section>
+        <section class="section-header-slide">
+          <h1>감사합니다.</h1>
+        </section>
+      </div>
+    </div>
+
+    <script src="/presentation/dist/reveal.js"></script>
+    <script src="/presentation/plugin/notes/notes.js"></script>
+    <script src="/presentation/plugin/markdown/markdown.js"></script>
+    <script src="/presentation/plugin/highlight/highlight.js"></script>
+    <script>
+      // More info about initialization & config:
+      // - https://revealjs.com/initialization/
+      // - https://revealjs.com/config/
+      Reveal.initialize({
+        // default: 960x700
+        // use 16:9
+        width: 1920,
+        height: 1080,
+
+        // Slides are vertically centered on the screen based on how much content they contain.
+        center: false,
+
+        // Display presentation control arrows
+        controls: false,
+
+        // Display a presentation progress bar
+        progress: true,
+
+        // Add the current slide number to the URL hash so that reloading the
+        // page/copying the URL will return you to the same slide
+        hash: true,
+
+        // Transition style
+        transition: 'none',
+
+        // Transition speed
+        backgroundTransition: 'none',
+
+        // Learn about plugins: https://revealjs.com/plugins/
+        plugins: [ RevealMarkdown, RevealHighlight, RevealNotes ]
+      });
+    </script>
+  </body>
+</html>
