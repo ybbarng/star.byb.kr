@@ -3,8 +3,8 @@
 
 ## 간단 사용법
 
-> **Warning**
->  [nvm을 설치](https://github.com/nvm-sh/nvm)해주세요.
+> [!NOTE]
+> [nvm을 설치](https://github.com/nvm-sh/nvm)해주세요.
 
 터미널을 열고 아래의 스크립트를 실행하세요.
 
