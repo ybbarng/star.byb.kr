@@ -327,7 +327,7 @@ export default function DetectStarStepForDemo() {
             </Stage>
           </div>
         </div>
-        <div>
+        <div className="w-[760px]">
           <h2 className="font-bold">별 목록</h2>
           <ul className="mt-1 ml-2">
             {canvasStars.map((star) => (
