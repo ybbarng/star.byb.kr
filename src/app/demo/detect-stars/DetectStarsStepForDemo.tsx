@@ -35,11 +35,23 @@ export default function DetectStarStepForDemo() {
     y2: 0,
     visible: false,
   });
+  const [scale, setScale] = useState(1);
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<Konva.Stage>(null);
 
   useEffect(() => {
     detectStars();
   }, []);
+
+  useEffect(() => {
+    if (!wrapperRef.current || !image) {
+      return;
+    }
+
+    const width = wrapperRef.current.clientWidth;
+    const height = wrapperRef.current.clientHeight;
+    setScale(Math.min(width / image.width, height / image.height));
+  }, [wrapperRef.current, image]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -268,11 +280,12 @@ export default function DetectStarStepForDemo() {
   return (
     <div className="flex h-full w-full flex-col gap-4">
       <div className="overflow flex h-full w-full justify-center gap-4">
-        <div className="flex-1">
+        <div className="h-full flex-1" ref={wrapperRef}>
           <div
             style={{
               backgroundImage: `url(${image.src})`,
               backgroundRepeat: "no-repeat",
+              transform: `scale(${scale})`,
             }}
           >
             <Stage
