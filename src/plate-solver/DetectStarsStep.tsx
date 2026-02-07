@@ -11,7 +11,7 @@ import cv from "@/services/cv";
 interface CanvasStar {
   x: number;
   y: number;
-  radius: number;
+  brightness: number;
   id: string;
   isSelected: boolean;
 }
@@ -115,15 +115,15 @@ export default function DetectStarStep() {
   async function findStars(imageData: ImageData) {
     // Processing image
     const result = await cv.findStars(imageData);
-    let stars: { cx: number; cy: number; radius: number }[] =
+    let stars: { cx: number; cy: number; brightness: number }[] =
       result.data.payload;
-    stars = stars.sort((a, b) => b.radius - a.radius);
+    stars = stars.sort((a, b) => b.brightness - a.brightness);
     stars = stars.slice(0, 100);
 
     return stars.map((star) => ({
       x: star.cx,
       y: star.cy,
-      radius: star.radius,
+      brightness: star.brightness,
     }));
   }
 
@@ -134,7 +134,7 @@ export default function DetectStarStep() {
         id: crypto.randomUUID(),
         x,
         y,
-        radius: 1.5,
+        brightness: 0,
         isSelected: false,
       },
     ]);
@@ -256,10 +256,12 @@ export default function DetectStarStep() {
   };
 
   const onBeforeNext = async () => {
+    const sorted = [...canvasStars].sort((a, b) => b.brightness - a.brightness);
     setPhotoStars(
-      canvasStars.map((star) => ({
+      sorted.map((star) => ({
         x: star.x,
         y: star.y,
+        brightness: star.brightness,
       })),
     );
   };

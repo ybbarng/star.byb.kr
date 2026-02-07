@@ -69,12 +69,20 @@ function imageDataFromMat(cv, mat) {
   return clampedArray;
 }
 
-function _preprocessImage(cv, imageData) {
-  const image = cv.matFromImageData(imageData);
-
-  const result = new cv.Mat();
+/**
+ * Local Maxima 기반 별 검출
+ * 1. 차영상(gray - blurred)에서 mean + stddev 계산
+ * 2. 적응적 threshold = mean + 3×stddev
+ * 3. 8방향 이웃과 비교하여 local maxima 검출
+ * 4. threshold 이상인 maxima만 별 후보
+ * 5. 주변 5×5 영역에서 weighted centroid (서브픽셀 정확도)
+ * 6. brightness = 차영상 픽셀값 (0~255)
+ */
+function findStars(cv, payload) {
+  const image = cv.matFromImageData(payload);
   const gray = new cv.Mat();
   const blurred = new cv.Mat();
+  const diff = new cv.Mat();
 
   // 회색조로 변경
   cv.cvtColor(image, gray, cv.COLOR_BGR2GRAY);
@@ -82,58 +90,71 @@ function _preprocessImage(cv, imageData) {
   // 가우시안 블러를 적용하여 노이즈 제거
   cv.GaussianBlur(gray, blurred, new cv.Size(51, 51), 0, 0, cv.BORDER_DEFAULT);
 
-  // 블러를 제거하여 명료하게 만들기
-  cv.subtract(gray, blurred, result);
+  // 차영상: 별만 남김
+  cv.subtract(gray, blurred, diff);
 
-  // 적절한 임계값을 설정하여 별과 배경 분리
-  cv.threshold(result, result, 70, 255, cv.THRESH_BINARY);
+  const rows = diff.rows;
+  const cols = diff.cols;
+  const data = diff.data;
+
+  // mean + stddev 계산
+  const mean = new cv.Mat();
+  const stddev = new cv.Mat();
+  cv.meanStdDev(diff, mean, stddev);
+  const meanVal = mean.doubleAt(0, 0);
+  const stddevVal = stddev.doubleAt(0, 0);
+  const threshold = meanVal + 3 * stddevVal;
+
+  const stars = [];
+  const margin = 3; // 8방향 이웃 비교를 위한 경계 마진
+
+  for (let y = margin; y < rows - margin; y++) {
+    for (let x = margin; x < cols - margin; x++) {
+      const val = data[y * cols + x];
+
+      // threshold 이상인 픽셀만 후보
+      if (val < threshold) continue;
+
+      // 8방향 이웃과 비교하여 local maxima 확인
+      let isMax = true;
+      for (let dy = -1; dy <= 1 && isMax; dy++) {
+        for (let dx = -1; dx <= 1 && isMax; dx++) {
+          if (dy === 0 && dx === 0) continue;
+          if (data[(y + dy) * cols + (x + dx)] > val) {
+            isMax = false;
+          }
+        }
+      }
+
+      if (!isMax) continue;
+
+      // 주변 5×5 영역에서 weighted centroid (서브픽셀 정확도)
+      let sumW = 0, sumWx = 0, sumWy = 0;
+      for (let dy = -2; dy <= 2; dy++) {
+        for (let dx = -2; dx <= 2; dx++) {
+          const ny = y + dy;
+          const nx = x + dx;
+          if (ny < 0 || ny >= rows || nx < 0 || nx >= cols) continue;
+          const w = data[ny * cols + nx];
+          sumW += w;
+          sumWx += w * nx;
+          sumWy += w * ny;
+        }
+      }
+
+      const cx = sumW > 0 ? sumWx / sumW : x;
+      const cy = sumW > 0 ? sumWy / sumW : y;
+
+      stars.push({ cx, cy, brightness: val });
+    }
+  }
 
   image.delete();
   gray.delete();
   blurred.delete();
-
-  return result;
-}
-
-function _findStars(cv, image) {
-  let hierarchy = new cv.Mat();
-  let contours = new cv.MatVector();
-
-  // Find contours (to simulate blob detection)
-  cv.findContours(
-    image,
-    contours,
-    hierarchy,
-    cv.RETR_EXTERNAL,
-    cv.CHAIN_APPROX_SIMPLE,
-  );
-
-  // find stars
-  const stars = [];
-
-  for (let i = 0; i < contours.size(); i++) {
-    let contour = contours.get(i);
-    let moments = cv.moments(contour);
-
-    if (moments.m00 > 0) {
-      let cx = moments.m10 / moments.m00; // Centroid x
-      let cy = moments.m01 / moments.m00; // Centroid y
-      let radius = Math.sqrt(cv.contourArea(contour) / Math.PI); // Approx radius
-      stars.push({ cx, cy, radius });
-    }
-  }
-
-  hierarchy.delete();
-  contours.delete();
-
-  return stars;
-}
-
-function findStars(cv, payload) {
-  const image = _preprocessImage(cv, payload);
-  const stars = _findStars(cv, image);
-
-  image.delete();
+  diff.delete();
+  mean.delete();
+  stddev.delete();
 
   return stars;
 }
