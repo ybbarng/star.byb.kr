@@ -15,7 +15,7 @@ const run = ({ minBright = 10 }: { minBright: number }) => {
 };
 
 const reduce = (stars: Star[], minBright: number) => {
-  let result = stars.filter((star) => parseInt(star.V) <= minBright);
+  let result = stars.filter((star) => parseFloat(star.V) <= minBright);
   console.log(
     `밝기가 ${minBright} 보다 밝은 별들만 남깁니다. 현재 별 수: ${result.length}`,
   );

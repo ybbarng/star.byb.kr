@@ -40,41 +40,35 @@ const createAndSplitCells = (
   return cells;
 };
 
-// 벡터 간 각도 계산 (단위 벡터)
-function angleBetweenVectors(v1: StarVector, v2: Point3D) {
-  // 내적
-  const dotProduct = v1.x * v2[0] + v1.y * v2[1] + v1.z * v2[2];
-
-  // 라디안 각도 계산
-  return Math.acos(dotProduct); // 각도 계산 (라디안)
-}
-
-// 주어진 벡터와 각 별에 대해 angle을 구하고 범위 내에 있는지 확인
+// 주어진 벡터와 각 별에 대해 내적으로 범위 내에 있는지 확인
 function filterStarsByAngle(
   stars: StarVector[],
   vector: Point3D,
   maxArcmin: number,
 ) {
-  // arcmin을 radian으로 변환
+  // arcmin을 radian으로 변환 후 cos 값으로 비교 (acos 호출 제거)
   const maxAngle = ((maxArcmin / 60) * Math.PI) / 180;
+  const cosThreshold = Math.cos(maxAngle);
   const result: SimpleStarVector[] = [];
 
   for (const star of stars) {
-    const angle = angleBetweenVectors(star, vector); // 벡터 간 각도 계산
+    // 내적이 cosThreshold 이상이면 각도가 maxAngle 이내
+    const dot = star.x * vector[0] + star.y * vector[1] + star.z * vector[2];
 
-    if (angle <= maxAngle) {
+    if (dot >= cosThreshold) {
       result.push({
         HR: star.HR,
         x: star.x,
         y: star.y,
         z: star.z,
         V: star.V,
-      }); // 범위 내의 별을 추가
+      });
     }
   }
 
   // 밝은 별이 앞에 오도록 정렬, V 값이 작을수록 밝은 별
-  result.sort((s1, s2) => Number(s1.V) - Number(s2.V));
+  // 숫자 변환을 정렬 시 1회만 수행
+  result.sort((s1, s2) => parseFloat(s1.V) - parseFloat(s2.V));
 
   return result;
 }

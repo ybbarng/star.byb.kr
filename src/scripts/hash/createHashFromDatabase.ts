@@ -11,7 +11,7 @@ import {
 } from "@/scripts/hash/types";
 
 const run = () => {
-  const stars = file.loadJson("data/hash", "vectors-database.json");
+  const stars = file.loadJson("build/database", "vectors-database.json");
   console.log(`로드한 카탈로그에는 총 ${stars.length}개의 별 정보가 있습니다.`);
   const indexes = createHashFromDatabase(stars);
   console.log(`생성한 전체 사각형 수는 ${indexes.length}개 입니다.`);
