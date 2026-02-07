@@ -106,16 +106,25 @@ const buildTransform = (p1: Point2D, p2: Point2D) => {
 };
 
 const findRest = (transformedPoints: Point2D[]): number[] => {
-  // 3. 나머지 두 점 중 x 좌표가 작은 점을 p3, 큰 점을 p4로 설정
-  const remainingPoints = transformedPoints.filter(
-    (p) => !arePointsEqual(p, [0, 0]) && !arePointsEqual(p, [1, 1]),
-  );
-  remainingPoints.sort((a, b) => a[0] - b[0]);
+  // 나머지 두 점의 인덱스를 직접 추적
+  const restIndexes: number[] = [];
 
-  return [
-    transformedPoints.indexOf(remainingPoints[0]),
-    transformedPoints.indexOf(remainingPoints[1]),
-  ];
+  for (let i = 0; i < transformedPoints.length; i++) {
+    const p = transformedPoints[i];
+
+    if (!arePointsEqual(p, [0, 0]) && !arePointsEqual(p, [1, 1])) {
+      restIndexes.push(i);
+    }
+  }
+
+  // x 좌표가 작은 점을 p3, 큰 점을 p4로 설정
+  if (
+    transformedPoints[restIndexes[0]][0] > transformedPoints[restIndexes[1]][0]
+  ) {
+    return [restIndexes[1], restIndexes[0]];
+  }
+
+  return restIndexes;
 };
 
 const removeSymmetric = (

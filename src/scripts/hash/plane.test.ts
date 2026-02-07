@@ -57,8 +57,9 @@ test("projectToTangentPlane()", () => {
   ];
 
   // 새로운 로직에서는 동차 좌표를 2차원 좌표로 변환하여 사용하므로, 미리 변환합니다.
-  const expected: Point2D[] = expectedH.map((hPoint: Point3D) =>
-    plane.toCartesian(hPoint),
+  const expected: Point2D[] = expectedH.map(
+    (hPoint: Point3D) =>
+      [hPoint[0] / hPoint[2], hPoint[1] / hPoint[2]] as Point2D,
   );
 
   const result = plane.projectToTangentPlane(given);

@@ -17,8 +17,8 @@ export const findCenter = (vectors: Point3D[]): Point3D => {
 };
 
 export const calculateProjectTransform = (center: Point3D) => {
-  // center 벡터 정규화
-  const cUnit = normalize(center);
+  // center는 findCenter에서 이미 정규화됨
+  const cUnit = center;
 
   // u 계산 (c와 직교하는 벡터 선택)
   const arbitrary =
@@ -38,10 +38,7 @@ export const calculateProjectTransform = (center: Point3D) => {
   return math.inv(transformMatrix); // 역행렬을 적용하여 좌표 변환
 };
 
-/**
- * 동차 좌표를 2차원 좌표로 변환합니다.
- */
-export const toCartesian = (vector: Point3D): Point2D => {
+const toCartesian = (vector: Point3D): Point2D => {
   return [vector[0] / vector[2], vector[1] / vector[2]];
 };
 
