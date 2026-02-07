@@ -42,4 +42,4 @@ const removeSameCoordinate = (stars: Star[]) => {
   return uniqueStars;
 };
 
-run({ minBright: 4 });
+run({ minBright: 5 });
