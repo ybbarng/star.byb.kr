@@ -1,5 +1,5 @@
 import * as math from "mathjs";
-import { Matrix } from "mathjs";
+import { Matrix, MathType } from "mathjs";
 import { useState } from "react";
 import * as plane from "@/scripts/hash/plane";
 import { Point2D, Point3D, StarVector } from "@/scripts/hash/types";
@@ -11,6 +11,15 @@ import {
   VerificationResult,
 } from "@/search/utils/verification";
 import _catalog from "@build/database/vectors-database.json";
+
+/** math.multiply 결과를 안전하게 배열로 변환 */
+const toArray = (result: MathType): number[] => {
+  if (typeof (result as Matrix).toArray === "function") {
+    return (result as Matrix).toArray() as number[];
+  }
+
+  return result as unknown as number[];
+};
 
 interface PhotoStar {
   position: Point2D;
@@ -69,16 +78,15 @@ export default function useFindNearestStars() {
     });
     const P = calculateProjectTransform(databaseQuad);
     const projectedDatabase = databaseQuad.map(
-      (star) =>
-        (math.multiply(P, star) as Matrix).toArray().splice(0, 2) as Point2D,
+      (star) => toArray(math.multiply(P, star)).slice(0, 2) as Point2D,
     );
     const photoQuad = photo.quad.map((star) => star.position);
     const T = calculateToPhotoTransform(photoQuad, projectedDatabase) as Matrix;
 
     const centerOfPhoto = [photo.width / 2, photo.height / 2, 1];
-    const centerOfPhotoVector = (
-      math.multiply(math.inv(P), math.inv(T), centerOfPhoto) as Matrix
-    ).toArray() as Point3D;
+    const centerOfPhotoVector = toArray(
+      math.multiply(math.inv(P), math.inv(T), centerOfPhoto),
+    ) as Point3D;
 
     // 동적 FOV 계산
     const estimatedFov = estimateFOV(T, P, photo.width, photo.height);
@@ -95,9 +103,7 @@ export default function useFindNearestStars() {
     setNearestStars(
       nearestStars.map((star) => ({
         ...star,
-        vector: toCartesian(
-          (math.multiply(TP, star.vector) as Matrix).toArray() as Point3D,
-        ),
+        vector: toCartesian(toArray(math.multiply(TP, star.vector)) as Point3D),
       })),
     );
 
@@ -207,12 +213,8 @@ export default function useFindNearestStars() {
     const invP = math.inv(P);
     const invT = math.inv(T);
     const center = [width / 2, height / 2, 1];
-    const centerVec = math.divide(
-      (math.multiply(invP, invT, center) as Matrix).toArray() as Point3D,
-      math.norm(
-        (math.multiply(invP, invT, center) as Matrix).toArray() as Point3D,
-      ),
-    ) as Point3D;
+    const centerRaw = toArray(math.multiply(invP, invT, center)) as Point3D;
+    const centerVec = math.divide(centerRaw, math.norm(centerRaw)) as Point3D;
 
     // 사진 네 모서리를 역변환
     const corners = [
@@ -225,9 +227,7 @@ export default function useFindNearestStars() {
     let maxAngle = 0;
 
     for (const corner of corners) {
-      const vec = (
-        math.multiply(invP, invT, corner) as Matrix
-      ).toArray() as Point3D;
+      const vec = toArray(math.multiply(invP, invT, corner)) as Point3D;
       const norm = math.norm(vec) as number;
       const normalVec: Point3D = [vec[0] / norm, vec[1] / norm, vec[2] / norm];
       const dot =
