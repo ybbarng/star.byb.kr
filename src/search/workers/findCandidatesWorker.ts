@@ -23,14 +23,15 @@ catalog.map((star: Star) => {
   dictionary.set(star.HR, star.N);
 });
 
-const zip = (arr1: number[], arr2: number[]) => {
-  return arr1.map((value, index) => [value, arr2[index]]);
-};
-
 const calculateDistance = (v1: number[], v2: number[]) => {
-  return zip(v1, v2)
-    .map(([a, b]) => Math.pow(a - b, 2))
-    .reduce((sum, a) => sum + a, 0);
+  let sum = 0;
+
+  for (let i = 0; i < v1.length; i++) {
+    const d = v1[i] - v2[i];
+    sum += d * d;
+  }
+
+  return sum;
 };
 
 const tree = new kdtree.kdTree(
@@ -48,7 +49,9 @@ const tree = new kdtree.kdTree(
   ["x", "y", "z", "w"],
 );
 
-const findNearestQuads = (quad: number[]) => {
+const findNearestQuads = (
+  quad: number[],
+): { index: number; distance: number }[] => {
   const nearest = tree.nearest(
     {
       i: 0,
@@ -57,10 +60,13 @@ const findNearestQuads = (quad: number[]) => {
       z: quad[2],
       w: quad[3],
     },
-    1,
+    3,
   );
 
-  return nearest[0][0].i;
+  return nearest.map((result: [{ i: number }, number]) => ({
+    index: result[0].i,
+    distance: result[1],
+  }));
 };
 
 const findCandidates = (photo: Photo) => {
@@ -77,39 +83,46 @@ const findCandidates = (photo: Photo) => {
     };
   });
 
-  const candidates: Candidate[] = [];
+  const getName = (hr: string) => {
+    const name = dictionary.get(hr);
+
+    return name ? name : `HR ${hr}`;
+  };
+
+  // 중복 제거를 위한 Map: DB quad의 HR 키 → 최소 distance
+  const bestByDbQuad = new Map<string, Candidate>();
 
   const total = quads.length;
   quads.forEach((quad, i) => {
     postMessage({ fn: "onProgress", payload: { total, progress: i } });
-    const minIndex = findNearestQuads(quad.hash);
+    const nearestResults = findNearestQuads(quad.hash);
 
-    if (minIndex === -1) {
-      console.log("검색 결과가 없습니다.");
+    for (const result of nearestResults) {
+      if (result.index === -1) continue;
 
-      return;
+      const found = hashes[result.index].stars;
+      const distance = result.distance * 1000;
+
+      // 중복 제거: 같은 DB quad(HR 4개 동일)가 여러 번 매칭되면 최소 distance만 유지
+      const dbKey = found.join(",");
+      const existing = bestByDbQuad.get(dbKey);
+
+      if (!existing || distance < existing.distance) {
+        bestByDbQuad.set(dbKey, {
+          input: quad.labels.map((label) => Number(label)) as CandidateInput,
+          output: found.map((hr) => ({
+            hr,
+            label: getName(hr),
+          })) as CandidateOutput,
+          distance,
+        });
+      }
     }
-
-    const found = hashes[minIndex].stars;
-    const minDistance = calculateDistance(hashes[minIndex].hash, quad.hash);
-
-    const getName = (hr: string) => {
-      const name = dictionary.get(hr);
-
-      return name ? name : `HR ${hr}`;
-    };
-
-    candidates.push({
-      input: quad.labels.map((label) => Number(label)) as CandidateInput,
-      output: found.map((hr) => ({
-        hr,
-        label: getName(hr),
-      })) as CandidateOutput,
-      distance: minDistance * 1000,
-    });
   });
 
-  return candidates.sort((ca, cb) => ca.distance - cb.distance);
+  return Array.from(bestByDbQuad.values()).sort(
+    (ca, cb) => ca.distance - cb.distance,
+  );
 };
 
 onmessage = async function (messageEvent) {
