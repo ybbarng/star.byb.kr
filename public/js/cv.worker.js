@@ -76,8 +76,9 @@ function imageDataFromMat(cv, mat) {
  * 3. 8방향 이웃과 비교하여 local maxima 검출
  * 4. threshold 이상인 maxima만 별 후보
  * 5. 유효 반경 측정: peak에서 바깥으로 확장하며 threshold 이하가 되는 거리
- * 6. 유효 반경 범위 내에서 weighted centroid (서브픽셀 정확도)
- * 7. brightness = 유효 반경 (겉보기 크기, 밝은 별일수록 큰 값)
+ * 6. Non-maximum suppression: 가까운 후보끼리 합쳐서 별 하나로 처리
+ * 7. 유효 반경 범위 내에서 weighted centroid (서브픽셀 정확도)
+ * 8. brightness = 유효 반경 (겉보기 크기, 밝은 별일수록 큰 값)
  */
 function findStars(cv, payload) {
   const image = cv.matFromImageData(payload);
@@ -106,9 +107,10 @@ function findStars(cv, payload) {
   const stddevVal = stddev.doubleAt(0, 0);
   const threshold = meanVal + 3 * stddevVal;
 
-  const stars = [];
-  const margin = 3; // 8방향 이웃 비교를 위한 경계 마진
-  const maxRadius = 50; // 유효 반경 탐색 상한 (픽셀)
+  // 1단계: 모든 local maxima 후보 수집
+  const candidates = [];
+  const margin = 3;
+  const maxRadius = 50;
 
   for (let y = margin; y < rows - margin; y++) {
     for (let x = margin; x < cols - margin; x++) {
@@ -146,27 +148,59 @@ function findStars(cv, payload) {
       }
       const effectiveRadius = radiusSum / directions.length;
 
-      // 유효 반경 범위 내에서 weighted centroid (서브픽셀 정확도)
-      const centroidRadius = Math.max(2, Math.ceil(effectiveRadius));
-      let sumW = 0, sumWx = 0, sumWy = 0;
-      for (let dy = -centroidRadius; dy <= centroidRadius; dy++) {
-        for (let dx = -centroidRadius; dx <= centroidRadius; dx++) {
-          const ny = y + dy;
-          const nx = x + dx;
-          if (ny < 0 || ny >= rows || nx < 0 || nx >= cols) continue;
-          const w = data[ny * cols + nx];
-          sumW += w;
-          sumWx += w * nx;
-          sumWy += w * ny;
-        }
-      }
-
-      const cx = sumW > 0 ? sumWx / sumW : x;
-      const cy = sumW > 0 ? sumWy / sumW : y;
-
-      stars.push({ cx, cy, brightness: effectiveRadius });
+      candidates.push({ x, y, peakVal: val, effectiveRadius });
     }
   }
+
+  // 2단계: Non-maximum suppression — 가까운 후보를 하나의 별로 합침
+  // 밝은(반경 큰) 후보부터 처리하여, 이미 채택된 별의 반경 내에 있는 후보는 제거
+  candidates.sort((a, b) => b.effectiveRadius - a.effectiveRadius || b.peakVal - a.peakVal);
+
+  const suppressed = new Uint8Array(candidates.length);
+  const merged = [];
+
+  for (let i = 0; i < candidates.length; i++) {
+    if (suppressed[i]) continue;
+
+    const star = candidates[i];
+    // 억제 반경: 유효 반경의 2배 또는 최소 3픽셀
+    const suppressRadius = Math.max(3, star.effectiveRadius * 2);
+    const suppressRadiusSq = suppressRadius * suppressRadius;
+
+    // 이 별보다 작은(뒤에 있는) 후보들 중 가까운 것을 억제
+    for (let j = i + 1; j < candidates.length; j++) {
+      if (suppressed[j]) continue;
+      const dx = candidates[j].x - star.x;
+      const dy = candidates[j].y - star.y;
+      if (dx * dx + dy * dy <= suppressRadiusSq) {
+        suppressed[j] = 1;
+      }
+    }
+
+    merged.push(star);
+  }
+
+  // 3단계: 합쳐진 별에 대해 weighted centroid 계산
+  const stars = merged.map(function (star) {
+    const centroidRadius = Math.max(2, Math.ceil(star.effectiveRadius));
+    let sumW = 0, sumWx = 0, sumWy = 0;
+    for (let dy = -centroidRadius; dy <= centroidRadius; dy++) {
+      for (let dx = -centroidRadius; dx <= centroidRadius; dx++) {
+        const ny = star.y + dy;
+        const nx = star.x + dx;
+        if (ny < 0 || ny >= rows || nx < 0 || nx >= cols) continue;
+        const w = data[ny * cols + nx];
+        sumW += w;
+        sumWx += w * nx;
+        sumWy += w * ny;
+      }
+    }
+
+    const cx = sumW > 0 ? sumWx / sumW : star.x;
+    const cy = sumW > 0 ? sumWy / sumW : star.y;
+
+    return { cx, cy, brightness: star.effectiveRadius };
+  });
 
   image.delete();
   gray.delete();
