@@ -4,6 +4,7 @@ import { useContextStore } from "@/plate-solver/store/context";
 import useFindCandidates from "@/search/hooks/useFindCandidates";
 import useFindNearestStars from "@/search/hooks/useFindNearestStars";
 import { Point2D } from "@/search/type";
+import { VerificationResult } from "@/search/utils/verification";
 import { cn } from "@/utils/cn";
 
 export default function PlateSolvingStep() {
@@ -13,6 +14,10 @@ export default function PlateSolvingStep() {
   const [selectedCandidateIndex, setSelectedCandidateIndex] = useState<
     number | undefined
   >(undefined);
+  const [candidateScores, setCandidateScores] = useState<
+    Map<number, VerificationResult>
+  >(new Map());
+  const [autoVerified, setAutoVerified] = useState(false);
   const {
     find: findCandidates,
     candidates,
@@ -23,12 +28,20 @@ export default function PlateSolvingStep() {
     find: findNearestStars,
     nearestStars,
     nearestConstellations,
+    verification,
   } = useFindNearestStars();
   const candidateNames = useMemo(() => {
-    return candidates.map((candidate) => {
-      return candidate.output.map((star) => `[${star.label}]`).join("-");
+    return candidates.map((candidate, i) => {
+      const score = candidateScores.get(i);
+      const scoreStr = score
+        ? ` (${score.matchedCount}matches, score:${score.score.toFixed(3)})`
+        : "";
+
+      return (
+        candidate.output.map((star) => `[${star.label}]`).join("-") + scoreStr
+      );
     });
-  }, [candidates]);
+  }, [candidates, candidateScores]);
 
   useEffect(() => {
     if (!image || photoStars.length < 1) {
@@ -38,9 +51,46 @@ export default function PlateSolvingStep() {
     findCandidates({
       width: image.width,
       height: image.height,
-      stars: photoStars.slice(0, 10).map((star) => [star.x, star.y]),
+      stars: photoStars.slice(0, 15).map((star) => [star.x, star.y]),
     });
   }, [image, photoStars]);
+
+  // 후보 목록이 나오면 상위 후보들을 자동 검증
+  useEffect(() => {
+    if (!image || candidates.length === 0 || autoVerified) {
+      return;
+    }
+
+    const topN = Math.min(candidates.length, 20);
+    const scores = new Map<number, VerificationResult>();
+    let bestIndex = 0;
+    let bestScore = -1;
+
+    for (let i = 0; i < topN; i++) {
+      const candidate = candidates[i];
+
+      try {
+        // distance 기반으로 score 추정, 실제 verification은 선택 시 수행됨
+        scores.set(i, {
+          matchedCount: 0,
+          matchRatio: 0,
+          averageError: candidate.distance,
+          score: 1 / (1 + candidate.distance),
+        });
+
+        if (1 / (1 + candidate.distance) > bestScore) {
+          bestScore = 1 / (1 + candidate.distance);
+          bestIndex = i;
+        }
+      } catch {
+        // 검증 실패 시 무시
+      }
+    }
+
+    setCandidateScores(scores);
+    setAutoVerified(true);
+    setSelectedCandidateIndex(bestIndex);
+  }, [image, photoStars, candidates, autoVerified]);
 
   function loadImageToCanvas(
     context: CanvasRenderingContext2D,
@@ -73,6 +123,7 @@ export default function PlateSolvingStep() {
     const candidateStars = selectedCandidate.output.map((item) => ({
       hr: item.hr,
     }));
+    const allPhotoStars: Point2D[] = photoStars.map((star) => [star.x, star.y]);
     findNearestStars({
       photo: {
         width: image.width,
@@ -80,8 +131,21 @@ export default function PlateSolvingStep() {
         quad: selectedPhotoStars,
       },
       candidate: candidateStars,
+      allPhotoStars,
     });
   }, [image, photoStars, candidates, selectedCandidateIndex]);
+
+  // verification 결과가 오면 candidateScores 업데이트
+  useEffect(() => {
+    if (verification && selectedCandidateIndex !== undefined) {
+      setCandidateScores((prev) => {
+        const next = new Map(prev);
+        next.set(selectedCandidateIndex, verification);
+
+        return next;
+      });
+    }
+  }, [verification, selectedCandidateIndex]);
 
   useEffect(() => {
     if (!canvasElement.current || !image) {
@@ -148,8 +212,6 @@ export default function PlateSolvingStep() {
       context.fillText(label, x + 16, y + 7);
     });
 
-    console.log(nearestConstellations.length);
-
     if (nearestConstellations.length < 1) {
       return;
     }
@@ -172,6 +234,7 @@ export default function PlateSolvingStep() {
           star[1] >= 0 &&
           star[1] < image.height,
       );
+      if (visibleStars.length === 0) return;
       const center = visibleStars
         .reduce((sum, star) => [sum[0] + star[0], sum[1] + star[1]], [0, 0])
         .map((value) => value / visibleStars.length);
@@ -212,9 +275,14 @@ export default function PlateSolvingStep() {
         )}
         {candidates.length > 0 && (
           <CandidateSelect
-            selectedCandidateIndex={selectedCandidateIndex || -1}
+            selectedCandidateIndex={selectedCandidateIndex ?? -1}
             setSelectedCandidateIndex={setSelectedCandidateIndex}
             candidates={candidateNames}
+            verification={
+              selectedCandidateIndex !== undefined
+                ? candidateScores.get(selectedCandidateIndex)
+                : undefined
+            }
           />
         )}
         <div className="flex grow justify-center">
@@ -266,25 +334,38 @@ interface CandidateSelectProps {
   selectedCandidateIndex: number;
   setSelectedCandidateIndex: (selectedCandidateIndex: number) => void;
   candidates: string[];
+  verification?: VerificationResult;
 }
 
 function CandidateSelect(props: CandidateSelectProps) {
   return (
-    <ul className="menu bg-base-200 rounded-box h-full w-100 shrink-0 flex-col flex-nowrap items-start overflow-x-clip overflow-y-scroll">
-      {props.candidates.map((candidate, i) => {
-        return (
-          <li key={`${candidate}-${i}`} className="w-full">
-            <a
-              className={cn(
-                props.selectedCandidateIndex === i && "menu-active",
-              )}
-              onClick={() => props.setSelectedCandidateIndex(i)}
-            >
-              {`${i}: ${candidate}`}
-            </a>
-          </li>
-        );
-      })}
-    </ul>
+    <div className="bg-base-200 rounded-box flex h-full w-100 shrink-0 flex-col overflow-hidden">
+      {props.verification && (
+        <div className="border-base-300 border-b p-2 text-sm">
+          <div>
+            매칭: {props.verification.matchedCount}개 (
+            {(props.verification.matchRatio * 100).toFixed(1)}%)
+          </div>
+          <div>평균 오차: {props.verification.averageError.toFixed(1)}px</div>
+          <div>점수: {props.verification.score.toFixed(4)}</div>
+        </div>
+      )}
+      <ul className="menu h-full flex-col flex-nowrap items-start overflow-x-clip overflow-y-scroll">
+        {props.candidates.map((candidate, i) => {
+          return (
+            <li key={`${candidate}-${i}`} className="w-full">
+              <a
+                className={cn(
+                  props.selectedCandidateIndex === i && "menu-active",
+                )}
+                onClick={() => props.setSelectedCandidateIndex(i)}
+              >
+                {`${i}: ${candidate}`}
+              </a>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
   );
 }

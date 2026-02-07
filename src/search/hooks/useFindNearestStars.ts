@@ -6,6 +6,10 @@ import { Point2D, Point3D, StarVector } from "@/scripts/hash/types";
 import { useFindConstellations } from "@/search/hooks/useFindConstellations";
 import { NearestStar2D } from "@/search/type";
 import { toCartesian } from "@/search/utils/vector";
+import {
+  verifyCandidate,
+  VerificationResult,
+} from "@/search/utils/verification";
 import _catalog from "@build/database/vectors-database.json";
 
 interface PhotoStar {
@@ -25,6 +29,7 @@ interface Candidate {
 interface CalculateAlignmentParams {
   photo: Photo;
   candidate: Candidate[];
+  allPhotoStars?: Point2D[];
 }
 
 interface NearestStar3D {
@@ -41,10 +46,18 @@ _catalog.forEach((star: StarVector) => {
 
 export default function useFindNearestStars() {
   const [nearestStars, setNearestStars] = useState<NearestStar2D[]>([]);
+  const [verification, setVerification] = useState<
+    VerificationResult | undefined
+  >(undefined);
+  const [fov, setFov] = useState<number>(Math.PI / 4);
   const { find: findNearestConstellations, nearestConstellations } =
     useFindConstellations();
 
-  const find = ({ photo, candidate }: CalculateAlignmentParams) => {
+  const find = ({
+    photo,
+    candidate,
+    allPhotoStars,
+  }: CalculateAlignmentParams) => {
     const databaseQuad: Point3D[] = candidate.map(({ hr }) => {
       const star: StarVector | undefined = catalog.get(hr);
 
@@ -56,7 +69,8 @@ export default function useFindNearestStars() {
     });
     const P = calculateProjectTransform(databaseQuad);
     const projectedDatabase = databaseQuad.map(
-      (star) => math.multiply(P, star).splice(0, 2) as Point2D,
+      (star) =>
+        (math.multiply(P, star) as Matrix).toArray().splice(0, 2) as Point2D,
     );
     const photoQuad = photo.quad.map((star) => star.position);
     const T = calculateToPhotoTransform(photoQuad, projectedDatabase) as Matrix;
@@ -66,30 +80,49 @@ export default function useFindNearestStars() {
       math.multiply(math.inv(P), math.inv(T), centerOfPhoto) as Matrix
     ).toArray() as Point3D;
 
+    // 동적 FOV 계산
+    const estimatedFov = estimateFOV(T, P, photo.width, photo.height);
+    setFov(estimatedFov);
+
     const nearestStars = filterNearestStars(
       _catalog as StarVector[],
       centerOfPhotoVector,
+      estimatedFov,
     );
+
+    const TP = math.multiply(T, P) as Matrix;
 
     setNearestStars(
       nearestStars.map((star) => ({
         ...star,
         vector: toCartesian(
-          (math.multiply(T, P, star.vector) as Matrix).toArray() as Point3D,
+          (math.multiply(TP, star.vector) as Matrix).toArray() as Point3D,
         ),
       })),
     );
 
+    // Verification 수행
+    if (allPhotoStars && allPhotoStars.length > 0) {
+      const result = verifyCandidate(
+        allPhotoStars,
+        TP,
+        _catalog as StarVector[],
+        { width: photo.width, height: photo.height },
+      );
+      setVerification(result);
+    }
+
     findNearestConstellations({
       center: centerOfPhotoVector,
-      matrix: math.multiply(T, P) as Matrix,
+      matrix: TP,
+      fov: estimatedFov,
     });
   };
 
-  const calculateProjectTransform = (quad: Point3D[]) => {
+  const calculateProjectTransform = (quad: Point3D[]): Matrix => {
     const center = plane.findCenter(quad);
 
-    return plane.calculateProjectTransform(center);
+    return plane.calculateProjectTransform(center) as unknown as Matrix;
   };
 
   const calculateToPhotoTransform = (photo: Point2D[], database: Point2D[]) => {
@@ -165,15 +198,69 @@ export default function useFindNearestStars() {
     ]);
   };
 
+  const estimateFOV = (
+    T: Matrix,
+    P: Matrix,
+    width: number,
+    height: number,
+  ): number => {
+    const invP = math.inv(P);
+    const invT = math.inv(T);
+    const center = [width / 2, height / 2, 1];
+    const centerVec = math.divide(
+      (math.multiply(invP, invT, center) as Matrix).toArray() as Point3D,
+      math.norm(
+        (math.multiply(invP, invT, center) as Matrix).toArray() as Point3D,
+      ),
+    ) as Point3D;
+
+    // 사진 네 모서리를 역변환
+    const corners = [
+      [0, 0, 1],
+      [width, 0, 1],
+      [0, height, 1],
+      [width, height, 1],
+    ];
+
+    let maxAngle = 0;
+
+    for (const corner of corners) {
+      const vec = (
+        math.multiply(invP, invT, corner) as Matrix
+      ).toArray() as Point3D;
+      const norm = math.norm(vec) as number;
+      const normalVec: Point3D = [vec[0] / norm, vec[1] / norm, vec[2] / norm];
+      const dot =
+        centerVec[0] * normalVec[0] +
+        centerVec[1] * normalVec[1] +
+        centerVec[2] * normalVec[2];
+      const angle = Math.acos(Math.min(1, Math.max(-1, dot)));
+
+      if (angle > maxAngle) {
+        maxAngle = angle;
+      }
+    }
+
+    return maxAngle;
+  };
+
   const filterNearestStars = (
     catalog: StarVector[],
     target: Point3D,
+    currentFov: number,
   ): NearestStar3D[] => {
-    // 45도 이내의 별만 반환하도록 함
-    const threshold = Math.cos(Math.PI / 4);
+    // FOV의 1.2배 범위 내의 별만 반환
+    const threshold = Math.cos(currentFov * 1.2);
 
     // 주어진 벡터 v (필터 기준)
-    const normalTarget = math.divide(target, math.norm(target)) as Point3D;
+    const norm = Math.sqrt(
+      target[0] * target[0] + target[1] * target[1] + target[2] * target[2],
+    );
+    const normalTarget: Point3D = [
+      target[0] / norm,
+      target[1] / norm,
+      target[2] / norm,
+    ];
 
     // 필터링
     return catalog
@@ -185,9 +272,12 @@ export default function useFindNearestStars() {
         };
       })
       .filter((star) => {
-        const dotProduct = math.dot(normalTarget, star.vector); // 내적 계산
+        const dotProduct =
+          normalTarget[0] * star.vector[0] +
+          normalTarget[1] * star.vector[1] +
+          normalTarget[2] * star.vector[2];
 
-        return dotProduct >= threshold; // 각도가 threshold 이내인 경우
+        return dotProduct >= threshold;
       });
   };
 
@@ -195,5 +285,7 @@ export default function useFindNearestStars() {
     find,
     nearestStars,
     nearestConstellations,
+    verification,
+    fov,
   };
 }

@@ -16,6 +16,7 @@ const constellations = _constellations as Constellation[];
 interface Params {
   center: Point3D;
   matrix: Matrix;
+  fov: number;
 }
 
 export const useFindConstellations = () => {
@@ -24,26 +25,36 @@ export const useFindConstellations = () => {
   >([]);
 
   const isNearest = useCallback(
-    (constellation: Constellation, target: Point3D) => {
-      // 45도 이내의 별만 반환하도록 함
-      const threshold = Math.cos(Math.PI / 4);
+    (constellation: Constellation, target: Point3D, fov: number) => {
+      // 동적 FOV 기반 threshold
+      const threshold = Math.cos(fov * 1.2);
 
       // 주어진 벡터 v (필터 기준)
-      const normalTarget = math.divide(target, math.norm(target)) as Point3D;
+      const norm = Math.sqrt(
+        target[0] * target[0] + target[1] * target[1] + target[2] * target[2],
+      );
+      const normalTarget: Point3D = [
+        target[0] / norm,
+        target[1] / norm,
+        target[2] / norm,
+      ];
 
       return constellation.stars.some((star: Point3D) => {
-        const dotProduct = math.dot(normalTarget, star); // 내적 계산
+        const dotProduct =
+          normalTarget[0] * star[0] +
+          normalTarget[1] * star[1] +
+          normalTarget[2] * star[2];
 
-        return dotProduct >= threshold; // 각도가 threshold 이내인 경우
+        return dotProduct >= threshold;
       });
     },
     [],
   );
 
-  const find = ({ center, matrix }: Params) => {
+  const find = ({ center, matrix, fov }: Params) => {
     setNearestConstellations(
       constellations
-        .filter((constellation) => isNearest(constellation, center))
+        .filter((constellation) => isNearest(constellation, center, fov))
         .map((constellation: Constellation) => ({
           ...constellation,
           stars: constellation.stars.map((star: Point3D) =>
