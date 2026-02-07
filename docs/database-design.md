@@ -143,9 +143,28 @@ BSC5 카탈로그 (9,096별)
 | KD-Tree 검색 | 1,365 x k=3 | 매우 빠름 (< 10ms) |
 | Verification | 후보당 1,625별 투영 | 상위 20개 후보만 수행 |
 
-### 향후 개선안
+## 5. 배포 최적화
 
-#### 1. 셀당 별 수 상한 도입
+### 현재 다운로드 리소스
+
+웹에 호스팅하여 공개할 경우, 서버 비용 절감을 위해 클라이언트 사이드 컴퓨팅을 사용하되 다운로드 용량을 최소화해야 한다. 현재 주요 리소스 크기는 다음과 같다.
+
+| 리소스 | 원본 크기 | gzip 전송 | 용도 |
+|:---|:---:|:---:|:---|
+| hashed-database.json | 66 MB | 22.5 MB | KD-Tree용 해시 DB |
+| opencv.js | 11 MB | ~3 MB | 별 검출 (WASM) |
+| vectors-database.json | 389 KB | 95 KB | 별 카탈로그 |
+| vectors-constellations.json | 89 KB | 23 KB | 별자리 연결선 |
+| 앱 번들 (Next.js) | ~수 MB | ~1 MB | 애플리케이션 코드 |
+| **합계** | **~78 MB** | **~27 MB** | |
+
+다운로드 용량의 대부분은 **hashed-database.json(22.5MB)**과 **opencv.js(~3MB)**가 차지한다.
+
+### 최적화 방안
+
+효과가 큰 순서대로 정리한다. 모든 방안은 매칭 정확도에 영향을 주지 않는다.
+
+#### 1. 셀당 별 수 상한 도입 (66MB → ~10MB)
 
 현재 셀 내 모든 별로 quad를 생성하지만, 사진 쪽에서는 상위 15개 밝은 별만 사용한다. DB 쪽에서도 셀당 밝은 별 상위 N개만으로 quad를 생성하면, 매칭 확률은 거의 동일하면서 DB 크기를 크게 줄일 수 있다.
 
@@ -157,14 +176,48 @@ BSC5 카탈로그 (9,096별)
 
 cell.ts에서 이미 밝기 순 정렬을 하고 있으므로, quad 생성 전에 `.slice(0, N)`을 추가하면 구현 가능하다. 단, 사진 쪽의 별 검출 밝기 순서가 카탈로그의 등급(V) 순서와 항상 일치하지는 않으므로(대기 조건, 카메라 감도 등), N은 사진 쪽(15)보다 약간 여유 있게 설정하는 것이 안전하다.
 
-#### 2. JSON → Binary 포맷
+#### 2. OpenCV.js 제거 (11MB → 0)
 
-hashed-database.json(66MB)의 JSON 파싱이 가장 큰 로딩 병목이다. Float32Array 기반 binary 포맷으로 전환하면 파싱 시간을 크게 줄일 수 있다.
+현재 `cv.worker.js`의 `findStars()` 함수는 OpenCV를 다음 4개 연산에만 사용한다:
 
-#### 3. KD-Tree 사전 직렬화
+- `cv.cvtColor` — grayscale 변환
+- `cv.GaussianBlur` — 가우시안 블러
+- `cv.subtract` — 차영상 생성
+- `cv.meanStdDev` — 평균/표준편차 계산
 
-현재 매번 546K 엔트리를 KD-Tree에 삽입하여 구축한다. 사전 직렬화된 ArrayBuffer로 저장하면 구축 시간을 제거할 수 있다.
+이 연산들은 모두 순수 JavaScript로 대체 가능하다:
 
-#### 4. 셀 크기 조정
+- grayscale: Canvas API의 `getImageData`에서 RGB 가중 평균
+- GaussianBlur: 분리 가능 커널(separable kernel)을 이용한 2-pass 블러
+- subtract/meanStdDev: 단순 배열 연산
+
+OpenCV.js(11MB WASM)를 완전히 제거하면 다운로드 용량이 크게 줄고, Web Worker의 초기화 시간도 단축된다.
+
+#### 3. JSON → Binary 포맷 (추가 3~5x 축소)
+
+hashed-database.json을 Float32Array 기반 binary 포맷으로 전환한다.
+
+- 해시 값 4개(float32) + 별 ID 4개(uint16) = quad당 24바이트
+- 80K quad 기준: 80,000 × 24 = 1.9MB (JSON 대비 ~5x 축소)
+- JSON 파싱이 불필요해져 로딩 속도도 크게 향상
+- gzip 압축 시 ~1MB 이하 가능
+
+#### 4. KD-Tree 사전 직렬화
+
+현재 매번 모든 엔트리를 KD-Tree에 삽입하여 구축한다. 사전 직렬화된 ArrayBuffer로 저장하면 구축 시간을 제거할 수 있다.
+
+#### 5. 셀 크기 조정
 
 nside를 높여 셀 수를 늘리면 셀당 별 수가 줄어 quad 폭발을 완화할 수 있다. 단, 셀이 작아지면 수집 반경도 함께 줄여야 하며, 경계 누락과의 균형이 필요하다.
+
+### 최적화 효과 전망
+
+| 단계 | 적용 후 gzip 전송량 | 비고 |
+|:---|:---:|:---|
+| 현재 | ~27 MB | |
+| + 셀당 상한 (20개) | ~9 MB | DB 66MB → 18MB |
+| + OpenCV.js 제거 | ~6 MB | 11MB WASM 제거 |
+| + Binary 포맷 | ~3 MB | JSON 파싱 제거 |
+| + 셀당 상한 (15개) | **~2 MB** | DB를 최소화 |
+
+1~3번을 적용하면 현재 ~27MB에서 **~3MB**까지 줄일 수 있다. 이는 일반적인 웹 애플리케이션과 비슷한 수준이며, 모바일 환경에서도 부담 없는 크기이다.
