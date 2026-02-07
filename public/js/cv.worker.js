@@ -75,8 +75,9 @@ function imageDataFromMat(cv, mat) {
  * 2. 적응적 threshold = mean + 3×stddev
  * 3. 8방향 이웃과 비교하여 local maxima 검출
  * 4. threshold 이상인 maxima만 별 후보
- * 5. 주변 5×5 영역에서 weighted centroid (서브픽셀 정확도)
- * 6. brightness = 차영상 픽셀값 (0~255)
+ * 5. 유효 반경 측정: peak에서 바깥으로 확장하며 threshold 이하가 되는 거리
+ * 6. 유효 반경 범위 내에서 weighted centroid (서브픽셀 정확도)
+ * 7. brightness = 유효 반경 (겉보기 크기, 밝은 별일수록 큰 값)
  */
 function findStars(cv, payload) {
   const image = cv.matFromImageData(payload);
@@ -107,6 +108,7 @@ function findStars(cv, payload) {
 
   const stars = [];
   const margin = 3; // 8방향 이웃 비교를 위한 경계 마진
+  const maxRadius = 50; // 유효 반경 탐색 상한 (픽셀)
 
   for (let y = margin; y < rows - margin; y++) {
     for (let x = margin; x < cols - margin; x++) {
@@ -128,10 +130,27 @@ function findStars(cv, payload) {
 
       if (!isMax) continue;
 
-      // 주변 5×5 영역에서 weighted centroid (서브픽셀 정확도)
+      // 유효 반경 측정: 4방향(상하좌우)으로 확장하며 threshold 아래로 떨어지는 거리의 평균
+      let radiusSum = 0;
+      const directions = [[0, -1], [0, 1], [-1, 0], [1, 0]];
+      for (const [ddx, ddy] of directions) {
+        let r = 1;
+        while (r <= maxRadius) {
+          const ny = y + ddy * r;
+          const nx = x + ddx * r;
+          if (ny < 0 || ny >= rows || nx < 0 || nx >= cols) break;
+          if (data[ny * cols + nx] < threshold) break;
+          r++;
+        }
+        radiusSum += r - 1;
+      }
+      const effectiveRadius = radiusSum / directions.length;
+
+      // 유효 반경 범위 내에서 weighted centroid (서브픽셀 정확도)
+      const centroidRadius = Math.max(2, Math.ceil(effectiveRadius));
       let sumW = 0, sumWx = 0, sumWy = 0;
-      for (let dy = -2; dy <= 2; dy++) {
-        for (let dx = -2; dx <= 2; dx++) {
+      for (let dy = -centroidRadius; dy <= centroidRadius; dy++) {
+        for (let dx = -centroidRadius; dx <= centroidRadius; dx++) {
           const ny = y + dy;
           const nx = x + dx;
           if (ny < 0 || ny >= rows || nx < 0 || nx >= cols) continue;
@@ -145,7 +164,7 @@ function findStars(cv, payload) {
       const cx = sumW > 0 ? sumWx / sumW : x;
       const cy = sumW > 0 ? sumWy / sumW : y;
 
-      stars.push({ cx, cy, brightness: val });
+      stars.push({ cx, cy, brightness: effectiveRadius });
     }
   }
 
