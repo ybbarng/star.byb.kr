@@ -293,6 +293,15 @@ export default function DetectStarStep() {
 
   return (
     <div className="flex h-full w-full flex-col gap-4">
+      <div className="flex flex-row justify-end">
+        <button
+          className="btn btn-error btn-sm"
+          disabled={canvasStars.length < 1}
+          onClick={() => setCanvasStars([])}
+        >
+          전체 삭제
+        </button>
+      </div>
       <div className="flex h-full w-full justify-center overflow-auto">
         <div>
           <div
