@@ -72,7 +72,12 @@ export default function PlateSolvingStep() {
         matchRatio: score?.matchRatio,
       };
     });
-  }, [candidates, candidateScores, candidateNeighborCounts, sortedCandidateIndices]);
+  }, [
+    candidates,
+    candidateScores,
+    candidateNeighborCounts,
+    sortedCandidateIndices,
+  ]);
 
   // 방향키로 후보 탐색
   useEffect(() => {
@@ -92,8 +97,7 @@ export default function PlateSolvingStep() {
             ? currentDisplayIdx + 1
             : currentDisplayIdx;
       } else {
-        nextDisplayIdx =
-          currentDisplayIdx > 0 ? currentDisplayIdx - 1 : 0;
+        nextDisplayIdx = currentDisplayIdx > 0 ? currentDisplayIdx - 1 : 0;
       }
 
       setSelectedCandidateIndex(candidateItems[nextDisplayIdx].originalIndex);
@@ -122,14 +126,13 @@ export default function PlateSolvingStep() {
       return;
     }
 
-    const topN = Math.min(candidates.length, 50);
     const scores = new Map<number, VerificationResult>();
     const allPhotoStarPoints: Point2D[] = photoStars.map((star) => [
       star.x,
       star.y,
     ]);
 
-    for (let i = 0; i < topN; i++) {
+    for (let i = 0; i < candidates.length; i++) {
       const candidate = candidates[i];
 
       try {
@@ -184,7 +187,7 @@ export default function PlateSolvingStep() {
     const consensusThreshold = Math.cos((20 * Math.PI) / 180); // 20°
     const neighbors = new Map<number, number>();
 
-    for (let i = 0; i < topN; i++) {
+    for (let i = 0; i < candidates.length; i++) {
       if (!scores.has(i) || !skyDirections[i]) continue;
       const dir = skyDirections[i]!;
       let count = 0;
@@ -192,8 +195,7 @@ export default function PlateSolvingStep() {
       for (let j = 0; j < skyDirections.length; j++) {
         if (i === j || !skyDirections[j]) continue;
         const other = skyDirections[j]!;
-        const dot =
-          dir[0] * other[0] + dir[1] * other[1] + dir[2] * other[2];
+        const dot = dir[0] * other[0] + dir[1] * other[1] + dir[2] * other[2];
 
         if (dot >= consensusThreshold) count++;
       }
@@ -506,9 +508,7 @@ function CandidateSelect(props: CandidateSelectProps) {
             매칭: {props.verification.matchedCount}개 (
             {(props.verification.matchRatio * 100).toFixed(1)}%)
           </div>
-          <div>
-            미매칭 사진별: {props.verification.unmatchedPhotoCount}개
-          </div>
+          <div>미매칭 사진별: {props.verification.unmatchedPhotoCount}개</div>
           <div>평균 오차: {props.verification.averageError.toFixed(1)}px</div>
           {props.neighborCount !== undefined && (
             <div>합의 이웃: {props.neighborCount}개</div>
@@ -523,10 +523,7 @@ function CandidateSelect(props: CandidateSelectProps) {
               key={`candidate-${item.originalIndex}`}
               className="w-full"
               ref={(el) => {
-                if (
-                  el &&
-                  props.selectedCandidateIndex === item.originalIndex
-                ) {
+                if (el && props.selectedCandidateIndex === item.originalIndex) {
                   el.scrollIntoView({ block: "nearest" });
                 }
               }}
