@@ -2,7 +2,7 @@
 
 import Konva from "konva";
 import { useEffect, useRef, useState } from "react";
-import { Stage, Layer, Rect } from "react-konva";
+import { Stage, Layer, Rect, Image as KonvaImage } from "react-konva";
 import SelectableStarMarker from "@/plate-solver/SelectableStarMarker";
 import StepMover from "@/plate-solver/StepMover";
 import { useContextStore } from "@/plate-solver/store/context";
@@ -38,6 +38,13 @@ export default function DetectStarStep() {
     visible: false,
   });
   const stageRef = useRef<Konva.Stage>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [stageScale, setStageScale] = useState(1);
+  const [stagePos, setStagePos] = useState({ x: 0, y: 0 });
+  const [containerSize, setContainerSize] = useState({
+    width: 0,
+    height: 0,
+  });
 
   useEffect(() => {
     // store에 이미 별 데이터가 있으면 복원, 없으면 새로 검출
@@ -55,6 +62,33 @@ export default function DetectStarStep() {
       detectStars();
     }
   }, []);
+
+  // 컨테이너 크기 측정 & 초기 스케일 계산
+  useEffect(() => {
+    if (!containerRef.current || !image) return;
+
+    const updateSize = () => {
+      const { clientWidth, clientHeight } = containerRef.current!;
+      setContainerSize({ width: clientWidth, height: clientHeight });
+
+      const scale = Math.min(
+        clientWidth / image.width,
+        clientHeight / image.height,
+        1,
+      );
+      setStageScale(scale);
+      setStagePos({
+        x: (clientWidth - image.width * scale) / 2,
+        y: (clientHeight - image.height * scale) / 2,
+      });
+    };
+
+    updateSize();
+    const observer = new ResizeObserver(updateSize);
+    observer.observe(containerRef.current);
+
+    return () => observer.disconnect();
+  }, [image]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -83,6 +117,19 @@ export default function DetectStarStep() {
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [canvasStars]);
+
+  // 스크린 좌표 → 이미지 좌표 변환
+  const getImagePointerPosition = (): { x: number; y: number } | null => {
+    const stage = stageRef.current;
+    if (!stage) return null;
+    const pos = stage.getPointerPosition();
+    if (!pos) return null;
+
+    return {
+      x: (pos.x - stage.x()) / stage.scaleX(),
+      y: (pos.y - stage.y()) / stage.scaleY(),
+    };
+  };
 
   async function detectStars() {
     if (!image) {
@@ -185,81 +232,87 @@ export default function DetectStarStep() {
     );
   };
 
-  const handleDoubleClick = (e: Konva.KonvaEventObject<MouseEvent>) => {
-    // 이벤트에서 얻어온 값과 마우스 포인터로 클릭한 곳의 오차가 있어서 보정
-    addStar(e.evt.offsetX - 1, e.evt.offsetY - 3);
+  const handleWheel = (e: Konva.KonvaEventObject<WheelEvent>) => {
+    e.evt.preventDefault();
+    const stage = stageRef.current;
+    if (!stage) return;
+
+    const oldScale = stage.scaleX();
+    const pointer = stage.getPointerPosition();
+    if (!pointer) return;
+
+    const scaleBy = 1.1;
+    const newScale = e.evt.deltaY < 0 ? oldScale * scaleBy : oldScale / scaleBy;
+    const clampedScale = Math.max(0.05, Math.min(10, newScale));
+
+    // 커서 위치를 기준으로 줌
+    const mousePointTo = {
+      x: (pointer.x - stage.x()) / oldScale,
+      y: (pointer.y - stage.y()) / oldScale,
+    };
+
+    setStageScale(clampedScale);
+    setStagePos({
+      x: pointer.x - mousePointTo.x * clampedScale,
+      y: pointer.y - mousePointTo.y * clampedScale,
+    });
+  };
+
+  const handleDoubleClick = () => {
+    const pos = getImagePointerPosition();
+    if (pos) addStar(pos.x, pos.y);
   };
 
   const handleDragStart = () => {
-    if (!stageRef.current) {
-      return;
-    }
-
-    const position = stageRef.current.getPointerPosition();
-
-    if (!position) {
-      return;
-    }
+    const pos = getImagePointerPosition();
+    if (!pos) return;
 
     setIsSelecting(true);
-
     setSelectArea({
-      x1: position.x,
-      y1: position.y,
-      x2: position.x,
-      y2: position.y,
+      x1: pos.x,
+      y1: pos.y,
+      x2: pos.x,
+      y2: pos.y,
       visible: false,
     });
   };
 
   const handleDragMove = () => {
-    if (!stageRef.current || !isSelecting) {
-      return;
-    }
-
-    const position = stageRef.current.getPointerPosition();
-
-    if (!position) {
-      return;
-    }
+    if (!isSelecting) return;
+    const pos = getImagePointerPosition();
+    if (!pos) return;
 
     setSelectArea({
       ...selectArea,
-      x2: position.x,
-      y2: position.y,
+      x2: pos.x,
+      y2: pos.y,
       visible: true,
     });
   };
 
   const handleDragEnd = () => {
-    if (!stageRef.current || !isSelecting) {
-      return;
-    }
-
-    const position = stageRef.current.getPointerPosition();
-
-    if (!position) {
-      return;
-    }
+    if (!isSelecting) return;
+    const pos = getImagePointerPosition();
+    if (!pos) return;
 
     setIsSelecting(false);
     setSelectArea({
       ...selectArea,
-      x2: position.x,
-      y2: position.y,
+      x2: pos.x,
+      y2: pos.y,
       visible: false,
     });
 
-    const select = stageRef.current.find(".select")[0];
-    const stars = stageRef.current.find(".star");
+    const select = stageRef.current?.find(".select")[0];
+    const stars = stageRef.current?.find(".star");
+    if (!select || !stars) return;
+
     const box = select.getClientRect();
     const selected = stars
       .filter((star) => Konva.Util.haveIntersection(box, star.getClientRect()))
       .map((star) => star.id());
 
-    if (selected.length < 1) {
-      return;
-    }
+    if (selected.length < 1) return;
 
     setCanvasStars(
       canvasStars.map((star) => ({
@@ -294,7 +347,10 @@ export default function DetectStarStep() {
   return (
     <div className="flex h-full w-full flex-col gap-4">
       <div className="flex flex-row items-center justify-between">
-        <span className="text-sm">마커 {canvasStars.length}개</span>
+        <span className="text-sm">
+          마커 {canvasStars.length}개
+          {stageScale !== 1 && ` · ${Math.round(stageScale * 100)}%`}
+        </span>
         <button
           className="btn btn-error btn-sm"
           disabled={canvasStars.length < 1}
@@ -303,52 +359,52 @@ export default function DetectStarStep() {
           전체 삭제
         </button>
       </div>
-      <div className="flex h-full w-full justify-center overflow-auto">
-        <div>
-          <div
-            style={{
-              backgroundImage: `url(${image.src})`,
-            }}
+      <div ref={containerRef} className="h-full w-full overflow-hidden">
+        {containerSize.width > 0 && (
+          <Stage
+            ref={stageRef}
+            width={containerSize.width}
+            height={containerSize.height}
+            scaleX={stageScale}
+            scaleY={stageScale}
+            x={stagePos.x}
+            y={stagePos.y}
+            onWheel={handleWheel}
+            onDblClick={handleDoubleClick}
+            onMouseDown={handleDragStart}
+            onTouchStart={handleDragStart}
+            onMouseMove={handleDragMove}
+            onTouchMove={handleDragMove}
+            onMouseUp={handleDragEnd}
+            onTouchEnd={handleDragEnd}
           >
-            <Stage
-              ref={stageRef}
-              width={image.width}
-              height={image.height}
-              onDblClick={handleDoubleClick}
-              onMouseDown={handleDragStart}
-              onTouchStart={handleDragStart}
-              onMouseMove={handleDragMove}
-              onTouchMove={handleDragMove}
-              onMouseUp={handleDragEnd}
-              onTouchEnd={handleDragEnd}
-            >
-              <Layer>
-                {canvasStars.map((star) => (
-                  <SelectableStarMarker
-                    key={star.id}
-                    id={star.id}
-                    x={star.x}
-                    y={star.y}
-                    isSelected={star.isSelected}
-                    onPositionUpdate={onPositionUpdate}
-                    remove={removeStar}
-                    select={selectStar}
-                  />
-                ))}
-                <Rect
-                  name="select"
-                  x={Math.min(selectArea.x1, selectArea.x2)}
-                  y={Math.min(selectArea.y1, selectArea.y2)}
-                  width={Math.abs(selectArea.x1 - selectArea.x2)}
-                  height={Math.abs(selectArea.y1 - selectArea.y2)}
-                  visible={selectArea.visible}
-                  fill="rgba(0,0,255,0.5)"
-                  listening={false}
+            <Layer>
+              <KonvaImage image={image} />
+              {canvasStars.map((star) => (
+                <SelectableStarMarker
+                  key={star.id}
+                  id={star.id}
+                  x={star.x}
+                  y={star.y}
+                  isSelected={star.isSelected}
+                  onPositionUpdate={onPositionUpdate}
+                  remove={removeStar}
+                  select={selectStar}
                 />
-              </Layer>
-            </Stage>
-          </div>
-        </div>
+              ))}
+              <Rect
+                name="select"
+                x={Math.min(selectArea.x1, selectArea.x2)}
+                y={Math.min(selectArea.y1, selectArea.y2)}
+                width={Math.abs(selectArea.x1 - selectArea.x2)}
+                height={Math.abs(selectArea.y1 - selectArea.y2)}
+                visible={selectArea.visible}
+                fill="rgba(0,0,255,0.5)"
+                listening={false}
+              />
+            </Layer>
+          </Stage>
+        )}
       </div>
       <StepMover
         disableNext={canvasStars.length < 1}
