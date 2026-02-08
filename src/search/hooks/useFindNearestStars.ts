@@ -249,8 +249,11 @@ export default function useFindNearestStars() {
     target: Point3D,
     currentFov: number,
   ): NearestStar3D[] => {
-    // FOV의 1.2배 범위 내의 별만 반환, 단 반대편 반구(>90°)는 절대 포함하지 않음
-    const threshold = Math.max(0, Math.cos(currentFov * 1.2));
+    // FOV의 1.2배 범위 내의 별만 반환
+    // 상한: 60° (광각 렌즈 한계), 하한: 0 (반대편 반구 제외)
+    const MAX_FOV = (60 * Math.PI) / 180;
+    const clampedFov = Math.min(currentFov, MAX_FOV);
+    const threshold = Math.cos(clampedFov * 1.2);
 
     // 주어진 벡터 v (필터 기준)
     const norm = Math.sqrt(
