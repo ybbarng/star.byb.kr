@@ -1,23 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import StepMover from "@/plate-solver/StepMover";
 import { useContextStore } from "@/plate-solver/store/context";
-import { Point3D, StarVector } from "@/scripts/hash/types";
 import useFindCandidates from "@/search/hooks/useFindCandidates";
 import useFindNearestStars from "@/search/hooks/useFindNearestStars";
 import { Point2D } from "@/search/type";
-import { computeTransformMatrix } from "@/search/utils/transform";
-import {
-  verifyCandidate,
-  VerificationResult,
-} from "@/search/utils/verification";
+import { VerificationResult } from "@/search/utils/verification";
 import { cn } from "@/utils/cn";
-import _catalog from "@build/database/vectors-database.json";
-
-const catalogArray = _catalog as StarVector[];
-const catalogMap = new Map<string, StarVector>();
-catalogArray.forEach((star) => {
-  catalogMap.set(star.HR, star);
-});
 
 export default function PlateSolvingStep() {
   const image = useContextStore((state) => state.image);
@@ -48,6 +36,11 @@ export default function PlateSolvingStep() {
     nearestConstellations,
     verification,
   } = useFindNearestStars();
+  const [verificationProgress, setVerificationProgress] = useState<{
+    progress: number;
+    total: number;
+  } | null>(null);
+  const verificationWorkerRef = useRef<Worker | undefined>(undefined);
   const candidateItems = useMemo(() => {
     const order =
       sortedCandidateIndices.length > 0
@@ -120,126 +113,89 @@ export default function PlateSolvingStep() {
     });
   }, [image, photoStars]);
 
-  // 후보 목록이 나오면 상위 후보들을 실제 변환 행렬로 검증
+  // Verification Worker 초기화
+  const onVerificationMessage = useCallback((e: MessageEvent) => {
+    switch (e.data.fn) {
+      case "onProgress":
+        setVerificationProgress(e.data.payload);
+        break;
+
+      case "onVerified": {
+        const { scores, neighbors, sorted, bestIndex } = e.data.payload as {
+          scores: Record<number, VerificationResult>;
+          neighbors: Record<number, number>;
+          sorted: number[];
+          bestIndex: number;
+        };
+
+        const scoresMap = new Map<number, VerificationResult>();
+
+        for (const [k, v] of Object.entries(scores)) {
+          scoresMap.set(Number(k), v);
+        }
+
+        const neighborsMap = new Map<number, number>();
+
+        for (const [k, v] of Object.entries(neighbors)) {
+          neighborsMap.set(Number(k), v as number);
+        }
+
+        setCandidateScores(scoresMap);
+        setCandidateNeighborCounts(neighborsMap);
+        setSortedCandidateIndices(sorted);
+        setAutoVerified(true);
+        setVerificationProgress(null);
+
+        if (bestIndex >= 0) {
+          setSelectedCandidateIndex(bestIndex);
+        }
+
+        break;
+      }
+    }
+  }, []);
+
   useEffect(() => {
-    if (!image || candidates.length === 0 || autoVerified) {
+    const worker = new Worker(
+      new URL("@/search/workers/verificationWorker.ts", import.meta.url),
+    );
+    worker.onmessage = onVerificationMessage;
+    verificationWorkerRef.current = worker;
+
+    return () => {
+      worker.terminate();
+      verificationWorkerRef.current = undefined;
+    };
+  }, [onVerificationMessage]);
+
+  // 후보 목록이 나오면 Worker에서 검증
+  useEffect(() => {
+    if (
+      !image ||
+      candidates.length === 0 ||
+      autoVerified ||
+      !verificationWorkerRef.current
+    ) {
       return;
     }
 
-    const scores = new Map<number, VerificationResult>();
     const allPhotoStarPoints: Point2D[] = photoStars.map((star) => [
       star.x,
       star.y,
     ]);
 
-    for (let i = 0; i < candidates.length; i++) {
-      const candidate = candidates[i];
-
-      try {
-        const photoQuad = candidate.input.map(
-          (starIndex) =>
-            [photoStars[starIndex].x, photoStars[starIndex].y] as Point2D,
-        );
-
-        const databaseQuad: Point3D[] = candidate.output.map(({ hr }) => {
-          const star = catalogMap.get(hr);
-
-          if (!star) throw new Error(`Star HR ${hr} not found`);
-
-          return [star.x, star.y, star.z] as Point3D;
-        });
-
-        const TP = computeTransformMatrix(photoQuad, databaseQuad);
-        const result = verifyCandidate(allPhotoStarPoints, TP, catalogArray, {
-          width: image.width,
-          height: image.height,
-        });
-
-        scores.set(i, result);
-      } catch {
-        // 검증 실패 시 무시
-      }
-    }
-
-    // 합의(consensus) 계산: 각 후보의 DB quad 중심 방향을 구하고
-    // 유사한 방향을 가리키는 이웃 수를 셈 (정답은 클러스터를 형성)
-    const skyDirections: (Point3D | null)[] = candidates.map((candidate) => {
-      let sx = 0,
-        sy = 0,
-        sz = 0;
-
-      for (const { hr } of candidate.output) {
-        const star = catalogMap.get(hr);
-
-        if (!star) return null;
-        sx += star.x;
-        sy += star.y;
-        sz += star.z;
-      }
-
-      const norm = Math.sqrt(sx * sx + sy * sy + sz * sz);
-
-      if (norm === 0) return null;
-
-      return [sx / norm, sy / norm, sz / norm] as Point3D;
+    verificationWorkerRef.current.postMessage({
+      fn: "verify",
+      payload: {
+        candidates: candidates.map((c) => ({
+          input: c.input,
+          output: c.output,
+        })),
+        photoStars: allPhotoStarPoints,
+        imageWidth: image.width,
+        imageHeight: image.height,
+      },
     });
-
-    const consensusThreshold = Math.cos((20 * Math.PI) / 180); // 20°
-    const neighbors = new Map<number, number>();
-
-    for (let i = 0; i < candidates.length; i++) {
-      if (!scores.has(i) || !skyDirections[i]) continue;
-      const dir = skyDirections[i]!;
-      let count = 0;
-
-      for (let j = 0; j < skyDirections.length; j++) {
-        if (i === j || !skyDirections[j]) continue;
-        const other = skyDirections[j]!;
-        const dot = dir[0] * other[0] + dir[1] * other[1] + dir[2] * other[2];
-
-        if (dot >= consensusThreshold) count++;
-      }
-
-      neighbors.set(i, count);
-    }
-
-    // 다단계 정렬: matchedCount↓ → neighborCount↓ → averageError↑ → score↓
-    const sorted = Array.from({ length: candidates.length }, (_, i) => i);
-    sorted.sort((a, b) => {
-      const scoreA = scores.get(a);
-      const scoreB = scores.get(b);
-
-      if (scoreA && scoreB) {
-        if (scoreB.matchedCount !== scoreA.matchedCount)
-          return scoreB.matchedCount - scoreA.matchedCount;
-
-        const neighborsA = neighbors.get(a) ?? 0;
-        const neighborsB = neighbors.get(b) ?? 0;
-
-        if (neighborsB !== neighborsA) return neighborsB - neighborsA;
-        if (scoreA.averageError !== scoreB.averageError)
-          return scoreA.averageError - scoreB.averageError;
-
-        return scoreB.score - scoreA.score;
-      }
-
-      if (scoreA) return -1;
-      if (scoreB) return 1;
-
-      return 0;
-    });
-
-    // 정렬된 첫 번째 검증 후보가 최고
-    const bestIndex = sorted.find((i) => scores.has(i)) ?? -1;
-
-    setCandidateScores(scores);
-    setCandidateNeighborCounts(neighbors);
-    setSortedCandidateIndices(sorted);
-    setAutoVerified(true);
-
-    if (bestIndex >= 0) {
-      setSelectedCandidateIndex(bestIndex);
-    }
   }, [image, photoStars, candidates, autoVerified]);
 
   function loadImageToCanvas(
@@ -420,10 +376,14 @@ export default function PlateSolvingStep() {
   return (
     <div className="flex size-full flex-col justify-stretch gap-4">
       <div className="flex h-full flex-row overflow-hidden">
-        {candidates.length < 1 && (
-          <CandidatesProgress progress={progress} total={total} />
+        {(candidates.length < 1 || verificationProgress) && (
+          <CandidatesProgress
+            progress={verificationProgress?.progress ?? progress}
+            total={verificationProgress?.total ?? total}
+            label={verificationProgress ? "검증 중" : "검색 중"}
+          />
         )}
-        {candidates.length > 0 && (
+        {candidates.length > 0 && !verificationProgress && (
           <CandidateSelect
             selectedCandidateIndex={selectedCandidateIndex ?? -1}
             setSelectedCandidateIndex={setSelectedCandidateIndex}
@@ -460,13 +420,18 @@ export default function PlateSolvingStep() {
 interface CandidatesProgressProps {
   progress: number;
   total: number;
+  label?: string;
 }
 
-function CandidatesProgress({ progress, total }: CandidatesProgressProps) {
+function CandidatesProgress({
+  progress,
+  total,
+  label,
+}: CandidatesProgressProps) {
   return (
     <div className="bg-base-200 rounded-box flex h-full w-100 shrink-0 flex-row items-center justify-center">
       <div className="flex flex-col items-center justify-center gap-2">
-        <div className="text-xl">로딩 중입니다.</div>
+        <div className="text-xl">{label ?? "로딩"} 중입니다.</div>
         {total === 0 && (
           <span className="loading loading-spinner loading-lg"></span>
         )}
