@@ -421,14 +421,14 @@ export default function DetectStarStep() {
         <div className="flex gap-2">
           <div className="join">
             <button
-              className={`btn join-item btn-sm ${mode === "select" ? "btn-active" : ""}`}
+              className={`btn join-item btn-sm ${mode === "select" ? "btn-primary" : ""}`}
               onClick={() => setMode("select")}
               title="선택 모드 (Space 누르면 이동)"
             >
               선택
             </button>
             <button
-              className={`btn join-item btn-sm ${mode === "move" ? "btn-active" : ""}`}
+              className={`btn join-item btn-sm ${mode === "move" ? "btn-primary" : ""}`}
               onClick={() => setMode("move")}
               title="이동 모드"
             >
