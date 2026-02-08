@@ -1,11 +1,23 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import StepMover from "@/plate-solver/StepMover";
 import { useContextStore } from "@/plate-solver/store/context";
+import { Point3D, StarVector } from "@/scripts/hash/types";
 import useFindCandidates from "@/search/hooks/useFindCandidates";
 import useFindNearestStars from "@/search/hooks/useFindNearestStars";
 import { Point2D } from "@/search/type";
-import { VerificationResult } from "@/search/utils/verification";
+import { computeTransformMatrix } from "@/search/utils/transform";
+import {
+  verifyCandidate,
+  VerificationResult,
+} from "@/search/utils/verification";
 import { cn } from "@/utils/cn";
+import _catalog from "@build/database/vectors-database.json";
+
+const catalogArray = _catalog as StarVector[];
+const catalogMap = new Map<string, StarVector>();
+catalogArray.forEach((star) => {
+  catalogMap.set(star.HR, star);
+});
 
 export default function PlateSolvingStep() {
   const image = useContextStore((state) => state.image);
@@ -18,6 +30,12 @@ export default function PlateSolvingStep() {
     Map<number, VerificationResult>
   >(new Map());
   const [autoVerified, setAutoVerified] = useState(false);
+  const [sortedCandidateIndices, setSortedCandidateIndices] = useState<
+    number[]
+  >([]);
+  const [candidateNeighborCounts, setCandidateNeighborCounts] = useState<
+    Map<number, number>
+  >(new Map());
   const {
     find: findCandidates,
     candidates,
@@ -30,18 +48,30 @@ export default function PlateSolvingStep() {
     nearestConstellations,
     verification,
   } = useFindNearestStars();
-  const candidateNames = useMemo(() => {
-    return candidates.map((candidate, i) => {
-      const score = candidateScores.get(i);
+  const candidateItems = useMemo(() => {
+    const order =
+      sortedCandidateIndices.length > 0
+        ? sortedCandidateIndices
+        : candidates.map((_, i) => i);
+
+    return order.map((origIdx) => {
+      const candidate = candidates[origIdx];
+      const score = candidateScores.get(origIdx);
+      const neighbors = candidateNeighborCounts.get(origIdx);
       const scoreStr = score
-        ? ` (${score.matchedCount}matches, score:${score.score.toFixed(3)})`
+        ? ` (${score.matchedCount}m, ${score.averageError.toFixed(1)}px` +
+          (neighbors !== undefined ? `, ${neighbors}n` : "") +
+          ")"
         : "";
 
-      return (
-        candidate.output.map((star) => `[${star.label}]`).join("-") + scoreStr
-      );
+      return {
+        label:
+          candidate.output.map((star) => `[${star.label}]`).join("-") +
+          scoreStr,
+        originalIndex: origIdx,
+      };
     });
-  }, [candidates, candidateScores]);
+  }, [candidates, candidateScores, candidateNeighborCounts, sortedCandidateIndices]);
 
   useEffect(() => {
     if (!image || photoStars.length < 1) {
@@ -55,41 +85,128 @@ export default function PlateSolvingStep() {
     });
   }, [image, photoStars]);
 
-  // 후보 목록이 나오면 상위 후보들을 자동 검증
+  // 후보 목록이 나오면 상위 후보들을 실제 변환 행렬로 검증
   useEffect(() => {
     if (!image || candidates.length === 0 || autoVerified) {
       return;
     }
 
-    const topN = Math.min(candidates.length, 20);
+    const topN = Math.min(candidates.length, 50);
     const scores = new Map<number, VerificationResult>();
-    let bestIndex = 0;
-    let bestScore = -1;
+    const allPhotoStarPoints: Point2D[] = photoStars.map((star) => [
+      star.x,
+      star.y,
+    ]);
 
     for (let i = 0; i < topN; i++) {
       const candidate = candidates[i];
 
       try {
-        // distance 기반으로 score 추정, 실제 verification은 선택 시 수행됨
-        scores.set(i, {
-          matchedCount: 0,
-          matchRatio: 0,
-          averageError: candidate.distance,
-          score: 1 / (1 + candidate.distance),
+        const photoQuad = candidate.input.map(
+          (starIndex) =>
+            [photoStars[starIndex].x, photoStars[starIndex].y] as Point2D,
+        );
+
+        const databaseQuad: Point3D[] = candidate.output.map(({ hr }) => {
+          const star = catalogMap.get(hr);
+
+          if (!star) throw new Error(`Star HR ${hr} not found`);
+
+          return [star.x, star.y, star.z] as Point3D;
         });
 
-        if (1 / (1 + candidate.distance) > bestScore) {
-          bestScore = 1 / (1 + candidate.distance);
-          bestIndex = i;
-        }
+        const TP = computeTransformMatrix(photoQuad, databaseQuad);
+        const result = verifyCandidate(allPhotoStarPoints, TP, catalogArray, {
+          width: image.width,
+          height: image.height,
+        });
+
+        scores.set(i, result);
       } catch {
         // 검증 실패 시 무시
       }
     }
 
+    // 합의(consensus) 계산: 각 후보의 DB quad 중심 방향을 구하고
+    // 유사한 방향을 가리키는 이웃 수를 셈 (정답은 클러스터를 형성)
+    const skyDirections: (Point3D | null)[] = candidates.map((candidate) => {
+      let sx = 0,
+        sy = 0,
+        sz = 0;
+
+      for (const { hr } of candidate.output) {
+        const star = catalogMap.get(hr);
+
+        if (!star) return null;
+        sx += star.x;
+        sy += star.y;
+        sz += star.z;
+      }
+
+      const norm = Math.sqrt(sx * sx + sy * sy + sz * sz);
+
+      if (norm === 0) return null;
+
+      return [sx / norm, sy / norm, sz / norm] as Point3D;
+    });
+
+    const consensusThreshold = Math.cos((20 * Math.PI) / 180); // 20°
+    const neighbors = new Map<number, number>();
+
+    for (let i = 0; i < topN; i++) {
+      if (!scores.has(i) || !skyDirections[i]) continue;
+      const dir = skyDirections[i]!;
+      let count = 0;
+
+      for (let j = 0; j < skyDirections.length; j++) {
+        if (i === j || !skyDirections[j]) continue;
+        const other = skyDirections[j]!;
+        const dot =
+          dir[0] * other[0] + dir[1] * other[1] + dir[2] * other[2];
+
+        if (dot >= consensusThreshold) count++;
+      }
+
+      neighbors.set(i, count);
+    }
+
+    // 다단계 정렬: matchedCount↓ → neighborCount↓ → averageError↑ → score↓
+    const sorted = Array.from({ length: candidates.length }, (_, i) => i);
+    sorted.sort((a, b) => {
+      const scoreA = scores.get(a);
+      const scoreB = scores.get(b);
+
+      if (scoreA && scoreB) {
+        if (scoreB.matchedCount !== scoreA.matchedCount)
+          return scoreB.matchedCount - scoreA.matchedCount;
+
+        const neighborsA = neighbors.get(a) ?? 0;
+        const neighborsB = neighbors.get(b) ?? 0;
+
+        if (neighborsB !== neighborsA) return neighborsB - neighborsA;
+        if (scoreA.averageError !== scoreB.averageError)
+          return scoreA.averageError - scoreB.averageError;
+
+        return scoreB.score - scoreA.score;
+      }
+
+      if (scoreA) return -1;
+      if (scoreB) return 1;
+
+      return 0;
+    });
+
+    // 정렬된 첫 번째 검증 후보가 최고
+    const bestIndex = sorted.find((i) => scores.has(i)) ?? -1;
+
     setCandidateScores(scores);
+    setCandidateNeighborCounts(neighbors);
+    setSortedCandidateIndices(sorted);
     setAutoVerified(true);
-    setSelectedCandidateIndex(bestIndex);
+
+    if (bestIndex >= 0) {
+      setSelectedCandidateIndex(bestIndex);
+    }
   }, [image, photoStars, candidates, autoVerified]);
 
   function loadImageToCanvas(
@@ -277,10 +394,15 @@ export default function PlateSolvingStep() {
           <CandidateSelect
             selectedCandidateIndex={selectedCandidateIndex ?? -1}
             setSelectedCandidateIndex={setSelectedCandidateIndex}
-            candidates={candidateNames}
+            candidates={candidateItems}
             verification={
               selectedCandidateIndex !== undefined
                 ? candidateScores.get(selectedCandidateIndex)
+                : undefined
+            }
+            neighborCount={
+              selectedCandidateIndex !== undefined
+                ? candidateNeighborCounts.get(selectedCandidateIndex)
                 : undefined
             }
           />
@@ -330,11 +452,17 @@ function CandidatesProgress({ progress, total }: CandidatesProgressProps) {
   );
 }
 
+interface CandidateItem {
+  label: string;
+  originalIndex: number;
+}
+
 interface CandidateSelectProps {
   selectedCandidateIndex: number;
   setSelectedCandidateIndex: (selectedCandidateIndex: number) => void;
-  candidates: string[];
+  candidates: CandidateItem[];
   verification?: VerificationResult;
+  neighborCount?: number;
 }
 
 function CandidateSelect(props: CandidateSelectProps) {
@@ -346,21 +474,30 @@ function CandidateSelect(props: CandidateSelectProps) {
             매칭: {props.verification.matchedCount}개 (
             {(props.verification.matchRatio * 100).toFixed(1)}%)
           </div>
+          <div>
+            미매칭 사진별: {props.verification.unmatchedPhotoCount}개
+          </div>
           <div>평균 오차: {props.verification.averageError.toFixed(1)}px</div>
+          {props.neighborCount !== undefined && (
+            <div>합의 이웃: {props.neighborCount}개</div>
+          )}
           <div>점수: {props.verification.score.toFixed(4)}</div>
         </div>
       )}
       <ul className="menu h-full flex-col flex-nowrap items-start overflow-x-clip overflow-y-scroll">
-        {props.candidates.map((candidate, i) => {
+        {props.candidates.map((item) => {
           return (
-            <li key={`${candidate}-${i}`} className="w-full">
+            <li key={`candidate-${item.originalIndex}`} className="w-full">
               <a
                 className={cn(
-                  props.selectedCandidateIndex === i && "menu-active",
+                  props.selectedCandidateIndex === item.originalIndex &&
+                    "menu-active",
                 )}
-                onClick={() => props.setSelectedCandidateIndex(i)}
+                onClick={() =>
+                  props.setSelectedCandidateIndex(item.originalIndex)
+                }
               >
-                {`${i}: ${candidate}`}
+                {`${item.originalIndex}: ${item.label}`}
               </a>
             </li>
           );

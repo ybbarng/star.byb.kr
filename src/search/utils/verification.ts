@@ -5,6 +5,7 @@ import { toCartesian } from "@/search/utils/vector";
 
 export interface VerificationResult {
   matchedCount: number;
+  unmatchedPhotoCount: number;
   matchRatio: number;
   averageError: number;
   score: number;
@@ -39,7 +40,13 @@ export function verifyCandidate(
   }
 
   if (projectedCatalog.length === 0) {
-    return { matchedCount: 0, matchRatio: 0, averageError: Infinity, score: 0 };
+    return {
+      matchedCount: 0,
+      unmatchedPhotoCount: photoStars.length,
+      matchRatio: 0,
+      averageError: Infinity,
+      score: 0,
+    };
   }
 
   // 각 사진 별에 대해 가장 가까운 투영 별과의 거리 측정
@@ -66,11 +73,14 @@ export function verifyCandidate(
     }
   }
 
+  const unmatchedPhotoCount = photoStars.length - matchedCount;
   const matchRatio =
     photoStars.length > 0 ? matchedCount / photoStars.length : 0;
   const averageError = matchedCount > 0 ? totalError / matchedCount : Infinity;
-  // score: 매칭 개수에 가중, 오차는 역수로 보정
-  const score = matchedCount * matchRatio * (1 / (1 + averageError));
+  // score: 사진 별은 사람이 검증한 것이므로, 매칭되지 않은 사진 별에 강한 패널티
+  // exp(-0.5 * unmatched): 미매칭 1개당 ~39% 감소
+  const photoTrustPenalty = Math.exp(-0.5 * unmatchedPhotoCount);
+  const score = matchedCount * photoTrustPenalty * (1 / (1 + averageError));
 
-  return { matchedCount, matchRatio, averageError, score };
+  return { matchedCount, unmatchedPhotoCount, matchRatio, averageError, score };
 }
