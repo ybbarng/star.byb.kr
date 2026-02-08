@@ -69,6 +69,7 @@ export default function PlateSolvingStep() {
           candidate.output.map((star) => `[${star.label}]`).join("-") +
           scoreStr,
         originalIndex: origIdx,
+        matchRatio: score?.matchRatio,
       };
     });
   }, [candidates, candidateScores, candidateNeighborCounts, sortedCandidateIndices]);
@@ -485,6 +486,7 @@ function CandidatesProgress({ progress, total }: CandidatesProgressProps) {
 interface CandidateItem {
   label: string;
   originalIndex: number;
+  matchRatio?: number;
 }
 
 interface CandidateSelectProps {
@@ -531,6 +533,7 @@ function CandidateSelect(props: CandidateSelectProps) {
             >
               <a
                 className={cn(
+                  "relative overflow-hidden",
                   props.selectedCandidateIndex === item.originalIndex &&
                     "menu-active",
                 )}
@@ -538,7 +541,15 @@ function CandidateSelect(props: CandidateSelectProps) {
                   props.setSelectedCandidateIndex(item.originalIndex)
                 }
               >
-                {`${item.originalIndex}: ${item.label}`}
+                {item.matchRatio !== undefined && (
+                  <span
+                    className="bg-primary/15 absolute inset-y-0 left-0"
+                    style={{ width: `${item.matchRatio * 100}%` }}
+                  />
+                )}
+                <span className="relative">
+                  {`${item.originalIndex}: ${item.label}`}
+                </span>
               </a>
             </li>
           );
