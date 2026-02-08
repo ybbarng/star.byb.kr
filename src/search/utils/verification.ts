@@ -120,12 +120,7 @@ export function verifyCandidate(
   const catalogPrecision =
     projectedCatalogCount > 0 ? matchedCount / projectedCatalogCount : 0;
   const averageError = matchedCount > 0 ? totalError / matchedCount : Infinity;
-  const photoTrustPenalty = Math.exp(-0.5 * unmatchedPhotoCount);
-  const score =
-    matchedCount *
-    catalogPrecision *
-    photoTrustPenalty *
-    (1 / (1 + averageError));
+  const score = matchedCount * catalogPrecision * (1 / (1 + averageError));
 
   return {
     matchedCount,
