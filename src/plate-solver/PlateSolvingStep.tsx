@@ -73,6 +73,36 @@ export default function PlateSolvingStep() {
     });
   }, [candidates, candidateScores, candidateNeighborCounts, sortedCandidateIndices]);
 
+  // 방향키로 후보 탐색
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (candidateItems.length === 0) return;
+      if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
+
+      e.preventDefault();
+      const currentDisplayIdx = candidateItems.findIndex(
+        (item) => item.originalIndex === selectedCandidateIndex,
+      );
+      let nextDisplayIdx: number;
+
+      if (e.key === "ArrowDown") {
+        nextDisplayIdx =
+          currentDisplayIdx < candidateItems.length - 1
+            ? currentDisplayIdx + 1
+            : currentDisplayIdx;
+      } else {
+        nextDisplayIdx =
+          currentDisplayIdx > 0 ? currentDisplayIdx - 1 : 0;
+      }
+
+      setSelectedCandidateIndex(candidateItems[nextDisplayIdx].originalIndex);
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [candidateItems, selectedCandidateIndex]);
+
   useEffect(() => {
     if (!image || photoStars.length < 1) {
       return;
@@ -487,7 +517,18 @@ function CandidateSelect(props: CandidateSelectProps) {
       <ul className="menu h-full flex-col flex-nowrap items-start overflow-x-clip overflow-y-scroll">
         {props.candidates.map((item) => {
           return (
-            <li key={`candidate-${item.originalIndex}`} className="w-full">
+            <li
+              key={`candidate-${item.originalIndex}`}
+              className="w-full"
+              ref={(el) => {
+                if (
+                  el &&
+                  props.selectedCandidateIndex === item.originalIndex
+                ) {
+                  el.scrollIntoView({ block: "nearest" });
+                }
+              }}
+            >
               <a
                 className={cn(
                   props.selectedCandidateIndex === item.originalIndex &&
