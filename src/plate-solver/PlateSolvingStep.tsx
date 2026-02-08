@@ -18,9 +18,6 @@ export default function PlateSolvingStep() {
     Map<number, VerificationResult>
   >(new Map());
   const [autoVerified, setAutoVerified] = useState(false);
-  const [sortedCandidateIndices, setSortedCandidateIndices] = useState<
-    number[]
-  >([]);
   const [candidateNeighborCounts, setCandidateNeighborCounts] = useState<
     Map<number, number>
   >(new Map());
@@ -42,12 +39,34 @@ export default function PlateSolvingStep() {
   } | null>(null);
   const verificationWorkerRef = useRef<Worker | undefined>(undefined);
   const candidateItems = useMemo(() => {
-    const order =
-      sortedCandidateIndices.length > 0
-        ? sortedCandidateIndices
-        : candidates.map((_, i) => i);
+    const indices = candidates.map((_, i) => i);
 
-    return order.map((origIdx) => {
+    // scores가 있으면 matchedCount → neighborCount → score 순으로 정렬
+    if (candidateScores.size > 0) {
+      indices.sort((a, b) => {
+        const scoreA = candidateScores.get(a);
+        const scoreB = candidateScores.get(b);
+
+        if (scoreA && scoreB) {
+          if (scoreB.matchedCount !== scoreA.matchedCount)
+            return scoreB.matchedCount - scoreA.matchedCount;
+
+          const neighborsA = candidateNeighborCounts.get(a) ?? 0;
+          const neighborsB = candidateNeighborCounts.get(b) ?? 0;
+
+          if (neighborsB !== neighborsA) return neighborsB - neighborsA;
+
+          return scoreB.score - scoreA.score;
+        }
+
+        if (scoreA) return -1;
+        if (scoreB) return 1;
+
+        return 0;
+      });
+    }
+
+    return indices.map((origIdx) => {
       const candidate = candidates[origIdx];
       const score = candidateScores.get(origIdx);
       const neighbors = candidateNeighborCounts.get(origIdx);
@@ -65,12 +84,7 @@ export default function PlateSolvingStep() {
         catalogPrecision: score?.catalogPrecision,
       };
     });
-  }, [
-    candidates,
-    candidateScores,
-    candidateNeighborCounts,
-    sortedCandidateIndices,
-  ]);
+  }, [candidates, candidateScores, candidateNeighborCounts]);
 
   // 방향키로 후보 탐색
   useEffect(() => {
@@ -121,10 +135,9 @@ export default function PlateSolvingStep() {
         break;
 
       case "onVerified": {
-        const { scores, neighbors, sorted, bestIndex } = e.data.payload as {
+        const { scores, neighbors, bestIndex } = e.data.payload as {
           scores: Record<number, VerificationResult>;
           neighbors: Record<number, number>;
-          sorted: number[];
           bestIndex: number;
         };
 
@@ -142,7 +155,6 @@ export default function PlateSolvingStep() {
 
         setCandidateScores(scoresMap);
         setCandidateNeighborCounts(neighborsMap);
-        setSortedCandidateIndices(sorted);
         setAutoVerified(true);
         setVerificationProgress(null);
 
