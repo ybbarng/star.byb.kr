@@ -16,6 +16,7 @@ export const useContextStore = create<ContextState>((set) => ({
       return {
         ...state,
         image,
+        photoStars: [],
       };
     }),
   setPhotoStars: (photoStars: PhotoStars[]) =>
