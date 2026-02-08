@@ -214,3 +214,6 @@ fabric.properties
 
 .idea
 build*/*
+
+# runtime data (symlinks to build/)
+public/data/

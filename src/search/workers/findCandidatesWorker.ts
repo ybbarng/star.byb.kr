@@ -10,13 +10,14 @@ import {
   Photo,
 } from "@/search/type";
 import catalog from "@build/database/reduced-database.json";
-import _hashes from "@build/hash/hashed-database.json";
-const hashes = _hashes as HashedQuad[];
 
 interface HashedQuad {
   hash: Hash;
   stars: [string, string, string, string];
 }
+
+let hashes: HashedQuad[] = [];
+let tree: InstanceType<typeof kdtree.kdTree> | null = null;
 
 const dictionary = new Map<string, string | undefined>();
 catalog.map((star: Star) => {
@@ -34,24 +35,34 @@ const calculateDistance = (v1: number[], v2: number[]) => {
   return sum;
 };
 
-const tree = new kdtree.kdTree(
-  hashes.map((hash, i) => {
-    return {
-      i,
-      x: hash.hash[0],
-      y: hash.hash[1],
-      z: hash.hash[2],
-      w: hash.hash[3],
-    };
-  }),
-  (p1, p2) =>
-    calculateDistance([p1.x, p1.y, p1.z, p1.w], [p2.x, p2.y, p2.z, p2.w]),
-  ["x", "y", "z", "w"],
-);
+const buildTree = () => {
+  tree = new kdtree.kdTree(
+    hashes.map((hash, i) => {
+      return {
+        i,
+        x: hash.hash[0],
+        y: hash.hash[1],
+        z: hash.hash[2],
+        w: hash.hash[3],
+      };
+    }),
+    (p1, p2) =>
+      calculateDistance([p1.x, p1.y, p1.z, p1.w], [p2.x, p2.y, p2.z, p2.w]),
+    ["x", "y", "z", "w"],
+  );
+};
+
+const loadDatabase = async () => {
+  const response = await fetch("/data/hashed-database.json");
+  hashes = (await response.json()) as HashedQuad[];
+  buildTree();
+};
 
 const findNearestQuads = (
   quad: number[],
 ): { index: number; distance: number }[] => {
+  if (!tree) return [];
+
   const nearest = tree.nearest(
     {
       i: 0,
@@ -63,9 +74,10 @@ const findNearestQuads = (
     3,
   );
 
-  return nearest.map((result: [{ i: number }, number]) => ({
-    index: result[0].i,
-    distance: result[1],
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return nearest.map((result: any) => ({
+    index: result[0].i as number,
+    distance: result[1] as number,
   }));
 };
 
@@ -127,7 +139,17 @@ const findCandidates = (photo: Photo) => {
 
 onmessage = async function (messageEvent) {
   switch (messageEvent.data.fn) {
+    case "loadDatabase": {
+      await loadDatabase();
+      postMessage({ fn: "onDatabaseLoaded" });
+      break;
+    }
+
     case "findCandidates": {
+      if (!tree) {
+        await loadDatabase();
+      }
+
       const result = findCandidates(messageEvent.data.payload);
       postMessage({ fn: "onCandidatesFound", payload: result });
       break;

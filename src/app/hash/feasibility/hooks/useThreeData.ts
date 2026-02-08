@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import * as THREE from "three";
-import databaseFull from "../../../../../build/hash/hashed-database.json";
 import photo from "../../../../../build/hash/sample/hashed-photo.json";
 import database from "../../../../../build/hash/sample/hashed-sample-database.json";
 
@@ -63,16 +62,25 @@ export const useThreeData = (graphType: GraphType) => {
       return new THREE.Points(geometry, material);
     }
 
-    const databaseData = createThreeData(database, 0xfca5a5);
-    setDatabaseData(databaseData);
-    const databaseFullData = createThreeData(
-      databaseFull as Data,
-      0xccccccc,
-      1,
-    );
-    setDatabaseFullData(databaseFullData);
-    const photoData = createThreeData(photo, 0xbbf7d0);
-    setPhotoData(photoData);
+    async function loadAndRender() {
+      const databaseData = createThreeData(database, 0xfca5a5);
+      setDatabaseData(databaseData);
+
+      const photoData = createThreeData(photo, 0xbbf7d0);
+      setPhotoData(photoData);
+
+      // hashed-database.json은 런타임에 fetch로 로드
+      try {
+        const response = await fetch("/data/hashed-database.json");
+        const databaseFull = (await response.json()) as Data;
+        const databaseFullData = createThreeData(databaseFull, 0xccccccc, 1);
+        setDatabaseFullData(databaseFullData);
+      } catch {
+        console.error("hashed-database.json 로드 실패");
+      }
+    }
+
+    loadAndRender();
   }, []);
 
   return {
