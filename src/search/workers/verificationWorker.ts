@@ -438,13 +438,21 @@ function runVerification(req: VerifyRequest) {
     neighbors.set(i, count);
   }
 
-  // score 기반 정렬
+  // 다단계 정렬: matchedCount → neighborCount → score
   const sorted = Array.from({ length: candidates.length }, (_, i) => i);
   sorted.sort((a, b) => {
     const scoreA = scores.get(a);
     const scoreB = scores.get(b);
 
     if (scoreA && scoreB) {
+      if (scoreB.matchedCount !== scoreA.matchedCount)
+        return scoreB.matchedCount - scoreA.matchedCount;
+
+      const neighborsA = neighbors.get(a) ?? 0;
+      const neighborsB = neighbors.get(b) ?? 0;
+
+      if (neighborsB !== neighborsA) return neighborsB - neighborsA;
+
       return scoreB.score - scoreA.score;
     }
 
