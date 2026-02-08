@@ -1,7 +1,7 @@
 "use client";
 
 import Konva from "konva";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Stage, Layer, Rect, Image as KonvaImage } from "react-konva";
 import SelectableStarMarker from "@/plate-solver/SelectableStarMarker";
 import StepMover from "@/plate-solver/StepMover";
@@ -45,6 +45,10 @@ export default function DetectStarStep() {
     width: 0,
     height: 0,
   });
+  const [mode, setMode] = useState<"select" | "move">("select");
+  const [isPanning, setIsPanning] = useState(false);
+  const panStartRef = useRef({ x: 0, y: 0 });
+  const spaceHeldRef = useRef(false);
 
   useEffect(() => {
     // store에 이미 별 데이터가 있으면 복원, 없으면 새로 검출
@@ -90,11 +94,16 @@ export default function DetectStarStep() {
     return () => observer.disconnect();
   }, [image]);
 
+  // 스페이스바: 누르는 동안 이동 모드
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (canvasStars.length < 1) {
-        return;
+      if (event.key === " " && !spaceHeldRef.current) {
+        event.preventDefault();
+        spaceHeldRef.current = true;
+        setMode("move");
       }
+
+      if (canvasStars.length < 1) return;
 
       if (event.key === "Delete" || event.key === "Backspace") {
         setCanvasStars(canvasStars.filter((star) => !star.isSelected));
@@ -111,10 +120,19 @@ export default function DetectStarStep() {
       }
     };
 
+    const handleKeyUp = (event: KeyboardEvent) => {
+      if (event.key === " ") {
+        spaceHeldRef.current = false;
+        setMode("select");
+      }
+    };
+
     window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
 
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
     };
   }, [canvasStars]);
 
@@ -259,11 +277,13 @@ export default function DetectStarStep() {
   };
 
   const handleDoubleClick = () => {
+    if (mode === "move") return;
     const pos = getImagePointerPosition();
     if (pos) addStar(pos.x, pos.y);
   };
 
-  const handleDragStart = () => {
+  // --- 선택 모드 핸들러 ---
+  const handleSelectDragStart = () => {
     const pos = getImagePointerPosition();
     if (!pos) return;
 
@@ -277,7 +297,7 @@ export default function DetectStarStep() {
     });
   };
 
-  const handleDragMove = () => {
+  const handleSelectDragMove = () => {
     if (!isSelecting) return;
     const pos = getImagePointerPosition();
     if (!pos) return;
@@ -290,7 +310,7 @@ export default function DetectStarStep() {
     });
   };
 
-  const handleDragEnd = () => {
+  const handleSelectDragEnd = () => {
     if (!isSelecting) return;
     const pos = getImagePointerPosition();
     if (!pos) return;
@@ -322,6 +342,53 @@ export default function DetectStarStep() {
     );
   };
 
+  // --- 이동 모드 핸들러 ---
+  const handlePanStart = () => {
+    const stage = stageRef.current;
+    if (!stage) return;
+    const pointer = stage.getPointerPosition();
+    if (!pointer) return;
+
+    setIsPanning(true);
+    panStartRef.current = {
+      x: pointer.x - stagePos.x,
+      y: pointer.y - stagePos.y,
+    };
+  };
+
+  const handlePanMove = () => {
+    if (!isPanning) return;
+    const stage = stageRef.current;
+    if (!stage) return;
+    const pointer = stage.getPointerPosition();
+    if (!pointer) return;
+
+    setStagePos({
+      x: pointer.x - panStartRef.current.x,
+      y: pointer.y - panStartRef.current.y,
+    });
+  };
+
+  const handlePanEnd = () => {
+    setIsPanning(false);
+  };
+
+  // --- 통합 핸들러: 모드에 따라 분기 ---
+  const handleDragStart = useCallback(() => {
+    if (mode === "move") handlePanStart();
+    else handleSelectDragStart();
+  }, [mode, canvasStars, stagePos]);
+
+  const handleDragMove = useCallback(() => {
+    if (mode === "move" || isPanning) handlePanMove();
+    else handleSelectDragMove();
+  }, [mode, isPanning, isSelecting, selectArea, stagePos]);
+
+  const handleDragEnd = useCallback(() => {
+    if (mode === "move" || isPanning) handlePanEnd();
+    else handleSelectDragEnd();
+  }, [mode, isPanning, isSelecting, selectArea, canvasStars]);
+
   const onBeforeNext = async () => {
     const sorted = [...canvasStars].sort((a, b) => b.brightness - a.brightness);
     setPhotoStars(
@@ -346,20 +413,45 @@ export default function DetectStarStep() {
 
   return (
     <div className="flex h-full w-full flex-col gap-4">
-      <div className="flex flex-row items-center justify-between">
+      <div className="flex flex-row items-center justify-between gap-2">
         <span className="text-sm">
           마커 {canvasStars.length}개
           {stageScale !== 1 && ` · ${Math.round(stageScale * 100)}%`}
         </span>
-        <button
-          className="btn btn-error btn-sm"
-          disabled={canvasStars.length < 1}
-          onClick={() => setCanvasStars([])}
-        >
-          전체 삭제
-        </button>
+        <div className="flex gap-2">
+          <div className="join">
+            <button
+              className={`btn join-item btn-sm ${mode === "select" ? "btn-active" : ""}`}
+              onClick={() => setMode("select")}
+              title="선택 모드 (Space 누르면 이동)"
+            >
+              선택
+            </button>
+            <button
+              className={`btn join-item btn-sm ${mode === "move" ? "btn-active" : ""}`}
+              onClick={() => setMode("move")}
+              title="이동 모드"
+            >
+              이동
+            </button>
+          </div>
+          <button
+            className="btn btn-error btn-sm"
+            disabled={canvasStars.length < 1}
+            onClick={() => setCanvasStars([])}
+          >
+            전체 삭제
+          </button>
+        </div>
       </div>
-      <div ref={containerRef} className="h-full w-full overflow-hidden">
+      <div
+        ref={containerRef}
+        className="h-full w-full overflow-hidden"
+        style={{
+          cursor:
+            mode === "move" ? (isPanning ? "grabbing" : "grab") : "crosshair",
+        }}
+      >
         {containerSize.width > 0 && (
           <Stage
             ref={stageRef}
