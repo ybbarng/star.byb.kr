@@ -27,7 +27,9 @@ interface StarVector {
 interface VerificationResult {
   matchedCount: number;
   unmatchedPhotoCount: number;
+  projectedCatalogCount: number;
   matchRatio: number;
+  catalogPrecision: number;
   averageError: number;
   score: number;
 }
@@ -223,7 +225,7 @@ function verifyCandidate(
   catalog: StarVector[],
   imageWidth: number,
   imageHeight: number,
-  tolerance = 20,
+  tolerance = 15,
 ): VerificationResult {
   const projectedCatalog: Point2D[] = [];
 
@@ -244,47 +246,101 @@ function verifyCandidate(
     }
   }
 
-  if (projectedCatalog.length === 0) {
+  const projectedCatalogCount = projectedCatalog.length;
+
+  if (projectedCatalogCount === 0) {
     return {
       matchedCount: 0,
       unmatchedPhotoCount: photoStars.length,
+      projectedCatalogCount: 0,
       matchRatio: 0,
+      catalogPrecision: 0,
       averageError: Infinity,
       score: 0,
     };
   }
 
-  let matchedCount = 0;
-  let totalError = 0;
+  // 양방향 매칭: 사진별→카탈로그별, 카탈로그별→사진별 모두 최근접이어야 매칭
   const toleranceSq = tolerance * tolerance;
 
-  for (const photoStar of photoStars) {
-    let minDistSq = Infinity;
+  // 사진 별 → 최근접 카탈로그 별
+  const photoNearest: { idx: number; distSq: number }[] = photoStars.map(
+    (ps) => {
+      let minDistSq = Infinity;
+      let minIdx = -1;
 
-    for (const catStar of projectedCatalog) {
-      const dx = photoStar[0] - catStar[0];
-      const dy = photoStar[1] - catStar[1];
-      const distSq = dx * dx + dy * dy;
+      for (let j = 0; j < projectedCatalog.length; j++) {
+        const dx = ps[0] - projectedCatalog[j][0];
+        const dy = ps[1] - projectedCatalog[j][1];
+        const distSq = dx * dx + dy * dy;
 
-      if (distSq < minDistSq) {
-        minDistSq = distSq;
+        if (distSq < minDistSq) {
+          minDistSq = distSq;
+          minIdx = j;
+        }
       }
-    }
 
-    if (minDistSq <= toleranceSq) {
+      return { idx: minIdx, distSq: minDistSq };
+    },
+  );
+
+  // 카탈로그 별 → 최근접 사진 별
+  const catalogNearest: { idx: number; distSq: number }[] =
+    projectedCatalog.map((cs) => {
+      let minDistSq = Infinity;
+      let minIdx = -1;
+
+      for (let j = 0; j < photoStars.length; j++) {
+        const dx = cs[0] - photoStars[j][0];
+        const dy = cs[1] - photoStars[j][1];
+        const distSq = dx * dx + dy * dy;
+
+        if (distSq < minDistSq) {
+          minDistSq = distSq;
+          minIdx = j;
+        }
+      }
+
+      return { idx: minIdx, distSq: minDistSq };
+    });
+
+  // 양쪽 모두 최근접이고 tolerance 이내인 경우만 매칭
+  let matchedCount = 0;
+  let totalError = 0;
+
+  for (let i = 0; i < photoStars.length; i++) {
+    const nearest = photoNearest[i];
+
+    if (nearest.distSq > toleranceSq || nearest.idx < 0) continue;
+
+    if (catalogNearest[nearest.idx].idx === i) {
       matchedCount++;
-      totalError += Math.sqrt(minDistSq);
+      totalError += Math.sqrt(nearest.distSq);
     }
   }
 
   const unmatchedPhotoCount = photoStars.length - matchedCount;
   const matchRatio =
     photoStars.length > 0 ? matchedCount / photoStars.length : 0;
+  const catalogPrecision =
+    projectedCatalogCount > 0 ? matchedCount / projectedCatalogCount : 0;
   const averageError = matchedCount > 0 ? totalError / matchedCount : Infinity;
   const photoTrustPenalty = Math.exp(-0.5 * unmatchedPhotoCount);
-  const score = matchedCount * photoTrustPenalty * (1 / (1 + averageError));
+  const score =
+    matchedCount *
+    catalogPrecision *
+    photoTrustPenalty *
+    (1 / (1 + averageError));
 
-  return { matchedCount, unmatchedPhotoCount, matchRatio, averageError, score };
+  return {
+    matchedCount,
+    unmatchedPhotoCount,
+    projectedCatalogCount,
+    matchRatio,
+    catalogPrecision,
+    averageError,
+    score,
+  };
 }
 
 // === Worker 메인 로직 ===
@@ -343,8 +399,13 @@ function runVerification(req: VerifyRequest) {
     }
   }
 
-  // 합의 계산
-  const skyDirections: (Point3D | null)[] = candidates.map((candidate) => {
+  // 합의 계산 (매칭 수 3개 이상인 후보만 참여)
+  const MIN_MATCH_FOR_CONSENSUS = 3;
+  const skyDirections: (Point3D | null)[] = candidates.map((candidate, i) => {
+    const result = scores.get(i);
+
+    if (!result || result.matchedCount < MIN_MATCH_FOR_CONSENSUS) return null;
+
     let sx = 0,
       sy = 0,
       sz = 0;
@@ -363,7 +424,7 @@ function runVerification(req: VerifyRequest) {
     return [sx / norm, sy / norm, sz / norm] as Point3D;
   });
 
-  const consensusThreshold = Math.cos((20 * Math.PI) / 180);
+  const consensusThreshold = Math.cos((15 * Math.PI) / 180);
   const neighbors = new Map<number, number>();
 
   for (let i = 0; i < candidates.length; i++) {
@@ -382,23 +443,13 @@ function runVerification(req: VerifyRequest) {
     neighbors.set(i, count);
   }
 
-  // 다단계 정렬
+  // score 기반 정렬
   const sorted = Array.from({ length: candidates.length }, (_, i) => i);
   sorted.sort((a, b) => {
     const scoreA = scores.get(a);
     const scoreB = scores.get(b);
 
     if (scoreA && scoreB) {
-      if (scoreB.matchedCount !== scoreA.matchedCount)
-        return scoreB.matchedCount - scoreA.matchedCount;
-
-      const neighborsA = neighbors.get(a) ?? 0;
-      const neighborsB = neighbors.get(b) ?? 0;
-
-      if (neighborsB !== neighborsA) return neighborsB - neighborsA;
-      if (scoreA.averageError !== scoreB.averageError)
-        return scoreA.averageError - scoreB.averageError;
-
       return scoreB.score - scoreA.score;
     }
 

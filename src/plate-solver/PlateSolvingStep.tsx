@@ -52,7 +52,7 @@ export default function PlateSolvingStep() {
       const score = candidateScores.get(origIdx);
       const neighbors = candidateNeighborCounts.get(origIdx);
       const scoreStr = score
-        ? ` (${score.matchedCount}m, ${score.averageError.toFixed(1)}px` +
+        ? ` (${score.matchedCount}/${score.projectedCatalogCount}, ${score.averageError.toFixed(1)}px` +
           (neighbors !== undefined ? `, ${neighbors}n` : "") +
           ")"
         : "";
@@ -62,7 +62,7 @@ export default function PlateSolvingStep() {
           candidate.output.map((star) => `[${star.label}]`).join("-") +
           scoreStr,
         originalIndex: origIdx,
-        matchRatio: score?.matchRatio,
+        catalogPrecision: score?.catalogPrecision,
       };
     });
   }, [
@@ -453,7 +453,7 @@ function CandidatesProgress({
 interface CandidateItem {
   label: string;
   originalIndex: number;
-  matchRatio?: number;
+  catalogPrecision?: number;
 }
 
 interface CandidateSelectProps {
@@ -470,8 +470,9 @@ function CandidateSelect(props: CandidateSelectProps) {
       {props.verification && (
         <div className="border-base-300 border-b p-2 text-sm">
           <div>
-            매칭: {props.verification.matchedCount}개 (
-            {(props.verification.matchRatio * 100).toFixed(1)}%)
+            매칭: {props.verification.matchedCount}/
+            {props.verification.projectedCatalogCount} (
+            {(props.verification.catalogPrecision * 100).toFixed(1)}%)
           </div>
           <div>미매칭 사진별: {props.verification.unmatchedPhotoCount}개</div>
           <div>평균 오차: {props.verification.averageError.toFixed(1)}px</div>
@@ -504,7 +505,7 @@ function CandidateSelect(props: CandidateSelectProps) {
                   props.setSelectedCandidateIndex(item.originalIndex)
                 }
               >
-                {item.matchRatio !== undefined && (
+                {item.catalogPrecision !== undefined && (
                   <span
                     className={cn(
                       "absolute inset-y-0 left-0",
@@ -512,7 +513,7 @@ function CandidateSelect(props: CandidateSelectProps) {
                         ? "bg-primary/25"
                         : "bg-primary/15",
                     )}
-                    style={{ width: `${item.matchRatio * 100}%` }}
+                    style={{ width: `${item.catalogPrecision * 100}%` }}
                   />
                 )}
                 <span className="relative">
