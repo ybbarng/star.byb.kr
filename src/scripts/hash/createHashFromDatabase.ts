@@ -6,9 +6,31 @@ import * as plane from "@/scripts/hash/plane";
 import {
   NamedQuadrilateral2D,
   Point3D,
+  Quadrilateral,
   SimpleStarVector,
   StarVector,
 } from "@/scripts/hash/types";
+
+// quad 내 모든 별 쌍의 각거리가 maxAngleDeg 이하인지 확인
+const MAX_PAIR_ANGLE_DEG = 10;
+const COS_MAX_PAIR_ANGLE = Math.cos((MAX_PAIR_ANGLE_DEG * Math.PI) / 180);
+
+const isQuadCompact = (quad: Quadrilateral<SimpleStarVector>): boolean => {
+  const stars = quad.stars;
+
+  for (let i = 0; i < 3; i++) {
+    for (let j = i + 1; j < 4; j++) {
+      const dot =
+        stars[i].x * stars[j].x +
+        stars[i].y * stars[j].y +
+        stars[i].z * stars[j].z;
+
+      if (dot < COS_MAX_PAIR_ANGLE) return false;
+    }
+  }
+
+  return true;
+};
 
 const run = () => {
   const stars = file.loadJson("build/database", "vectors-database.json");
@@ -26,12 +48,13 @@ const createHashFromDatabase = (stars: StarVector[]) => {
 
   return cells
     .map((cell, i) => {
+      const allQuads = quadrilateral.create<SimpleStarVector>(cell);
+      const compactQuads = allQuads.filter(isQuadCompact);
       console.log(
-        `${i}번째 Cell에 대한 사각형을 생성합니다. 영역 내 별의 갯수는 ${cell.length}개 입니다.`,
+        `${i}번째 Cell: 별 ${cell.length}개, quad ${allQuads.length}→${compactQuads.length}개 (${allQuads.length - compactQuads.length}개 제거, max pair ${MAX_PAIR_ANGLE_DEG}°)`,
       );
 
-      return quadrilateral
-        .create<SimpleStarVector>(cell)
+      return compactQuads
         .map((quadrilateral) => {
           const vectors = quadrilateral.stars.map(
             (star: SimpleStarVector): Point3D => {
