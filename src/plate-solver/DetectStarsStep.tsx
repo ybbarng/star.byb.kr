@@ -26,6 +26,7 @@ interface SelectArea {
 
 export default function DetectStarStep() {
   const image = useContextStore((state) => state.image);
+  const photoStars = useContextStore((state) => state.photoStars);
   const setPhotoStars = useContextStore((state) => state.setPhotoStars);
   const [canvasStars, setCanvasStars] = useState<CanvasStar[]>([]);
   const [isSelecting, setIsSelecting] = useState(false);
@@ -39,7 +40,20 @@ export default function DetectStarStep() {
   const stageRef = useRef<Konva.Stage>(null);
 
   useEffect(() => {
-    detectStars();
+    // store에 이미 별 데이터가 있으면 복원, 없으면 새로 검출
+    if (photoStars.length > 0) {
+      setCanvasStars(
+        photoStars.map((star) => ({
+          x: star.x,
+          y: star.y,
+          brightness: star.brightness,
+          id: crypto.randomUUID(),
+          isSelected: false,
+        })),
+      );
+    } else {
+      detectStars();
+    }
   }, []);
 
   useEffect(() => {
