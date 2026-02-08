@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import Script from "next/script";
 import "./globals.css";
 
 const pretendard = localFont({
@@ -21,6 +22,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <Script
+          src="https://cdn.jsdelivr.net/npm/mathjs@14.0.1/lib/browser/math.js"
+          strategy="beforeInteractive"
+        />
+        <Script id="mathjs-fallback" strategy="beforeInteractive">
+          {`window.math||document.write('<script src="/libs/math.js"><\\/script>')`}
+        </Script>
+      </head>
       <body className={`${pretendard.className} h-screen antialiased`}>
         {children}
       </body>
