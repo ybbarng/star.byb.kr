@@ -7,13 +7,15 @@ import useFindCandidates from "@/search/hooks/useFindCandidates";
 import cv from "@/services/cv";
 
 export default function PlateSolverPage() {
-  useFindCandidates();
+  const { preload } = useFindCandidates();
+
   useEffect(() => {
     const init = async () => {
       await cv.load();
     };
 
     init();
+    preload();
   }, []);
 
   return (

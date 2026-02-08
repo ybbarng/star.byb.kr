@@ -52,10 +52,20 @@ const buildTree = () => {
   );
 };
 
-const loadDatabase = async () => {
-  const response = await fetch(new URL("/data/hashed-database.json", self.location.origin));
-  hashes = (await response.json()) as HashedQuad[];
-  buildTree();
+let loadPromise: Promise<void> | null = null;
+
+const loadDatabase = () => {
+  if (loadPromise) return loadPromise;
+
+  loadPromise = (async () => {
+    const response = await fetch(
+      new URL("/data/hashed-database.json", self.location.origin),
+    );
+    hashes = (await response.json()) as HashedQuad[];
+    buildTree();
+  })();
+
+  return loadPromise;
 };
 
 const findNearestQuads = (

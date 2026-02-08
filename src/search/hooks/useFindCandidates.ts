@@ -55,11 +55,16 @@ export default function useFindCandidates() {
     };
   }, []);
 
+  const preload = () => {
+    workerRef.current?.postMessage({ fn: "loadDatabase" });
+  };
+
   const find = (photo: Photo) => {
     workerRef.current?.postMessage({ fn: "findCandidates", payload: photo });
   };
 
   return {
+    preload,
     find,
     candidates,
     progress,
