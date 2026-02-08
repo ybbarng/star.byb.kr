@@ -534,8 +534,9 @@ function CandidateSelect(props: CandidateSelectProps) {
               <a
                 className={cn(
                   "relative overflow-hidden",
-                  props.selectedCandidateIndex === item.originalIndex &&
-                    "menu-active",
+                  props.selectedCandidateIndex === item.originalIndex
+                    ? "bg-primary text-primary-content font-bold"
+                    : "hover:bg-base-300",
                 )}
                 onClick={() =>
                   props.setSelectedCandidateIndex(item.originalIndex)
@@ -543,7 +544,12 @@ function CandidateSelect(props: CandidateSelectProps) {
               >
                 {item.matchRatio !== undefined && (
                   <span
-                    className="bg-primary/15 absolute inset-y-0 left-0"
+                    className={cn(
+                      "absolute inset-y-0 left-0",
+                      props.selectedCandidateIndex === item.originalIndex
+                        ? "bg-primary-content/20"
+                        : "bg-primary/15",
+                    )}
                     style={{ width: `${item.matchRatio * 100}%` }}
                   />
                 )}
