@@ -293,7 +293,8 @@ export default function DetectStarStep() {
 
   return (
     <div className="flex h-full w-full flex-col gap-4">
-      <div className="flex flex-row justify-end">
+      <div className="flex flex-row items-center justify-between">
+        <span className="text-sm">마커 {canvasStars.length}개</span>
         <button
           className="btn btn-error btn-sm"
           disabled={canvasStars.length < 1}
