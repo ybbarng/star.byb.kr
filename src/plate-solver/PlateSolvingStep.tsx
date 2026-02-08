@@ -535,7 +535,7 @@ function CandidateSelect(props: CandidateSelectProps) {
                 className={cn(
                   "relative overflow-hidden",
                   props.selectedCandidateIndex === item.originalIndex
-                    ? "bg-base-300 font-bold"
+                    ? "bg-primary/30 font-bold"
                     : "hover:bg-base-300/50",
                 )}
                 onClick={() =>
