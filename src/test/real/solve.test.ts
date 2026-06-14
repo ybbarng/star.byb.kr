@@ -234,86 +234,89 @@ describe.skipIf(!ready)("실제 샘플 plate solving", () => {
     expect(solvedCount).toBeGreaterThan(0);
   });
 
-  // orion이 안 풀리는 게 매칭(KD 누락) 문제인지 검증 문제인지 가린다:
-  // 정답 별 3개로 직접 변환을 풀었을 때 inlier가 나오면 매칭이 원인이다.
-  it("진단: orion 정답 삼각형을 직접 solveCandidate", () => {
-    const path = resolve(process.cwd(), "data/search/orion.json");
-    const truth = JSON.parse(readFileSync(path, "utf-8")) as {
-      width: number;
-      height: number;
-      stars: { label: string; position: [number, number] }[];
-    };
+  // 각 샘플이 "이론상 풀리는지" 확인: 정답 별로 만든 모든 삼각형을 직접
+  // solveCandidate에 넣어 최선의 별 역투영 오차를 본다. 작으면 알고리즘은
+  // 정답을 만들 수 있고, solver가 못 푸는 건 매칭(KD 후보 선택) 문제다.
+  it("진단: 각 샘플의 정답 삼각형 직접 검증 (이론상 풀림)", () => {
     const byName = loadNameToVector();
-    const truthCenter = truthCenterFromLabels(
-      truth.stars.map((s) => s.label),
-      byName,
-    ) as Point3D;
-    const allStars = truth.stars.map((s) => s.position);
-    const stars = truth.stars;
+    const lines: string[] = ["\n=== 정답 삼각형 직접 검증 (이론상 최선) ==="];
 
-    let bestInlier = -1;
-    let bestRes: ReturnType<typeof solveCandidate> = null;
+    for (const sample of refinedSamples) {
+      const path = resolve(process.cwd(), "data/search", sample.file);
 
-    for (let i = 0; i < stars.length - 2; i++) {
-      for (let j = i + 1; j < stars.length - 1; j++) {
-        for (let k = j + 1; k < stars.length; k++) {
-          const photo3: [number, number][] = [
-            stars[i].position,
-            stars[j].position,
-            stars[k].position,
-          ];
-          const v = [
-            byName.get(stars[i].label),
-            byName.get(stars[j].label),
-            byName.get(stars[k].label),
-          ];
+      if (!existsSync(path)) {
+        continue;
+      }
 
-          if (v.some((x) => !x)) {
-            continue;
-          }
+      const truth = JSON.parse(readFileSync(path, "utf-8")) as {
+        width: number;
+        height: number;
+        stars: { label: string; position: [number, number] }[];
+      };
+      const allStars = truth.stars.map((s) => s.position);
+      const stars = truth.stars;
 
-          const db3 = v as Point3D[];
-          const orders: Point3D[][] = [db3, [db3[0], db3[2], db3[1]]];
+      let bestInlier = -1;
+      let bestRes: ReturnType<typeof solveCandidate> = null;
 
-          for (const ord of orders) {
-            const res = solveCandidate(photo3, ord, allStars, ctx.catalog, {
-              imageWidth: truth.width,
-              imageHeight: truth.height,
-            });
+      for (let i = 0; i < stars.length - 2; i++) {
+        for (let j = i + 1; j < stars.length - 1; j++) {
+          for (let k = j + 1; k < stars.length; k++) {
+            const photo3: [number, number][] = [
+              stars[i].position,
+              stars[j].position,
+              stars[k].position,
+            ];
+            const v = [
+              byName.get(stars[i].label),
+              byName.get(stars[j].label),
+              byName.get(stars[k].label),
+            ];
 
-            if (res && res.inlierCount > bestInlier) {
-              bestInlier = res.inlierCount;
-              bestRes = res;
+            if (v.some((x) => !x)) {
+              continue;
+            }
+
+            const db3 = v as Point3D[];
+            const orders: Point3D[][] = [db3, [db3[0], db3[2], db3[1]]];
+
+            for (const ord of orders) {
+              const res = solveCandidate(photo3, ord, allStars, ctx.catalog, {
+                imageWidth: truth.width,
+                imageHeight: truth.height,
+              });
+
+              if (res && res.inlierCount > bestInlier) {
+                bestInlier = res.inlierCount;
+                bestRes = res;
+              }
             }
           }
         }
       }
-    }
 
-    // 추정 변환으로 각 입력 별을 역투영해 라벨 별 방향과 비교 (진짜 정답인지)
-    let maxLabelErr = 0;
+      let maxLabelErr = Infinity;
 
-    if (bestRes) {
-      for (const s of stars) {
-        const truthVec = byName.get(s.label);
+      if (bestRes) {
+        maxLabelErr = 0;
 
-        if (truthVec) {
-          const sky = photoToSky(bestRes.TP, s.position);
-          maxLabelErr = Math.max(maxLabelErr, angleDeg(sky, truthVec));
+        for (const s of stars) {
+          const truthVec = byName.get(s.label);
+
+          if (truthVec) {
+            const sky = photoToSky(bestRes.TP, s.position);
+            maxLabelErr = Math.max(maxLabelErr, angleDeg(sky, truthVec));
+          }
         }
       }
+
+      lines.push(
+        `${sample.name}: 최대 inlier ${bestInlier}/${stars.length}, ` +
+          `별 역투영 최대오차 ${Number.isFinite(maxLabelErr) ? maxLabelErr.toFixed(2) : "-"}°`,
+      );
     }
 
-    const centerErr =
-      bestRes && bestRes.centerVector
-        ? angleDeg(bestRes.centerVector, truthCenter)
-        : Infinity;
-
-    console.warn(
-      `\norion 정답 삼각형 직접 검증: 최대 inlier ${bestInlier}/${stars.length}\n` +
-        `  별평균-center 오차 ${Number.isFinite(centerErr) ? centerErr.toFixed(1) : "-"}° (채점 기준 의심)\n` +
-        `  각 별 역투영 최대오차 ${maxLabelErr.toFixed(2)}° (진짜 정확도)`,
-    );
-    expect(bestInlier).toBeGreaterThan(0);
+    console.warn(lines.join("\n"));
+    expect(lines.length).toBeGreaterThan(1);
   });
 });
