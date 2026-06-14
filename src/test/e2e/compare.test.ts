@@ -4,6 +4,7 @@ import type { CatalogStar } from "@/test/synthetic/loadCatalog";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
+import { buildTriangleIndex } from "@/search/catalogGeometry";
 import { buildCandidateIndex } from "@/search/findCandidatesCore";
 import { solvers } from "@/search/solvers";
 import {
@@ -72,10 +73,12 @@ describe.skipIf(!ready)("알고리즘 비교 벤치마크", () => {
 
   beforeAll(() => {
     catalog = loadCatalog();
+    const solveStars = catalog.map((s) => ({ hr: s.hr, vector: s.vector }));
     ctx = {
       index: buildCandidateIndex(loadHashes()),
-      catalog: catalog.map((s) => ({ hr: s.hr, vector: s.vector })),
+      catalog: solveStars,
       byHrVec: new Map(catalog.map((s) => [s.hr, s.vector])),
+      triangleIndex: buildTriangleIndex(solveStars),
     };
   });
 

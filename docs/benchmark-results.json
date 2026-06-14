@@ -9,7 +9,7 @@
         "falsePositive": 0,
         "missed": 0,
         "meanCenterErrDeg": 0.06739331060659486,
-        "meanTimeMs": 61.907788166666656
+        "meanTimeMs": 61.24147925000002
       },
       "L1_약": {
         "total": 12,
@@ -17,7 +17,7 @@
         "falsePositive": 6,
         "missed": 0,
         "meanCenterErrDeg": 0.10215658268095891,
-        "meanTimeMs": 70.77125341666662
+        "meanTimeMs": 69.54801716666667
       },
       "L2_중": {
         "total": 12,
@@ -25,7 +25,7 @@
         "falsePositive": 11,
         "missed": 0,
         "meanCenterErrDeg": 1.1402910867428755,
-        "meanTimeMs": 71.18844416666666
+        "meanTimeMs": 70.91269791666669
       },
       "L3_강": {
         "total": 12,
@@ -33,7 +33,7 @@
         "falsePositive": 12,
         "missed": 0,
         "meanCenterErrDeg": null,
-        "meanTimeMs": 70.98736458333342
+        "meanTimeMs": 70.50743074999991
       }
     }
   },
@@ -47,7 +47,7 @@
         "falsePositive": 0,
         "missed": 0,
         "meanCenterErrDeg": 0.02701687260993918,
-        "meanTimeMs": 168.23136133333347
+        "meanTimeMs": 167.50240283333315
       },
       "L1_약": {
         "total": 12,
@@ -55,7 +55,7 @@
         "falsePositive": 0,
         "missed": 0,
         "meanCenterErrDeg": 0.04246013853468839,
-        "meanTimeMs": 222.81486441666675
+        "meanTimeMs": 215.42404166666643
       },
       "L2_중": {
         "total": 12,
@@ -63,7 +63,7 @@
         "falsePositive": 3,
         "missed": 8,
         "meanCenterErrDeg": 0.017929098392126013,
-        "meanTimeMs": 268.07119441666646
+        "meanTimeMs": 284.01685783333323
       },
       "L3_강": {
         "total": 12,
@@ -71,7 +71,45 @@
         "falsePositive": 6,
         "missed": 6,
         "meanCenterErrDeg": null,
-        "meanTimeMs": 267.22808333333313
+        "meanTimeMs": 273.1870589166668
+      }
+    }
+  },
+  "triangle": {
+    "name": "최선B (삼각형 매칭)",
+    "description": "3별 삼각형의 스케일 불변 형태로 카탈로그 검색 → 3별 대응을 RANSAC 검증",
+    "levels": {
+      "L0_clean": {
+        "total": 12,
+        "correct": 11,
+        "falsePositive": 1,
+        "missed": 0,
+        "meanCenterErrDeg": 0.03565119824546054,
+        "meanTimeMs": 15.649767333333179
+      },
+      "L1_약": {
+        "total": 12,
+        "correct": 5,
+        "falsePositive": 1,
+        "missed": 6,
+        "meanCenterErrDeg": 0.01389589379436163,
+        "meanTimeMs": 44.67114233333359
+      },
+      "L2_중": {
+        "total": 12,
+        "correct": 0,
+        "falsePositive": 1,
+        "missed": 11,
+        "meanCenterErrDeg": null,
+        "meanTimeMs": 58.112170333333474
+      },
+      "L3_강": {
+        "total": 12,
+        "correct": 0,
+        "falsePositive": 2,
+        "missed": 10,
+        "meanCenterErrDeg": null,
+        "meanTimeMs": 51.61577066666632
       }
     }
   }

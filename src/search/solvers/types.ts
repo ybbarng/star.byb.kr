@@ -1,4 +1,5 @@
 import type { Point3D } from "@/scripts/hash/types";
+import type { TriangleIndex } from "@/search/catalogGeometry";
 import type { CandidateIndex } from "@/search/findCandidatesCore";
 import type { SolveStar } from "@/search/solveCore";
 
@@ -18,9 +19,10 @@ export interface ImageSize {
 
 // solve에 필요한 공유 자원(매칭 인덱스·카탈로그). 한 번 만들어 재사용한다.
 export interface SolverContext {
-  index: CandidateIndex;
+  index: CandidateIndex; // quad 매칭용 (원본·개선)
   catalog: SolveStar[];
   byHrVec: Map<string, Point3D>;
+  triangleIndex?: TriangleIndex; // 삼각형 매칭용 (최선B)
 }
 
 export interface SolveOutcome {
