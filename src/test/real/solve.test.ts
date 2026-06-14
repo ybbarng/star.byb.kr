@@ -117,11 +117,11 @@ describe.skipIf(!ready)("실제 샘플 plate solving", () => {
       `\n=== big-dipper 실측 (검출 ${stars.length}개) ===`,
     ];
 
-    // 반경(brightness) 필터로 핫픽셀/노이즈를 제거하며 측정
-    for (const minR of [0, 2.5, 4]) {
+    // 밝기 상위 N개를 바꿔가며 — 노이즈 비율과 정답률의 관계 측정
+    for (const minR of [0]) {
       const filtered = sorted.filter((s) => s.brightness >= minR);
 
-      for (const topN of [30, 60]) {
+      for (const topN of [20, 30, 40, 50, 70, 100]) {
         const inputStars = filtered
           .slice(0, topN)
           .map((s) => ({ x: s.cx, y: s.cy, brightness: s.brightness }));
@@ -138,7 +138,8 @@ describe.skipIf(!ready)("실제 샘플 plate solving", () => {
           lines.push(
             `${solver.name}: found=${out.found}, ` +
               `중심오차=${Number.isFinite(err) ? err.toFixed(1) : "-"}°, ` +
-              `유의도=${out.confidence.toFixed(1)}, inlier=${out.inlierCount}`,
+              `유의도=${out.confidence.toFixed(1)}, inlier=${out.inlierCount}, ` +
+              `${out.timeMs.toFixed(0)}ms`,
           );
         }
       }
@@ -250,7 +251,8 @@ describe.skipIf(!ready)("실제 샘플 plate solving", () => {
           `  ${solver.name}: ${ok ? "✓풀림" : "✗"} ` +
             `별오차=${Number.isFinite(maxErr) ? maxErr.toFixed(2) : "-"}°, ` +
             `inlier=${out.inlierCount}, ` +
-            `후보군 ${out.candidates.length}개 중 정답 ${rank > 0 ? rank + "위" : "없음"}`,
+            `후보군 ${out.candidates.length}개 중 정답 ${rank > 0 ? rank + "위" : "없음"}, ` +
+            `${out.timeMs.toFixed(0)}ms`,
         );
       }
     }
