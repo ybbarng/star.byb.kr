@@ -118,15 +118,27 @@ export default function PlateSolvingStep() {
       context.lineWidth = 1;
 
       for (let i = 0; i < lines.length - 1; i++) {
+        const a = lines[i];
+        const b = lines[i + 1];
+
+        // 한쪽 정점이라도 뒤쪽 반구/먼 영역(null)이면 그 선분은 그리지 않는다
+        if (!a || !b) {
+          continue;
+        }
+
         context.beginPath();
-        context.moveTo(lines[i][0], lines[i][1]);
-        context.lineTo(lines[i + 1][0], lines[i + 1][1]);
+        context.moveTo(a[0], a[1]);
+        context.lineTo(b[0], b[1]);
         context.stroke();
       }
 
       const visible = lines.filter(
-        (l) =>
-          l[0] >= 0 && l[0] < image.width && l[1] >= 0 && l[1] < image.height,
+        (l): l is [number, number] =>
+          l !== null &&
+          l[0] >= 0 &&
+          l[0] < image.width &&
+          l[1] >= 0 &&
+          l[1] < image.height,
       );
 
       if (visible.length === 0) {

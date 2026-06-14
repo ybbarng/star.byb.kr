@@ -6,7 +6,9 @@ import type { SolveResult } from "@/search/solveCore";
 export const ACCEPT = {
   minInlier: 6, // 매칭된 별이 이보다 적으면 우연/빈약
   minSignificance: 5, // 우연매칭 기대 대비 배수. 1이면 우연 수준
-  maxFovDeg: 120, // 이보다 크면 "하늘 전체"가 잡힌 퇴화 해(변환 붕괴)
+  // 일반 사진의 대각 시야는 이 정도를 넘지 않는다. 더 넓게 나오는 해는
+  // 변환이 느슨/붕괴해 넓은 하늘이 우연히 맞은 비현실적 결과다.
+  maxFovDeg: 80,
 };
 
 // 거대 FOV(하늘 전체)·빈약 inlier·우연 수준 유의도를 모두 거른다.
