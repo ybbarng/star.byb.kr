@@ -12,6 +12,7 @@ export const detectStarsFromDiff = (
   diff: Float32Array | Uint8Array | Uint8ClampedArray,
   cols: number,
   rows: number,
+  sigmaK = 3, // threshold = mean + sigmaK·σ. 높일수록 노이즈에 엄격
 ): DetectedStar[] => {
   const n = cols * rows;
 
@@ -31,7 +32,7 @@ export const detectStarsFromDiff = (
   }
 
   const stddevVal = Math.sqrt(varSum / n);
-  const threshold = meanVal + 3 * stddevVal;
+  const threshold = meanVal + sigmaK * stddevVal;
 
   // 1단계: local maxima 후보 + 유효 반경
   const candidates: {

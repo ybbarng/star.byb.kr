@@ -17,20 +17,24 @@ import {
 const samplesDir = resolve(process.cwd(), "public/samples");
 const ready = catalogExists() && hashesExist() && existsSync(samplesDir);
 
-// 별 이름(N) → 3D 벡터. 정답 방향 계산용.
+// 라벨(별 이름 N 또는 HR 번호) → 3D 벡터. 정답 방향 계산용.
 const loadNameToVector = (): Map<string, Point3D> => {
   const vdb = JSON.parse(
     readFileSync(
       resolve(process.cwd(), "build/database/vectors-database.json"),
       "utf-8",
     ),
-  ) as { N?: string; x: number; y: number; z: number }[];
+  ) as { N?: string; HR: string; x: number; y: number; z: number }[];
   const map = new Map<string, Point3D>();
 
   for (const s of vdb) {
+    const vec: Point3D = [s.x, s.y, s.z];
+
     if (s.N) {
-      map.set(s.N, [s.x, s.y, s.z]);
+      map.set(s.N, vec);
     }
+
+    map.set(s.HR, vec); // saipan은 HR 번호로 라벨링됨
   }
 
   return map;
@@ -85,7 +89,9 @@ describe.skipIf(!ready)("실제 샘플 plate solving", () => {
       index: buildCandidateIndex(loadHashes()),
       catalog: solveStars,
       byHrVec: new Map(catalog.map((s) => [s.hr, s.vector])),
-      triangleIndex: buildTriangleIndex(solveStars),
+      // TODO: 단일 maxAngle은 별자리 크기 trade-off가 있어 한계.
+      // 멀티스케일 인덱스 또는 사진 삼각형 크기 기반 동적 선택이 필요.
+      triangleIndex: buildTriangleIndex(solveStars, 8),
     };
   });
 
@@ -143,48 +149,73 @@ describe.skipIf(!ready)("실제 샘플 plate solving", () => {
     expect(lines.length).toBeGreaterThan(1);
   }, 60000);
 
-  it("진단: 북두칠성 정답 7개 별만으로 푼다 (노이즈 0)", () => {
-    const truthPath = resolve(process.cwd(), "data/search/ursa-major.json");
-    const truth = JSON.parse(readFileSync(truthPath, "utf-8")) as {
-      width: number;
-      height: number;
-      stars: {
-        label: string;
-        position: [number, number];
-        brightness: number;
-      }[];
-    };
+  // 사람이 정제한 별 목록(data/search)으로 4개 알고리즘 측정 — 실제 협업 워크플로
+  const refinedSamples = [
+    { name: "ursa-major(북두칠성)", file: "ursa-major.json" },
+    { name: "orion(오리온)", file: "orion.json" },
+    { name: "saipan(남반구)", file: "saipan.json" },
+  ];
+
+  it("사람이 정제한 샘플 별 목록을 정확히 푼다", () => {
     const byName = loadNameToVector();
-    const truthCenter = truthCenterFromLabels(
-      truth.stars.map((s) => s.label),
-      byName,
-    ) as Point3D;
+    const lines: string[] = ["\n=== 정제된 샘플 plate solving ==="];
+    let solvedCount = 0;
 
-    const inputStars = truth.stars.map((s) => ({
-      x: s.position[0],
-      y: s.position[1],
-      brightness: s.brightness,
-    }));
+    for (const sample of refinedSamples) {
+      const path = resolve(process.cwd(), "data/search", sample.file);
 
-    const lines: string[] = ["\n=== 북두칠성 정답 7개만 (노이즈 0) ==="];
+      if (!existsSync(path)) {
+        continue;
+      }
 
-    for (const solver of solvers) {
-      const out = solver.solve(
-        inputStars,
-        { width: truth.width, height: truth.height },
-        ctx,
+      const truth = JSON.parse(readFileSync(path, "utf-8")) as {
+        width: number;
+        height: number;
+        stars: {
+          label: string;
+          position: [number, number];
+          brightness: number;
+        }[];
+      };
+      const truthCenter = truthCenterFromLabels(
+        truth.stars.map((s) => s.label),
+        byName,
       );
-      const err = out.centerVector
-        ? angleDeg(out.centerVector, truthCenter)
-        : Infinity;
+      const inputStars = truth.stars.map((s) => ({
+        x: s.position[0],
+        y: s.position[1],
+        brightness: s.brightness,
+      }));
+
       lines.push(
-        `${solver.name}: found=${out.found}, ` +
-          `중심오차=${Number.isFinite(err) ? err.toFixed(1) : "-"}°, ` +
-          `유의도=${out.confidence.toFixed(1)}, inlier=${out.inlierCount}`,
+        `\n■ ${sample.name} (${truth.stars.length}개 별, 정답${truthCenter ? "있음" : "없음"})`,
       );
+
+      for (const solver of solvers) {
+        const out = solver.solve(
+          inputStars,
+          { width: truth.width, height: truth.height },
+          ctx,
+        );
+        const err =
+          out.centerVector && truthCenter
+            ? angleDeg(out.centerVector, truthCenter)
+            : Infinity;
+        const ok = out.found && err < 5;
+
+        if (ok) {
+          solvedCount++;
+        }
+
+        lines.push(
+          `  ${solver.name}: ${ok ? "✓풀림" : "✗"} ` +
+            `found=${out.found}, 오차=${Number.isFinite(err) ? err.toFixed(1) : "-"}°, ` +
+            `유의도=${out.confidence.toFixed(1)}, inlier=${out.inlierCount}`,
+        );
+      }
     }
 
     console.warn(lines.join("\n"));
-    expect(lines.length).toBeGreaterThan(1);
+    expect(solvedCount).toBeGreaterThan(0);
   });
 });
