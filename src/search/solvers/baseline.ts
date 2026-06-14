@@ -28,6 +28,7 @@ export const baselineSolver: Solver = {
       inlierCount: 0,
       candidatesEvaluated: candidates,
       timeMs: performance.now() - t0,
+      transform: null,
     });
 
     const photoTop = selectTopByBrightness(stars, TOP_N);
@@ -61,6 +62,7 @@ export const baselineSolver: Solver = {
       inlierCount: 0,
       candidatesEvaluated: cands.length,
       timeMs: performance.now() - t0,
+      transform: TP,
     };
   },
 };

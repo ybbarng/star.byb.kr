@@ -102,6 +102,7 @@ export const triangleSolver: Solver = {
         inlierCount: 0,
         candidatesEvaluated: evaluated,
         timeMs,
+        transform: null,
       };
     }
 
@@ -114,6 +115,7 @@ export const triangleSolver: Solver = {
       inlierCount: best.inlierCount,
       candidatesEvaluated: evaluated,
       timeMs,
+      transform: best.TP,
     };
   },
 };

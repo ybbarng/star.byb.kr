@@ -71,6 +71,7 @@ export const improvedSolver: Solver = {
         inlierCount: 0,
         candidatesEvaluated: cands.length,
         timeMs,
+        transform: null,
       };
     }
 
@@ -83,6 +84,7 @@ export const improvedSolver: Solver = {
       inlierCount: best.inlierCount,
       candidatesEvaluated: cands.length,
       timeMs,
+      transform: best.TP,
     };
   },
 };

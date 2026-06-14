@@ -2,6 +2,7 @@ import type { Point3D } from "@/scripts/hash/types";
 import type { PairIndex, TriangleIndex } from "@/search/catalogGeometry";
 import type { CandidateIndex } from "@/search/findCandidatesCore";
 import type { SolveStar } from "@/search/solveCore";
+import type { Mat3 } from "@/search/utils/similarity";
 
 // 세 알고리즘(원본/개선/최선)을 같은 입력으로 비교 실행하기 위한 공통 인터페이스.
 
@@ -34,6 +35,7 @@ export interface SolveOutcome {
   inlierCount: number; // 매칭된 별 수 (원본은 0)
   candidatesEvaluated: number; // 검토한 후보 수
   timeMs: number;
+  transform: Mat3 | null; // 추정 변환행렬(TP). 별 역투영·채점에 쓴다
 }
 
 export interface Solver {

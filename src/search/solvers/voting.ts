@@ -106,6 +106,7 @@ export const votingSolver: Solver = {
         inlierCount: 0,
         candidatesEvaluated: 0,
         timeMs: timeMs0,
+        transform: null,
       };
     }
 
@@ -125,6 +126,7 @@ export const votingSolver: Solver = {
         inlierCount: 0,
         candidatesEvaluated: 1,
         timeMs,
+        transform: null,
       };
     }
 
@@ -137,6 +139,7 @@ export const votingSolver: Solver = {
       inlierCount: res.inlierCount,
       candidatesEvaluated: 1,
       timeMs,
+      transform: res.TP,
     };
   },
 };
