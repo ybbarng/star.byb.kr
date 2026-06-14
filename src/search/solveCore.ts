@@ -84,6 +84,7 @@ const toPlane = (P: Mat3, v: Point3D): Point2D | null => {
 };
 
 interface Correspondence {
+  vec: Point3D; // 카탈로그 별 벡터 (광축 재추정 시 재투영에 필요)
   plane: Point2D;
   photo: Point2D;
   dist: number;
@@ -104,43 +105,21 @@ export const solveCandidate = (
   const tolerancePx = options.tolerancePx ?? Math.max(5, diag * 0.006);
   const tol2 = tolerancePx * tolerancePx;
 
-  // 1. 기준 투영 P (DB quad 중심을 광축으로 근사)
-  const P = projectionMatrix(findCenter(databaseQuad));
-
-  // 2. DB quad의 접선평면 좌표
-  const dbQuadPlane: Point2D[] = [];
-
-  for (const v of databaseQuad) {
-    const pl = toPlane(P, v);
-
-    if (!pl) {
-      return null;
-    }
-
-    dbQuadPlane.push(pl);
-  }
-
-  // 3. 초기 변환 T (quad 4점 최소제곱)
-  let T = umeyamaSimilarity2D(dbQuadPlane, photoQuad).matrix;
-
-  // 4. 카탈로그 별의 접선평면 좌표 (P 고정, 앞 반구만)
-  const catPlane: Point2D[] = [];
-
-  for (const s of catalog) {
-    const pl = toPlane(P, s.vector);
-
-    if (pl) {
-      catPlane.push(pl);
-    }
-  }
-
-  // 현재 T로 카탈로그를 사진에 투영한 뒤 photoStars와 양방향 최근접 대응 수집
+  // collectMatches: 주어진 광축 P·변환 T로 카탈로그를 사진에 투영해 photoStars와
+  // 양방향 최근접 대응을 수집한다 (광축 재추정에 쓰도록 카탈로그 벡터도 보유).
   const collectMatches = (
     Tcur: Mat3,
+    Pcur: Mat3,
   ): { matches: Correspondence[]; projectedInFov: number } => {
-    const pred: { plane: Point2D; xy: Point2D }[] = [];
+    const pred: { vec: Point3D; plane: Point2D; xy: Point2D }[] = [];
 
-    for (const plane of catPlane) {
+    for (const s of catalog) {
+      const plane = toPlane(Pcur, s.vector);
+
+      if (!plane) {
+        continue;
+      }
+
       const xy = applySimilarity(Tcur, plane);
 
       if (
@@ -149,11 +128,10 @@ export const solveCandidate = (
         xy[1] >= -tolerancePx &&
         xy[1] < H + tolerancePx
       ) {
-        pred.push({ plane, xy });
+        pred.push({ vec: s.vector, plane, xy });
       }
     }
 
-    // photoStar → 최근접 pred
     const photoNearest = photoStars.map((ps) => {
       let bestK = -1;
       let bestD = Infinity;
@@ -172,7 +150,6 @@ export const solveCandidate = (
       return { k: bestK, d: bestD };
     });
 
-    // pred → 최근접 photoStar
     const predNearest = pred.map((p) => {
       let bestI = -1;
       let bestD = Infinity;
@@ -200,9 +177,9 @@ export const solveCandidate = (
         continue;
       }
 
-      // 양방향(서로 최근접)일 때만 대응 인정
       if (predNearest[nn.k].i === i) {
         matches.push({
+          vec: pred[nn.k].vec,
           plane: pred[nn.k].plane,
           photo: photoStars[i],
           dist: Math.sqrt(nn.d),
@@ -213,11 +190,26 @@ export const solveCandidate = (
     return { matches, projectedInFov: pred.length };
   };
 
-  // 5. 초기 대응
-  const initial = collectMatches(T);
-  let best = initial.matches;
+  // 초기 광축 P (DB quad 중심)와 초기 변환 T (quad 4점 최소제곱)
+  let P = projectionMatrix(findCenter(databaseQuad));
+  const dbQuadPlane: Point2D[] = [];
 
-  // 6. RANSAC: 2쌍으로 변환을 추정하며 최대 inlier 모델 탐색
+  for (const v of databaseQuad) {
+    const pl = toPlane(P, v);
+
+    if (!pl) {
+      return null;
+    }
+
+    dbQuadPlane.push(pl);
+  }
+
+  let T = umeyamaSimilarity2D(dbQuadPlane, photoQuad).matrix;
+
+  // 초기 대응
+  let best = collectMatches(T, P).matches;
+
+  // RANSAC: 2쌍으로 변환을 추정하며 최대 inlier 모델 탐색
   if (best.length >= 4) {
     const m = best;
 
@@ -252,7 +244,7 @@ export const solveCandidate = (
     }
   }
 
-  // 7. inlier 전체로 변환 refine
+  // inlier 전체로 변환 refine
   if (best.length >= 2) {
     T = umeyamaSimilarity2D(
       best.map((c) => c.plane),
@@ -260,8 +252,42 @@ export const solveCandidate = (
     ).matrix;
   }
 
-  // 8. refine된 변환으로 최종 검증
-  const final = collectMatches(T);
+  // 광축 재추정 정제: 큰 FOV에서는 quad 중심 광축이 화면 전체에 안 맞아 변환이
+  // 부정확해진다. 화면 중심을 광축으로 다시 잡아 inlier의 (벡터, 사진) 대응을
+  // 새 광축 기준으로 재적합하며 수렴시킨다.
+  for (let iter = 0; iter < 2; iter++) {
+    const newCenter = recoverCenter(mat3Mul(T, P), W, H);
+    const Pnew = projectionMatrix(newCenter);
+
+    const planes: Point2D[] = [];
+    const photos: Point2D[] = [];
+
+    for (const c of best) {
+      const pl = toPlane(Pnew, c.vec);
+
+      if (pl) {
+        planes.push(pl);
+        photos.push(c.photo);
+      }
+    }
+
+    if (planes.length < 2) {
+      break;
+    }
+
+    T = umeyamaSimilarity2D(planes, photos).matrix;
+    P = Pnew;
+
+    // 새 광축으로 더 많은 별이 매칭될 수 있으니 재수집
+    const r = collectMatches(T, P);
+
+    if (r.matches.length >= best.length) {
+      best = r.matches;
+    }
+  }
+
+  // 최종 검증
+  const final = collectMatches(T, P);
   const inlierCount = final.matches.length;
   const projectedInFov = final.projectedInFov;
 
