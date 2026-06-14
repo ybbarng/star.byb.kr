@@ -1,4 +1,5 @@
 import type { Point3D } from "@/scripts/hash/types";
+import type { HashedQuad } from "@/search/findCandidatesCore";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
@@ -33,3 +34,14 @@ export const loadCatalog = (): CatalogStar[] => {
     v: parseFloat(s.V),
   }));
 };
+
+// 미리 계산된 DB quad 해시(build/hash/hashed-database.json) 로더.
+export const hashesPath = resolve(
+  process.cwd(),
+  "build/hash/hashed-database.json",
+);
+
+export const hashesExist = (): boolean => existsSync(hashesPath);
+
+export const loadHashes = (): HashedQuad[] =>
+  JSON.parse(readFileSync(hashesPath, "utf-8")) as HashedQuad[];

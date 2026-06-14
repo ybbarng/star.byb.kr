@@ -1,57 +1,23 @@
-import * as kdtree from "kd-tree-javascript";
 import { Star } from "@/scripts/database/types";
-import * as hashLib from "@/scripts/hash/hash";
-import * as quadrilateral from "@/scripts/hash/quadrilateral";
-import { Hash, NamedPoint2D } from "@/scripts/hash/types";
 import {
-  Candidate,
-  CandidateInput,
-  CandidateOutput,
-  Photo,
-} from "@/search/type";
+  buildCandidateIndex,
+  findCandidates,
+  type CandidateIndex,
+  type HashedQuad,
+} from "@/search/findCandidatesCore";
+import { Photo } from "@/search/type";
 import catalog from "@build/database/reduced-database.json";
 
-interface HashedQuad {
-  hash: Hash;
-  stars: [string, string, string, string];
-}
-
-let hashes: HashedQuad[] = [];
-let tree: InstanceType<typeof kdtree.kdTree> | null = null;
+// 매칭 알고리즘은 findCandidatesCore에 있고, 이 worker는 DB 로딩(fetch)과
+// 메인 스레드와의 메시지 전달(progress 포함)만 담당한다.
 
 const dictionary = new Map<string, string | undefined>();
 catalog.map((star: Star) => {
   dictionary.set(star.HR, star.N);
 });
+const nameOf = (hr: string) => dictionary.get(hr) ?? `HR ${hr}`;
 
-const calculateDistance = (v1: number[], v2: number[]) => {
-  let sum = 0;
-
-  for (let i = 0; i < v1.length; i++) {
-    const d = v1[i] - v2[i];
-    sum += d * d;
-  }
-
-  return sum;
-};
-
-const buildTree = () => {
-  tree = new kdtree.kdTree(
-    hashes.map((hash, i) => {
-      return {
-        i,
-        x: hash.hash[0],
-        y: hash.hash[1],
-        z: hash.hash[2],
-        w: hash.hash[3],
-      };
-    }),
-    (p1, p2) =>
-      calculateDistance([p1.x, p1.y, p1.z, p1.w], [p2.x, p2.y, p2.z, p2.w]),
-    ["x", "y", "z", "w"],
-  );
-};
-
+let index: CandidateIndex | null = null;
 let loadPromise: Promise<void> | null = null;
 
 const loadDatabase = () => {
@@ -61,90 +27,11 @@ const loadDatabase = () => {
     const response = await fetch(
       new URL("/data/hashed-database.json", self.location.origin),
     );
-    hashes = (await response.json()) as HashedQuad[];
-    buildTree();
+    const hashes = (await response.json()) as HashedQuad[];
+    index = buildCandidateIndex(hashes, nameOf);
   })();
 
   return loadPromise;
-};
-
-const findNearestQuads = (
-  quad: number[],
-): { index: number; distance: number }[] => {
-  if (!tree) return [];
-
-  const nearest = tree.nearest(
-    {
-      i: 0,
-      x: quad[0],
-      y: quad[1],
-      z: quad[2],
-      w: quad[3],
-    },
-    3,
-  );
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return nearest.map((result: any) => ({
-    index: result[0].i as number,
-    distance: result[1] as number,
-  }));
-};
-
-const findCandidates = (photo: Photo) => {
-  const namedStars: NamedPoint2D[] = photo.stars.map((star, i) => ({
-    label: String(i),
-    vector: star,
-  }));
-  const quads = quadrilateral.create(namedStars).map((quadrilateral) => {
-    const hash = hashLib.calculateHash(quadrilateral.stars);
-
-    return {
-      labels: hash.labels,
-      hash: hash.hash,
-    };
-  });
-
-  const getName = (hr: string) => {
-    const name = dictionary.get(hr);
-
-    return name ? name : `HR ${hr}`;
-  };
-
-  // 중복 제거를 위한 Map: DB quad의 HR 키 → 최소 distance
-  const bestByDbQuad = new Map<string, Candidate>();
-
-  const total = quads.length;
-  quads.forEach((quad, i) => {
-    postMessage({ fn: "onProgress", payload: { total, progress: i } });
-    const nearestResults = findNearestQuads(quad.hash);
-
-    for (const result of nearestResults) {
-      if (result.index === -1) continue;
-
-      const found = hashes[result.index].stars;
-      const distance = result.distance * 1000;
-
-      // 중복 제거: 같은 DB quad(HR 4개 동일)가 여러 번 매칭되면 최소 distance만 유지
-      const dbKey = found.join(",");
-      const existing = bestByDbQuad.get(dbKey);
-
-      if (!existing || distance < existing.distance) {
-        bestByDbQuad.set(dbKey, {
-          input: quad.labels.map((label) => Number(label)) as CandidateInput,
-          output: found.map((hr) => ({
-            hr,
-            label: getName(hr),
-          })) as CandidateOutput,
-          distance,
-        });
-      }
-    }
-  });
-
-  return Array.from(bestByDbQuad.values()).sort(
-    (ca, cb) => ca.distance - cb.distance,
-  );
 };
 
 onmessage = async function (messageEvent) {
@@ -156,11 +43,18 @@ onmessage = async function (messageEvent) {
     }
 
     case "findCandidates": {
-      if (!tree) {
+      if (!index) {
         await loadDatabase();
       }
 
-      const result = findCandidates(messageEvent.data.payload);
+      const result = findCandidates(
+        messageEvent.data.payload as Photo,
+        index as CandidateIndex,
+        {
+          onProgress: (progress, total) =>
+            postMessage({ fn: "onProgress", payload: { total, progress } }),
+        },
+      );
       postMessage({ fn: "onCandidatesFound", payload: result });
       break;
     }
