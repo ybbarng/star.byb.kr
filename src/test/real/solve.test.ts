@@ -110,24 +110,30 @@ describe.skipIf(!ready)("실제 샘플 plate solving", () => {
       `\n=== big-dipper 실측 (검출 ${stars.length}개) ===`,
     ];
 
-    // 입력 별 수를 바꿔가며 — 노이즈 과검출 영향 측정
-    for (const topN of [30, 60, 120, 200]) {
-      const inputStars = sorted
-        .slice(0, topN)
-        .map((s) => ({ x: s.cx, y: s.cy, brightness: s.brightness }));
+    // 반경(brightness) 필터로 핫픽셀/노이즈를 제거하며 측정
+    for (const minR of [0, 2.5, 4]) {
+      const filtered = sorted.filter((s) => s.brightness >= minR);
 
-      lines.push(`\n-- 상위 ${topN}개 입력 --`);
+      for (const topN of [30, 60]) {
+        const inputStars = filtered
+          .slice(0, topN)
+          .map((s) => ({ x: s.cx, y: s.cy, brightness: s.brightness }));
 
-      for (const solver of solvers) {
-        const out = solver.solve(inputStars, { width, height }, ctx);
-        const err = out.centerVector
-          ? angleDeg(out.centerVector, truthCenter as Point3D)
-          : Infinity;
         lines.push(
-          `${solver.name}: found=${out.found}, ` +
-            `중심오차=${Number.isFinite(err) ? err.toFixed(1) : "-"}°, ` +
-            `유의도=${out.confidence.toFixed(1)}, inlier=${out.inlierCount}`,
+          `\n-- 반경≥${minR} (${filtered.length}개) 중 상위 ${topN} --`,
         );
+
+        for (const solver of solvers) {
+          const out = solver.solve(inputStars, { width, height }, ctx);
+          const err = out.centerVector
+            ? angleDeg(out.centerVector, truthCenter as Point3D)
+            : Infinity;
+          lines.push(
+            `${solver.name}: found=${out.found}, ` +
+              `중심오차=${Number.isFinite(err) ? err.toFixed(1) : "-"}°, ` +
+              `유의도=${out.confidence.toFixed(1)}, inlier=${out.inlierCount}`,
+          );
+        }
       }
     }
 
