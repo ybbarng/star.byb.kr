@@ -1,5 +1,6 @@
 import type { ImageSize, InputStar, Solver, SolverContext } from "./types";
 import type { Point2D, Point3D } from "@/scripts/hash/types";
+import { topCandidates } from "./candidates";
 import { searchTriangle, triangleShape } from "@/search/catalogGeometry";
 import { solveCandidate } from "@/search/solveCore";
 import { selectTopByBrightness } from "@/search/utils/selectStars";
@@ -107,6 +108,7 @@ export const votingSolver: Solver = {
         candidatesEvaluated: 0,
         timeMs: timeMs0,
         transform: null,
+        candidates: [],
       };
     }
 
@@ -127,6 +129,7 @@ export const votingSolver: Solver = {
         candidatesEvaluated: 1,
         timeMs,
         transform: null,
+        candidates: [],
       };
     }
 
@@ -140,6 +143,7 @@ export const votingSolver: Solver = {
       candidatesEvaluated: 1,
       timeMs,
       transform: res.TP,
+      candidates: topCandidates([res], 5),
     };
   },
 };

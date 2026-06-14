@@ -1,5 +1,6 @@
 import type { ImageSize, InputStar, Solver, SolverContext } from "./types";
 import type { Point2D, Point3D } from "@/scripts/hash/types";
+import { topCandidates } from "./candidates";
 import { findCandidates } from "@/search/findCandidatesCore";
 import { solveCandidate } from "@/search/solveCore";
 import { selectByGrid } from "@/search/utils/selectStars";
@@ -12,6 +13,7 @@ const MATCH_STARS = 40;
 const LOCAL_NEIGHBORS = 10; // 각 별의 가까운 이웃으로 compact quad (큰 FOV 대응)
 const MIN_INLIER = 6;
 const MIN_SIGNIFICANCE = 5;
+const MAX_PRESENTED_CANDIDATES = 5; // 사람에게 제시할 상위 후보 수
 // 후보는 hash 거리 오름차순. 정답 quad는 보통 거리가 작아 상위에 온다.
 // 전부 검증하면 느리므로(30초 목표) 상위 일부만 검증한다.
 const MAX_CANDIDATES_TO_VERIFY = 220;
@@ -31,6 +33,7 @@ export const improvedSolver: Solver = {
     });
     const allStars: Point2D[] = stars.map((s) => [s.x, s.y]);
 
+    const results: NonNullable<ReturnType<typeof solveCandidate>>[] = [];
     let best: ReturnType<typeof solveCandidate> = null;
     let bestInlier = -1;
     let bestSig = -Infinity;
@@ -51,11 +54,16 @@ export const improvedSolver: Solver = {
         { imageWidth: size.width, imageHeight: size.height },
       );
 
+      if (!res) {
+        continue;
+      }
+
+      results.push(res);
+
       // inlier 절대수 1순위, 동률 시 유의도
       if (
-        res &&
-        (res.inlierCount > bestInlier ||
-          (res.inlierCount === bestInlier && res.significance > bestSig))
+        res.inlierCount > bestInlier ||
+        (res.inlierCount === bestInlier && res.significance > bestSig)
       ) {
         best = res;
         bestInlier = res.inlierCount;
@@ -64,6 +72,7 @@ export const improvedSolver: Solver = {
     }
 
     const timeMs = performance.now() - t0;
+    const candidates = topCandidates(results, MAX_PRESENTED_CANDIDATES);
 
     if (!best) {
       return {
@@ -75,6 +84,7 @@ export const improvedSolver: Solver = {
         candidatesEvaluated: cands.length,
         timeMs,
         transform: null,
+        candidates,
       };
     }
 
@@ -88,6 +98,7 @@ export const improvedSolver: Solver = {
       candidatesEvaluated: cands.length,
       timeMs,
       transform: best.TP,
+      candidates,
     };
   },
 };

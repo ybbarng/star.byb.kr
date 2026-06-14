@@ -20,15 +20,16 @@ export const baselineSolver: Solver = {
 
   solve(stars: InputStar[], size: ImageSize, ctx: SolverContext) {
     const t0 = performance.now();
-    const empty = (candidates: number) => ({
+    const empty = (cnt: number) => ({
       found: false,
       centerVector: null,
       fovDeg: null,
       confidence: 0,
       inlierCount: 0,
-      candidatesEvaluated: candidates,
+      candidatesEvaluated: cnt,
       timeMs: performance.now() - t0,
       transform: null,
+      candidates: [],
     });
 
     const photoTop = selectTopByBrightness(stars, TOP_N);
@@ -63,6 +64,16 @@ export const baselineSolver: Solver = {
       candidatesEvaluated: cands.length,
       timeMs: performance.now() - t0,
       transform: TP,
+      // 원본은 검증이 없어 후보군을 못 만든다 (거리 최소 1개만)
+      candidates: [
+        {
+          centerVector,
+          fovDeg,
+          transform: TP,
+          confidence: 1 / (1 + top.distance),
+          inlierCount: 0,
+        },
+      ],
     };
   },
 };

@@ -222,10 +222,35 @@ describe.skipIf(!ready)("실제 샘플 plate solving", () => {
           solvedCount++;
         }
 
+        // 정답이 제시 후보군 몇 위에 있는지 (사람이 고를 수 있는가)
+        let rank = -1;
+
+        for (let ci = 0; ci < out.candidates.length; ci++) {
+          const c = out.candidates[ci];
+          let cErr = 0;
+
+          for (const s of truth.stars) {
+            const tv = byName.get(s.label);
+
+            if (tv) {
+              cErr = Math.max(
+                cErr,
+                angleDeg(photoToSky(c.transform, s.position), tv),
+              );
+            }
+          }
+
+          if (cErr < 2) {
+            rank = ci + 1;
+            break;
+          }
+        }
+
         lines.push(
           `  ${solver.name}: ${ok ? "✓풀림" : "✗"} ` +
-            `found=${out.found}, 별오차=${Number.isFinite(maxErr) ? maxErr.toFixed(2) : "-"}°, ` +
-            `유의도=${out.confidence.toFixed(1)}, inlier=${out.inlierCount}`,
+            `별오차=${Number.isFinite(maxErr) ? maxErr.toFixed(2) : "-"}°, ` +
+            `inlier=${out.inlierCount}, ` +
+            `후보군 ${out.candidates.length}개 중 정답 ${rank > 0 ? rank + "위" : "없음"}`,
         );
       }
     }

@@ -1,5 +1,6 @@
 import type { ImageSize, InputStar, Solver, SolverContext } from "./types";
 import type { Point2D, Point3D } from "@/scripts/hash/types";
+import { topCandidates } from "./candidates";
 import { searchTriangle, triangleShape } from "@/search/catalogGeometry";
 import { solveCandidate, type SolveResult } from "@/search/solveCore";
 import { selectTopByBrightness } from "@/search/utils/selectStars";
@@ -15,6 +16,7 @@ const KD_K = 8;
 const EARLY_ACCEPT_INLIER = 10; // 충분한 inlier를 찾으면 즉시 채택
 const MIN_INLIER = 6;
 const MIN_SIGNIFICANCE = 5;
+const MAX_PRESENTED_CANDIDATES = 5;
 
 const pixDist = (a: Point2D, b: Point2D): number =>
   Math.hypot(a[0] - b[0], a[1] - b[1]);
@@ -36,6 +38,7 @@ export const triangleSolver: Solver = {
     const photoTop = selectTopByBrightness(stars, MATCH_STARS);
     const allStars: Point2D[] = stars.map((s) => [s.x, s.y]);
 
+    const results: SolveResult[] = [];
     let best: SolveResult | null = null;
     let bestInlier = -1;
     let bestSig = -Infinity;
@@ -71,11 +74,15 @@ export const triangleSolver: Solver = {
                 ransacIterations: 60,
               });
 
+              if (!res) {
+                continue;
+              }
+
+              results.push(res);
+
               if (
-                res &&
-                (res.inlierCount > bestInlier ||
-                  (res.inlierCount === bestInlier &&
-                    res.significance > bestSig))
+                res.inlierCount > bestInlier ||
+                (res.inlierCount === bestInlier && res.significance > bestSig)
               ) {
                 best = res;
                 bestInlier = res.inlierCount;
@@ -92,6 +99,7 @@ export const triangleSolver: Solver = {
     }
 
     const timeMs = performance.now() - t0;
+    const candidates = topCandidates(results, MAX_PRESENTED_CANDIDATES);
 
     if (!best) {
       return {
@@ -103,6 +111,7 @@ export const triangleSolver: Solver = {
         candidatesEvaluated: evaluated,
         timeMs,
         transform: null,
+        candidates,
       };
     }
 
@@ -116,6 +125,7 @@ export const triangleSolver: Solver = {
       candidatesEvaluated: evaluated,
       timeMs,
       transform: best.TP,
+      candidates,
     };
   },
 };

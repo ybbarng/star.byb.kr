@@ -27,15 +27,27 @@ export interface SolverContext {
   pairIndex?: PairIndex; // 별쌍 각거리 투표용 (최선A)
 }
 
+// 사람이 고를 수 있도록 제시하는 후보 하나 (서로 다른 하늘 위치).
+export interface SolveCandidateResult {
+  centerVector: Point3D;
+  fovDeg: number;
+  transform: Mat3;
+  confidence: number;
+  inlierCount: number;
+}
+
 export interface SolveOutcome {
-  found: boolean; // 알고리즘이 "해를 찾았다"고 판단했는지
-  centerVector: Point3D | null; // 추정 광축 방향
-  fovDeg: number | null; // 추정 시야각
+  found: boolean; // 알고리즘이 "해를 찾았다"고 판단했는지 (최상위 후보가 신뢰할 만한지)
+  centerVector: Point3D | null; // 최상위 후보의 광축 방향
+  fovDeg: number | null; // 최상위 후보의 시야각
   confidence: number; // 신뢰 지표(원본은 1/거리, 개선·최선은 유의도)
   inlierCount: number; // 매칭된 별 수 (원본은 0)
   candidatesEvaluated: number; // 검토한 후보 수
   timeMs: number;
-  transform: Mat3 | null; // 추정 변환행렬(TP). 별 역투영·채점에 쓴다
+  transform: Mat3 | null; // 최상위 후보의 변환행렬(TP)
+  // 유의도 순 상위 후보들(서로 다른 하늘 위치, 중복 제거). 유일한 해를 못
+  // 찾아도 사람이 이 중 고를 수 있게 한다 (사람-컴퓨터 협업).
+  candidates: SolveCandidateResult[];
 }
 
 export interface Solver {
