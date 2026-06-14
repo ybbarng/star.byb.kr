@@ -9,7 +9,7 @@
         "falsePositive": 0,
         "missed": 0,
         "meanCenterErrDeg": 0.06739331060659486,
-        "meanTimeMs": 61.23874308333334
+        "meanTimeMs": 60.89180566666668
       },
       "L1_약": {
         "total": 12,
@@ -17,7 +17,7 @@
         "falsePositive": 6,
         "missed": 0,
         "meanCenterErrDeg": 0.10215658268095891,
-        "meanTimeMs": 71.04556916666667
+        "meanTimeMs": 69.96136124999998
       },
       "L2_중": {
         "total": 12,
@@ -25,7 +25,7 @@
         "falsePositive": 11,
         "missed": 0,
         "meanCenterErrDeg": 1.1402910867428755,
-        "meanTimeMs": 71.31626724999997
+        "meanTimeMs": 77.96465283333339
       },
       "L3_강": {
         "total": 12,
@@ -33,7 +33,7 @@
         "falsePositive": 12,
         "missed": 0,
         "meanCenterErrDeg": null,
-        "meanTimeMs": 68.94037141666676
+        "meanTimeMs": 80.5197849166666
       }
     }
   },
@@ -46,32 +46,32 @@
         "correct": 12,
         "falsePositive": 0,
         "missed": 0,
-        "meanCenterErrDeg": 0.02701687260993918,
-        "meanTimeMs": 166.76234375000013
+        "meanCenterErrDeg": 0.000020891667859105154,
+        "meanTimeMs": 140.36005216666663
       },
       "L1_약": {
         "total": 12,
         "correct": 12,
         "falsePositive": 0,
         "missed": 0,
-        "meanCenterErrDeg": 0.04246013853468839,
-        "meanTimeMs": 217.9065972500001
+        "meanCenterErrDeg": 0.006077241667044389,
+        "meanTimeMs": 155.95119458333343
       },
       "L2_중": {
         "total": 12,
-        "correct": 1,
-        "falsePositive": 3,
-        "missed": 8,
-        "meanCenterErrDeg": 0.017929098392126013,
-        "meanTimeMs": 267.2369790833333
+        "correct": 10,
+        "falsePositive": 0,
+        "missed": 2,
+        "meanCenterErrDeg": 0.010252751613689468,
+        "meanTimeMs": 183.5672257499999
       },
       "L3_강": {
         "total": 12,
-        "correct": 0,
-        "falsePositive": 6,
-        "missed": 6,
-        "meanCenterErrDeg": null,
-        "meanTimeMs": 263.0629027499999
+        "correct": 3,
+        "falsePositive": 9,
+        "missed": 0,
+        "meanCenterErrDeg": 0.01959755527054934,
+        "meanTimeMs": 206.17225700000017
       }
     }
   },
@@ -85,7 +85,7 @@
         "falsePositive": 0,
         "missed": 12,
         "meanCenterErrDeg": null,
-        "meanTimeMs": 2.248204749999483
+        "meanTimeMs": 2.393555333333552
       },
       "L1_약": {
         "total": 12,
@@ -93,7 +93,7 @@
         "falsePositive": 0,
         "missed": 12,
         "meanCenterErrDeg": null,
-        "meanTimeMs": 1.9851493333330836
+        "meanTimeMs": 2.038430499999928
       },
       "L2_중": {
         "total": 12,
@@ -101,7 +101,7 @@
         "falsePositive": 0,
         "missed": 12,
         "meanCenterErrDeg": null,
-        "meanTimeMs": 1.7410625000002256
+        "meanTimeMs": 1.8667116666667123
       },
       "L3_강": {
         "total": 12,
@@ -109,7 +109,7 @@
         "falsePositive": 0,
         "missed": 12,
         "meanCenterErrDeg": null,
-        "meanTimeMs": 1.6328438333331785
+        "meanTimeMs": 2.0577846666668242
       }
     }
   },
@@ -122,16 +122,16 @@
         "correct": 12,
         "falsePositive": 0,
         "missed": 0,
-        "meanCenterErrDeg": 0.04331532270386395,
-        "meanTimeMs": 27.8458055000004
+        "meanCenterErrDeg": 0.00009423520642279748,
+        "meanTimeMs": 41.24011791666635
       },
       "L1_약": {
         "total": 12,
         "correct": 7,
-        "falsePositive": 1,
-        "missed": 4,
-        "meanCenterErrDeg": 0.06256377886620779,
-        "meanTimeMs": 92.51304158333384
+        "falsePositive": 2,
+        "missed": 3,
+        "meanCenterErrDeg": 0.00560756109385334,
+        "meanTimeMs": 145.4947221666665
       },
       "L2_중": {
         "total": 12,
@@ -139,15 +139,15 @@
         "falsePositive": 1,
         "missed": 11,
         "meanCenterErrDeg": null,
-        "meanTimeMs": 105.24134733333328
+        "meanTimeMs": 249.83133333333294
       },
       "L3_강": {
         "total": 12,
         "correct": 0,
-        "falsePositive": 1,
-        "missed": 11,
+        "falsePositive": 2,
+        "missed": 10,
         "meanCenterErrDeg": null,
-        "meanTimeMs": 119.68714208333283
+        "meanTimeMs": 196.79700349999953
       }
     }
   }

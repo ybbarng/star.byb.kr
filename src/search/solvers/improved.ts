@@ -8,12 +8,13 @@ import { selectByGrid } from "@/search/utils/selectStars";
 // 1) 격자 균등 선택으로 가짜 별이 진짜 별을 밀어내는 것을 완화
 // 2) 각 후보를 RANSAC·유의도로 검증해 inlier 최다 후보 채택 (검증 단계 신설)
 
-const MATCH_STARS = 20;
+const MATCH_STARS = 40;
+const LOCAL_NEIGHBORS = 10; // 각 별의 가까운 이웃으로 compact quad (큰 FOV 대응)
 const MIN_INLIER = 6;
 const MIN_SIGNIFICANCE = 5;
 // 후보는 hash 거리 오름차순. 정답 quad는 보통 거리가 작아 상위에 온다.
 // 전부 검증하면 느리므로(30초 목표) 상위 일부만 검증한다.
-const MAX_CANDIDATES_TO_VERIFY = 150;
+const MAX_CANDIDATES_TO_VERIFY = 220;
 
 export const improvedSolver: Solver = {
   key: "improved",
@@ -23,9 +24,11 @@ export const improvedSolver: Solver = {
 
   solve(stars: InputStar[], size: ImageSize, ctx: SolverContext) {
     const t0 = performance.now();
-    const matchStars = selectByGrid(stars, size, 4, 3, 3, MATCH_STARS);
+    const matchStars = selectByGrid(stars, size, 4, 3, 8, MATCH_STARS);
     const photo = { width: size.width, height: size.height, stars: matchStars };
-    const cands = findCandidates(photo, ctx.index);
+    const cands = findCandidates(photo, ctx.index, {
+      localNeighbors: LOCAL_NEIGHBORS,
+    });
     const allStars: Point2D[] = stars.map((s) => [s.x, s.y]);
 
     let best: ReturnType<typeof solveCandidate> = null;
