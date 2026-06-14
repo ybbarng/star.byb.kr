@@ -9,7 +9,6 @@ import type {
 import { buildTriangleIndex } from "@/search/catalogGeometry";
 import { buildCandidateIndex } from "@/search/findCandidatesCore";
 import { improvedSolver, triangleSolver } from "@/search/solvers";
-import { mergeCloseStars } from "@/search/utils/selectStars";
 
 // 검출 노이즈 비율을 모르므로 입력을 여러 크기로 잘라 각각 풀고 합친다.
 // 노이즈가 적은 크기에서 정답이 나오고, 후보군은 모두 합쳐 사람에게 제시한다.
@@ -120,18 +119,8 @@ onmessage = async function (e) {
       const { stars, width, height, solverKey } = e.data
         .payload as SolveRequest;
       const solver = solverKey === "improved" ? improvedSolver : triangleSolver;
-
-      // 너무 가까운 중복 검출을 먼저 합친다(매칭 tolerance보다 살짝 작은 거리).
-      const minDistPx = Math.max(6, Math.hypot(width, height) * 0.005);
-      const merged0 = mergeCloseStars(stars, minDistPx);
-
-      if (merged0.length < stars.length) {
-        console.log(
-          `[solver] 가까운 중복 ${stars.length - merged0.length}개 합침 (${minDistPx.toFixed(0)}px) → ${merged0.length}개`,
-        );
-      }
-
-      const sorted = [...merged0].sort((a, b) => b.brightness - a.brightness);
+      // 가까운 중복 검출은 검출 단계(DetectStarsStep)에서 이미 합쳐 들어온다.
+      const sorted = [...stars].sort((a, b) => b.brightness - a.brightness);
 
       // 여러 입력 크기로 풀어 후보를 모은다 (노이즈 적은 크기에서 정답 나옴)
       const allCandidates: SolveCandidateResult[] = [];

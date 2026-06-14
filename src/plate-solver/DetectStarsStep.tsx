@@ -6,6 +6,7 @@ import { Stage, Layer, Rect, Image as KonvaImage } from "react-konva";
 import SelectableStarMarker from "@/plate-solver/SelectableStarMarker";
 import StepMover from "@/plate-solver/StepMover";
 import { useContextStore } from "@/plate-solver/store/context";
+import { mergeCloseStars } from "@/search/utils/selectStars";
 import cv from "@/services/cv";
 
 interface CanvasStar {
@@ -207,10 +208,21 @@ export default function DetectStarStep() {
     const result = await cv.findStars(imageData);
     const raw: { cx: number; cy: number; brightness: number }[] =
       result.data.payload;
+    // 너무 가까운 중복 검출은 밝은 것만 남긴다(거의 같은 위치의 별쌍 정리).
+    // 매칭 tolerance보다 살짝 작은 거리 기준.
+    const minDistPx = Math.max(
+      6,
+      Math.hypot(imageData.width, imageData.height) * 0.005,
+    );
     // 전체 검출을 밝기순으로 보관(영역 재검출에서 어두운 별까지 꺼내 쓴다)
-    const all = raw
-      .map((star) => ({ x: star.cx, y: star.cy, brightness: star.brightness }))
-      .sort((a, b) => b.brightness - a.brightness);
+    const all = mergeCloseStars(
+      raw.map((star) => ({
+        x: star.cx,
+        y: star.cy,
+        brightness: star.brightness,
+      })),
+      minDistPx,
+    ).sort((a, b) => b.brightness - a.brightness);
     allDetectionsRef.current = all;
 
     // 기본 화면은 밝기 상위 100개만(전체를 다 그리면 노이즈가 가림)
