@@ -319,4 +319,63 @@ describe.skipIf(!ready)("실제 샘플 plate solving", () => {
     console.warn(lines.join("\n"));
     expect(lines.length).toBeGreaterThan(1);
   });
+
+  // saipan은 진짜 별 일부가 카탈로그(V<=5)에 없다. 카탈로그에 있는 별만으로
+  // 4개 알고리즘이 푸는지 확인한다 (없는 별을 빼면 풀리는가).
+  it("진단: saipan 카탈로그에 있는 별만으로 푼다", () => {
+    const path = resolve(process.cwd(), "data/search/saipan.json");
+    const truth = JSON.parse(readFileSync(path, "utf-8")) as {
+      width: number;
+      height: number;
+      stars: {
+        label: string;
+        position: [number, number];
+        brightness?: number;
+      }[];
+    };
+    const byName = loadNameToVector();
+    const filtered = truth.stars.filter((s) => byName.has(s.label));
+    const inputStars = filtered.map((s) => ({
+      x: s.position[0],
+      y: s.position[1],
+      brightness: s.brightness ?? 1,
+    }));
+
+    const lines: string[] = [
+      `\nsaipan 카탈로그 있는 별 ${filtered.length}/${truth.stars.length}개로 solve:`,
+    ];
+
+    for (const solver of solvers) {
+      const out = solver.solve(
+        inputStars,
+        { width: truth.width, height: truth.height },
+        ctx,
+      );
+      let maxErr = Infinity;
+
+      if (out.transform) {
+        maxErr = 0;
+
+        for (const s of filtered) {
+          const tv = byName.get(s.label);
+
+          if (tv) {
+            maxErr = Math.max(
+              maxErr,
+              angleDeg(photoToSky(out.transform, s.position), tv),
+            );
+          }
+        }
+      }
+
+      const ok = out.found && maxErr < 2;
+      lines.push(
+        `  ${solver.name}: ${ok ? "✓" : "✗"} 별오차 ` +
+          `${Number.isFinite(maxErr) ? maxErr.toFixed(2) : "-"}°, inlier ${out.inlierCount}`,
+      );
+    }
+
+    console.warn(lines.join("\n"));
+    expect(filtered.length).toBeGreaterThan(0);
+  });
 });
