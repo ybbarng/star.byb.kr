@@ -9,7 +9,9 @@ import { selectTopByBrightness } from "@/search/utils/selectStars";
 // 더 적은 별로 동작하며, 찾은 3별 대응을 검증 코어(solveCandidate)로 정밀화한다.
 
 const MATCH_STARS = 10;
-const KD_K = 3;
+// 형태(비율)는 크기를 구분 못 하므로 후보를 넓게 가져와 검증으로 거른다.
+// KD_K를 더 키우면(20+) 후보 폭증으로 오답이 선택돼 오히려 악화된다.
+const KD_K = 8;
 const EARLY_ACCEPT_INLIER = 10; // 충분한 inlier를 찾으면 즉시 채택
 const MIN_INLIER = 6;
 const MIN_SIGNIFICANCE = 5;

@@ -9,7 +9,7 @@
         "falsePositive": 0,
         "missed": 0,
         "meanCenterErrDeg": 0.06739331060659486,
-        "meanTimeMs": 60.31938899999998
+        "meanTimeMs": 80.14765625000001
       },
       "L1_약": {
         "total": 12,
@@ -17,7 +17,7 @@
         "falsePositive": 6,
         "missed": 0,
         "meanCenterErrDeg": 0.10215658268095891,
-        "meanTimeMs": 71.2440173333333
+        "meanTimeMs": 85.43438883333333
       },
       "L2_중": {
         "total": 12,
@@ -25,7 +25,7 @@
         "falsePositive": 11,
         "missed": 0,
         "meanCenterErrDeg": 1.1402910867428755,
-        "meanTimeMs": 71.05765625
+        "meanTimeMs": 88.96286108333318
       },
       "L3_강": {
         "total": 12,
@@ -33,7 +33,7 @@
         "falsePositive": 12,
         "missed": 0,
         "meanCenterErrDeg": null,
-        "meanTimeMs": 67.8561319166666
+        "meanTimeMs": 86.11575350000005
       }
     }
   },
@@ -47,7 +47,7 @@
         "falsePositive": 0,
         "missed": 0,
         "meanCenterErrDeg": 0.02701687260993918,
-        "meanTimeMs": 186.0537465833335
+        "meanTimeMs": 195.5280035833333
       },
       "L1_약": {
         "total": 12,
@@ -55,7 +55,7 @@
         "falsePositive": 0,
         "missed": 0,
         "meanCenterErrDeg": 0.04246013853468839,
-        "meanTimeMs": 218.06140625000012
+        "meanTimeMs": 248.0927952499998
       },
       "L2_중": {
         "total": 12,
@@ -63,7 +63,7 @@
         "falsePositive": 3,
         "missed": 8,
         "meanCenterErrDeg": 0.017929098392126013,
-        "meanTimeMs": 262.14878833333324
+        "meanTimeMs": 291.638493083333
       },
       "L3_강": {
         "total": 12,
@@ -71,7 +71,7 @@
         "falsePositive": 6,
         "missed": 6,
         "meanCenterErrDeg": null,
-        "meanTimeMs": 261.76499300000006
+        "meanTimeMs": 267.59515291666594
       }
     }
   },
@@ -85,7 +85,7 @@
         "falsePositive": 0,
         "missed": 12,
         "meanCenterErrDeg": null,
-        "meanTimeMs": 2.2013819166666813
+        "meanTimeMs": 2.4581493333334947
       },
       "L1_약": {
         "total": 12,
@@ -93,7 +93,7 @@
         "falsePositive": 0,
         "missed": 12,
         "meanCenterErrDeg": null,
-        "meanTimeMs": 2.087847166666961
+        "meanTimeMs": 2.0357467499998165
       },
       "L2_중": {
         "total": 12,
@@ -101,7 +101,7 @@
         "falsePositive": 0,
         "missed": 12,
         "meanCenterErrDeg": null,
-        "meanTimeMs": 1.5342745833333236
+        "meanTimeMs": 2.0534203333336336
       },
       "L3_강": {
         "total": 12,
@@ -109,7 +109,7 @@
         "falsePositive": 0,
         "missed": 12,
         "meanCenterErrDeg": null,
-        "meanTimeMs": 1.721208250000321
+        "meanTimeMs": 2.2257082500003285
       }
     }
   },
@@ -119,19 +119,19 @@
     "levels": {
       "L0_clean": {
         "total": 12,
-        "correct": 11,
-        "falsePositive": 1,
+        "correct": 12,
+        "falsePositive": 0,
         "missed": 0,
-        "meanCenterErrDeg": 0.03565119824546054,
-        "meanTimeMs": 15.06994450000017
+        "meanCenterErrDeg": 0.04331532270386395,
+        "meanTimeMs": 24.80667374999909
       },
       "L1_약": {
         "total": 12,
-        "correct": 5,
+        "correct": 7,
         "falsePositive": 1,
-        "missed": 6,
-        "meanCenterErrDeg": 0.01389589379436163,
-        "meanTimeMs": 43.51783000000008
+        "missed": 4,
+        "meanCenterErrDeg": 0.06256377886620779,
+        "meanTimeMs": 94.46973291666625
       },
       "L2_중": {
         "total": 12,
@@ -139,15 +139,15 @@
         "falsePositive": 1,
         "missed": 11,
         "meanCenterErrDeg": null,
-        "meanTimeMs": 53.47733325000021
+        "meanTimeMs": 113.56244075000056
       },
       "L3_강": {
         "total": 12,
         "correct": 0,
-        "falsePositive": 2,
-        "missed": 10,
+        "falsePositive": 1,
+        "missed": 11,
         "meanCenterErrDeg": null,
-        "meanTimeMs": 47.58143399999972
+        "meanTimeMs": 125.19375708333367
       }
     }
   }

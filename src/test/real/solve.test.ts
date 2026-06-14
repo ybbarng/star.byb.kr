@@ -89,9 +89,8 @@ describe.skipIf(!ready)("실제 샘플 plate solving", () => {
       index: buildCandidateIndex(loadHashes()),
       catalog: solveStars,
       byHrVec: new Map(catalog.map((s) => [s.hr, s.vector])),
-      // TODO: 단일 maxAngle은 별자리 크기 trade-off가 있어 한계.
-      // 멀티스케일 인덱스 또는 사진 삼각형 크기 기반 동적 선택이 필요.
-      triangleIndex: buildTriangleIndex(solveStars, 8),
+      // 넓은 범위(다양한 별자리 크기) + KD 후보를 늘려 검증으로 크기를 거른다
+      triangleIndex: buildTriangleIndex(solveStars, 18),
     };
   });
 
