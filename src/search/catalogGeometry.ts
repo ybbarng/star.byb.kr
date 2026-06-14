@@ -6,10 +6,26 @@ import { mat3MulVec, projectionMatrix } from "@/search/utils/wcs";
 // 최선 알고리즘(Triangle matching / Geometric Voting)을 위한 카탈로그 기하 인덱스.
 // quad geometric hashing과 달리, 별쌍/삼각형의 각거리를 직접 인덱싱한다.
 
-// 삼각형 세 별을 그 중심 접선평면(gnomonic)에 투영한 2D 좌표.
-// 사진 별도 gnomonic으로 찍히므로, 형태를 같은 기준으로 재야 큰 삼각형에서도
-// 픽셀 형태와 어긋나지 않는다 (각거리로 재면 큰 삼각형이 왜곡됨).
-const projectTriangle = (tri: Point3D[]): [number, number][] => {
+// 픽셀 좌표를 카메라 좌표계의 3D 방향으로 (pinhole, FOV로 정한 focalPx).
+// blind라 FOV를 모르므로 호출 측에서 여러 FOV로 스캔한다.
+export const pixelToCamera3D = (
+  px: number,
+  py: number,
+  focalPx: number,
+  cx: number,
+  cy: number,
+): Point3D => {
+  const x = (px - cx) / focalPx;
+  const y = (py - cy) / focalPx;
+  const n = Math.sqrt(x * x + y * y + 1);
+
+  return [x / n, y / n, 1 / n];
+};
+
+// 삼각형 세 별(또는 픽셀에서 복원한 3D 방향)을 그 중심 접선평면(gnomonic)에
+// 투영한 2D 좌표. 사진 삼각형도 이 기준으로 재야 카탈로그와 형태가 맞는다
+// (픽셀거리로 재면 카메라 광축 기준이라 큰 별자리에서 어긋난다).
+export const projectTriangle = (tri: Point3D[]): [number, number][] => {
   let cx = 0;
   let cy = 0;
   let cz = 0;

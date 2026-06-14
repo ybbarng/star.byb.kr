@@ -1,7 +1,12 @@
 import type { ImageSize, InputStar, Solver, SolverContext } from "./types";
 import type { Point2D, Point3D } from "@/scripts/hash/types";
 import { topCandidates } from "./candidates";
-import { searchTriangle, triangleShape } from "@/search/catalogGeometry";
+import {
+  pixelToCamera3D,
+  projectTriangle,
+  searchTriangle,
+  triangleShape,
+} from "@/search/catalogGeometry";
 import { solveCandidate, type SolveResult } from "@/search/solveCore";
 import { selectTopByBrightness } from "@/search/utils/selectStars";
 
@@ -17,9 +22,9 @@ const EARLY_ACCEPT_INLIER = 10; // 충분한 inlier를 찾으면 즉시 채택
 const MIN_INLIER = 6;
 const MIN_SIGNIFICANCE = 5;
 const MAX_PRESENTED_CANDIDATES = 5;
-
-const pixDist = (a: Point2D, b: Point2D): number =>
-  Math.hypot(a[0] - b[0], a[1] - b[1]);
+// blind FOV 후보. 사진 삼각형을 카탈로그와 같은 "삼각형 중심" 기준으로
+// 재투영하려면 픽셀→각 스케일(FOV)이 필요한데 모르므로 스캔한다.
+const FOV_CANDIDATES = [10, 14, 18, 23, 29, 37, 47];
 
 export const triangleSolver: Solver = {
   key: "triangle",
@@ -44,55 +49,68 @@ export const triangleSolver: Solver = {
     let bestSig = -Infinity;
     let evaluated = 0;
 
+    const cx = size.width / 2;
+    const cy = size.height / 2;
+    const minDim = Math.min(size.width, size.height);
+
     outer: for (let i = 0; i < photoTop.length - 2; i++) {
       for (let j = i + 1; j < photoTop.length - 1; j++) {
         for (let k = j + 1; k < photoTop.length; k++) {
-          const d01 = pixDist(photoTop[i], photoTop[j]);
-          const d02 = pixDist(photoTop[i], photoTop[k]);
-          const d12 = pixDist(photoTop[j], photoTop[k]);
-          const { order, shape } = triangleShape(d01, d02, d12, [i, j, k]);
-          const photo3: Point2D[] = order.map((o) => photoTop[o]);
-          const cands = searchTriangle(tri, shape, KD_K);
+          // FOV를 모르므로 후보 FOV마다 사진 삼각형을 카탈로그와 같은 기준
+          // (삼각형 중심 접선평면)으로 재투영해 형태를 맞춘다.
+          for (const fov of FOV_CANDIDATES) {
+            const focalPx = minDim / 2 / Math.tan(((fov / 2) * Math.PI) / 180);
+            const dirs = [photoTop[i], photoTop[j], photoTop[k]].map((p) =>
+              pixelToCamera3D(p[0], p[1], focalPx, cx, cy),
+            );
+            const pp = projectTriangle(dirs);
+            const d01 = Math.hypot(pp[0][0] - pp[1][0], pp[0][1] - pp[1][1]);
+            const d02 = Math.hypot(pp[0][0] - pp[2][0], pp[0][1] - pp[2][1]);
+            const d12 = Math.hypot(pp[1][0] - pp[2][0], pp[1][1] - pp[2][1]);
+            const { order, shape } = triangleShape(d01, d02, d12, [i, j, k]);
+            const photo3: Point2D[] = order.map((o) => photoTop[o]);
+            const cands = searchTriangle(tri, shape, KD_K);
 
-          for (const ent of cands) {
-            const db = ent.hrs.map((hr) => ctx.byHrVec.get(hr));
+            for (const ent of cands) {
+              const db = ent.hrs.map((hr) => ctx.byHrVec.get(hr));
 
-            if (db.some((v) => !v)) {
-              continue;
-            }
-
-            const db3 = db as Point3D[];
-            // 삼각형은 거울상이 모호하므로 정상/반사 두 정점 순서를 모두 시도
-            const orders: Point3D[][] = [db3, [db3[0], db3[2], db3[1]]];
-
-            for (const ord of orders) {
-              evaluated++;
-
-              const res = solveCandidate(photo3, ord, allStars, ctx.catalog, {
-                imageWidth: size.width,
-                imageHeight: size.height,
-                ransacIterations: 60,
-              });
-
-              if (!res) {
+              if (db.some((v) => !v)) {
                 continue;
               }
 
-              results.push(res);
+              const db3 = db as Point3D[];
+              // 거울상이 모호하므로 정상/반사 두 정점 순서를 모두 시도
+              const orders: Point3D[][] = [db3, [db3[0], db3[2], db3[1]]];
 
-              if (
-                res.inlierCount > bestInlier ||
-                (res.inlierCount === bestInlier && res.significance > bestSig)
-              ) {
-                best = res;
-                bestInlier = res.inlierCount;
-                bestSig = res.significance;
+              for (const ord of orders) {
+                evaluated++;
+
+                const res = solveCandidate(photo3, ord, allStars, ctx.catalog, {
+                  imageWidth: size.width,
+                  imageHeight: size.height,
+                  ransacIterations: 60,
+                });
+
+                if (!res) {
+                  continue;
+                }
+
+                results.push(res);
+
+                if (
+                  res.inlierCount > bestInlier ||
+                  (res.inlierCount === bestInlier && res.significance > bestSig)
+                ) {
+                  best = res;
+                  bestInlier = res.inlierCount;
+                  bestSig = res.significance;
+                }
               }
             }
+          }
 
-            if (bestInlier >= EARLY_ACCEPT_INLIER) {
-              break outer;
-            }
+          if (bestInlier >= EARLY_ACCEPT_INLIER) {
+            break outer;
           }
         }
       }
