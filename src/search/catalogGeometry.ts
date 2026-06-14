@@ -1,17 +1,33 @@
 import type { Point3D } from "@/scripts/hash/types";
 import type { SolveStar } from "@/search/solveCore";
 import * as kdtree from "kd-tree-javascript";
+import { mat3MulVec, projectionMatrix } from "@/search/utils/wcs";
 
 // 최선 알고리즘(Triangle matching / Geometric Voting)을 위한 카탈로그 기하 인덱스.
 // quad geometric hashing과 달리, 별쌍/삼각형의 각거리를 직접 인덱싱한다.
 
-const angDist = (a: Point3D, b: Point3D): number => {
-  const dot = Math.max(
-    -1,
-    Math.min(1, a[0] * b[0] + a[1] * b[1] + a[2] * b[2]),
-  );
+// 삼각형 세 별을 그 중심 접선평면(gnomonic)에 투영한 2D 좌표.
+// 사진 별도 gnomonic으로 찍히므로, 형태를 같은 기준으로 재야 큰 삼각형에서도
+// 픽셀 형태와 어긋나지 않는다 (각거리로 재면 큰 삼각형이 왜곡됨).
+const projectTriangle = (tri: Point3D[]): [number, number][] => {
+  let cx = 0;
+  let cy = 0;
+  let cz = 0;
 
-  return Math.acos(dot);
+  for (const v of tri) {
+    cx += v[0];
+    cy += v[1];
+    cz += v[2];
+  }
+
+  const n = Math.sqrt(cx * cx + cy * cy + cz * cz);
+  const P = projectionMatrix([cx / n, cy / n, cz / n]);
+
+  return tri.map((v) => {
+    const p = mat3MulVec(P, v);
+
+    return [p[0] / p[2], p[1] / p[2]];
+  });
 };
 
 // === Triangle 인덱스 ===
@@ -93,9 +109,15 @@ export const buildTriangleIndex = (
 
         seen.add(key);
 
-        const d01 = angDist(stars[tri[0]].vector, stars[tri[1]].vector);
-        const d02 = angDist(stars[tri[0]].vector, stars[tri[2]].vector);
-        const d12 = angDist(stars[tri[1]].vector, stars[tri[2]].vector);
+        // 접선평면 투영 거리로 형태 계산 (사진의 gnomonic 픽셀 형태와 일치)
+        const pp = projectTriangle([
+          stars[tri[0]].vector,
+          stars[tri[1]].vector,
+          stars[tri[2]].vector,
+        ]);
+        const d01 = Math.hypot(pp[0][0] - pp[1][0], pp[0][1] - pp[1][1]);
+        const d02 = Math.hypot(pp[0][0] - pp[2][0], pp[0][1] - pp[2][1]);
+        const d12 = Math.hypot(pp[1][0] - pp[2][0], pp[1][1] - pp[2][1]);
         const { order, shape } = triangleShape(d01, d02, d12, tri);
 
         entries.push({
