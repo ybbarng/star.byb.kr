@@ -49,6 +49,17 @@ export default function DetectStarStep() {
   const [isPanning, setIsPanning] = useState(false);
   const panStartRef = useRef({ x: 0, y: 0 });
   const spaceHeldRef = useRef(false);
+  // cv 검출 전체 결과(밝기순, 캡 없음). 영역 재검출 때 가려진 어두운 별을 꺼내 쓴다.
+  const allDetectionsRef = useRef<
+    { x: number; y: number; brightness: number }[]
+  >([]);
+  // 마지막으로 그린 선택 사각형(이미지 좌표). 영역 재검출의 대상 영역.
+  const [lastBox, setLastBox] = useState<{
+    x1: number;
+    y1: number;
+    x2: number;
+    y2: number;
+  } | null>(null);
 
   useEffect(() => {
     // store에 이미 별 데이터가 있으면 복원, 없으면 새로 검출
@@ -194,17 +205,43 @@ export default function DetectStarStep() {
   async function findStars(imageData: ImageData) {
     // Processing image
     const result = await cv.findStars(imageData);
-    let stars: { cx: number; cy: number; brightness: number }[] =
+    const raw: { cx: number; cy: number; brightness: number }[] =
       result.data.payload;
-    stars = stars.sort((a, b) => b.brightness - a.brightness);
-    stars = stars.slice(0, 100);
+    // 전체 검출을 밝기순으로 보관(영역 재검출에서 어두운 별까지 꺼내 쓴다)
+    const all = raw
+      .map((star) => ({ x: star.cx, y: star.cy, brightness: star.brightness }))
+      .sort((a, b) => b.brightness - a.brightness);
+    allDetectionsRef.current = all;
 
-    return stars.map((star) => ({
-      x: star.cx,
-      y: star.cy,
-      brightness: star.brightness,
-    }));
+    // 기본 화면은 밝기 상위 100개만(전체를 다 그리면 노이즈가 가림)
+    return all.slice(0, 100);
   }
+
+  // 선택한 영역 안에서만 별을 다시 표시한다. 전역 밝기 상위 100에서 밀려
+  // 가려졌던 어두운 별이, 좁은 영역 안에서는 상위로 올라와 마커로 보인다.
+  // (물결·가로등 같은 밝은 가짜가 다른 영역에 있을 때 진짜 별을 꺼내는 용도)
+  const redetectInBox = async () => {
+    if (!lastBox) return;
+
+    // 단계 이동 후 복귀 등으로 전체 검출이 비어 있으면 새로 검출
+    if (allDetectionsRef.current.length === 0 && image) {
+      await findStars(loadImageData(image));
+    }
+
+    const { x1, y1, x2, y2 } = lastBox;
+    const inBox = allDetectionsRef.current.filter(
+      (star) => star.x >= x1 && star.x <= x2 && star.y >= y1 && star.y <= y2,
+    );
+    // 이미 밝기순. 영역이 넓어도 너무 많지 않게 상한을 둔다.
+    const picked = inBox.slice(0, 120);
+    setCanvasStars(
+      picked.map((star) => ({
+        ...star,
+        id: crypto.randomUUID(),
+        isSelected: false,
+      })),
+    );
+  };
 
   const addStar = (x: number, y: number) => {
     setCanvasStars([
@@ -323,6 +360,14 @@ export default function DetectStarStep() {
       visible: false,
     });
 
+    // 영역 재검출에 쓸 수 있도록 그린 사각형을 기억(이미지 좌표, 정규화)
+    setLastBox({
+      x1: Math.min(selectArea.x1, pos.x),
+      y1: Math.min(selectArea.y1, pos.y),
+      x2: Math.max(selectArea.x1, pos.x),
+      y2: Math.max(selectArea.y1, pos.y),
+    });
+
     const select = stageRef.current?.find(".select")[0];
     const stars = stageRef.current?.find(".star");
     if (!select || !stars) return;
@@ -436,6 +481,14 @@ export default function DetectStarStep() {
             </button>
           </div>
           <button
+            className="btn btn-sm"
+            disabled={!lastBox}
+            onClick={redetectInBox}
+            title="선택한 영역 안에서만 별을 다시 찾습니다. 다른 곳의 밝은 가짜 빛(물결·가로등)에 가려 안 보이던 어두운 별이 마커로 나타납니다."
+          >
+            영역만 재검출
+          </button>
+          <button
             className="btn btn-error btn-sm"
             disabled={canvasStars.length < 1}
             onClick={() => setCanvasStars([])}
@@ -484,6 +537,18 @@ export default function DetectStarStep() {
                   select={selectStar}
                 />
               ))}
+              {lastBox && !selectArea.visible && (
+                <Rect
+                  x={lastBox.x1}
+                  y={lastBox.y1}
+                  width={lastBox.x2 - lastBox.x1}
+                  height={lastBox.y2 - lastBox.y1}
+                  stroke="rgba(0,200,120,0.9)"
+                  strokeWidth={2 / stageScale}
+                  dash={[8 / stageScale, 4 / stageScale]}
+                  listening={false}
+                />
+              )}
               <Rect
                 name="select"
                 x={Math.min(selectArea.x1, selectArea.x2)}
