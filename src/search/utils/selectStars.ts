@@ -3,6 +3,38 @@ import type { ImageSize, InputStar } from "@/search/solvers/types";
 
 // 매칭에 쓸 별을 고르는 전략들. quad 생성은 C(N,4)라 N을 제한해야 한다.
 
+// 서로 minDistPx보다 가까운 검출은 하나로 본다(밝은 것만 남김). 검출 NMS가
+// 작은 별에선 억제 반경이 작아 거의 같은 위치의 중복이 남는데, 이런 별쌍은
+// 매칭의 tolerance 안이라 같은 카탈로그 별에 양쪽이 경쟁해 inlier를 왜곡하고
+// quad/삼각형 형태를 흐린다. 밝기순으로 훑으며 이미 채택된 별과 너무 가까우면 버린다.
+export const mergeCloseStars = (
+  stars: InputStar[],
+  minDistPx: number,
+): InputStar[] => {
+  const min2 = minDistPx * minDistPx;
+  const kept: InputStar[] = [];
+
+  for (const s of [...stars].sort((a, b) => b.brightness - a.brightness)) {
+    let tooClose = false;
+
+    for (const k of kept) {
+      const dx = s.x - k.x;
+      const dy = s.y - k.y;
+
+      if (dx * dx + dy * dy < min2) {
+        tooClose = true;
+        break;
+      }
+    }
+
+    if (!tooClose) {
+      kept.push(s);
+    }
+  }
+
+  return kept;
+};
+
 // 밝기 상위 N개 (원본·개선 방식). 가짜 별이 밝으면 진짜 별을 밀어낼 수 있다.
 export const selectTopByBrightness = (
   stars: InputStar[],
