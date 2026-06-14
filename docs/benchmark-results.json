@@ -9,7 +9,7 @@
         "falsePositive": 0,
         "missed": 0,
         "meanCenterErrDeg": 0.06739331060659486,
-        "meanTimeMs": 60.89180566666668
+        "meanTimeMs": 87.2124724166667
       },
       "L1_약": {
         "total": 12,
@@ -17,7 +17,7 @@
         "falsePositive": 6,
         "missed": 0,
         "meanCenterErrDeg": 0.10215658268095891,
-        "meanTimeMs": 69.96136124999998
+        "meanTimeMs": 94.67424308333334
       },
       "L2_중": {
         "total": 12,
@@ -25,7 +25,7 @@
         "falsePositive": 11,
         "missed": 0,
         "meanCenterErrDeg": 1.1402910867428755,
-        "meanTimeMs": 77.96465283333339
+        "meanTimeMs": 94.06998608333333
       },
       "L3_강": {
         "total": 12,
@@ -33,7 +33,7 @@
         "falsePositive": 12,
         "missed": 0,
         "meanCenterErrDeg": null,
-        "meanTimeMs": 80.5197849166666
+        "meanTimeMs": 87.47770500000001
       }
     }
   },
@@ -47,7 +47,7 @@
         "falsePositive": 0,
         "missed": 0,
         "meanCenterErrDeg": 0.000020891667859105154,
-        "meanTimeMs": 140.36005216666663
+        "meanTimeMs": 144.64478466666665
       },
       "L1_약": {
         "total": 12,
@@ -55,7 +55,7 @@
         "falsePositive": 0,
         "missed": 0,
         "meanCenterErrDeg": 0.006077241667044389,
-        "meanTimeMs": 155.95119458333343
+        "meanTimeMs": 171.1581804999997
       },
       "L2_중": {
         "total": 12,
@@ -63,7 +63,7 @@
         "falsePositive": 0,
         "missed": 2,
         "meanCenterErrDeg": 0.010252751613689468,
-        "meanTimeMs": 183.5672257499999
+        "meanTimeMs": 214.20338175000006
       },
       "L3_강": {
         "total": 12,
@@ -71,7 +71,7 @@
         "falsePositive": 9,
         "missed": 0,
         "meanCenterErrDeg": 0.01959755527054934,
-        "meanTimeMs": 206.17225700000017
+        "meanTimeMs": 252.57311816666666
       }
     }
   },
@@ -85,7 +85,7 @@
         "falsePositive": 0,
         "missed": 12,
         "meanCenterErrDeg": null,
-        "meanTimeMs": 2.393555333333552
+        "meanTimeMs": 2.858749916666511
       },
       "L1_약": {
         "total": 12,
@@ -93,7 +93,7 @@
         "falsePositive": 0,
         "missed": 12,
         "meanCenterErrDeg": null,
-        "meanTimeMs": 2.038430499999928
+        "meanTimeMs": 2.5195070833333375
       },
       "L2_중": {
         "total": 12,
@@ -101,7 +101,7 @@
         "falsePositive": 0,
         "missed": 12,
         "meanCenterErrDeg": null,
-        "meanTimeMs": 1.8667116666667123
+        "meanTimeMs": 2.082933999999568
       },
       "L3_강": {
         "total": 12,
@@ -109,7 +109,7 @@
         "falsePositive": 0,
         "missed": 12,
         "meanCenterErrDeg": null,
-        "meanTimeMs": 2.0577846666668242
+        "meanTimeMs": 2.2531354166665856
       }
     }
   },
@@ -123,7 +123,7 @@
         "falsePositive": 0,
         "missed": 0,
         "meanCenterErrDeg": 0.00009423520642279748,
-        "meanTimeMs": 41.24011791666635
+        "meanTimeMs": 42.73390250000011
       },
       "L1_약": {
         "total": 12,
@@ -131,7 +131,7 @@
         "falsePositive": 2,
         "missed": 3,
         "meanCenterErrDeg": 0.00560756109385334,
-        "meanTimeMs": 145.4947221666665
+        "meanTimeMs": 150.10060075
       },
       "L2_중": {
         "total": 12,
@@ -139,7 +139,7 @@
         "falsePositive": 1,
         "missed": 11,
         "meanCenterErrDeg": null,
-        "meanTimeMs": 249.83133333333294
+        "meanTimeMs": 259.1797118333334
       },
       "L3_강": {
         "total": 12,
@@ -147,7 +147,7 @@
         "falsePositive": 2,
         "missed": 10,
         "meanCenterErrDeg": null,
-        "meanTimeMs": 196.79700349999953
+        "meanTimeMs": 203.37951724999948
       }
     }
   }

@@ -11,7 +11,7 @@ import { selectTopByBrightness } from "@/search/utils/selectStars";
 
 const MATCH_STARS = 10;
 // 형태(비율)는 크기를 구분 못 하므로 후보를 넓게 가져와 검증으로 거른다.
-// KD_K를 더 키우면(20+) 후보 폭증으로 오답이 선택돼 오히려 악화된다.
+// KD_K를 키워도 사진/카탈로그 삼각형 형태가 어긋나면(큰 별자리) 정답을 못 찾는다.
 const KD_K = 8;
 const EARLY_ACCEPT_INLIER = 10; // 충분한 inlier를 찾으면 즉시 채택
 const MIN_INLIER = 6;
