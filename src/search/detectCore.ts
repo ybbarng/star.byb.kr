@@ -2,6 +2,8 @@ export interface DetectedStar {
   cx: number;
   cy: number;
   brightness: number; // 유효 반경 (밝은 별일수록 큼)
+  elongation: number; // 1=원형, 클수록 길쭉 (물결 반사광/궤적은 큼)
+  fwhm: number; // 밝기 분포 크기(px)
 }
 
 // 별 검출의 순수 JS 부분 (cv.worker.js findStars에서 포팅).
@@ -141,12 +143,15 @@ export const detectStarsFromDiff = (
     merged.push(star);
   }
 
-  // 3단계: weighted centroid (서브픽셀)
+  // 3단계: weighted centroid (서브픽셀) + 2차 모멘트로 모양(elongation/fwhm)
   return merged.map((star) => {
     const centroidRadius = Math.max(2, Math.ceil(star.effectiveRadius));
     let sumW = 0;
     let sumWx = 0;
     let sumWy = 0;
+    let sumWxx = 0;
+    let sumWyy = 0;
+    let sumWxy = 0;
 
     for (let dy = -centroidRadius; dy <= centroidRadius; dy++) {
       for (let dx = -centroidRadius; dx <= centroidRadius; dx++) {
@@ -161,13 +166,31 @@ export const detectStarsFromDiff = (
         sumW += w;
         sumWx += w * nx;
         sumWy += w * ny;
+        sumWxx += w * nx * nx;
+        sumWyy += w * ny * ny;
+        sumWxy += w * nx * ny;
       }
     }
 
+    const cx = sumW > 0 ? sumWx / sumW : star.x;
+    const cy = sumW > 0 ? sumWy / sumW : star.y;
+    // 2차 중심 모멘트 → 공분산 고유값으로 elongation, fwhm
+    const mu20 = sumW > 0 ? sumWxx / sumW - cx * cx : 0;
+    const mu02 = sumW > 0 ? sumWyy / sumW - cy * cy : 0;
+    const mu11 = sumW > 0 ? sumWxy / sumW - cx * cy : 0;
+    const half = (mu20 + mu02) / 2;
+    const common = Math.sqrt(((mu20 - mu02) / 2) ** 2 + mu11 * mu11);
+    const l1 = half + common;
+    const l2 = half - common;
+    const elongation = l2 > 1e-6 ? Math.sqrt(l1 / l2) : Infinity;
+    const fwhm = 2.3548 * Math.sqrt(Math.max(0, half));
+
     return {
-      cx: sumW > 0 ? sumWx / sumW : star.x,
-      cy: sumW > 0 ? sumWy / sumW : star.y,
+      cx,
+      cy,
       brightness: star.effectiveRadius,
+      elongation,
+      fwhm,
     };
   });
 };
