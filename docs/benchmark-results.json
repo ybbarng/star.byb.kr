@@ -9,7 +9,7 @@
         "falsePositive": 0,
         "missed": 0,
         "meanCenterErrDeg": 0.06739331060659486,
-        "meanTimeMs": 61.24147925000002
+        "meanTimeMs": 60.31938899999998
       },
       "L1_약": {
         "total": 12,
@@ -17,7 +17,7 @@
         "falsePositive": 6,
         "missed": 0,
         "meanCenterErrDeg": 0.10215658268095891,
-        "meanTimeMs": 69.54801716666667
+        "meanTimeMs": 71.2440173333333
       },
       "L2_중": {
         "total": 12,
@@ -25,7 +25,7 @@
         "falsePositive": 11,
         "missed": 0,
         "meanCenterErrDeg": 1.1402910867428755,
-        "meanTimeMs": 70.91269791666669
+        "meanTimeMs": 71.05765625
       },
       "L3_강": {
         "total": 12,
@@ -33,7 +33,7 @@
         "falsePositive": 12,
         "missed": 0,
         "meanCenterErrDeg": null,
-        "meanTimeMs": 70.50743074999991
+        "meanTimeMs": 67.8561319166666
       }
     }
   },
@@ -47,7 +47,7 @@
         "falsePositive": 0,
         "missed": 0,
         "meanCenterErrDeg": 0.02701687260993918,
-        "meanTimeMs": 167.50240283333315
+        "meanTimeMs": 186.0537465833335
       },
       "L1_약": {
         "total": 12,
@@ -55,7 +55,7 @@
         "falsePositive": 0,
         "missed": 0,
         "meanCenterErrDeg": 0.04246013853468839,
-        "meanTimeMs": 215.42404166666643
+        "meanTimeMs": 218.06140625000012
       },
       "L2_중": {
         "total": 12,
@@ -63,7 +63,7 @@
         "falsePositive": 3,
         "missed": 8,
         "meanCenterErrDeg": 0.017929098392126013,
-        "meanTimeMs": 284.01685783333323
+        "meanTimeMs": 262.14878833333324
       },
       "L3_강": {
         "total": 12,
@@ -71,7 +71,45 @@
         "falsePositive": 6,
         "missed": 6,
         "meanCenterErrDeg": null,
-        "meanTimeMs": 273.1870589166668
+        "meanTimeMs": 261.76499300000006
+      }
+    }
+  },
+  "voting": {
+    "name": "최선A (Geometric Voting)",
+    "description": "모든 삼각형이 별-별 대응에 투표 → 최다 득표 대응(outlier 제거)으로 RANSAC 검증",
+    "levels": {
+      "L0_clean": {
+        "total": 12,
+        "correct": 0,
+        "falsePositive": 0,
+        "missed": 12,
+        "meanCenterErrDeg": null,
+        "meanTimeMs": 2.2013819166666813
+      },
+      "L1_약": {
+        "total": 12,
+        "correct": 0,
+        "falsePositive": 0,
+        "missed": 12,
+        "meanCenterErrDeg": null,
+        "meanTimeMs": 2.087847166666961
+      },
+      "L2_중": {
+        "total": 12,
+        "correct": 0,
+        "falsePositive": 0,
+        "missed": 12,
+        "meanCenterErrDeg": null,
+        "meanTimeMs": 1.5342745833333236
+      },
+      "L3_강": {
+        "total": 12,
+        "correct": 0,
+        "falsePositive": 0,
+        "missed": 12,
+        "meanCenterErrDeg": null,
+        "meanTimeMs": 1.721208250000321
       }
     }
   },
@@ -85,7 +123,7 @@
         "falsePositive": 1,
         "missed": 0,
         "meanCenterErrDeg": 0.03565119824546054,
-        "meanTimeMs": 15.649767333333179
+        "meanTimeMs": 15.06994450000017
       },
       "L1_약": {
         "total": 12,
@@ -93,7 +131,7 @@
         "falsePositive": 1,
         "missed": 6,
         "meanCenterErrDeg": 0.01389589379436163,
-        "meanTimeMs": 44.67114233333359
+        "meanTimeMs": 43.51783000000008
       },
       "L2_중": {
         "total": 12,
@@ -101,7 +139,7 @@
         "falsePositive": 1,
         "missed": 11,
         "meanCenterErrDeg": null,
-        "meanTimeMs": 58.112170333333474
+        "meanTimeMs": 53.47733325000021
       },
       "L3_강": {
         "total": 12,
@@ -109,7 +147,7 @@
         "falsePositive": 2,
         "missed": 10,
         "meanCenterErrDeg": null,
-        "meanTimeMs": 51.61577066666632
+        "meanTimeMs": 47.58143399999972
       }
     }
   }

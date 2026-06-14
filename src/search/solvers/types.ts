@@ -1,5 +1,5 @@
 import type { Point3D } from "@/scripts/hash/types";
-import type { TriangleIndex } from "@/search/catalogGeometry";
+import type { PairIndex, TriangleIndex } from "@/search/catalogGeometry";
 import type { CandidateIndex } from "@/search/findCandidatesCore";
 import type { SolveStar } from "@/search/solveCore";
 
@@ -23,6 +23,7 @@ export interface SolverContext {
   catalog: SolveStar[];
   byHrVec: Map<string, Point3D>;
   triangleIndex?: TriangleIndex; // 삼각형 매칭용 (최선B)
+  pairIndex?: PairIndex; // 별쌍 각거리 투표용 (최선A)
 }
 
 export interface SolveOutcome {

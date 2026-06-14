@@ -128,3 +128,84 @@ export const searchTriangle = (
 
   return nearest.map((r) => index.entries[r[0].i as number]);
 };
+
+// === Pair 인덱스 (Geometric Voting용) ===
+// maxAngle 이내 카탈로그 별쌍을 각거리 오름차순으로 정렬해, 각거리 범위
+// 검색을 이분탐색으로 한다.
+
+export interface PairIndex {
+  angles: number[]; // 오름차순 각거리(rad)
+  hrA: string[];
+  hrB: string[];
+}
+
+export const buildPairIndex = (
+  stars: SolveStar[],
+  maxAngleDeg = 15,
+): PairIndex => {
+  const cosMax = Math.cos((maxAngleDeg * Math.PI) / 180);
+  const items: { a: string; b: string; ang: number }[] = [];
+
+  for (let i = 0; i < stars.length; i++) {
+    for (let j = i + 1; j < stars.length; j++) {
+      const va = stars[i].vector;
+      const vb = stars[j].vector;
+      const dot = va[0] * vb[0] + va[1] * vb[1] + va[2] * vb[2];
+
+      if (dot > cosMax) {
+        items.push({
+          a: stars[i].hr,
+          b: stars[j].hr,
+          ang: Math.acos(Math.min(1, dot)),
+        });
+      }
+    }
+  }
+
+  items.sort((x, y) => x.ang - y.ang);
+
+  return {
+    angles: items.map((x) => x.ang),
+    hrA: items.map((x) => x.a),
+    hrB: items.map((x) => x.b),
+  };
+};
+
+// 각거리 ∈ [lo, hi]인 별쌍 인덱스 범위 [start, end)를 이분탐색으로 찾는다.
+export const searchPairRange = (
+  index: PairIndex,
+  lo: number,
+  hi: number,
+): [number, number] => {
+  const a = index.angles;
+  // lo 이상 첫 인덱스
+  let s = 0;
+  let e = a.length;
+
+  while (s < e) {
+    const m = (s + e) >> 1;
+
+    if (a[m] < lo) {
+      s = m + 1;
+    } else {
+      e = m;
+    }
+  }
+
+  const start = s;
+  // hi 초과 첫 인덱스
+  e = a.length;
+  let s2 = start;
+
+  while (s2 < e) {
+    const m = (s2 + e) >> 1;
+
+    if (a[m] <= hi) {
+      s2 = m + 1;
+    } else {
+      e = m;
+    }
+  }
+
+  return [start, s2];
+};
