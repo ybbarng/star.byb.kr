@@ -1,0 +1,78 @@
+{
+  "baseline": {
+    "name": "원본 (v2.0.0 발표)",
+    "description": "밝기 상위 15개 quad → hash 거리 최소 후보의 변환을 그대로 사용 (검증 없음)",
+    "levels": {
+      "L0_clean": {
+        "total": 12,
+        "correct": 12,
+        "falsePositive": 0,
+        "missed": 0,
+        "meanCenterErrDeg": 0.06739331060659486,
+        "meanTimeMs": 61.907788166666656
+      },
+      "L1_약": {
+        "total": 12,
+        "correct": 6,
+        "falsePositive": 6,
+        "missed": 0,
+        "meanCenterErrDeg": 0.10215658268095891,
+        "meanTimeMs": 70.77125341666662
+      },
+      "L2_중": {
+        "total": 12,
+        "correct": 1,
+        "falsePositive": 11,
+        "missed": 0,
+        "meanCenterErrDeg": 1.1402910867428755,
+        "meanTimeMs": 71.18844416666666
+      },
+      "L3_강": {
+        "total": 12,
+        "correct": 0,
+        "falsePositive": 12,
+        "missed": 0,
+        "meanCenterErrDeg": null,
+        "meanTimeMs": 70.98736458333342
+      }
+    }
+  },
+  "improved": {
+    "name": "개선 (quad + RANSAC 검증)",
+    "description": "격자 균등 선택 20개 quad → 각 후보를 RANSAC·유의도로 검증, inlier 최다 채택",
+    "levels": {
+      "L0_clean": {
+        "total": 12,
+        "correct": 12,
+        "falsePositive": 0,
+        "missed": 0,
+        "meanCenterErrDeg": 0.02701687260993918,
+        "meanTimeMs": 168.23136133333347
+      },
+      "L1_약": {
+        "total": 12,
+        "correct": 12,
+        "falsePositive": 0,
+        "missed": 0,
+        "meanCenterErrDeg": 0.04246013853468839,
+        "meanTimeMs": 222.81486441666675
+      },
+      "L2_중": {
+        "total": 12,
+        "correct": 1,
+        "falsePositive": 3,
+        "missed": 8,
+        "meanCenterErrDeg": 0.017929098392126013,
+        "meanTimeMs": 268.07119441666646
+      },
+      "L3_강": {
+        "total": 12,
+        "correct": 0,
+        "falsePositive": 6,
+        "missed": 6,
+        "meanCenterErrDeg": null,
+        "meanTimeMs": 267.22808333333313
+      }
+    }
+  }
+}
