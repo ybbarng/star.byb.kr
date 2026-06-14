@@ -22,6 +22,7 @@ export const gaussian = (rng: () => number): number => {
   while (u === 0) {
     u = rng();
   }
+
   while (v === 0) {
     v = rng();
   }

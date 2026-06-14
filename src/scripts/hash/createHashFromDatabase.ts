@@ -54,29 +54,28 @@ const createHashFromDatabase = (stars: StarVector[]) => {
         `${i}번째 Cell: 별 ${cell.length}개, quad ${allQuads.length}→${compactQuads.length}개 (${allQuads.length - compactQuads.length}개 제거, max pair ${MAX_PAIR_ANGLE_DEG}°)`,
       );
 
-      return compactQuads
-        .map((quadrilateral) => {
-          const vectors = quadrilateral.stars.map(
-            (star: SimpleStarVector): Point3D => {
-              return [star.x, star.y, star.z];
-            },
-          );
-          const hrs = quadrilateral.stars.map((star) => star.HR);
-          const projectedVectors = plane.projectToTangentPlane(vectors);
-          const quad: NamedQuadrilateral2D = projectedVectors.map(
-            (projected, i) => ({
-              label: hrs[i],
-              vector: projected,
-            }),
-          ) as NamedQuadrilateral2D;
+      return compactQuads.map((quadrilateral) => {
+        const vectors = quadrilateral.stars.map(
+          (star: SimpleStarVector): Point3D => {
+            return [star.x, star.y, star.z];
+          },
+        );
+        const hrs = quadrilateral.stars.map((star) => star.HR);
+        const projectedVectors = plane.projectToTangentPlane(vectors);
+        const quad: NamedQuadrilateral2D = projectedVectors.map(
+          (projected, i) => ({
+            label: hrs[i],
+            vector: projected,
+          }),
+        ) as NamedQuadrilateral2D;
 
-          const hash = hashLib.calculateHash(quad);
+        const hash = hashLib.calculateHash(quad);
 
-          return {
-            stars: hash.labels,
-            hash: hash.hash,
-          };
-        });
+        return {
+          stars: hash.labels,
+          hash: hash.hash,
+        };
+      });
     })
     .flat();
 };

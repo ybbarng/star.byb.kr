@@ -8,12 +8,6 @@ import {
   recoverFov,
 } from "@/test/synthetic/projection";
 
-const normalize = (v: Point3D): Point3D => {
-  const n = Math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
-
-  return [v[0] / n, v[1] / n, v[2] / n];
-};
-
 const deg = (rad: number) => (rad * 180) / Math.PI;
 
 // RA(시간)·Dec(도)로 천구 방향 벡터를 만든다 (테스트 편의용).

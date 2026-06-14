@@ -1,5 +1,5 @@
-import type { Photo } from "@/search/type";
 import type { Point3D } from "@/scripts/hash/types";
+import type { Photo } from "@/search/type";
 import type { CatalogStar } from "@/test/synthetic/loadCatalog";
 import type {
   NoiseParams,
@@ -59,6 +59,7 @@ export const generateSyntheticImage = (
     if (!p) {
       continue;
     }
+
     if (p[0] < 0 || p[0] >= width || p[1] < 0 || p[1] >= height) {
       continue;
     }
