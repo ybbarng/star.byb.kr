@@ -139,6 +139,29 @@ onmessage = async function (e) {
       }
 
       const merged = mergeCandidates(allCandidates, 8);
+
+      // 진단 로그: 어떤 후보가 잡히는지 RA/Dec·FOV·inlier·유의도로 출력.
+      // (게이트로 거대 FOV·우연 후보는 이미 걸러진 상태)
+      const fmt = (v: Point3D) => {
+        const raDeg = ((Math.atan2(v[1], v[0]) * 180) / Math.PI + 360) % 360;
+        const decDeg =
+          (Math.asin(Math.max(-1, Math.min(1, v[2]))) * 180) / Math.PI;
+
+        return `RA ${raDeg.toFixed(1)}° Dec ${decDeg.toFixed(1)}°`;
+      };
+
+      console.log(
+        `[solver] 검토 ${allCandidates.length}개 → 제시 후보 ${merged.length}개` +
+          (best
+            ? ` (해 찾음: ${fmt(best.centerVector as Point3D)})`
+            : " (확신 못 함)"),
+      );
+      merged.forEach((c, i) => {
+        console.log(
+          `  #${i + 1} ${fmt(c.centerVector)} · FOV ${c.fovDeg.toFixed(1)}° · inlier ${c.inlierCount} · 유의도 ${c.confidence.toFixed(1)}`,
+        );
+      });
+
       const outcome: SolveOutcome = best ?? {
         found: false,
         centerVector: null,

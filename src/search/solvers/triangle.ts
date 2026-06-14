@@ -1,6 +1,6 @@
 import type { ImageSize, InputStar, Solver, SolverContext } from "./types";
 import type { Point2D, Point3D } from "@/scripts/hash/types";
-import { topCandidates } from "./candidates";
+import { isPlausible, topCandidates } from "./candidates";
 import {
   pixelToCamera3D,
   projectTriangle,
@@ -19,8 +19,6 @@ const MATCH_STARS = 10;
 // KD_K를 키워도 사진/카탈로그 삼각형 형태가 어긋나면(큰 별자리) 정답을 못 찾는다.
 const KD_K = 8;
 const EARLY_ACCEPT_INLIER = 10; // 충분한 inlier를 찾으면 즉시 채택
-const MIN_INLIER = 6;
-const MIN_SIGNIFICANCE = 5;
 const MAX_PRESENTED_CANDIDATES = 5;
 // blind FOV 후보. 사진 삼각형을 카탈로그와 같은 "삼각형 중심" 기준으로
 // 재투영하려면 픽셀→각 스케일(FOV)이 필요한데 모르므로 스캔한다.
@@ -97,9 +95,12 @@ export const triangleSolver: Solver = {
 
                 results.push(res);
 
+                // 그럴듯한 해(거대 FOV·빈약 inlier 제외)만 best 후보로
                 if (
-                  res.inlierCount > bestInlier ||
-                  (res.inlierCount === bestInlier && res.significance > bestSig)
+                  isPlausible(res) &&
+                  (res.inlierCount > bestInlier ||
+                    (res.inlierCount === bestInlier &&
+                      res.significance > bestSig))
                 ) {
                   best = res;
                   bestInlier = res.inlierCount;
@@ -134,8 +135,8 @@ export const triangleSolver: Solver = {
     }
 
     return {
-      found:
-        best.significance > MIN_SIGNIFICANCE && best.inlierCount >= MIN_INLIER,
+      // best는 이미 그럴듯한 해(isPlausible)만 통과시켜 선택했다
+      found: isPlausible(best),
       centerVector: best.centerVector,
       fovDeg: best.fovDeg,
       confidence: best.significance,
