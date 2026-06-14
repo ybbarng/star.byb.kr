@@ -7,12 +7,14 @@ import type { ImageSize, InputStar } from "@/search/solvers/types";
 // 작은 별에선 억제 반경이 작아 거의 같은 위치의 중복이 남는데, 이런 별쌍은
 // 매칭의 tolerance 안이라 같은 카탈로그 별에 양쪽이 경쟁해 inlier를 왜곡하고
 // quad/삼각형 형태를 흐린다. 밝기순으로 훑으며 이미 채택된 별과 너무 가까우면 버린다.
-export const mergeCloseStars = (
-  stars: InputStar[],
+export const mergeCloseStars = <
+  T extends { x: number; y: number; brightness: number },
+>(
+  stars: T[],
   minDistPx: number,
-): InputStar[] => {
+): T[] => {
   const min2 = minDistPx * minDistPx;
-  const kept: InputStar[] = [];
+  const kept: T[] = [];
 
   for (const s of [...stars].sort((a, b) => b.brightness - a.brightness)) {
     let tooClose = false;

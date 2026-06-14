@@ -13,9 +13,27 @@ interface CanvasStar {
   x: number;
   y: number;
   brightness: number;
+  fwhm: number; // 퍼짐 크기. 작을수록 또렷한 점(별), 클수록 흐리멍텅한 번짐
   id: string;
   isSelected: boolean;
 }
+
+const BLURRY_FILL = "oklch(0.75 0.18 60)"; // 흐릿한 별 표시색(주황)
+
+// 또렷함 기준(fwhm) 기본값: 검출된 별들의 75% 지점. 위쪽 25%를 흐릿으로 본다.
+const finiteFwhmsSorted = (stars: { fwhm: number }[]): number[] =>
+  stars
+    .map((s) => s.fwhm)
+    .filter((f) => Number.isFinite(f))
+    .sort((a, b) => a - b);
+
+const defaultFwhmCut = (stars: { fwhm: number }[]): number | null => {
+  const sorted = finiteFwhmsSorted(stars);
+
+  return sorted.length
+    ? sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.75))]
+    : null;
+};
 
 interface SelectArea {
   x1: number;
@@ -52,7 +70,7 @@ export default function DetectStarStep() {
   const spaceHeldRef = useRef(false);
   // cv 검출 전체 결과(밝기순, 캡 없음). 영역 재검출 때 가려진 어두운 별을 꺼내 쓴다.
   const allDetectionsRef = useRef<
-    { x: number; y: number; brightness: number }[]
+    { x: number; y: number; brightness: number; fwhm: number }[]
   >([]);
   // 마지막으로 그린 선택 사각형(이미지 좌표). 영역 재검출의 대상 영역.
   const [lastBox, setLastBox] = useState<{
@@ -61,6 +79,8 @@ export default function DetectStarStep() {
     x2: number;
     y2: number;
   } | null>(null);
+  // 또렷함 기준. 이 값보다 fwhm이 크면 흐릿한 별로 보고 주황으로 표시한다.
+  const [fwhmCut, setFwhmCut] = useState<number | null>(null);
 
   useEffect(() => {
     // store에 이미 별 데이터가 있으면 복원, 없으면 새로 검출
@@ -70,6 +90,7 @@ export default function DetectStarStep() {
           x: star.x,
           y: star.y,
           brightness: star.brightness,
+          fwhm: 0, // 복원된 별은 모양 정보가 없으므로 또렷으로 취급
           id: crypto.randomUUID(),
           isSelected: false,
         })),
@@ -180,6 +201,7 @@ export default function DetectStarStep() {
           isSelected: false,
         })),
       );
+      setFwhmCut(defaultFwhmCut(stars));
     } catch (error) {
       console.error(error);
     }
@@ -206,8 +228,12 @@ export default function DetectStarStep() {
   async function findStars(imageData: ImageData) {
     // Processing image
     const result = await cv.findStars(imageData);
-    const raw: { cx: number; cy: number; brightness: number }[] =
-      result.data.payload;
+    const raw: {
+      cx: number;
+      cy: number;
+      brightness: number;
+      fwhm?: number;
+    }[] = result.data.payload;
     // 너무 가까운 중복 검출은 밝은 것만 남긴다(거의 같은 위치의 별쌍 정리).
     // 매칭 tolerance보다 살짝 작은 거리 기준.
     const minDistPx = Math.max(
@@ -220,6 +246,7 @@ export default function DetectStarStep() {
         x: star.cx,
         y: star.cy,
         brightness: star.brightness,
+        fwhm: star.fwhm ?? 0,
       })),
       minDistPx,
     ).sort((a, b) => b.brightness - a.brightness);
@@ -253,6 +280,8 @@ export default function DetectStarStep() {
         isSelected: false,
       })),
     );
+    // 영역 안 별들 기준으로 또렷함 기준을 다시 잡는다
+    setFwhmCut(defaultFwhmCut(picked));
   };
 
   const addStar = (x: number, y: number) => {
@@ -263,6 +292,7 @@ export default function DetectStarStep() {
         x,
         y,
         brightness: 0,
+        fwhm: 0, // 손으로 찍은 별은 또렷으로 취급
         isSelected: false,
       },
     ]);
@@ -457,6 +487,25 @@ export default function DetectStarStep() {
     );
   };
 
+  // 흐릿한 별(fwhm > 기준)인지
+  const isBlurry = (star: { fwhm: number }) =>
+    fwhmCut !== null && Number.isFinite(star.fwhm) && star.fwhm > fwhmCut;
+
+  // 흐릿한 별을 모두 선택(사람이 보고 Delete로 지우게)
+  const selectBlurry = () => {
+    setMode("select");
+    setCanvasStars(
+      canvasStars.map((star) => ({ ...star, isSelected: isBlurry(star) })),
+    );
+  };
+
+  const blurryCount = canvasStars.filter(isBlurry).length;
+  const fwhmSorted = finiteFwhmsSorted(canvasStars);
+  const fwhmMin = fwhmSorted.length ? fwhmSorted[0] : 0;
+  const fwhmMax = fwhmSorted.length ? fwhmSorted[fwhmSorted.length - 1] : 0;
+  // 또렷함 기준 슬라이더를 보여줄 수 있는지(모양 정보가 있는 검출 결과일 때)
+  const canFilterCrispness = fwhmCut !== null && fwhmMax > fwhmMin;
+
   if (!image || !image.width) {
     return (
       <div className="flex w-full flex-col gap-4">
@@ -473,9 +522,37 @@ export default function DetectStarStep() {
       <div className="flex flex-row items-center justify-between gap-2">
         <span className="text-sm">
           마커 {canvasStars.length}개
+          {canFilterCrispness && (
+            <span className="text-warning"> · 흐릿 {blurryCount}개</span>
+          )}
           {stageScale !== 1 && ` · ${Math.round(stageScale * 100)}%`}
         </span>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
+          {canFilterCrispness && (
+            <div
+              className="flex items-center gap-1"
+              title="오른쪽으로 갈수록 더 흐린 것까지 또렷으로 봅니다. 왼쪽으로 당기면 흐릿(주황)한 별이 늘어납니다."
+            >
+              <span className="text-xs whitespace-nowrap">또렷함 기준</span>
+              <input
+                type="range"
+                className="range range-xs w-28"
+                min={fwhmMin}
+                max={fwhmMax}
+                step={(fwhmMax - fwhmMin) / 100 || 0.01}
+                value={fwhmCut ?? fwhmMax}
+                onChange={(e) => setFwhmCut(Number(e.target.value))}
+              />
+              <button
+                className="btn btn-sm btn-warning"
+                disabled={blurryCount < 1}
+                onClick={selectBlurry}
+                title="흐릿한 별을 모두 선택합니다. Delete 키로 지우세요."
+              >
+                흐릿한 별 선택
+              </button>
+            </div>
+          )}
           <div className="join">
             <button
               className={`btn join-item btn-sm ${mode === "select" ? "btn-primary" : ""}`}
@@ -544,6 +621,7 @@ export default function DetectStarStep() {
                   x={star.x}
                   y={star.y}
                   isSelected={star.isSelected}
+                  fill={isBlurry(star) ? BLURRY_FILL : undefined}
                   onPositionUpdate={onPositionUpdate}
                   remove={removeStar}
                   select={selectStar}

@@ -8,6 +8,7 @@ interface Props {
   x: number;
   y: number;
   isSelected: boolean;
+  fill?: string; // 마커 색 (흐릿한 별을 다르게 표시할 때 사용)
   onPositionUpdate: (id: string, x: number, y: number) => void;
   select(id: string): void;
   remove(id: string): void;
@@ -59,7 +60,7 @@ export default function SelectableStarMarker(props: Props) {
         name="star"
         innerRadius={12}
         outerRadius={25}
-        fill="oklch(0.704 0.191 22.216)"
+        fill={props.fill ?? "oklch(0.704 0.191 22.216)"}
         opacity={0.5}
         draggable
         shadowColor="black"

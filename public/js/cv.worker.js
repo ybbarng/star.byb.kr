@@ -183,7 +183,7 @@ function findStars(cv, payload) {
   // 3단계: 합쳐진 별에 대해 weighted centroid 계산
   const stars = merged.map(function (star) {
     const centroidRadius = Math.max(2, Math.ceil(star.effectiveRadius));
-    let sumW = 0, sumWx = 0, sumWy = 0;
+    let sumW = 0, sumWx = 0, sumWy = 0, sumWxx = 0, sumWyy = 0, sumWxy = 0;
     for (let dy = -centroidRadius; dy <= centroidRadius; dy++) {
       for (let dx = -centroidRadius; dx <= centroidRadius; dx++) {
         const ny = star.y + dy;
@@ -193,13 +193,27 @@ function findStars(cv, payload) {
         sumW += w;
         sumWx += w * nx;
         sumWy += w * ny;
+        sumWxx += w * nx * nx;
+        sumWyy += w * ny * ny;
+        sumWxy += w * nx * ny;
       }
     }
 
     const cx = sumW > 0 ? sumWx / sumW : star.x;
     const cy = sumW > 0 ? sumWy / sumW : star.y;
+    // 2차 중심 모멘트 → 공분산 고유값으로 elongation(길쭉함), fwhm(퍼짐 크기).
+    // 또렷한 별은 fwhm이 작고, 흐리멍텅한 번짐은 크다.
+    const mu20 = sumW > 0 ? sumWxx / sumW - cx * cx : 0;
+    const mu02 = sumW > 0 ? sumWyy / sumW - cy * cy : 0;
+    const mu11 = sumW > 0 ? sumWxy / sumW - cx * cy : 0;
+    const half = (mu20 + mu02) / 2;
+    const common = Math.sqrt(((mu20 - mu02) / 2) ** 2 + mu11 * mu11);
+    const l1 = half + common;
+    const l2 = half - common;
+    const elongation = l2 > 1e-6 ? Math.sqrt(l1 / l2) : Infinity;
+    const fwhm = 2.3548 * Math.sqrt(Math.max(0, half));
 
-    return { cx, cy, brightness: star.effectiveRadius };
+    return { cx, cy, brightness: star.effectiveRadius, fwhm, elongation };
   });
 
   image.delete();
