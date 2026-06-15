@@ -1,5 +1,7 @@
+import type { SampleAnswer } from "@/plate-solver/sampleAnswers";
 import type { SolveCandidateResult } from "@/search/solvers";
 import { useEffect, useRef, useState } from "react";
+import { getSampleAnswer, matchesAnswer } from "@/plate-solver/sampleAnswers";
 import StepMover from "@/plate-solver/StepMover";
 import { useContextStore } from "@/plate-solver/store/context";
 import useSkyOverlay from "@/search/hooks/useSkyOverlay";
@@ -167,6 +169,7 @@ export default function PlateSolvingStep() {
   }
 
   const candidates = outcome?.candidates ?? [];
+  const answer = getSampleAnswer(image.src);
 
   return (
     <div className="flex size-full flex-col justify-stretch gap-4">
@@ -185,6 +188,7 @@ export default function PlateSolvingStep() {
             <div className="text-sm opacity-70">
               별을 더 정확히 표시하거나 더 많이 선택해 보세요.
             </div>
+            {answer && <KnownAnswerNote answer={answer} found={false} />}
           </div>
         )}
         {!solving && candidates.length > 0 && (
@@ -192,6 +196,7 @@ export default function PlateSolvingStep() {
             candidates={candidates}
             selected={selected}
             found={outcome?.found ?? false}
+            answer={answer}
             onSelect={setSelected}
           />
         )}
@@ -214,6 +219,7 @@ interface CandidateListProps {
   candidates: SolveCandidateResult[];
   selected: number;
   found: boolean;
+  answer: SampleAnswer | null;
   onSelect: (index: number) => void;
 }
 
@@ -221,6 +227,7 @@ function CandidateList({
   candidates,
   selected,
   found,
+  answer,
   onSelect,
 }: CandidateListProps) {
   return (
@@ -234,31 +241,60 @@ function CandidateList({
           </div>
         )}
         <div>후보 {candidates.length}개 (신뢰도 순)</div>
+        {answer && <KnownAnswerNote answer={answer} found />}
       </div>
       <ul className="menu h-full flex-col flex-nowrap items-start overflow-y-scroll">
-        {candidates.map((c, i) => (
-          <li
-            key={`candidate-${i}`}
-            className="w-full"
-            ref={(el) => {
-              if (el && selected === i) {
-                el.scrollIntoView({ block: "nearest" });
-              }
-            }}
-          >
-            <a
-              className={cn(
-                selected === i
-                  ? "bg-primary/20 font-bold"
-                  : "hover:bg-base-300/50",
-              )}
-              onClick={() => onSelect(i)}
+        {candidates.map((c, i) => {
+          const isAnswer = answer
+            ? matchesAnswer(c.centerVector, answer)
+            : false;
+
+          return (
+            <li
+              key={`candidate-${i}`}
+              className="w-full"
+              ref={(el) => {
+                if (el && selected === i) {
+                  el.scrollIntoView({ block: "nearest" });
+                }
+              }}
             >
-              {`${i + 1}. 매칭 ${c.inlierCount}개, 신뢰도 ${c.confidence.toFixed(0)}, FOV ${c.fovDeg.toFixed(0)}°`}
-            </a>
-          </li>
-        ))}
+              <a
+                className={cn(
+                  selected === i
+                    ? "bg-primary/20 font-bold"
+                    : "hover:bg-base-300/50",
+                )}
+                onClick={() => onSelect(i)}
+              >
+                {isAnswer && (
+                  <span className="badge badge-success badge-sm">✓ 정답</span>
+                )}
+                {`${i + 1}. 매칭 ${c.inlierCount}개, 신뢰도 ${c.confidence.toFixed(0)}, FOV ${c.fovDeg.toFixed(0)}°`}
+              </a>
+            </li>
+          );
+        })}
       </ul>
+    </div>
+  );
+}
+
+// 이 샘플의 알려진 정답(검증된 ground truth)을 안내한다. 후보 중 ✓ 표시와 함께
+// 사람이 헷갈리지 않게 한다.
+function KnownAnswerNote({
+  answer,
+  found,
+}: {
+  answer: SampleAnswer;
+  found: boolean;
+}) {
+  return (
+    <div
+      className={cn("mt-1 text-xs", found ? "text-success/80" : "text-info/80")}
+    >
+      알려진 정답: {answer.name} · 중심 RA {answer.centerRaDeg.toFixed(0)}° Dec{" "}
+      {answer.centerDecDeg.toFixed(0)}° · 시야 약 {answer.fovDeg.toFixed(0)}°
     </div>
   );
 }
