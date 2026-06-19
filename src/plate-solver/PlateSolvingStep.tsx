@@ -245,9 +245,11 @@ function CandidateList({
       </div>
       <ul className="menu h-full flex-col flex-nowrap items-start overflow-y-scroll">
         {candidates.map((c, i) => {
-          const isAnswer = answer
-            ? matchesAnswer(c.centerVector, answer)
-            : false;
+          // 검증된 정답(approximate 아님)일 때만 후보에 ✓를 단다
+          const isAnswer =
+            answer && !answer.approximate
+              ? matchesAnswer(c.centerVector, answer)
+              : false;
 
           return (
             <li
@@ -291,9 +293,17 @@ function KnownAnswerNote({
 }) {
   return (
     <div
-      className={cn("mt-1 text-xs", found ? "text-success/80" : "text-info/80")}
+      className={cn(
+        "mt-1 text-xs",
+        answer.approximate
+          ? "text-warning/80"
+          : found
+            ? "text-success/80"
+            : "text-info/80",
+      )}
     >
-      알려진 정답: {answer.name} · 중심 RA {answer.centerRaDeg.toFixed(0)}° Dec{" "}
+      {answer.approximate ? "예상 영역(대략): " : "알려진 정답: "}
+      {answer.name} · 중심 RA {answer.centerRaDeg.toFixed(0)}° Dec{" "}
       {answer.centerDecDeg.toFixed(0)}° · 시야 약 {answer.fovDeg.toFixed(0)}°
     </div>
   );

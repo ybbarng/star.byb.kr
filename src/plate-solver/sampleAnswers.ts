@@ -8,6 +8,9 @@ export interface SampleAnswer {
   centerDecDeg: number;
   fovDeg: number;
   name: string; // 사람이 읽을 별자리/하늘 영역 이름
+  // 정제 라벨로 검증한 정확한 포즈가 아니라, 사진 설명으로 추정한 대략 위치일 때 true.
+  // 이 경우 후보에 ✓ 정답 배지를 달지 않고 "예상 영역"으로만 안내한다.
+  approximate?: boolean;
 }
 
 // 키는 샘플 파일명(samples.ts의 src 마지막 조각).
@@ -23,6 +26,15 @@ const byFilename: Record<string, SampleAnswer> = {
     centerDecDeg: -66,
     fovDeg: 51,
     name: "센타우루스·남십자 (남반구)",
+  },
+  // 여름 은하수(은하 중심부). 밝은 별들이 ~60°에 걸쳐 광각(FOV~75°).
+  // 안타레스·궁수 등 밝은 별이 건물에 가려 아직 검증된 정확한 포즈는 없음(대략).
+  "20220328-brice-Milky Way over Buzzvil.jpg": {
+    centerRaDeg: 281,
+    centerDecDeg: -12,
+    fovDeg: 75,
+    name: "여름 은하수 (방패·궁수·전갈·독수리)",
+    approximate: true,
   },
 };
 
