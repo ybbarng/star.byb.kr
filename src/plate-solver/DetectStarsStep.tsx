@@ -546,7 +546,7 @@ export default function DetectStarStep() {
   const handleDragEnd = useCallback(() => {
     if (mode === "move" || isPanning) handlePanEnd();
     else handleSelectDragEnd();
-  }, [mode, isPanning, isSelecting, selectArea, canvasStars]);
+  }, [mode, isPanning, isSelecting, selectArea, canvasStars, labelMode]);
 
   const onBeforeNext = async () => {
     const sorted = [...canvasStars].sort((a, b) => b.brightness - a.brightness);
