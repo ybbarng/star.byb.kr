@@ -1,12 +1,14 @@
 import type { Point2D, Point3D } from "@/scripts/hash/types";
+import type { FisheyeCamera } from "@/search/utils/fisheye";
 import type { Mat3 } from "@/search/utils/similarity";
 import { useCallback, useState } from "react";
-import { mat3MulVec } from "@/search/utils/wcs";
+import { projectFisheye } from "@/search/utils/fisheye";
+import { projectVecToPhoto } from "@/search/utils/wcs";
 import constellationData from "@build/database/vectors-constellations.json";
 import catalogData from "@build/database/vectors-database.json";
 
-// 후보의 변환행렬(TP)로 카탈로그 별/별자리를 사진 좌표에 투영하는 hook.
-// solver가 transform을 직접 주므로 quad 4점에서 TP를 다시 계산할 필요가 없다.
+// 카탈로그 별/별자리를 사진 좌표에 투영하는 hook. 투영 방식(직선/어안)에 무관하게,
+// "방향 → 픽셀(뒤쪽이면 null)" 투영 함수만 받으면 오버레이를 만든다.
 
 export interface SkyStar {
   label: string;
@@ -16,8 +18,7 @@ export interface SkyStar {
 
 export interface SkyConstellation {
   label: string;
-  // 폴리라인 정점들. 카메라 뒤쪽(반대 반구)이거나 화면에서 너무 먼 정점은
-  // null로 두어, 그 정점에 닿는 선분은 그리지 않는다(반대편 하늘 겹침 방지).
+  // 폴리라인 정점. 카메라 뒤쪽이거나 화면에서 너무 먼 정점은 null(그 선분은 안 그림).
   lines: (Point2D | null)[];
 }
 
@@ -34,105 +35,99 @@ interface ConstellationData {
   stars: number[][];
 }
 
-// 카메라 앞쪽(p[2] > 0)일 때만 사진 좌표를 돌려준다. 뒤쪽 반구 별은 접선평면
-// 투영에서 좌표가 거울처럼 뒤집혀 엉뚱한 위치에 찍히므로 null로 거른다
-// (solveCore.toPlane과 같은 규약).
-const project = (tp: Mat3, vec: Point3D): Point2D | null => {
-  const p = mat3MulVec(tp, vec);
+type Projector = (vec: Point3D) => Point2D | null;
 
-  if (p[2] <= 1e-9) {
-    return null;
+interface Overlay {
+  stars: SkyStar[];
+  constellations: SkyConstellation[];
+}
+
+// 투영 함수로 화면에 들어오는 별/별자리를 만든다.
+const buildOverlay = (
+  project: Projector,
+  width: number,
+  height: number,
+): Overlay => {
+  const sk: SkyStar[] = [];
+
+  for (const s of catalogData as VectorStar[]) {
+    const p = project([s.x, s.y, s.z]);
+
+    if (
+      !p ||
+      p[0] < -50 ||
+      p[0] > width + 50 ||
+      p[1] < -50 ||
+      p[1] > height + 50
+    ) {
+      continue;
+    }
+
+    sk.push({ label: s.N ?? `HR ${s.HR}`, x: p[0], y: p[1] });
   }
 
-  return [p[0] / p[2], p[1] / p[2]];
+  // 정점이 화면에서 이만큼 벗어나면 선이 사진 밖으로 길게 뻗으므로 끊는다
+  const marginX = width;
+  const marginY = height;
+  const cons: SkyConstellation[] = [];
+
+  for (const c of constellationData as ConstellationData[]) {
+    const lines: (Point2D | null)[] = c.stars.map((st) => {
+      const p = project([st[0], st[1], st[2]]);
+
+      if (
+        !p ||
+        p[0] < -marginX ||
+        p[0] > width + marginX ||
+        p[1] < -marginY ||
+        p[1] > height + marginY
+      ) {
+        return null;
+      }
+
+      return p;
+    });
+
+    const anyVisible = lines.some(
+      (p) =>
+        p !== null && p[0] >= 0 && p[0] < width && p[1] >= 0 && p[1] < height,
+    );
+
+    if (anyVisible) {
+      cons.push({ label: c.label, lines });
+    }
+  }
+
+  return { stars: sk, constellations: cons };
 };
 
 export default function useSkyOverlay() {
   const [stars, setStars] = useState<SkyStar[]>([]);
   const [constellations, setConstellations] = useState<SkyConstellation[]>([]);
 
+  // 직선투영(핀홀) 변환행렬로 그린다.
   const update = useCallback(
-    (
-      transform: Mat3,
-      center: Point3D,
-      fovDeg: number,
-      width: number,
-      height: number,
-    ) => {
-      const fovRad = (fovDeg * Math.PI) / 180;
-      const starThresh = Math.cos(fovRad * 0.75);
-
-      const sk: SkyStar[] = [];
-
-      for (const s of catalogData as VectorStar[]) {
-        const dot = s.x * center[0] + s.y * center[1] + s.z * center[2];
-
-        if (dot < starThresh) {
-          continue;
-        }
-
-        const p = project(transform, [s.x, s.y, s.z]);
-
-        if (!p) {
-          continue;
-        }
-
-        if (
-          p[0] < -50 ||
-          p[0] > width + 50 ||
-          p[1] < -50 ||
-          p[1] > height + 50
-        ) {
-          continue;
-        }
-
-        sk.push({ label: s.N ?? `HR ${s.HR}`, x: p[0], y: p[1] });
-      }
-
+    (transform: Mat3, width: number, height: number) => {
+      const { stars: sk, constellations: cons } = buildOverlay(
+        (v) => projectVecToPhoto(transform, v),
+        width,
+        height,
+      );
       setStars(sk);
+      setConstellations(cons);
+    },
+    [],
+  );
 
-      // 정점이 화면에서 이만큼 벗어나면 선이 사진 밖으로 길게 뻗으므로 끊는다
-      const marginX = width;
-      const marginY = height;
-      const cons: SkyConstellation[] = [];
-
-      for (const c of constellationData as ConstellationData[]) {
-        const lines: (Point2D | null)[] = c.stars.map((st) => {
-          const p = project(transform, [st[0], st[1], st[2]]);
-
-          if (!p) {
-            return null;
-          }
-
-          if (
-            p[0] < -marginX ||
-            p[0] > width + marginX ||
-            p[1] < -marginY ||
-            p[1] > height + marginY
-          ) {
-            return null;
-          }
-
-          return p;
-        });
-
-        // 화면 안에 들어오는 정점이 하나도 없으면 그리지 않는다
-        const anyVisible = lines.some(
-          (p) =>
-            p !== null &&
-            p[0] >= 0 &&
-            p[0] < width &&
-            p[1] >= 0 &&
-            p[1] < height,
-        );
-
-        if (!anyVisible) {
-          continue;
-        }
-
-        cons.push({ label: c.label, lines });
-      }
-
+  // 어안 카메라로 그린다(초광각 은하수 등).
+  const updateFisheye = useCallback(
+    (camera: FisheyeCamera, width: number, height: number) => {
+      const { stars: sk, constellations: cons } = buildOverlay(
+        (v) => projectFisheye(camera, v),
+        width,
+        height,
+      );
+      setStars(sk);
       setConstellations(cons);
     },
     [],
@@ -143,5 +138,5 @@ export default function useSkyOverlay() {
     setConstellations([]);
   }, []);
 
-  return { stars, constellations, update, clear };
+  return { stars, constellations, update, updateFisheye, clear };
 }
