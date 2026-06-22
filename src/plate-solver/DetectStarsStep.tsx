@@ -22,7 +22,9 @@ const namedCatalog = (catalogStars as CatStar[]).filter((s) => s.N);
 const nameToHR = new Map<string, string>(
   namedCatalog.map((s) => [s.N!.toLowerCase(), String(s.HR)]),
 );
-const catalogNameList = namedCatalog.map((s) => s.N!).sort();
+// 이름이 겹치는 별이 있어(예: Al Thalimain = HR7236·7447) datalist key 충돌을 막으려 중복 제거.
+// 겹치는 이름은 정확히 지정하려면 HR 번호로 입력하면 된다.
+const catalogNameList = [...new Set(namedCatalog.map((s) => s.N!))].sort();
 
 // 입력(별 이름 또는 HR 번호)을 카탈로그 HR로 해석. 못 찾으면 null.
 const resolveToHR = (input: string): string | null => {
@@ -470,18 +472,23 @@ export default function DetectStarStep() {
       .filter((star) => Konva.Util.haveIntersection(box, star.getClientRect()))
       .map((star) => star.id());
 
-    // 라벨링 중 빈 곳을 '클릭'(드래그 아님)하면 마커를 새로 만들어 바로 선택한다.
-    // 검출 안 된 별도 사람이 직접 찍어 이름을 달 수 있게.
+    // 라벨링 중 '클릭'(드래그 아님)하면 사진 좌표를 콘솔에 찍는다. 사용자가 이
+    // 좌표와 별 이름을 알려주면 그걸로 정답(data/search) JSON을 만든다.
     const dragDist = Math.hypot(pos.x - selectArea.x1, pos.y - selectArea.y1);
 
-    if (labelMode && selected.length === 0 && dragDist < 6) {
-      const id = crypto.randomUUID();
-      setCanvasStars([
-        ...canvasStars.map((star) => ({ ...star, isSelected: false })),
-        { id, x: pos.x, y: pos.y, brightness: 0, fwhm: 0, isSelected: true },
-      ]);
+    if (labelMode && dragDist < 6) {
+      console.log(`[라벨] x=${Math.round(pos.x)}, y=${Math.round(pos.y)}`);
 
-      return;
+      // 빈 곳이면 마커를 새로 만들어 선택(시각 확인용). 검출 안 된 별도 찍을 수 있게.
+      if (selected.length === 0) {
+        const id = crypto.randomUUID();
+        setCanvasStars([
+          ...canvasStars.map((star) => ({ ...star, isSelected: false })),
+          { id, x: pos.x, y: pos.y, brightness: 0, fwhm: 0, isSelected: true },
+        ]);
+
+        return;
+      }
     }
 
     if (selected.length < 1) return;
