@@ -1,13 +1,11 @@
 import type { SampleAnswer } from "@/plate-solver/sampleAnswers";
 import type { SolveCandidateResult } from "@/search/solvers";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { getFisheyeLabels } from "@/plate-solver/fisheyeSamples";
+import { useEffect, useRef, useState } from "react";
 import { getSampleAnswer, matchesAnswer } from "@/plate-solver/sampleAnswers";
 import StepMover from "@/plate-solver/StepMover";
 import { useContextStore } from "@/plate-solver/store/context";
 import useSkyOverlay from "@/search/hooks/useSkyOverlay";
 import useSolve from "@/search/hooks/useSolve";
-import { fitFisheyeCamera } from "@/search/utils/fisheye";
 import { cn } from "@/utils/cn";
 
 export default function PlateSolvingStep() {
@@ -24,26 +22,12 @@ export default function PlateSolvingStep() {
   } = useSkyOverlay();
   const [selected, setSelected] = useState(0);
 
-  // 어안 보정 라벨이 있는 샘플이면 라벨로 카메라를 피팅한다(초광각 은하수 등).
-  const labelFisheye = useMemo(() => {
-    const labels = getFisheyeLabels(image?.src);
+  // 그릴 어안 카메라: worker의 blind 어안 풀이가 성공했을 때만(라벨 하드코딩 없음).
+  const fisheyeCamera = outcome?.fisheyeCamera ?? null;
 
-    if (!labels) {
-      return null;
-    }
-
-    return fitFisheyeCamera(labels.corr, labels.width, labels.height);
-  }, [image?.src]);
-
-  // 그릴 어안 카메라: 라벨 기반(우선) 또는 worker의 blind 어안 풀이 결과
-  const fisheyeCamera = useMemo(
-    () => labelFisheye?.camera ?? outcome?.fisheyeCamera ?? null,
-    [labelFisheye, outcome],
-  );
-
-  // 검출된 별로 plate solving 실행 (어안 라벨 샘플은 라벨 기준으로 바로 그린다)
+  // 검출된 별로 plate solving 실행 (직선/어안 자동 판별은 worker에서)
   useEffect(() => {
-    if (labelFisheye || !image || photoStars.length < 1 || !ready) {
+    if (!image || photoStars.length < 1 || !ready) {
       return;
     }
 
@@ -53,7 +37,7 @@ export default function PlateSolvingStep() {
       image.height,
       "triangle",
     );
-  }, [labelFisheye, image, photoStars, ready, solve]);
+  }, [image, photoStars, ready, solve]);
 
   // 결과가 오면 최상위 후보 선택
   useEffect(() => {
