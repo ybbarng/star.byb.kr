@@ -318,6 +318,20 @@ export const fitFisheyeCamera = (
   return solveFrom(corr, P, imageW, imageH);
 };
 
+// 이미 거의 맞는 카메라에서 시작해 격자 없이 따뜻하게 재피팅(inlier 정밀화용).
+export const refitFisheyeCamera = (
+  corr: Corr[],
+  start: FisheyeCamera,
+  imageW: number,
+  imageH: number,
+): FisheyeFit =>
+  solveFrom(
+    corr,
+    [start.pcx, start.pcy, start.ffish, start.k1],
+    imageW,
+    imageH,
+  );
+
 // 거친 카메라에서 시작해, 검출된 별로 카메라를 정밀화한다.
 // 카탈로그 별을 투영 → 그 자리의 검출 별 중심에 맞춰 대응을 모으고 재피팅. 반복하며
 // 허용오차를 좁힌다. 손라벨 몇 개보다 훨씬 많은 정확한 대응으로 정밀도·견고성↑.
