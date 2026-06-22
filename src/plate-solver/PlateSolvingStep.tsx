@@ -24,8 +24,8 @@ export default function PlateSolvingStep() {
   } = useSkyOverlay();
   const [selected, setSelected] = useState(0);
 
-  // 어안 보정이 있는 샘플이면 라벨로 카메라를 피팅한다(초광각 은하수 등).
-  const fisheye = useMemo(() => {
+  // 어안 보정 라벨이 있는 샘플이면 라벨로 카메라를 피팅한다(초광각 은하수 등).
+  const labelFisheye = useMemo(() => {
     const labels = getFisheyeLabels(image?.src);
 
     if (!labels) {
@@ -35,9 +35,15 @@ export default function PlateSolvingStep() {
     return fitFisheyeCamera(labels.corr, labels.width, labels.height);
   }, [image?.src]);
 
-  // 검출된 별로 plate solving 실행 (어안 샘플은 라벨 기준으로 바로 그린다)
+  // 그릴 어안 카메라: 라벨 기반(우선) 또는 worker의 blind 어안 풀이 결과
+  const fisheyeCamera = useMemo(
+    () => labelFisheye?.camera ?? outcome?.fisheyeCamera ?? null,
+    [labelFisheye, outcome],
+  );
+
+  // 검출된 별로 plate solving 실행 (어안 라벨 샘플은 라벨 기준으로 바로 그린다)
   useEffect(() => {
-    if (fisheye || !image || photoStars.length < 1 || !ready) {
+    if (labelFisheye || !image || photoStars.length < 1 || !ready) {
       return;
     }
 
@@ -47,29 +53,26 @@ export default function PlateSolvingStep() {
       image.height,
       "triangle",
     );
-  }, [fisheye, image, photoStars, ready, solve]);
+  }, [labelFisheye, image, photoStars, ready, solve]);
 
   // 결과가 오면 최상위 후보 선택
   useEffect(() => {
     setSelected(0);
   }, [outcome]);
 
-  // 어안 보정 샘플: 라벨로 피팅한 어안 카메라로 별자리를 그린다
+  // 어안이면 어안 카메라로, 아니면 선택 후보의 변환으로 별/별자리를 그린다
   useEffect(() => {
-    if (!image || !fisheye) {
+    if (!image) {
       return;
     }
 
-    updateFisheye(fisheye.camera, image.width, image.height);
-  }, [image, fisheye, updateFisheye]);
+    if (fisheyeCamera) {
+      updateFisheye(fisheyeCamera, image.width, image.height);
 
-  // 선택된 후보의 변환행렬로 별/별자리 투영 (어안 샘플은 위에서 처리)
-  useEffect(() => {
-    if (fisheye) {
       return;
     }
 
-    if (!image || !outcome || outcome.candidates.length === 0) {
+    if (!outcome || outcome.candidates.length === 0) {
       clearSky();
 
       return;
@@ -82,7 +85,15 @@ export default function PlateSolvingStep() {
     }
 
     updateSky(c.transform, image.width, image.height);
-  }, [fisheye, image, outcome, selected, updateSky, clearSky]);
+  }, [
+    image,
+    fisheyeCamera,
+    outcome,
+    selected,
+    updateSky,
+    updateFisheye,
+    clearSky,
+  ]);
 
   // 방향키로 후보 탐색
   useEffect(() => {
@@ -201,22 +212,27 @@ export default function PlateSolvingStep() {
   return (
     <div className="flex size-full flex-col justify-stretch gap-4">
       <div className="flex h-full flex-row overflow-hidden">
-        {fisheye && (
+        {fisheyeCamera && (
           <div className="bg-base-200 rounded-box flex h-full w-100 shrink-0 flex-col gap-2 p-4">
             <div className="text-success text-xl font-bold">어안 보정 적용</div>
             <div className="text-sm opacity-80">
-              초광각(어안) 렌즈로 찍은 사진이라 직선투영으로는 안 맞습니다.
-              사람이 라벨한 별로 어안 카메라를 보정해 별자리를 그렸습니다.
+              초광각(어안) 렌즈로 찍은 사진이라 직선투영으로는 안 맞습니다.{" "}
+              {labelFisheye
+                ? "사람이 라벨한 별로 어안 카메라를 보정해 별자리를 그렸습니다."
+                : "어안 카메라를 자동으로 복원해(라벨 없이) 별자리를 그렸습니다."}
             </div>
-            <div className="text-xs opacity-60">
-              피팅 오차 RMS {fisheye.rms.toFixed(1)}px · 라벨 {fisheye.used}개
-              사용
-              {fisheye.dropped > 0 && ` (어긋난 ${fisheye.dropped}개 제외)`}
-            </div>
+            {labelFisheye && (
+              <div className="text-xs opacity-60">
+                피팅 오차 RMS {labelFisheye.rms.toFixed(1)}px · 라벨{" "}
+                {labelFisheye.used}개 사용
+                {labelFisheye.dropped > 0 &&
+                  ` (어긋난 ${labelFisheye.dropped}개 제외)`}
+              </div>
+            )}
             {answer && <KnownAnswerNote answer={answer} found />}
           </div>
         )}
-        {!fisheye && (solving || !ready) && (
+        {!fisheyeCamera && (solving || !ready) && (
           <div className="bg-base-200 rounded-box flex h-full w-100 shrink-0 flex-col items-center justify-center gap-2">
             <div className="text-xl">
               {!ready ? "데이터베이스 로딩" : "별자리 분석"} 중입니다.
@@ -224,7 +240,7 @@ export default function PlateSolvingStep() {
             <span className="loading loading-spinner loading-lg"></span>
           </div>
         )}
-        {!fisheye && !solving && outcome && candidates.length === 0 && (
+        {!fisheyeCamera && !solving && outcome && candidates.length === 0 && (
           <div className="bg-base-200 rounded-box flex h-full w-100 shrink-0 flex-col items-center justify-center gap-2 p-4 text-center">
             <div className="text-xl">별자리를 찾지 못했습니다.</div>
             <div className="text-sm opacity-70">
@@ -233,7 +249,7 @@ export default function PlateSolvingStep() {
             {answer && <KnownAnswerNote answer={answer} found={false} />}
           </div>
         )}
-        {!fisheye && !solving && candidates.length > 0 && (
+        {!fisheyeCamera && !solving && candidates.length > 0 && (
           <CandidateList
             candidates={candidates}
             selected={selected}

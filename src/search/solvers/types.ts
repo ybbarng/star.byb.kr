@@ -2,6 +2,7 @@ import type { Point3D } from "@/scripts/hash/types";
 import type { PairIndex, TriangleIndex } from "@/search/catalogGeometry";
 import type { CandidateIndex } from "@/search/findCandidatesCore";
 import type { SolveStar } from "@/search/solveCore";
+import type { FisheyeCamera } from "@/search/utils/fisheye";
 import type { Mat3 } from "@/search/utils/similarity";
 
 // 세 알고리즘(원본/개선/최선)을 같은 입력으로 비교 실행하기 위한 공통 인터페이스.
@@ -48,6 +49,9 @@ export interface SolveOutcome {
   // 유의도 순 상위 후보들(서로 다른 하늘 위치, 중복 제거). 유일한 해를 못
   // 찾아도 사람이 이 중 고를 수 있게 한다 (사람-컴퓨터 협업).
   candidates: SolveCandidateResult[];
+  // 직선투영으로 못 풀고 어안 blind 풀이가 성공했을 때의 어안 카메라(있으면 오버레이는
+  // 이걸로 그린다). 초광각/어안 사진용.
+  fisheyeCamera?: FisheyeCamera | null;
 }
 
 export interface Solver {

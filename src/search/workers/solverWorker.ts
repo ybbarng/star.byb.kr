@@ -8,6 +8,7 @@ import type {
 } from "@/search/solvers";
 import { buildTriangleIndex } from "@/search/catalogGeometry";
 import { buildCandidateIndex } from "@/search/findCandidatesCore";
+import { blindSolveFisheye } from "@/search/fisheyeSolve";
 import { improvedSolver, triangleSolver } from "@/search/solvers";
 
 // 검출 노이즈 비율을 모르므로 입력을 여러 크기로 잘라 각각 풀고 합친다.
@@ -163,6 +164,31 @@ onmessage = async function (e) {
         );
       });
 
+      // 직선투영으로 못 풀었으면 어안(초광각) blind 풀이를 시도한다.
+      let fisheyeCamera = null;
+
+      if (!best && ctx) {
+        const fe = blindSolveFisheye(
+          sorted.map((s) => [s.x, s.y] as [number, number]),
+          ctx.index,
+          ctx.byHrVec,
+          width,
+          height,
+        );
+
+        // 우연/오답을 줄이려 inlier가 충분히 많고 재투영 오차가 작을 때만 채택
+        if (fe && fe.inliers >= 25 && fe.rms < 6) {
+          fisheyeCamera = fe.camera;
+          console.log(
+            `[solver] 어안 보정 채택: inlier ${fe.inliers}, RMS ${fe.rms.toFixed(1)}px`,
+          );
+        } else if (fe) {
+          console.log(
+            `[solver] 어안 후보 기각: inlier ${fe.inliers}, RMS ${fe.rms.toFixed(1)}px (확신 부족)`,
+          );
+        }
+      }
+
       const outcome: SolveOutcome = best ?? {
         found: false,
         centerVector: null,
@@ -177,7 +203,7 @@ onmessage = async function (e) {
 
       postMessage({
         fn: "onSolved",
-        payload: { ...outcome, candidates: merged },
+        payload: { ...outcome, candidates: merged, fisheyeCamera },
       });
       break;
     }

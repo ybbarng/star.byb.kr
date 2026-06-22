@@ -17,6 +17,7 @@ export interface FisheyeSolveResult {
   camera: FisheyeCamera;
   inliers: number; // 최종 카메라와 일치한 별 수
   voted: number; // 투표로 정체를 확정한 별 수
+  rms: number; // inlier 재투영 RMS(px)
 }
 
 export const blindSolveFisheye = (
@@ -93,6 +94,7 @@ export const blindSolveFisheye = (
 
   // inlier 확장: 재투영 오차가 작은 별만 모아 따뜻하게 재피팅, 허용오차를 좁혀간다
   let inliers = seed.length;
+  let rms = Infinity;
 
   for (let it = 0; it < 6; it++) {
     const tol = Math.max(5, 30 - it * 6);
@@ -106,14 +108,16 @@ export const blindSolveFisheye = (
       break;
     }
 
-    cam = refitFisheyeCamera(
+    const fit = refitFisheyeCamera(
       inl.map((d) => ({ x: d.x, y: d.y, v: d.v })),
       cam,
       width,
       height,
-    ).camera;
+    );
+    cam = fit.camera;
     inliers = inl.length;
+    rms = fit.rms;
   }
 
-  return { camera: cam, inliers, voted: ident.length };
+  return { camera: cam, inliers, voted: ident.length, rms };
 };

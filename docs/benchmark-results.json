@@ -9,7 +9,7 @@
         "falsePositive": 0,
         "missed": 0,
         "meanCenterErrDeg": 0.06739331060659486,
-        "meanTimeMs": 90.64900016666665
+        "meanTimeMs": 163.73784033333342
       },
       "L1_약": {
         "total": 12,
@@ -17,7 +17,7 @@
         "falsePositive": 6,
         "missed": 0,
         "meanCenterErrDeg": 0.10215658268095891,
-        "meanTimeMs": 94.18277091666668
+        "meanTimeMs": 169.6875868333333
       },
       "L2_중": {
         "total": 12,
@@ -25,7 +25,7 @@
         "falsePositive": 11,
         "missed": 0,
         "meanCenterErrDeg": 1.1402910867428755,
-        "meanTimeMs": 95.25701399999998
+        "meanTimeMs": 166.99185058333327
       },
       "L3_강": {
         "total": 12,
@@ -33,7 +33,7 @@
         "falsePositive": 12,
         "missed": 0,
         "meanCenterErrDeg": null,
-        "meanTimeMs": 91.74895833333342
+        "meanTimeMs": 141.3809272500001
       }
     }
   },
@@ -47,7 +47,7 @@
         "falsePositive": 0,
         "missed": 0,
         "meanCenterErrDeg": 0.000020891667859105154,
-        "meanTimeMs": 154.69113558333333
+        "meanTimeMs": 207.27502433333302
       },
       "L1_약": {
         "total": 12,
@@ -55,15 +55,15 @@
         "falsePositive": 0,
         "missed": 0,
         "meanCenterErrDeg": 0.006077241667044389,
-        "meanTimeMs": 180.4142081666664
+        "meanTimeMs": 334.3113994166667
       },
       "L2_중": {
         "total": 12,
         "correct": 10,
-        "falsePositive": 0,
-        "missed": 2,
+        "falsePositive": 2,
+        "missed": 0,
         "meanCenterErrDeg": 0.010252751613689468,
-        "meanTimeMs": 217.03720833333304
+        "meanTimeMs": 307.2427674999996
       },
       "L3_강": {
         "total": 12,
@@ -71,7 +71,7 @@
         "falsePositive": 9,
         "missed": 0,
         "meanCenterErrDeg": 0.01959755527054934,
-        "meanTimeMs": 256.4973401666666
+        "meanTimeMs": 369.1426076666676
       }
     }
   },
@@ -85,7 +85,7 @@
         "falsePositive": 0,
         "missed": 12,
         "meanCenterErrDeg": null,
-        "meanTimeMs": 2.7771633333334953
+        "meanTimeMs": 3.1746390833335076
       },
       "L1_약": {
         "total": 12,
@@ -93,7 +93,7 @@
         "falsePositive": 0,
         "missed": 12,
         "meanCenterErrDeg": null,
-        "meanTimeMs": 2.2924443333334543
+        "meanTimeMs": 2.6425311666659277
       },
       "L2_중": {
         "total": 12,
@@ -101,7 +101,7 @@
         "falsePositive": 0,
         "missed": 12,
         "meanCenterErrDeg": null,
-        "meanTimeMs": 2.2200659166668024
+        "meanTimeMs": 2.487194333332809
       },
       "L3_강": {
         "total": 12,
@@ -109,7 +109,7 @@
         "falsePositive": 0,
         "missed": 12,
         "meanCenterErrDeg": null,
-        "meanTimeMs": 2.329107833333486
+        "meanTimeMs": 2.789139166666852
       }
     }
   },
@@ -123,31 +123,31 @@
         "falsePositive": 0,
         "missed": 0,
         "meanCenterErrDeg": 0.00007758391513116789,
-        "meanTimeMs": 175.32465616666755
+        "meanTimeMs": 191.55462158333376
       },
       "L1_약": {
         "total": 12,
-        "correct": 9,
-        "falsePositive": 0,
-        "missed": 3,
-        "meanCenterErrDeg": 0.006419210168901505,
-        "meanTimeMs": 1027.0999134166666
+        "correct": 11,
+        "falsePositive": 1,
+        "missed": 0,
+        "meanCenterErrDeg": 0.005825896974703829,
+        "meanTimeMs": 1379.1511770833329
       },
       "L2_중": {
         "total": 12,
         "correct": 0,
-        "falsePositive": 1,
-        "missed": 11,
+        "falsePositive": 11,
+        "missed": 1,
         "meanCenterErrDeg": null,
-        "meanTimeMs": 1587.1003091666664
+        "meanTimeMs": 2252.104451416668
       },
       "L3_강": {
         "total": 12,
         "correct": 0,
-        "falsePositive": 0,
-        "missed": 12,
+        "falsePositive": 12,
+        "missed": 0,
         "meanCenterErrDeg": null,
-        "meanTimeMs": 1280.9121041666688
+        "meanTimeMs": 2223.715600583335
       }
     }
   }
