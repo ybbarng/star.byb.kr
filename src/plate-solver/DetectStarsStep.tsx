@@ -355,6 +355,8 @@ export default function DetectStarStep() {
   };
 
   const onPositionUpdate = (id: string, x: number, y: number) => {
+    // 드래그로 미세 조정한 최종 위치를 콘솔에 찍는다(정확히 못 찍었을 때 보정용).
+    console.log(`[라벨] x=${Math.round(x)}, y=${Math.round(y)} (이동)`);
     setCanvasStars(
       canvasStars.map((star) => {
         if (star.id === id) {
