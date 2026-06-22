@@ -226,46 +226,26 @@ const camOf = (P: number[], TP: Mat3): FisheyeCamera => ({
   k1: P[3],
 });
 
-// 라벨 대응 {x,y,v}로 어안 카메라를 피팅한다.
-// (1) 광학중심·초점 격자 탐색 → (2) 좌표하강 정밀화 →
-// (3) 크게 어긋난 라벨(쌍성 혼동·오클릭)은 이상치로 빼고 재피팅(robust).
-export const fitFisheyeCamera = (
+// 시작점 P0에서 좌표하강 + 이상치 robust 제거로 카메라를 푼다(격자 탐색 없이).
+const solveFrom = (
   corr: Corr[],
+  P0: number[],
   imageW: number,
   imageH: number,
 ): FisheyeFit => {
   const diag = Math.hypot(imageW, imageH);
   const scale = [imageW / 20, imageH / 20, diag / 20, 0.05];
 
-  // (1) 거친 격자 탐색 (전체 점, k1=0)
-  const ev0 = makeEval(corr);
-  let P = [imageW / 2, imageH / 2, diag, 0];
-  let gridRms = Infinity;
-
-  for (let pcx = -imageW; pcx <= 2 * imageW; pcx += imageW / 12) {
-    for (let pcy = -imageH; pcy <= 2 * imageH; pcy += imageH / 10) {
-      for (let ffish = diag * 0.4; ffish <= diag * 4; ffish += diag / 15) {
-        const m = ev0(pcx, pcy, ffish, 0);
-
-        if (m.rms < gridRms) {
-          gridRms = m.rms;
-          P = [pcx, pcy, ffish, 0];
-        }
-      }
-    }
-  }
-
-  // (2) 좌표하강
   let pts = corr.slice();
-  let r = descend(ev0, P, scale);
+  let r = descend(makeEval(pts), P0, scale);
   let cam = camOf(r.P, r.TP);
   let curRms = r.rms;
 
-  // (3) robust: 가장 어긋난 라벨을 빼고 다시 맞춰서 RMS가 크게 좋아지면 버린다
-  // (쌍성 혼동·오클릭). 이미 충분히 정확하면(≤4px) 건드리지 않는다.
+  // robust: 가장 어긋난 점을 빼고 다시 맞춰 RMS가 크게 좋아질 때만(0.8배 미만) 버린다.
+  // 이미 충분히 정확하면(≤4px) 건드리지 않는다.
   let dropped = 0;
 
-  for (let iter = 0; iter < 3 && pts.length > 6 && curRms > 4; iter++) {
+  for (let iter = 0; iter < 4 && pts.length > 6 && curRms > 4; iter++) {
     const res = pts.map((c) => {
       const p = projectFisheye(cam, c.v);
 
@@ -285,7 +265,6 @@ export const fitFisheyeCamera = (
       break;
     }
 
-    // 그 점을 빼고 재피팅 → 크게 좋아질 때만(0.8배 미만) 버린다
     const trialPts = pts.filter((_, i) => i !== wi);
     const tr = descend(makeEval(trialPts), r.P, scale);
 
@@ -309,4 +288,103 @@ export const fitFisheyeCamera = (
     used: pts.length,
     dropped,
   };
+};
+
+// 라벨 대응 {x,y,v}로 어안 카메라를 피팅한다.
+// (1) 광학중심·초점 격자 탐색 → (2) 좌표하강 + 이상치 robust 제거.
+export const fitFisheyeCamera = (
+  corr: Corr[],
+  imageW: number,
+  imageH: number,
+): FisheyeFit => {
+  const diag = Math.hypot(imageW, imageH);
+  const ev0 = makeEval(corr);
+  let P = [imageW / 2, imageH / 2, diag, 0];
+  let gridRms = Infinity;
+
+  for (let pcx = -imageW; pcx <= 2 * imageW; pcx += imageW / 12) {
+    for (let pcy = -imageH; pcy <= 2 * imageH; pcy += imageH / 10) {
+      for (let ffish = diag * 0.4; ffish <= diag * 4; ffish += diag / 15) {
+        const m = ev0(pcx, pcy, ffish, 0);
+
+        if (m.rms < gridRms) {
+          gridRms = m.rms;
+          P = [pcx, pcy, ffish, 0];
+        }
+      }
+    }
+  }
+
+  return solveFrom(corr, P, imageW, imageH);
+};
+
+// 거친 카메라에서 시작해, 검출된 별로 카메라를 정밀화한다.
+// 카탈로그 별을 투영 → 그 자리의 검출 별 중심에 맞춰 대응을 모으고 재피팅. 반복하며
+// 허용오차를 좁힌다. 손라벨 몇 개보다 훨씬 많은 정확한 대응으로 정밀도·견고성↑.
+export const refineFisheyeWithDetections = (
+  start: FisheyeCamera,
+  catalog: Point3D[],
+  detected: Point2D[],
+  imageW: number,
+  imageH: number,
+  iterations = 4,
+): FisheyeFit & { matched: number } => {
+  let cam = start;
+  let fit: FisheyeFit = {
+    camera: start,
+    rms: 0,
+    maxRes: 0,
+    used: 0,
+    dropped: 0,
+  };
+  let matched = 0;
+
+  for (let it = 0; it < iterations; it++) {
+    const tol = Math.max(12, 32 - it * 8); // 32→24→16→12px로 좁힘
+    const tol2 = tol * tol;
+    const corr: Corr[] = [];
+
+    for (const v of catalog) {
+      const p = projectFisheye(cam, v);
+
+      if (!p || p[0] < 0 || p[0] >= imageW || p[1] < 0 || p[1] >= imageH) {
+        continue;
+      }
+
+      let best = tol2;
+      let bx = 0;
+      let by = 0;
+      let found = false;
+
+      for (const d of detected) {
+        const dd = (d[0] - p[0]) ** 2 + (d[1] - p[1]) ** 2;
+
+        if (dd < best) {
+          best = dd;
+          bx = d[0];
+          by = d[1];
+          found = true;
+        }
+      }
+
+      if (found) {
+        corr.push({ x: bx, y: by, v });
+      }
+    }
+
+    if (corr.length < 6) {
+      break;
+    }
+
+    matched = corr.length;
+    fit = solveFrom(
+      corr,
+      [cam.pcx, cam.pcy, cam.ffish, cam.k1],
+      imageW,
+      imageH,
+    );
+    cam = fit.camera;
+  }
+
+  return { ...fit, matched };
 };
