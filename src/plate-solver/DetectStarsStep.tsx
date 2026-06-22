@@ -2,46 +2,12 @@
 
 import Konva from "konva";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Stage, Layer, Rect, Text, Image as KonvaImage } from "react-konva";
+import { Stage, Layer, Rect, Image as KonvaImage } from "react-konva";
 import SelectableStarMarker from "@/plate-solver/SelectableStarMarker";
 import StepMover from "@/plate-solver/StepMover";
 import { useContextStore } from "@/plate-solver/store/context";
 import { mergeCloseStars } from "@/search/utils/selectStars";
 import cv from "@/services/cv";
-import catalogStars from "@build/database/vectors-database.json";
-
-// 라벨링용 카탈로그 이름→HR 맵. 사람이 별 이름(Altair 등)이나 HR 번호로 별을 지정한다.
-interface CatStar {
-  HR: string | number;
-  N?: string;
-  x: number;
-  y: number;
-  z: number;
-}
-const namedCatalog = (catalogStars as CatStar[]).filter((s) => s.N);
-const nameToHR = new Map<string, string>(
-  namedCatalog.map((s) => [s.N!.toLowerCase(), String(s.HR)]),
-);
-// 이름이 겹치는 별이 있어(예: Al Thalimain = HR7236·7447) datalist key 충돌을 막으려 중복 제거.
-// 겹치는 이름은 정확히 지정하려면 HR 번호로 입력하면 된다.
-const catalogNameList = [...new Set(namedCatalog.map((s) => s.N!))].sort();
-
-// 입력(별 이름 또는 HR 번호)을 카탈로그 HR로 해석. 못 찾으면 null.
-const resolveToHR = (input: string): string | null => {
-  const t = input.trim();
-
-  if (!t) {
-    return null;
-  }
-
-  const byName = nameToHR.get(t.toLowerCase());
-
-  if (byName) {
-    return byName;
-  }
-
-  return /^\d+$/.test(t) ? t : null;
-};
 
 interface CanvasStar {
   x: number;
@@ -50,10 +16,7 @@ interface CanvasStar {
   fwhm: number; // 퍼짐 크기. 작을수록 또렷한 점(별), 클수록 흐리멍텅한 번짐
   id: string;
   isSelected: boolean;
-  name?: string; // 라벨링 모드에서 사람이 지정한 별 이름/HR (ground truth용)
 }
-
-const NAMED_FILL = "oklch(0.72 0.19 145)"; // 이름 단 별 표시색(초록)
 
 const BLURRY_FILL = "oklch(0.75 0.18 60)"; // 흐릿한 별 표시색(주황)
 
@@ -118,9 +81,6 @@ export default function DetectStarStep() {
   } | null>(null);
   // 또렷함 기준. 이 값보다 fwhm이 크면 흐릿한 별로 보고 주황으로 표시한다.
   const [fwhmCut, setFwhmCut] = useState<number | null>(null);
-  // 라벨링 모드: 별을 클릭해 이름/HR을 달고 data/search JSON으로 내보낸다(ground truth).
-  const [labelMode, setLabelMode] = useState(false);
-  const [labelInput, setLabelInput] = useState("");
 
   useEffect(() => {
     // store에 이미 별 데이터가 있으면 복원, 없으면 새로 검출
@@ -208,19 +168,6 @@ export default function DetectStarStep() {
       window.removeEventListener("keyup", handleKeyUp);
     };
   }, [canvasStars]);
-
-  // 라벨링 중 마커 하나만 선택하면 입력칸에 그 별의 기존 이름을 채운다
-  useEffect(() => {
-    if (!labelMode) {
-      return;
-    }
-
-    const selected = canvasStars.filter((star) => star.isSelected);
-
-    if (selected.length === 1) {
-      setLabelInput(selected[0].name ?? "");
-    }
-  }, [canvasStars, labelMode]);
 
   // 스크린 좌표 → 이미지 좌표 변환
   const getImagePointerPosition = (): { x: number; y: number } | null => {
@@ -338,9 +285,6 @@ export default function DetectStarStep() {
   };
 
   const addStar = (x: number, y: number) => {
-    // 손으로 찍은 마커 좌표를 콘솔에 찍는다. 사용자가 이 좌표와 별 이름을 알려주면
-    // 그걸로 정답(data/search) JSON·카메라 포즈를 만든다.
-    console.log(`[라벨] x=${Math.round(x)}, y=${Math.round(y)}`);
     setCanvasStars([
       ...canvasStars,
       {
@@ -355,8 +299,6 @@ export default function DetectStarStep() {
   };
 
   const onPositionUpdate = (id: string, x: number, y: number) => {
-    // 드래그로 미세 조정한 최종 위치를 콘솔에 찍는다(정확히 못 찍었을 때 보정용).
-    console.log(`[라벨] x=${Math.round(x)}, y=${Math.round(y)} (이동)`);
     setCanvasStars(
       canvasStars.map((star) => {
         if (star.id === id) {
@@ -532,7 +474,7 @@ export default function DetectStarStep() {
   const handleDragEnd = useCallback(() => {
     if (mode === "move" || isPanning) handlePanEnd();
     else handleSelectDragEnd();
-  }, [mode, isPanning, isSelecting, selectArea, canvasStars, labelMode]);
+  }, [mode, isPanning, isSelecting, selectArea, canvasStars]);
 
   const onBeforeNext = async () => {
     const sorted = [...canvasStars].sort((a, b) => b.brightness - a.brightness);
@@ -563,65 +505,6 @@ export default function DetectStarStep() {
   const fwhmMax = fwhmSorted.length ? fwhmSorted[fwhmSorted.length - 1] : 0;
   // 또렷함 기준 슬라이더를 보여줄 수 있는지(모양 정보가 있는 검출 결과일 때)
   const canFilterCrispness = fwhmCut !== null && fwhmMax > fwhmMin;
-
-  // 입력한 이름/HR을 현재 선택된 마커에 단다(보통 하나 선택). 단 뒤 선택 해제.
-  const assignLabel = () => {
-    const name = labelInput.trim();
-
-    if (!name) {
-      return;
-    }
-
-    setCanvasStars(
-      canvasStars.map((star) =>
-        star.isSelected ? { ...star, name, isSelected: false } : star,
-      ),
-    );
-    setLabelInput("");
-  };
-
-  // 이름 단 별들을 data/search 형식 JSON으로 내보낸다(파일 다운로드).
-  const exportLabels = () => {
-    if (!image) {
-      return;
-    }
-
-    const labeled = canvasStars
-      .map((star) => ({ star, hr: star.name ? resolveToHR(star.name) : null }))
-      .filter((e): e is { star: CanvasStar; hr: string } => e.hr !== null);
-
-    if (labeled.length === 0) {
-      console.warn("이름을 단 별이 없습니다.");
-
-      return;
-    }
-
-    const data = {
-      width: image.width,
-      height: image.height,
-      stars: labeled.map(({ star, hr }) => ({
-        label: hr,
-        position: [star.x, star.y],
-        brightness: 1,
-      })),
-    };
-    const blob = new Blob([JSON.stringify(data, null, 2)], {
-      type: "application/json",
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    const base = decodeURIComponent(
-      (image.src.split("/").pop() ?? "labels").replace(/\.[^.]+$/, ""),
-    );
-    a.href = url;
-    a.download = `${base}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const labeledCount = canvasStars.filter(
-    (s) => s.name && resolveToHR(s.name),
-  ).length;
 
   if (!image || !image.width) {
     return (
@@ -695,13 +578,6 @@ export default function DetectStarStep() {
             영역만 재검출
           </button>
           <button
-            className={`btn btn-sm ${labelMode ? "btn-success" : ""}`}
-            onClick={() => setLabelMode((v) => !v)}
-            title="별을 클릭해 이름/HR을 달고 정답(data/search) JSON으로 내보냅니다."
-          >
-            라벨링
-          </button>
-          <button
             className="btn btn-error btn-sm"
             disabled={canvasStars.length < 1}
             onClick={() => setCanvasStars([])}
@@ -710,50 +586,6 @@ export default function DetectStarStep() {
           </button>
         </div>
       </div>
-      {labelMode && (
-        <div className="bg-base-200 rounded-box flex flex-row items-center gap-2 p-2 text-sm">
-          <span className="whitespace-nowrap opacity-70">
-            마커 클릭 → 이름/HR 입력 → Enter
-          </span>
-          <input
-            type="text"
-            list="catalog-star-names"
-            className="input input-sm w-56"
-            placeholder="예: Altair 또는 7557"
-            value={labelInput}
-            onChange={(e) => setLabelInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                assignLabel();
-              }
-            }}
-          />
-          <datalist id="catalog-star-names">
-            {catalogNameList.map((n) => (
-              <option key={n} value={n} />
-            ))}
-          </datalist>
-          <button
-            className="btn btn-success btn-sm"
-            onClick={assignLabel}
-            disabled={!labelInput.trim()}
-          >
-            이름 달기
-          </button>
-          <span className="whitespace-nowrap opacity-70">
-            이름 단 별 {labeledCount}개
-          </span>
-          <button
-            className="btn btn-sm"
-            onClick={exportLabels}
-            disabled={labeledCount < 1}
-            title="data/search 형식 JSON으로 다운로드"
-          >
-            JSON 내보내기
-          </button>
-        </div>
-      )}
       <div
         ref={containerRef}
         className="h-full w-full overflow-hidden"
@@ -789,32 +621,12 @@ export default function DetectStarStep() {
                   x={star.x}
                   y={star.y}
                   isSelected={star.isSelected}
-                  fill={
-                    star.name
-                      ? NAMED_FILL
-                      : isBlurry(star)
-                        ? BLURRY_FILL
-                        : undefined
-                  }
+                  fill={isBlurry(star) ? BLURRY_FILL : undefined}
                   onPositionUpdate={onPositionUpdate}
                   remove={removeStar}
                   select={selectStar}
                 />
               ))}
-              {canvasStars
-                .filter((star) => star.name)
-                .map((star) => (
-                  <Text
-                    key={`name-${star.id}`}
-                    x={star.x + 16}
-                    y={star.y - 34}
-                    text={star.name}
-                    fontSize={26}
-                    fontStyle="bold"
-                    fill={NAMED_FILL}
-                    listening={false}
-                  />
-                ))}
               {lastBox && !selectArea.visible && (
                 <Rect
                   x={lastBox.x1}

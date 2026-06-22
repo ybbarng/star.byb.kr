@@ -214,22 +214,10 @@ export default function PlateSolvingStep() {
       <div className="flex h-full flex-row overflow-hidden">
         {fisheyeCamera && (
           <div className="bg-base-200 rounded-box flex h-full w-100 shrink-0 flex-col gap-2 p-4">
-            <div className="text-success text-xl font-bold">어안 보정 적용</div>
-            <div className="text-sm opacity-80">
-              초광각(어안) 렌즈로 찍은 사진이라 직선투영으로는 안 맞습니다.{" "}
-              {labelFisheye
-                ? "사람이 라벨한 별로 어안 카메라를 보정해 별자리를 그렸습니다."
-                : "어안 카메라를 자동으로 복원해(라벨 없이) 별자리를 그렸습니다."}
+            <div className="text-success font-bold">별자리를 찾았습니다</div>
+            <div className="text-xs opacity-60">
+              초광각(어안) 렌즈 보정을 적용했습니다.
             </div>
-            {labelFisheye && (
-              <div className="text-xs opacity-60">
-                피팅 오차 RMS {labelFisheye.rms.toFixed(1)}px · 라벨{" "}
-                {labelFisheye.used}개 사용
-                {labelFisheye.dropped > 0 &&
-                  ` (어긋난 ${labelFisheye.dropped}개 제외)`}
-              </div>
-            )}
-            {answer && <KnownAnswerNote answer={answer} found />}
           </div>
         )}
         {!fisheyeCamera && (solving || !ready) && (
