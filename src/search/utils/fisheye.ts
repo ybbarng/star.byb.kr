@@ -129,22 +129,36 @@ export const fitFisheyeCamera = (
 ): FisheyeFit => {
   const diag = Math.hypot(imageW, imageH);
 
+  const IDENTITY: Mat3 = [
+    [1, 0, 0],
+    [0, 1, 0],
+    [0, 0, 1],
+  ];
+
+  // 격자 탐색 중 극단적 파라미터는 퇴화된 변환(det≈0)을 만들어 mat3Inv가 던질 수
+  // 있다. 그런 조합은 실패로 보고 건너뛴다(RMS=Infinity).
   const evalModel = (pcx: number, pcy: number, ffish: number) => {
-    const TP = fitPoseRect(
-      corr.map((c) => ({ p: rectify(c.x, c.y, pcx, pcy, ffish), v: c.v })),
-    );
-    let sse = 0;
-    let maxRes = 0;
+    try {
+      const TP = fitPoseRect(
+        corr.map((c) => ({ p: rectify(c.x, c.y, pcx, pcy, ffish), v: c.v })),
+      );
+      let sse = 0;
+      let maxRes = 0;
 
-    for (const c of corr) {
-      const uv = projectVecToPhoto(TP, c.v);
-      const obs = uv ? fisheyeForward(uv[0], uv[1], pcx, pcy, ffish) : null;
-      const res = obs ? Math.hypot(obs[0] - c.x, obs[1] - c.y) : Infinity;
-      sse += res * res;
-      maxRes = Math.max(maxRes, res);
+      for (const c of corr) {
+        const uv = projectVecToPhoto(TP, c.v);
+        const obs = uv ? fisheyeForward(uv[0], uv[1], pcx, pcy, ffish) : null;
+        const res = obs ? Math.hypot(obs[0] - c.x, obs[1] - c.y) : Infinity;
+        sse += res * res;
+        maxRes = Math.max(maxRes, res);
+      }
+
+      const rms = Math.sqrt(sse / corr.length);
+
+      return { TP, rms: Number.isFinite(rms) ? rms : Infinity, maxRes };
+    } catch {
+      return { TP: IDENTITY, rms: Infinity, maxRes: Infinity };
     }
-
-    return { TP, rms: Math.sqrt(sse / corr.length), maxRes };
   };
 
   const search = (
