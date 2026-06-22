@@ -338,6 +338,9 @@ export default function DetectStarStep() {
   };
 
   const addStar = (x: number, y: number) => {
+    // 손으로 찍은 마커 좌표를 콘솔에 찍는다. 사용자가 이 좌표와 별 이름을 알려주면
+    // 그걸로 정답(data/search) JSON·카메라 포즈를 만든다.
+    console.log(`[라벨] x=${Math.round(x)}, y=${Math.round(y)}`);
     setCanvasStars([
       ...canvasStars,
       {
@@ -412,23 +415,6 @@ export default function DetectStarStep() {
     if (mode === "move") return;
     const pos = getImagePointerPosition();
     if (pos) addStar(pos.x, pos.y);
-  };
-
-  // 라벨링 중 클릭하면 사진 좌표를 콘솔에 찍는다(드래그/모드와 무관). 빈 곳을
-  // 클릭하면 마커도 새로 만들어 시각 확인. 사용자가 좌표+별이름을 알려주면 정답
-  // JSON을 만든다.
-  const handleStageClick = (e: Konva.KonvaEventObject<MouseEvent>) => {
-    if (!labelMode) return;
-    const pos = getImagePointerPosition();
-    if (!pos) return;
-
-    console.log(`[라벨] x=${Math.round(pos.x)}, y=${Math.round(pos.y)}`);
-
-    const cls = e.target.getClassName?.();
-
-    if (cls === "Image" || cls === "Stage") {
-      addStar(pos.x, pos.y);
-    }
   };
 
   // --- 선택 모드 핸들러 ---
@@ -784,7 +770,6 @@ export default function DetectStarStep() {
             x={stagePos.x}
             y={stagePos.y}
             onWheel={handleWheel}
-            onClick={handleStageClick}
             onDblClick={handleDoubleClick}
             onMouseDown={handleDragStart}
             onTouchStart={handleDragStart}
