@@ -470,6 +470,20 @@ export default function DetectStarStep() {
       .filter((star) => Konva.Util.haveIntersection(box, star.getClientRect()))
       .map((star) => star.id());
 
+    // 라벨링 중 빈 곳을 '클릭'(드래그 아님)하면 마커를 새로 만들어 바로 선택한다.
+    // 검출 안 된 별도 사람이 직접 찍어 이름을 달 수 있게.
+    const dragDist = Math.hypot(pos.x - selectArea.x1, pos.y - selectArea.y1);
+
+    if (labelMode && selected.length === 0 && dragDist < 6) {
+      const id = crypto.randomUUID();
+      setCanvasStars([
+        ...canvasStars.map((star) => ({ ...star, isSelected: false })),
+        { id, x: pos.x, y: pos.y, brightness: 0, fwhm: 0, isSelected: true },
+      ]);
+
+      return;
+    }
+
     if (selected.length < 1) return;
 
     setCanvasStars(
