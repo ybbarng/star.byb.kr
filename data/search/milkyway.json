@@ -1,0 +1,78 @@
+{
+  "width": 1200,
+  "height": 801,
+  "stars": [
+    {
+      "label": "7557",
+      "position": [
+        3,
+        244
+      ],
+      "brightness": 1,
+      "name": "Altair"
+    },
+    {
+      "label": "6527",
+      "position": [
+        986,
+        670
+      ],
+      "brightness": 1,
+      "name": "Shaula"
+    },
+    {
+      "label": "6378",
+      "position": [
+        967,
+        278
+      ],
+      "brightness": 1,
+      "name": "Sabik"
+    },
+    {
+      "label": "6175",
+      "position": [
+        1127,
+        79
+      ],
+      "brightness": 1,
+      "name": null
+    },
+    {
+      "label": "7121",
+      "position": [
+        634,
+        648
+      ],
+      "brightness": 1,
+      "name": "Nunki"
+    },
+    {
+      "label": "7194",
+      "position": [
+        643,
+        705
+      ],
+      "brightness": 1,
+      "name": "Ascella"
+    },
+    {
+      "label": "7377",
+      "position": [
+        201,
+        284
+      ],
+      "brightness": 1,
+      "name": null
+    },
+    {
+      "label": "6869",
+      "position": [
+        538,
+        218
+      ],
+      "brightness": 1,
+      "name": null
+    }
+  ]
+}
