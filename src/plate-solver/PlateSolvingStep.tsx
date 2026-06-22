@@ -209,8 +209,9 @@ export default function PlateSolvingStep() {
               사람이 라벨한 별로 어안 카메라를 보정해 별자리를 그렸습니다.
             </div>
             <div className="text-xs opacity-60">
-              피팅 오차 RMS {fisheye.rms.toFixed(1)}px · 어안초점 f≈
-              {fisheye.camera.ffish.toFixed(0)}px
+              피팅 오차 RMS {fisheye.rms.toFixed(1)}px · 라벨 {fisheye.used}개
+              사용
+              {fisheye.dropped > 0 && ` (어긋난 ${fisheye.dropped}개 제외)`}
             </div>
             {answer && <KnownAnswerNote answer={answer} found />}
           </div>

@@ -9,15 +9,29 @@ import {
   recoverCenter,
 } from "@/search/utils/wcs";
 
-// 등거리 어안(r = f·θ) 카메라 모델. 초광각 은하수 사진처럼 직선투영(핀홀)으로
-// 안 맞는 렌즈를 다룬다. 광학중심(pcx,pcy)·어안초점(ffish)을 자유 변수로 둔다.
+// 어안 카메라 모델. 기본은 등거리(r = f·θ)이고, 실제 렌즈의 이탈을 잡으려 θ 다항식
+// 항 k1을 둔다: r = f·(θ + k1·θ³). 광학중심(pcx,pcy)도 자유 변수(크롭/디센터 대응).
 // TP는 카탈로그 방향을 "직선투영 등가 평면 [tanθ·cosφ, tanθ·sinφ]"으로 보내는 변환.
 export interface FisheyeCamera {
   TP: Mat3;
   pcx: number;
   pcy: number;
   ffish: number;
+  k1: number;
 }
+
+// 관측 반경 r에서 광축 각도 θ를 구한다 (r/f = θ + k1·θ³, Newton).
+const angleFromRadius = (rOverF: number, k1: number): number => {
+  let theta = rOverF;
+
+  for (let i = 0; i < 6; i++) {
+    const g = theta + k1 * theta * theta * theta - rOverF;
+    const gp = 1 + 3 * k1 * theta * theta;
+    theta -= g / gp;
+  }
+
+  return theta;
+};
 
 // 관측(어안) 픽셀 → 직선투영 등가 좌표
 export const rectify = (
@@ -26,6 +40,7 @@ export const rectify = (
   pcx: number,
   pcy: number,
   ffish: number,
+  k1: number,
 ): Point2D => {
   const xc = x - pcx;
   const yc = y - pcy;
@@ -35,7 +50,8 @@ export const rectify = (
     return [0, 0];
   }
 
-  const t = Math.tan(r / ffish);
+  const theta = angleFromRadius(r / ffish, k1);
+  const t = Math.tan(theta);
 
   return [(t * xc) / r, (t * yc) / r];
 };
@@ -47,6 +63,7 @@ export const fisheyeForward = (
   pcx: number,
   pcy: number,
   ffish: number,
+  k1: number,
 ): Point2D => {
   const rt = Math.hypot(u, v);
 
@@ -54,7 +71,8 @@ export const fisheyeForward = (
     return [pcx, pcy];
   }
 
-  const rObs = ffish * Math.atan(rt);
+  const theta = Math.atan(rt);
+  const rObs = ffish * (theta + k1 * theta * theta * theta);
 
   return [pcx + (rObs * u) / rt, pcy + (rObs * v) / rt];
 };
@@ -70,7 +88,7 @@ export const projectFisheye = (
     return null;
   }
 
-  return fisheyeForward(uv[0], uv[1], cam.pcx, cam.pcy, cam.ffish);
+  return fisheyeForward(uv[0], uv[1], cam.pcx, cam.pcy, cam.ffish, cam.k1);
 };
 
 // 직선투영 등가 좌표(rectified)와 카탈로그 방향 대응으로 포즈(TP) 피팅.
@@ -118,42 +136,39 @@ export interface FisheyeFit {
   camera: FisheyeCamera;
   rms: number;
   maxRes: number;
+  used: number; // 피팅에 실제로 쓴 라벨 수
+  dropped: number; // 이상치로 제외한 라벨 수
 }
 
-// 라벨 대응 {x,y,v}로 어안 카메라를 피팅한다(광학중심·어안초점 격자 탐색 → 정밀화).
-// imageW/imageH로 탐색 범위를 잡는다. 대응은 화면 곳곳에 흩어질수록 좋다.
-export const fitFisheyeCamera = (
-  corr: { x: number; y: number; v: Point3D }[],
-  imageW: number,
-  imageH: number,
-): FisheyeFit => {
-  const diag = Math.hypot(imageW, imageH);
+const IDENTITY: Mat3 = [
+  [1, 0, 0],
+  [0, 1, 0],
+  [0, 0, 1],
+];
 
-  const IDENTITY: Mat3 = [
-    [1, 0, 0],
-    [0, 1, 0],
-    [0, 0, 1],
-  ];
+type Corr = { x: number; y: number; v: Point3D };
 
-  // 격자 탐색 중 극단적 파라미터는 퇴화된 변환(det≈0)을 만들어 mat3Inv가 던질 수
-  // 있다. 그런 조합은 실패로 보고 건너뛴다(RMS=Infinity).
-  const evalModel = (pcx: number, pcy: number, ffish: number) => {
+// 한 점 집합에 대한 평가 함수 (파라미터 → TP·RMS). 부분집합 재피팅에 재사용한다.
+const makeEval =
+  (pts: Corr[]) => (pcx: number, pcy: number, ffish: number, k1: number) => {
     try {
       const TP = fitPoseRect(
-        corr.map((c) => ({ p: rectify(c.x, c.y, pcx, pcy, ffish), v: c.v })),
+        pts.map((c) => ({ p: rectify(c.x, c.y, pcx, pcy, ffish, k1), v: c.v })),
       );
       let sse = 0;
       let maxRes = 0;
 
-      for (const c of corr) {
+      for (const c of pts) {
         const uv = projectVecToPhoto(TP, c.v);
-        const obs = uv ? fisheyeForward(uv[0], uv[1], pcx, pcy, ffish) : null;
+        const obs = uv
+          ? fisheyeForward(uv[0], uv[1], pcx, pcy, ffish, k1)
+          : null;
         const res = obs ? Math.hypot(obs[0] - c.x, obs[1] - c.y) : Infinity;
         sse += res * res;
         maxRes = Math.max(maxRes, res);
       }
 
-      const rms = Math.sqrt(sse / corr.length);
+      const rms = Math.sqrt(sse / pts.length);
 
       return { TP, rms: Number.isFinite(rms) ? rms : Infinity, maxRes };
     } catch {
@@ -161,48 +176,137 @@ export const fitFisheyeCamera = (
     }
   };
 
-  const search = (
-    pcxR: [number, number, number],
-    pcyR: [number, number, number],
-    fR: [number, number, number],
-    seed: { pcx: number; pcy: number; ffish: number; rms: number },
-  ) => {
-    let best = seed;
+type EvalFn = ReturnType<typeof makeEval>;
 
-    for (let pcx = pcxR[0]; pcx <= pcxR[1]; pcx += pcxR[2]) {
-      for (let pcy = pcyR[0]; pcy <= pcyR[1]; pcy += pcyR[2]) {
-        for (let ffish = fR[0]; ffish <= fR[1]; ffish += fR[2]) {
-          const r = evalModel(pcx, pcy, ffish);
+// (pcx,pcy,ffish,k1) 좌표하강. 시작점 P0에서 스텝을 줄여가며 픽셀 RMS를 최소화.
+const descend = (ev: EvalFn, P0: number[], scale: number[]) => {
+  let P = P0.slice();
+  const m = ev(P[0], P[1], P[2], P[3]);
+  let bestRms = m.rms;
+  let bestTP = m.TP;
+  const step = scale.slice();
 
-          if (r.rms < best.rms) {
-            best = { pcx, pcy, ffish, rms: r.rms };
-          }
+  for (let round = 0; round < 400; round++) {
+    let improved = false;
+
+    for (let i = 0; i < 4; i++) {
+      for (const dir of [1, -1]) {
+        const cand = P.slice();
+        cand[i] += dir * step[i];
+        const c = ev(cand[0], cand[1], cand[2], cand[3]);
+
+        if (c.rms < bestRms - 1e-6) {
+          bestRms = c.rms;
+          bestTP = c.TP;
+          P = cand;
+          improved = true;
         }
       }
     }
 
-    return best;
-  };
+    if (!improved) {
+      for (let i = 0; i < 4; i++) {
+        step[i] *= 0.5;
+      }
 
-  const init = { pcx: imageW / 2, pcy: imageH / 2, ffish: diag, rms: Infinity };
-  const coarse = search(
-    [-imageW, 2 * imageW, imageW / 12],
-    [-imageH, 2 * imageH, imageH / 10],
-    [diag * 0.4, diag * 4, diag / 15],
-    init,
-  );
-  const fine = search(
-    [coarse.pcx - imageW / 12, coarse.pcx + imageW / 12, imageW / 60],
-    [coarse.pcy - imageH / 10, coarse.pcy + imageH / 10, imageH / 50],
-    [coarse.ffish - diag / 15, coarse.ffish + diag / 15, diag / 75],
-    coarse,
-  );
+      if (step[0] < 0.02 && step[2] < 0.02) {
+        break;
+      }
+    }
+  }
 
-  const m = evalModel(fine.pcx, fine.pcy, fine.ffish);
+  return { P, rms: bestRms, TP: bestTP };
+};
+
+const camOf = (P: number[], TP: Mat3): FisheyeCamera => ({
+  TP,
+  pcx: P[0],
+  pcy: P[1],
+  ffish: P[2],
+  k1: P[3],
+});
+
+// 라벨 대응 {x,y,v}로 어안 카메라를 피팅한다.
+// (1) 광학중심·초점 격자 탐색 → (2) 좌표하강 정밀화 →
+// (3) 크게 어긋난 라벨(쌍성 혼동·오클릭)은 이상치로 빼고 재피팅(robust).
+export const fitFisheyeCamera = (
+  corr: Corr[],
+  imageW: number,
+  imageH: number,
+): FisheyeFit => {
+  const diag = Math.hypot(imageW, imageH);
+  const scale = [imageW / 20, imageH / 20, diag / 20, 0.05];
+
+  // (1) 거친 격자 탐색 (전체 점, k1=0)
+  const ev0 = makeEval(corr);
+  let P = [imageW / 2, imageH / 2, diag, 0];
+  let gridRms = Infinity;
+
+  for (let pcx = -imageW; pcx <= 2 * imageW; pcx += imageW / 12) {
+    for (let pcy = -imageH; pcy <= 2 * imageH; pcy += imageH / 10) {
+      for (let ffish = diag * 0.4; ffish <= diag * 4; ffish += diag / 15) {
+        const m = ev0(pcx, pcy, ffish, 0);
+
+        if (m.rms < gridRms) {
+          gridRms = m.rms;
+          P = [pcx, pcy, ffish, 0];
+        }
+      }
+    }
+  }
+
+  // (2) 좌표하강
+  let pts = corr.slice();
+  let r = descend(ev0, P, scale);
+  let cam = camOf(r.P, r.TP);
+  let curRms = r.rms;
+
+  // (3) robust: 가장 어긋난 라벨을 빼고 다시 맞춰서 RMS가 크게 좋아지면 버린다
+  // (쌍성 혼동·오클릭). 이미 충분히 정확하면(≤4px) 건드리지 않는다.
+  let dropped = 0;
+
+  for (let iter = 0; iter < 3 && pts.length > 6 && curRms > 4; iter++) {
+    const res = pts.map((c) => {
+      const p = projectFisheye(cam, c.v);
+
+      return p ? Math.hypot(p[0] - c.x, p[1] - c.y) : Infinity;
+    });
+    let worst = 0;
+    let wi = -1;
+
+    res.forEach((v, i) => {
+      if (v > worst) {
+        worst = v;
+        wi = i;
+      }
+    });
+
+    if (wi < 0) {
+      break;
+    }
+
+    // 그 점을 빼고 재피팅 → 크게 좋아질 때만(0.8배 미만) 버린다
+    const trialPts = pts.filter((_, i) => i !== wi);
+    const tr = descend(makeEval(trialPts), r.P, scale);
+
+    if (tr.rms >= curRms * 0.8) {
+      break;
+    }
+
+    pts = trialPts;
+    r = tr;
+    cam = camOf(r.P, r.TP);
+    curRms = tr.rms;
+    dropped++;
+  }
+
+  const fm = makeEval(pts)(cam.pcx, cam.pcy, cam.ffish, cam.k1);
 
   return {
-    camera: { TP: m.TP, pcx: fine.pcx, pcy: fine.pcy, ffish: fine.ffish },
-    rms: m.rms,
-    maxRes: m.maxRes,
+    camera: cam,
+    rms: fm.rms,
+    maxRes: fm.maxRes,
+    used: pts.length,
+    dropped,
   };
 };
