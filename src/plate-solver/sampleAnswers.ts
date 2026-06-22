@@ -35,6 +35,22 @@ const byFilename: Record<string, SampleAnswer> = {
     fovDeg: 73,
     name: "여름 은하수 (방패·궁수·전갈·독수리)",
   },
+  // 브라우저 풀이가 유의도 37.7로 확신한 해. 중심 별이 북두칠성 7별(Megrez·Alioth·
+  // Phecda·Mizar·Dubhe·Merak·Alkaid)임을 카탈로그로 확인.
+  "20230904-nike-jeungseun-02.png": {
+    centerRaDeg: 184.7,
+    centerDecDeg: 58.5,
+    fovDeg: 55.5,
+    name: "큰곰자리 (북두칠성)",
+  },
+  // 브라우저 풀이가 유의도 75.0으로 확신한 해. 중심 별이 오리온 삼태성(Mintaka·Alnilam·
+  // Alnitak) + Betelgeuse·Rigel·Bellatrix임을 카탈로그로 확인.
+  "cafe-orion.jpg": {
+    centerRaDeg: 83.1,
+    centerDecDeg: 1.2,
+    fovDeg: 16.8,
+    name: "오리온자리",
+  },
 };
 
 // image.src(URL)에서 파일명을 뽑아 알려진 정답을 찾는다. 업로드 사진은 정답이 없다.
