@@ -27,14 +27,13 @@ const byFilename: Record<string, SampleAnswer> = {
     fovDeg: 51,
     name: "센타우루스·남십자 (남반구)",
   },
-  // 여름 은하수(은하 중심부). 밝은 별들이 ~60°에 걸쳐 광각(FOV~75°).
-  // 안타레스·궁수 등 밝은 별이 건물에 가려 아직 검증된 정확한 포즈는 없음(대략).
+  // 여름 은하수(은하 중심부). 초광각 어안 사진. 사람이 라벨한 별 8개로 어안 카메라를
+  // 피팅해(RMS ~5px) 사진 중심 방향·시야를 검증함 — 직선투영으론 안 풀리는 사진의 정답.
   "20220328-brice-Milky Way over Buzzvil.jpg": {
-    centerRaDeg: 281,
+    centerRaDeg: 277,
     centerDecDeg: -12,
-    fovDeg: 75,
+    fovDeg: 73,
     name: "여름 은하수 (방패·궁수·전갈·독수리)",
-    approximate: true,
   },
 };
 
