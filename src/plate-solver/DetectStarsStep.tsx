@@ -414,6 +414,23 @@ export default function DetectStarStep() {
     if (pos) addStar(pos.x, pos.y);
   };
 
+  // 라벨링 중 클릭하면 사진 좌표를 콘솔에 찍는다(드래그/모드와 무관). 빈 곳을
+  // 클릭하면 마커도 새로 만들어 시각 확인. 사용자가 좌표+별이름을 알려주면 정답
+  // JSON을 만든다.
+  const handleStageClick = (e: Konva.KonvaEventObject<MouseEvent>) => {
+    if (!labelMode) return;
+    const pos = getImagePointerPosition();
+    if (!pos) return;
+
+    console.log(`[라벨] x=${Math.round(pos.x)}, y=${Math.round(pos.y)}`);
+
+    const cls = e.target.getClassName?.();
+
+    if (cls === "Image" || cls === "Stage") {
+      addStar(pos.x, pos.y);
+    }
+  };
+
   // --- 선택 모드 핸들러 ---
   const handleSelectDragStart = () => {
     const pos = getImagePointerPosition();
@@ -471,25 +488,6 @@ export default function DetectStarStep() {
     const selected = stars
       .filter((star) => Konva.Util.haveIntersection(box, star.getClientRect()))
       .map((star) => star.id());
-
-    // 라벨링 중 '클릭'(드래그 아님)하면 사진 좌표를 콘솔에 찍는다. 사용자가 이
-    // 좌표와 별 이름을 알려주면 그걸로 정답(data/search) JSON을 만든다.
-    const dragDist = Math.hypot(pos.x - selectArea.x1, pos.y - selectArea.y1);
-
-    if (labelMode && dragDist < 6) {
-      console.log(`[라벨] x=${Math.round(pos.x)}, y=${Math.round(pos.y)}`);
-
-      // 빈 곳이면 마커를 새로 만들어 선택(시각 확인용). 검출 안 된 별도 찍을 수 있게.
-      if (selected.length === 0) {
-        const id = crypto.randomUUID();
-        setCanvasStars([
-          ...canvasStars.map((star) => ({ ...star, isSelected: false })),
-          { id, x: pos.x, y: pos.y, brightness: 0, fwhm: 0, isSelected: true },
-        ]);
-
-        return;
-      }
-    }
 
     if (selected.length < 1) return;
 
@@ -786,6 +784,7 @@ export default function DetectStarStep() {
             x={stagePos.x}
             y={stagePos.y}
             onWheel={handleWheel}
+            onClick={handleStageClick}
             onDblClick={handleDoubleClick}
             onMouseDown={handleDragStart}
             onTouchStart={handleDragStart}
