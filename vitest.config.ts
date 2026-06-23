@@ -15,5 +15,7 @@ export default defineConfig({
     environment: "node",
     include: ["src/test/**/*.{test,bench}.ts"],
     testTimeout: 30000,
+    // 카탈로그 인덱스(KD-Tree·삼각형) 구축 setup 훅이 무거워 기본 10초를 넘길 수 있다.
+    hookTimeout: 60000,
   },
 });
