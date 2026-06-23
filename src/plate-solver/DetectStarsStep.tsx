@@ -48,7 +48,6 @@ export default function DetectStarStep() {
   const photoStars = useContextStore((state) => state.photoStars);
   const setPhotoStars = useContextStore((state) => state.setPhotoStars);
   const [canvasStars, setCanvasStars] = useState<CanvasStar[]>([]);
-  const [isSelecting, setIsSelecting] = useState(false);
   const [selectArea, setSelectArea] = useState<SelectArea>({
     x1: 0,
     x2: 0,
@@ -179,6 +178,21 @@ export default function DetectStarStep() {
     return {
       x: (pos.x - stage.x()) / stage.scaleX(),
       y: (pos.y - stage.y()) / stage.scaleY(),
+    };
+  };
+
+  // 브라우저 client 좌표 → 이미지 좌표 (캔버스 밖 window 이벤트에서도 쓰려고).
+  const clientToImage = (
+    clientX: number,
+    clientY: number,
+  ): { x: number; y: number } | null => {
+    const stage = stageRef.current;
+    if (!stage) return null;
+    const rect = stage.container().getBoundingClientRect();
+
+    return {
+      x: (clientX - rect.left - stage.x()) / stage.scaleX(),
+      y: (clientY - rect.top - stage.y()) / stage.scaleY(),
     };
   };
 
@@ -362,70 +376,74 @@ export default function DetectStarStep() {
   };
 
   // --- 선택 모드 핸들러 ---
+  // 드래그가 캔버스(Stage) 밖으로 나가도 이어지도록 window pointer 이벤트로 처리한다.
+  // (세로 사진은 이미지가 높이를 꽉 채워 아래로 나가면 Stage 이벤트가 끊기던 문제)
   const handleSelectDragStart = () => {
-    const pos = getImagePointerPosition();
-    if (!pos) return;
-
-    setIsSelecting(true);
-    setSelectArea({
-      x1: pos.x,
-      y1: pos.y,
-      x2: pos.x,
-      y2: pos.y,
-      visible: false,
-    });
-  };
-
-  const handleSelectDragMove = () => {
-    if (!isSelecting) return;
-    const pos = getImagePointerPosition();
-    if (!pos) return;
+    const start = getImagePointerPosition();
+    if (!start) return;
 
     setSelectArea({
-      ...selectArea,
-      x2: pos.x,
-      y2: pos.y,
-      visible: true,
-    });
-  };
-
-  const handleSelectDragEnd = () => {
-    if (!isSelecting) return;
-    const pos = getImagePointerPosition();
-    if (!pos) return;
-
-    setIsSelecting(false);
-    setSelectArea({
-      ...selectArea,
-      x2: pos.x,
-      y2: pos.y,
+      x1: start.x,
+      y1: start.y,
+      x2: start.x,
+      y2: start.y,
       visible: false,
     });
 
-    // 영역 재검출에 쓸 수 있도록 그린 사각형을 기억(이미지 좌표, 정규화)
-    setLastBox({
-      x1: Math.min(selectArea.x1, pos.x),
-      y1: Math.min(selectArea.y1, pos.y),
-      x2: Math.max(selectArea.x1, pos.x),
-      y2: Math.max(selectArea.y1, pos.y),
-    });
+    const onMove = (e: PointerEvent) => {
+      const p = clientToImage(e.clientX, e.clientY);
+      if (!p) return;
 
-    const select = stageRef.current?.find(".select")[0];
-    const stars = stageRef.current?.find(".star");
-    if (!select || !stars) return;
+      setSelectArea({
+        x1: start.x,
+        y1: start.y,
+        x2: p.x,
+        y2: p.y,
+        visible: true,
+      });
+    };
 
-    const box = select.getClientRect();
-    const selected = stars
-      .filter((star) => Konva.Util.haveIntersection(box, star.getClientRect()))
-      .map((star) => star.id());
+    const onUp = (e: PointerEvent) => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      finalizeSelection(start, clientToImage(e.clientX, e.clientY) ?? start);
+    };
 
-    if (selected.length < 1) return;
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+  };
+
+  // 시작·끝 이미지 좌표로 선택 사각형을 확정하고, 그 안의 별을 선택한다.
+  const finalizeSelection = (
+    start: { x: number; y: number },
+    end: { x: number; y: number },
+  ) => {
+    const x1 = Math.min(start.x, end.x);
+    const x2 = Math.max(start.x, end.x);
+    const y1 = Math.min(start.y, end.y);
+    const y2 = Math.max(start.y, end.y);
+
+    setSelectArea((a) => ({ ...a, visible: false }));
+    // 영역 재검출에 쓸 수 있도록 그린 사각형을 기억
+    setLastBox({ x1, y1, x2, y2 });
+
+    // 거의 안 움직였으면(클릭) 선택 변경 안 함
+    if (Math.hypot(end.x - start.x, end.y - start.y) < 3) {
+      return;
+    }
+
+    const inBox = new Set(
+      canvasStars
+        .filter((s) => s.x >= x1 && s.x <= x2 && s.y >= y1 && s.y <= y2)
+        .map((s) => s.id),
+    );
+
+    if (inBox.size < 1) {
+      return;
+    }
 
     setCanvasStars(
-      canvasStars.map((star) => ({
-        ...star,
-        isSelected: selected.includes(star.id),
-      })),
+      canvasStars.map((star) => ({ ...star, isSelected: inBox.has(star.id) })),
     );
   };
 
@@ -467,14 +485,13 @@ export default function DetectStarStep() {
   }, [mode, canvasStars, stagePos]);
 
   const handleDragMove = useCallback(() => {
+    // 선택 드래그는 window pointer 이벤트가 처리한다(캔버스 밖에서도 이어지게).
     if (mode === "move" || isPanning) handlePanMove();
-    else handleSelectDragMove();
-  }, [mode, isPanning, isSelecting, selectArea, stagePos]);
+  }, [mode, isPanning, stagePos]);
 
   const handleDragEnd = useCallback(() => {
     if (mode === "move" || isPanning) handlePanEnd();
-    else handleSelectDragEnd();
-  }, [mode, isPanning, isSelecting, selectArea, canvasStars]);
+  }, [mode, isPanning]);
 
   const onBeforeNext = async () => {
     const sorted = [...canvasStars].sort((a, b) => b.brightness - a.brightness);
