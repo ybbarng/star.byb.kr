@@ -14,12 +14,14 @@ const naiveTriangleKeys = (
   stars: { hr: string; vector: [number, number, number] }[],
 ): Set<string> => {
   const cosMax = Math.cos((MAX_ANGLE_DEG * Math.PI) / 180);
+
   const near = (i: number, j: number) => {
     const a = stars[i].vector;
     const b = stars[j].vector;
 
     return a[0] * b[0] + a[1] * b[1] + a[2] * b[2] > cosMax;
   };
+
   const keys = new Set<string>();
 
   for (let i = 0; i < stars.length; i++) {
