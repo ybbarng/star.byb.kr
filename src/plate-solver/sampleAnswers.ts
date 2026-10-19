@@ -53,6 +53,28 @@ const byFilename: Record<string, SampleAnswer> = {
     fovDeg: 59.1,
     name: "남십자·켄타우루스 (남반구)",
   },
+  // 아래 셋은 개선 quad solver가 자동으로 확신한 해. 예측 위치에 겹친 별을 눈으로 확인.
+  // 카시오페이아 W(Caph·Schedar·Navi·Ruchbah)·북극성·Kochab
+  "20230904-nike-jeungseun-03.png": {
+    centerRaDeg: 350.7,
+    centerDecDeg: 65.8,
+    fovDeg: 55,
+    name: "카시오페이아·북극성",
+  },
+  // 여름의 대삼각형(직녀성·데네브·견우성)·백조자리 Sadr. 어두운 사진이라 log-odds 9.7로 기준을 간신히 넘음
+  "20230904-nike-jeungseun-04.png": {
+    centerRaDeg: 289.5,
+    centerDecDeg: 29,
+    fovDeg: 54.8,
+    name: "여름의 대삼각형 (거문고·백조·독수리)",
+  },
+  // 안타레스·전갈 꼬리(Shaula·Sargas)·리길 켄타우루스·하다르
+  "20231012-nike-aust-02.jpg": {
+    centerRaDeg: 241.5,
+    centerDecDeg: -33.9,
+    fovDeg: 58.2,
+    name: "전갈·켄타우루스 (남반구)",
+  },
   "cafe-orion.jpg": {
     centerRaDeg: 83.1,
     centerDecDeg: 1.2,
