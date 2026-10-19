@@ -31,35 +31,21 @@ export default function SelectPhotoStep() {
   const previewSrc =
     imageType === ImageType.SAMPLE ? selectedSample.src : uploadedUrl;
 
+  // 다음 단계(검출)는 사진의 실제 크기가 필요해, 사진을 다 불러온 뒤에 넘어간다.
   const onBeforeNext = async () => {
     if (!previewSrc) {
       return;
     }
 
     const image = new Image();
+    const loaded = new Promise<void>((resolve, reject) => {
+      image.onload = () => resolve();
+      image.onerror = () => reject(new Error("사진을 불러오지 못했습니다."));
+    });
 
-    if (imageType === ImageType.UPLOAD && uploadedImage) {
-      image.src = URL.createObjectURL(uploadedImage);
-    } else {
-      image.src = previewSrc;
-    }
-
+    image.src = previewSrc;
+    await loaded;
     setImage(image);
-    const { promise, resolve, reject } = Promise.withResolvers<void>();
-    const worker = window.setInterval(() => {
-      try {
-        if (image.width) {
-          window.clearInterval(worker);
-          resolve();
-        }
-      } catch (e) {
-        console.error(e);
-        window.clearInterval(worker);
-        reject(e);
-      }
-    }, 100);
-
-    return promise;
   };
 
   return (

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useStepsStore } from "@/plate-solver/store/steps";
 
 interface Props {
@@ -12,12 +13,26 @@ export default function StepMover(props: Props) {
   const moveToPrev = useStepsStore((state) => state.moveToPrev);
   const moveToNext = useStepsStore((state) => state.moveToNext);
 
-  const handleMoveToNext = async () => {
-    if (props.onBeforeNext) {
-      await props.onBeforeNext();
-    }
+  // 다음 단계 준비(사진 불러오기 등)가 몇 초 걸릴 수 있어, 그동안 버튼을 막고 진행 중임을 보여 준다.
+  // 두 번 눌려 단계가 두 번 넘어가지 않게 한다.
+  const [moving, setMoving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-    moveToNext();
+  const handleMoveToNext = async () => {
+    setMoving(true);
+    setError(null);
+
+    try {
+      if (props.onBeforeNext) {
+        await props.onBeforeNext();
+      }
+
+      moveToNext();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setMoving(false);
+    }
   };
 
   return (
@@ -29,13 +44,17 @@ export default function StepMover(props: Props) {
       >
         이전
       </button>
-      <button
-        className="btn btn-lg btn-primary"
-        disabled={props.disableNext || current >= steps.length - 1}
-        onClick={handleMoveToNext}
-      >
-        다음
-      </button>
+      <div className="flex items-center gap-3">
+        {error && <span className="text-error text-sm">{error}</span>}
+        <button
+          className="btn btn-lg btn-primary"
+          disabled={moving || props.disableNext || current >= steps.length - 1}
+          onClick={handleMoveToNext}
+        >
+          {moving && <span className="loading loading-spinner loading-sm" />}
+          다음
+        </button>
+      </div>
     </div>
   );
 }
