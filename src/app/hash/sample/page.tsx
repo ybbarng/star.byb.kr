@@ -35,7 +35,7 @@ export default function Page() {
       const context = canvasElement.current.getContext("2d");
 
       if (!context) {
-        console.log("Can't find context of canvas.");
+        console.warn("canvas의 context를 얻을 수 없습니다.");
 
         return;
       }
@@ -43,10 +43,8 @@ export default function Page() {
       await loadImageToCanvas(context, imageElement.current);
 
       const stars = await findStars(context);
-      console.log(`별 수: ${stars.length}`);
 
-      const quadrilaterals = await createQuadrilaterals(context, stars);
-      console.log(`사각형 수: ${quadrilaterals.length}`);
+      await createQuadrilaterals(context, stars);
     };
 
     init();
@@ -57,7 +55,6 @@ export default function Page() {
       return;
     }
 
-    console.log(stars);
     scene.add(stars);
     labels.forEach((label) => {
       scene.add(label);

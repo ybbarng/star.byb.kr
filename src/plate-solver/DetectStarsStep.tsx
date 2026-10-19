@@ -203,7 +203,7 @@ export default function DetectStarStep() {
 
   async function detectStars() {
     if (!image) {
-      console.log("DOM을 찾지 못했습니다.");
+      console.warn("검출할 이미지가 없습니다.");
 
       return;
     }
@@ -212,7 +212,6 @@ export default function DetectStarStep() {
       const imageData = loadImageData(image);
 
       const stars = await findStars(imageData);
-      console.log(`별 수: ${stars.length}`);
       setCanvasStars(
         stars.map((star) => ({
           ...star,

@@ -41,7 +41,6 @@ class CV {
 
     // Capture events and save [status, event] inside the _status object
     this.worker.onmessage = (e) => {
-      console.log(e.data.messageId);
       this._status[e.data.messageId] = ["done", e];
     };
 
