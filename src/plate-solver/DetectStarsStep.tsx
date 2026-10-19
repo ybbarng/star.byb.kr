@@ -24,7 +24,10 @@ interface CanvasStar {
 
 const BLURRY_FILL = "oklch(0.75 0.18 60)"; // 흐릿한 별 표시색(주황)
 
-// 또렷함 기준(fwhm) 기본값: 검출된 별들의 75% 지점. 위쪽 25%를 흐릿으로 본다.
+// 또렷함 기준(fwhm) 기본값: 가장 큰 fwhm, 즉 처음에는 아무것도 흐릿으로 표시하지 않는다.
+// fwhm만으로는 진짜 별과 가짜 빛이 갈리지 않는다. 밝은 진짜 별은 크게 번져 fwhm이 크고
+// (북두칠성 7개가 모두 상위 25%), 물결 반사광 같은 가짜도 크게 번진다(사이판).
+// 그래서 자동으로 고르지 않고, 필요할 때 사람이 슬라이더를 내려 흐릿한 것을 고른다.
 const finiteFwhmsSorted = (stars: { fwhm: number }[]): number[] =>
   stars
     .map((s) => s.fwhm)
@@ -34,9 +37,7 @@ const finiteFwhmsSorted = (stars: { fwhm: number }[]): number[] =>
 const defaultFwhmCut = (stars: { fwhm: number }[]): number | null => {
   const sorted = finiteFwhmsSorted(stars);
 
-  return sorted.length
-    ? sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.75))]
-    : null;
+  return sorted.length ? sorted[sorted.length - 1] : null;
 };
 
 interface SelectArea {
