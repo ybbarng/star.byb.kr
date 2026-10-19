@@ -1,5 +1,11 @@
+import type { InputStar } from "@/search/solvers";
 import sharp from "sharp";
 import { detectStarsFromDiff, type DetectedStar } from "@/search/detectCore";
+import {
+  DEFAULT_DISPLAY_STARS,
+  mergeCloseStars,
+  mergeDistancePx,
+} from "@/search/utils/selectStars";
 
 // node에서 실제 사진(JPG/PNG)을 읽어 별을 검출한다.
 // OpenCV에 의존하는 grayscale/blur/subtract는 sharp로 대체하고, 나머지 검출
@@ -44,4 +50,18 @@ export const detectStarsFromFile = async (
   const stars = detectStarsFromDiff(diff, width, height);
 
   return { stars, width, height };
+};
+
+// 앱의 검출 단계(DetectStarsStep)가 사람 손을 거치지 않고 풀이에 넘기는 별 목록을 만든다.
+// 가까운 중복을 합치고 밝기 상위 DEFAULT_DISPLAY_STARS개를 고른다.
+export const detectLikeApp = async (
+  path: string,
+): Promise<{ stars: InputStar[]; width: number; height: number }> => {
+  const { stars, width, height } = await detectStarsFromFile(path);
+  const merged = mergeCloseStars(
+    stars.map((s) => ({ x: s.cx, y: s.cy, brightness: s.brightness })),
+    mergeDistancePx(width, height),
+  );
+
+  return { stars: merged.slice(0, DEFAULT_DISPLAY_STARS), width, height };
 };

@@ -37,6 +37,14 @@ export const mergeCloseStars = <
   return kept;
 };
 
+// 검출 단계에서 가까운 중복을 합치는 거리. 매칭 tolerance(대각선×0.006)보다 살짝 작다.
+export const mergeDistancePx = (width: number, height: number): number =>
+  Math.max(6, Math.hypot(width, height) * 0.005);
+
+// 검출 단계가 화면에 기본으로 띄우고 풀이에 넘기는 별 수(밝기 상위).
+// 전부 그리면 노이즈 마커가 진짜 별을 가린다.
+export const DEFAULT_DISPLAY_STARS = 100;
+
 // 밝기 상위 N개 (원본·개선 방식). 가짜 별이 밝으면 진짜 별을 밀어낼 수 있다.
 export const selectTopByBrightness = (
   stars: InputStar[],

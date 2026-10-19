@@ -113,6 +113,7 @@ describe.skipIf(!ready)("실제 샘플 plate solving", () => {
     expect(truthCenter).not.toBeNull();
 
     const sorted = stars.sort((a, b) => b.brightness - a.brightness);
+    let solvedByAny = false;
     const lines: string[] = [
       `\n=== big-dipper 실측 (검출 ${stars.length}개) ===`,
     ];
@@ -135,6 +136,11 @@ describe.skipIf(!ready)("실제 샘플 plate solving", () => {
           const err = out.centerVector
             ? angleDeg(out.centerVector, truthCenter as Point3D)
             : Infinity;
+
+          if (out.found && err < 5) {
+            solvedByAny = true;
+          }
+
           lines.push(
             `${solver.name}: found=${out.found}, ` +
               `중심오차=${Number.isFinite(err) ? err.toFixed(1) : "-"}°, ` +
@@ -148,7 +154,7 @@ describe.skipIf(!ready)("실제 샘플 plate solving", () => {
     console.warn(lines.join("\n"));
 
     // 적어도 한 알고리즘은 북두칠성을 5도 이내로 풀어야 한다
-    expect(lines.length).toBeGreaterThan(1);
+    expect(solvedByAny).toBe(true);
   }, 60000);
 
   // 사람이 정제한 별 목록(data/search)으로 4개 알고리즘 측정 — 실제 협업 워크플로
