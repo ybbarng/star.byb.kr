@@ -1,6 +1,10 @@
 import type { Point3D } from "@/scripts/hash/types";
 import type { SolveStar } from "@/search/solveCore";
-import * as kdtree from "kd-tree-javascript";
+import {
+  buildGridIndex2D,
+  nearestInGrid,
+  type GridIndex2D,
+} from "@/search/utils/gridIndex2D";
 import { mat3MulVec, projectionMatrix } from "@/search/utils/wcs";
 
 // 최선 알고리즘(Triangle matching / Geometric Voting)을 위한 카탈로그 기하 인덱스.
@@ -54,9 +58,11 @@ export interface TriangleEntry {
   hrs: [string, string, string]; // 마주변 오름차순으로 정렬된 정점
 }
 
+// 삼각형이 백만 개를 넘으므로 객체 대신 정수 배열에 담는다.
 export interface TriangleIndex {
-  tree: InstanceType<typeof kdtree.kdTree>;
-  entries: TriangleEntry[];
+  grid: GridIndex2D; // 형태 키(2D)로 찾는 격자 인덱스
+  vertices: Int32Array; // 삼각형 t의 정점(별 번호)은 vertices[3t..3t+2], 마주변 오름차순
+  hrs: string[]; // 별 번호 → HR
 }
 
 // 사진 삼각형도 같은 규약으로 형태 키를 만들기 위한 헬퍼 (변 길이 3개 입력).
@@ -81,6 +87,8 @@ export const triangleShape = (
   };
 };
 
+// maxAngleDeg 이내 이웃 관계로 만든 카탈로그 삼각형 인덱스.
+// 한 별이 나머지 두 별과 모두 maxAngleDeg 이내면 그 세 별을 삼각형으로 넣는다.
 export const buildTriangleIndex = (
   stars: SolveStar[],
   maxAngleDeg = 8,
@@ -88,8 +96,9 @@ export const buildTriangleIndex = (
   const cosMax = Math.cos((maxAngleDeg * Math.PI) / 180);
   const n = stars.length;
 
-  // maxAngle 이내 이웃 그래프
+  // maxAngle 이내 이웃 그래프 (목록은 별 번호 오름차순) + 빠른 이웃 확인용 행렬
   const nb: number[][] = Array.from({ length: n }, () => []);
+  const adjacent = new Uint8Array(n * n);
 
   for (let i = 0; i < n; i++) {
     for (let j = i + 1; j < n; j++) {
@@ -99,73 +108,72 @@ export const buildTriangleIndex = (
       if (a[0] * b[0] + a[1] * b[1] + a[2] * b[2] > cosMax) {
         nb[i].push(j);
         nb[j].push(i);
+        adjacent[i * n + j] = 1;
+        adjacent[j * n + i] = 1;
       }
     }
   }
 
-  const seen = new Set<string>();
-  const entries: TriangleEntry[] = [];
-  const points: { i: number; x: number; y: number }[] = [];
+  // 별 c가 다른 두 별과 모두 이웃이면 c를 중심으로 이 삼각형이 만들어진다
+  const isCenter = (c: number, u: number, v: number) =>
+    adjacent[c * n + u] === 1 && adjacent[c * n + v] === 1;
+
+  const vertices: number[] = [];
+  const xs: number[] = [];
+  const ys: number[] = [];
 
   for (let i = 0; i < n; i++) {
     const list = nb[i];
 
     for (let a = 0; a < list.length; a++) {
       for (let b = a + 1; b < list.length; b++) {
-        const tri = [i, list[a], list[b]].sort((x, y) => x - y) as [
-          number,
-          number,
-          number,
-        ];
-        const key = tri.join(",");
+        const u = list[a];
+        const v = list[b];
+        // 같은 삼각형이 여러 중심에서 만들어지므로, 번호가 가장 작은 중심에서만 넣는다
+        const [p, q, r] = [i, u, v].sort((x, y) => x - y);
+        const firstCenter = isCenter(p, q, r) ? p : isCenter(q, p, r) ? q : r;
 
-        if (seen.has(key)) {
+        if (firstCenter !== i) {
           continue;
         }
 
-        seen.add(key);
-
         // 접선평면 투영 거리로 형태 계산 (사진의 gnomonic 픽셀 형태와 일치)
         const pp = projectTriangle([
-          stars[tri[0]].vector,
-          stars[tri[1]].vector,
-          stars[tri[2]].vector,
+          stars[p].vector,
+          stars[q].vector,
+          stars[r].vector,
         ]);
         const d01 = Math.hypot(pp[0][0] - pp[1][0], pp[0][1] - pp[1][1]);
         const d02 = Math.hypot(pp[0][0] - pp[2][0], pp[0][1] - pp[2][1]);
         const d12 = Math.hypot(pp[1][0] - pp[2][0], pp[1][1] - pp[2][1]);
-        const { order, shape } = triangleShape(d01, d02, d12, tri);
+        const { order, shape } = triangleShape(d01, d02, d12, [p, q, r]);
 
-        entries.push({
-          hrs: [stars[order[0]].hr, stars[order[1]].hr, stars[order[2]].hr],
-        });
-        points.push({ i: entries.length - 1, x: shape[0], y: shape[1] });
+        vertices.push(order[0], order[1], order[2]);
+        xs.push(shape[0]);
+        ys.push(shape[1]);
       }
     }
   }
 
-  const tree = new kdtree.kdTree(
-    points,
-    (p, q) => (p.x - q.x) ** 2 + (p.y - q.y) ** 2,
-    ["x", "y"],
-  );
-
-  return { tree, entries };
+  return {
+    grid: buildGridIndex2D(Float64Array.from(xs), Float64Array.from(ys)),
+    vertices: Int32Array.from(vertices),
+    hrs: stars.map((s) => s.hr),
+  };
 };
 
 export const searchTriangle = (
   index: TriangleIndex,
   shape: [number, number],
   k: number,
-): TriangleEntry[] => {
-  const nearest = index.tree.nearest(
-    { i: 0, x: shape[0], y: shape[1] },
-    k,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ) as any[];
-
-  return nearest.map((r) => index.entries[r[0].i as number]);
-};
+): TriangleEntry[] =>
+  nearestInGrid(index.grid, shape[0], shape[1], k).map((t) => ({
+    hrs: [
+      index.hrs[index.vertices[3 * t]],
+      index.hrs[index.vertices[3 * t + 1]],
+      index.hrs[index.vertices[3 * t + 2]],
+    ],
+  }));
 
 // === Pair 인덱스 (Geometric Voting용) ===
 // maxAngle 이내 카탈로그 별쌍을 각거리 오름차순으로 정렬해, 각거리 범위
