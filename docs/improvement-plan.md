@@ -81,4 +81,4 @@
 | 10 | `CLAUDE.md`의 DB 설명을 실제와 맞추기 | 11 | ⬜ |
 | 11 | 노이즈 강건화 연구 (지면 제외, 검출 품질, 은하수·오로라) | 4 | ⬜ (1~10 이후) |
 | 12 | DB 크기 줄이기 (binary 형식 등) | 6 | ⬜ (나중) |
-| 13 | `npm test`가 `docs/benchmark-results.json`을 매번 다시 써서 작업 트리를 더럽힌다 | 10 | ⬜ |
+| 13 | `npm test`가 `docs/benchmark-results.json`을 매번 다시 써서 작업 트리를 더럽힌다 | 10 | ✅ `npm run benchmark:update`일 때만 쓴다 |

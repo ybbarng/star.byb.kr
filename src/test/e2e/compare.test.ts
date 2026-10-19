@@ -195,13 +195,16 @@ describe.skipIf(!ready)("알고리즘 비교 벤치마크", () => {
 
     console.warn(lines.join("\n"));
 
-    // 발표 자료용 JSON 저장
-    const outDir = resolve(process.cwd(), "docs");
-    mkdirSync(outDir, { recursive: true });
-    writeFileSync(
-      resolve(outDir, "benchmark-results.json"),
-      JSON.stringify(report, null, 2),
-    );
+    // 발표 자료용 JSON 저장. 평소 npm test에서는 시간 측정값만 바뀐 파일이 매번 생기므로,
+    // 결과를 갱신하고 싶을 때만 `npm run benchmark:update`로 쓴다.
+    if (process.env.UPDATE_BENCHMARK === "1") {
+      const outDir = resolve(process.cwd(), "docs");
+      mkdirSync(outDir, { recursive: true });
+      writeFileSync(
+        resolve(outDir, "benchmark-results.json"),
+        JSON.stringify(report, null, 2),
+      );
+    }
 
     expect(Object.keys(report).length).toBe(solvers.length);
   }, 180000);
