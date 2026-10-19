@@ -11,7 +11,7 @@ import catalogData from "@build/database/vectors-database.json";
 // "방향 → 픽셀(뒤쪽이면 null)" 투영 함수만 받으면 오버레이를 만든다.
 
 export interface SkyStar {
-  label: string;
+  name: string | null; // 고유 이름이 있는 별만 글자로 표시한다 (나머지는 HR 번호뿐이라 사진을 덮는다)
   x: number;
   y: number;
 }
@@ -25,10 +25,19 @@ export interface SkyConstellation {
 interface VectorStar {
   HR: string;
   N?: string;
+  V: string; // 시등급 (작을수록 밝다)
   x: number;
   y: number;
   z: number;
 }
+
+// 이 거리(px) 안에 겹친 별(쌍성·중복 항목)은 밝은 하나만 그린다
+const OVERLAP_PX = 3;
+
+// 밝은 별부터 그려지도록 미리 정렬해 둔다
+const catalogByBrightness = [...(catalogData as VectorStar[])].sort(
+  (a, b) => parseFloat(a.V) - parseFloat(b.V),
+);
 
 interface ConstellationData {
   label: string;
@@ -50,7 +59,7 @@ const buildOverlay = (
 ): Overlay => {
   const sk: SkyStar[] = [];
 
-  for (const s of catalogData as VectorStar[]) {
+  for (const s of catalogByBrightness) {
     const p = project([s.x, s.y, s.z]);
 
     if (
@@ -63,7 +72,14 @@ const buildOverlay = (
       continue;
     }
 
-    sk.push({ label: s.N ?? `HR ${s.HR}`, x: p[0], y: p[1] });
+    const overlapped = sk.some(
+      (o) =>
+        Math.abs(o.x - p[0]) < OVERLAP_PX && Math.abs(o.y - p[1]) < OVERLAP_PX,
+    );
+
+    if (!overlapped) {
+      sk.push({ name: s.N ?? null, x: p[0], y: p[1] });
+    }
   }
 
   // 정점이 화면에서 이만큼 벗어나면 선이 사진 밖으로 길게 뻗으므로 끊는다

@@ -124,29 +124,35 @@ export default function PlateSolvingStep() {
 
     context.drawImage(image, 0, 0, image.width, image.height);
 
+    // 사진 크기와 무관하게 비슷한 크기로 보이도록 표시 크기를 대각선 길이에 맞춘다
+    const unit = Math.hypot(image.width, image.height) / 1400;
+    const fontPx = Math.round(18 * unit);
+
     photoStars.forEach(({ x, y }) => {
       context.beginPath();
-      context.arc(x, y, 5, 0, 2 * Math.PI);
+      context.arc(x, y, 5 * unit, 0, 2 * Math.PI);
       context.strokeStyle = "oklch(0.704 0.191 22.216)";
-      context.lineWidth = 2;
+      context.lineWidth = 2 * unit;
       context.stroke();
     });
 
-    skyStars.forEach(({ label, x, y }) => {
+    skyStars.forEach(({ name, x, y }) => {
       context.beginPath();
-      context.arc(x, y, 10, 0, 2 * Math.PI);
+      context.arc(x, y, (name ? 10 : 6) * unit, 0, 2 * Math.PI);
       context.strokeStyle = "oklch(.606 .25 292.717)";
-      context.lineWidth = 3;
+      context.lineWidth = (name ? 3 : 1.5) * unit;
       context.stroke();
 
-      context.font = "bold 20px Arial";
-      context.fillStyle = "oklch(.606 .25 292.717)";
-      context.fillText(label, x + 16, y + 7);
+      if (name) {
+        context.font = `bold ${fontPx}px Arial`;
+        context.fillStyle = "oklch(.606 .25 292.717)";
+        context.fillText(name, x + 14 * unit, y + 6 * unit);
+      }
     });
 
     skyConstellations.forEach(({ label, lines }) => {
       context.strokeStyle = "oklch(0.905 0.182 98.111)";
-      context.lineWidth = 1;
+      context.lineWidth = 1.5 * unit;
 
       for (let i = 0; i < lines.length - 1; i++) {
         const a = lines[i];
@@ -180,7 +186,7 @@ export default function PlateSolvingStep() {
         .reduce((sum, l) => [sum[0] + l[0], sum[1] + l[1]], [0, 0])
         .map((v) => v / visible.length);
 
-      context.font = "bold 20px Arial";
+      context.font = `bold ${fontPx}px Arial`;
       context.fillStyle = "oklch(0.905 0.182 98.111)";
       context.fillText(label, center[0], center[1]);
     });
