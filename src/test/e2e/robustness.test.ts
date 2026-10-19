@@ -14,6 +14,7 @@ import {
   loadCatalog,
   loadHashes,
 } from "@/test/synthetic/loadCatalog";
+import { yieldToEventLoop } from "@/test/yieldToEventLoop";
 
 const ready = catalogExists() && hashesExist();
 
@@ -60,7 +61,7 @@ describe.skipIf(!ready)("견고성: FOV별 정답률", () => {
     };
   });
 
-  it("FOV별로 4개 알고리즘 정답률을 측정한다", () => {
+  it("FOV별로 4개 알고리즘 정답률을 측정한다", async () => {
     // solverKey → fovDeg → {solved, total}
     const tally: Record<
       string,
@@ -104,6 +105,8 @@ describe.skipIf(!ready)("견고성: FOV별 정답률", () => {
           cell.total++;
 
           const out = solver.solve(inputStars, { width: W, height: H }, ctx);
+          // 동기 계산이 60초 넘게 이어지면 vitest 워커 RPC가 타임아웃난다.
+          await yieldToEventLoop();
 
           if (out.found && out.transform) {
             const pose = comparePose(out.transform, img.groundTruth);

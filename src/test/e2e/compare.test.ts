@@ -17,6 +17,7 @@ import {
   loadCatalog,
   loadHashes,
 } from "@/test/synthetic/loadCatalog";
+import { yieldToEventLoop } from "@/test/yieldToEventLoop";
 
 const ready = catalogExists() && hashesExist();
 
@@ -82,7 +83,7 @@ describe.skipIf(!ready)("알고리즘 비교 벤치마크", () => {
     };
   });
 
-  it("모든 알고리즘을 같은 합성 데이터로 비교한다", () => {
+  it("모든 알고리즘을 같은 합성 데이터로 비교한다", async () => {
     const report: Record<
       string,
       { name: string; description: string; levels: Record<string, LevelStat> }
@@ -121,6 +122,8 @@ describe.skipIf(!ready)("알고리즘 비교 벤치마크", () => {
 
           const outcome = solver.solve(img.stars, { width: W, height: H }, ctx);
           times.push(outcome.timeMs);
+          // 동기 계산이 60초 넘게 이어지면 vitest 워커 RPC가 타임아웃난다.
+          await yieldToEventLoop();
 
           let errDeg = Infinity;
 

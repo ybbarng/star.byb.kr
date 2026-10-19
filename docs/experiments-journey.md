@@ -218,10 +218,11 @@ Dec −12°, 대각 FOV 73°** (여름 은하수, 은하 중심부). `sampleAnsw
 
 - **노이즈 90% 어안 blind 돌파** — `docs/fisheye-todo.md` (유의도 게이트·다중 시드·
   haze/모양 필터).
-- **느린 벤치마크 테스트 결정적화**: compare(≈136s)·robustness·pipeline은 정답률 측정
-  벤치마크라 무겁다. 병렬 전체 실행 시 CPU 경합으로 타임아웃나 간헐 실패(개별은 통과).
-  → 벤치마크를 기본 `npm test`에서 분리하거나(별도 명령), 병렬도/타임아웃을 조정해
-  결정적이게. (testing-principles: 실패 테스트는 결정적이어야)
+- ~~**느린 벤치마크 테스트 결정적화**~~ (2026-10-19 해결): 원인은 병렬 CPU 경합이 아니었다.
+  compare만 단독으로 돌려도 실패했다. compare(≈76s)·robustness(≈59s)가 동기 계산으로 이벤트
+  루프를 60초 넘게 막아서, vitest 워커 RPC가 `Timeout calling "onTaskUpdate"`로 끝났다
+  (테스트 45개는 통과하지만 실행은 실패). solve 한 번마다 `yieldToEventLoop()`로 차례를
+  넘기게 해서 기본 `npm test`가 매번 통과한다.
 - **지면/전경(지평선 조명) 자동 제외** (장기): 지금은 사람이 하단을 빼지만(협업), 장기적
   으로 밝은 지면 띠·지평선을 자동 감지해 제외. 풍경+밤하늘 사진(jeungseun·seoul·aust·
   aurora 등) 공통. → 9.1 참고.
