@@ -51,7 +51,10 @@ interface SelectArea {
 export default function DetectStarStep() {
   const image = useContextStore((state) => state.image);
   const photoStars = useContextStore((state) => state.photoStars);
+  const hiddenStars = useContextStore((state) => state.hiddenStars);
   const setPhotoStars = useContextStore((state) => state.setPhotoStars);
+  // 사람이 마커를 고쳤는지(추가·삭제·이동·영역 재검출). 고쳤으면 그 판단을 존중해 화면의 별만 풀이에 넘긴다.
+  const editedRef = useRef(false);
   const [canvasStars, setCanvasStars] = useState<CanvasStar[]>([]);
   const [selectArea, setSelectArea] = useState<SelectArea>({
     x1: 0,
@@ -143,6 +146,7 @@ export default function DetectStarStep() {
       if (canvasStars.length < 1) return;
 
       if (event.key === "Delete" || event.key === "Backspace") {
+        editedRef.current = true;
         setCanvasStars(canvasStars.filter((star) => !star.isSelected));
 
         return;
@@ -276,6 +280,8 @@ export default function DetectStarStep() {
   const redetectInBox = async () => {
     if (!lastBox) return;
 
+    editedRef.current = true;
+
     // 단계 이동 후 복귀 등으로 전체 검출이 비어 있으면 새로 검출
     if (allDetectionsRef.current.length === 0 && image) {
       await findStars(loadImageData(image));
@@ -299,6 +305,7 @@ export default function DetectStarStep() {
   };
 
   const addStar = (x: number, y: number) => {
+    editedRef.current = true;
     setCanvasStars([
       ...canvasStars,
       {
@@ -313,6 +320,7 @@ export default function DetectStarStep() {
   };
 
   const onPositionUpdate = (id: string, x: number, y: number) => {
+    editedRef.current = true;
     setCanvasStars(
       canvasStars.map((star) => {
         if (star.id === id) {
@@ -331,6 +339,7 @@ export default function DetectStarStep() {
   };
 
   const removeStar = (id: string) => {
+    editedRef.current = true;
     setCanvasStars(canvasStars.filter((star) => star.id !== id));
   };
 
@@ -494,14 +503,25 @@ export default function DetectStarStep() {
   }, [mode, isPanning]);
 
   const onBeforeNext = async () => {
+    const toPhotoStar = (star: {
+      x: number;
+      y: number;
+      brightness: number;
+    }) => ({
+      x: star.x,
+      y: star.y,
+      brightness: star.brightness,
+    });
     const sorted = [...canvasStars].sort((a, b) => b.brightness - a.brightness);
-    setPhotoStars(
-      sorted.map((star) => ({
-        x: star.x,
-        y: star.y,
-        brightness: star.brightness,
-      })),
-    );
+    // 사람이 고치지 않았으면 화면에 안 띄운 나머지 검출도 넘긴다(위쪽 영역 재선택용).
+    // 이번에 검출하지 않고 복원만 했으면(단계 복귀) 이전에 넘긴 값을 그대로 쓴다.
+    const hidden = editedRef.current
+      ? []
+      : allDetectionsRef.current.length > 0
+        ? allDetectionsRef.current.slice(DEFAULT_DISPLAY_STARS).map(toPhotoStar)
+        : hiddenStars;
+
+    setPhotoStars(sorted.map(toPhotoStar), hidden);
   };
 
   // 흐릿한 별(fwhm > 기준)인지
@@ -597,7 +617,10 @@ export default function DetectStarStep() {
           <button
             className="btn btn-error btn-sm"
             disabled={canvasStars.length < 1}
-            onClick={() => setCanvasStars([])}
+            onClick={() => {
+              editedRef.current = true;
+              setCanvasStars([]);
+            }}
           >
             전체 삭제
           </button>

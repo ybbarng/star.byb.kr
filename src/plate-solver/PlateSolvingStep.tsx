@@ -13,6 +13,7 @@ import { cn } from "@/utils/cn";
 export default function PlateSolvingStep() {
   const image = useContextStore((state) => state.image);
   const photoStars = useContextStore((state) => state.photoStars);
+  const hiddenStars = useContextStore((state) => state.hiddenStars);
   const canvasElement = useRef<HTMLCanvasElement>(null);
   const { solve, outcome, solving, ready, phase, error } = useSolve();
   const {
@@ -33,12 +34,17 @@ export default function PlateSolvingStep() {
       return;
     }
 
+    // 화면의 별 + 화면에 안 띄운 나머지 검출(사람이 고치지 않았을 때). 풀이가 영역마다 고른다.
     solve(
-      photoStars.map((s) => ({ x: s.x, y: s.y, brightness: s.brightness })),
+      [...photoStars, ...hiddenStars].map((s) => ({
+        x: s.x,
+        y: s.y,
+        brightness: s.brightness,
+      })),
       image.width,
       image.height,
     );
-  }, [image, photoStars, solve]);
+  }, [image, photoStars, hiddenStars, solve]);
 
   useEffect(() => {
     if (ready) {
@@ -291,7 +297,7 @@ const describePhase = (ready: boolean, phase: SolvePhase | null): string => {
 
   const pattern = SOLVER_PATTERN_NAMES[phase.solverKey] ?? "별 패턴";
 
-  return `밝은 별 ${phase.inputSize}개의 ${pattern}으로 찾고 있습니다 (${phase.index + 1}/${phase.total})`;
+  return `${phase.region}에서 밝은 별 ${phase.inputSize}개의 ${pattern}으로 찾고 있습니다 (${phase.index + 1}/${phase.total})`;
 };
 
 // 풀이가 진행 중임을 보여 준다. 몇 초 걸릴 수 있어 단계·경과 시간을 함께 보여 준다.
