@@ -208,10 +208,57 @@ export const solveCandidate = (
     dbQuadPlane.push(pl);
   }
 
+  // 광축 재추정 한 번: 지금 변환이 가리키는 화면 중심을 새 광축으로 잡고, 대응들을 새 광축
+  // 기준으로 다시 맞춘 뒤 대응을 다시 모은다. 큰 FOV에서는 quad 중심 광축이 화면 가장자리에
+  // 안 맞아 변환이 부정확한데, 이렇게 하면 맞는 별이 늘어난다.
+  const recenter = (
+    matches: Correspondence[],
+    Tcur: Mat3,
+    Pcur: Mat3,
+  ): { T: Mat3; P: Mat3; matches: Correspondence[] } | null => {
+    const Pnew = projectionMatrix(recoverCenter(mat3Mul(Tcur, Pcur), W, H));
+    const planes: Point2D[] = [];
+    const photos: Point2D[] = [];
+
+    for (const c of matches) {
+      const pl = toPlane(Pnew, c.vec);
+
+      if (pl) {
+        planes.push(pl);
+        photos.push(c.photo);
+      }
+    }
+
+    if (planes.length < 2) {
+      return null;
+    }
+
+    const Tnew = umeyamaSimilarity2D(planes, photos).matrix;
+
+    return { T: Tnew, P: Pnew, matches: collectMatches(Tnew, Pnew).matches };
+  };
+
   let T = umeyamaSimilarity2D(dbQuadPlane, photoQuad).matrix;
 
   // 초기 대응
   let best = collectMatches(T, P).matches;
+
+  // 시드 별 말고는 하나도 맞지 않는 후보는 RANSAC·광축 재추정을 해도 그럴듯한 해가
+  // 되지 못한다. 대부분의 오답 후보가 여기서 걸러져 검증 비용이 크게 준다.
+  // 다만 시야가 넓으면 시드 중심 광축으로는 가장자리가 어긋나 시드만 맞을 수 있어,
+  // 광축을 한 번 다시 잡아 보고도 그대로일 때만 버린다.
+  const minUseful = photoQuad.length + 1;
+
+  if (best.length < minUseful) {
+    const r = recenter(best, T, P);
+
+    if (!r || r.matches.length < minUseful) {
+      return null;
+    }
+
+    ({ T, P } = r);
+    best = r.matches;
+  }
 
   // RANSAC: 2쌍으로 변환을 추정하며 최대 inlier 모델 탐색
   if (best.length >= 4) {
@@ -256,34 +303,15 @@ export const solveCandidate = (
     ).matrix;
   }
 
-  // 광축 재추정 정제: 큰 FOV에서는 quad 중심 광축이 화면 전체에 안 맞아 변환이
-  // 부정확해진다. 화면 중심을 광축으로 다시 잡아 inlier의 (벡터, 사진) 대응을
-  // 새 광축 기준으로 재적합하며 수렴시킨다.
+  // 광축 재추정 정제: 새 광축으로 더 많은 별이 맞으면 그 대응으로 바꾸며 수렴시킨다.
   for (let iter = 0; iter < 2; iter++) {
-    const newCenter = recoverCenter(mat3Mul(T, P), W, H);
-    const Pnew = projectionMatrix(newCenter);
+    const r = recenter(best, T, P);
 
-    const planes: Point2D[] = [];
-    const photos: Point2D[] = [];
-
-    for (const c of best) {
-      const pl = toPlane(Pnew, c.vec);
-
-      if (pl) {
-        planes.push(pl);
-        photos.push(c.photo);
-      }
-    }
-
-    if (planes.length < 2) {
+    if (!r) {
       break;
     }
 
-    T = umeyamaSimilarity2D(planes, photos).matrix;
-    P = Pnew;
-
-    // 새 광축으로 더 많은 별이 매칭될 수 있으니 재수집
-    const r = collectMatches(T, P);
+    ({ T, P } = r);
 
     if (r.matches.length >= best.length) {
       best = r.matches;
