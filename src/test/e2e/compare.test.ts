@@ -207,5 +207,23 @@ describe.skipIf(!ready)("알고리즘 비교 벤치마크", () => {
     }
 
     expect(Object.keys(report).length).toBe(solvers.length);
+
+    // 지켜야 할 기준 (원본 v2.0.0은 검증 단계가 없어 오답을 확신하므로 비교용으로만 둔다)
+    for (const solver of solvers.filter((s) => s.key !== "baseline")) {
+      for (const lvl of noiseLevels) {
+        // 어떤 노이즈에서도 틀린 해를 확신하지 않는다
+        expect(
+          report[solver.key].levels[lvl.name].falsePositive,
+          `${solver.key} ${lvl.name} 오답 확신`,
+        ).toBe(0);
+      }
+    }
+
+    // 앱이 쓰는 삼각형 solver와 개선 quad solver는 깨끗한 합성 사진을 모두 푼다
+    for (const key of ["triangle", "improved"]) {
+      const clean = report[key].levels["L0_clean"];
+
+      expect(clean.correct, `${key} L0_clean 정답`).toBe(clean.total);
+    }
   }, 180000);
 });
