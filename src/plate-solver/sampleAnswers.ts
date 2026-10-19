@@ -45,6 +45,14 @@ const byFilename: Record<string, SampleAnswer> = {
   },
   // 브라우저 풀이가 유의도 75.0으로 확신한 해. 중심 별이 오리온 삼태성(Mintaka·Alnilam·
   // Alnitak) + Betelgeuse·Rigel·Bellatrix임을 카탈로그로 확인.
+  // 자동 풀이가 log-odds 17로 확신한 해. 예측 위치에 남십자(Acrux·Mimosa·Gacrux)·
+  // 리길 켄타우루스·하다르·Atria·Miaplacidus가 사진 속 밝은 별과 겹침을 눈으로 확인.
+  "20231012-nike-aust-01.jpg": {
+    centerRaDeg: 202.2,
+    centerDecDeg: -66.1,
+    fovDeg: 59.1,
+    name: "남십자·켄타우루스 (남반구)",
+  },
   "cafe-orion.jpg": {
     centerRaDeg: 83.1,
     centerDecDeg: 1.2,
