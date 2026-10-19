@@ -1,9 +1,9 @@
 import type { Point3D } from "@/scripts/hash/types";
-import type { HashedQuad } from "@/search/findCandidatesCore";
 import type { SolvePhase } from "@/search/solvePhoto";
 import type { InputStar, SolverContext } from "@/search/solvers";
 import { buildTriangleIndex } from "@/search/catalogGeometry";
 import { buildCandidateIndex } from "@/search/findCandidatesCore";
+import { decodeHashedDatabase } from "@/search/hashedDatabaseFormat";
 import { solvePhoto } from "@/search/solvePhoto";
 
 // 검증된 풀이 코어(solvePhoto)를 브라우저에서 실행하는 Worker.
@@ -20,6 +20,19 @@ interface VectorStar {
 
 let loadPromise: Promise<SolverContext> | null = null;
 
+// 응답이 실패(404 등)면 바로 오류로 알린다 (그대로 파싱하면 엉뚱한 오류가 난다)
+const fetchOk = async (url: URL): Promise<Response> => {
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error(
+      `별 데이터베이스를 받지 못했습니다 (${response.status} ${url.pathname})`,
+    );
+  }
+
+  return response;
+};
+
 const loadDatabase = (): Promise<SolverContext> => {
   if (loadPromise) {
     return loadPromise;
@@ -27,12 +40,20 @@ const loadDatabase = (): Promise<SolverContext> => {
 
   loadPromise = (async () => {
     const origin = self.location.origin;
-    const hashes = (await (
-      await fetch(new URL("/data/hashed-database.json", origin))
-    ).json()) as HashedQuad[];
-    const vectors = (await (
-      await fetch(new URL("/data/vectors-database.json", origin))
-    ).json()) as VectorStar[];
+    // 두 파일을 함께 받는다. quad 해시는 이진 형식(약 2MB, 파싱 없음)이고 별 번호는
+    // vectors-database.json의 순서를 따른다.
+    const [hashesBuffer, vectors] = await Promise.all([
+      fetchOk(new URL("/data/hashed-database.bin", origin)).then((r) =>
+        r.arrayBuffer(),
+      ),
+      fetchOk(new URL("/data/vectors-database.json", origin)).then(
+        (r) => r.json() as Promise<VectorStar[]>,
+      ),
+    ]);
+    const hashes = decodeHashedDatabase(
+      hashesBuffer,
+      vectors.map((s) => s.HR),
+    );
 
     const solveStars = vectors.map((s) => ({
       hr: s.HR,

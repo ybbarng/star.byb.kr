@@ -25,6 +25,9 @@
 ```sh
 npm install           # 의존성 설치
 ./build_database.sh   # 데이터베이스 파일 생성 (최초 1회)
+# 브라우저가 받는 DB는 public/data/에 build 산출물 symlink로 둔다 (gitignore 대상):
+#   ln -s $PWD/build/hash/hashed-database.bin public/data/
+#   ln -s $PWD/build/database/vectors-database.json public/data/
 npm run dev           # 개발 서버 (http://localhost:5025)
 npm run build         # 프로덕션 빌드
 npm run lint          # ESLint
@@ -88,7 +91,8 @@ public/
 1. **reduceDatabase**: BSC5 카탈로그에서 설정 등급 이하의 밝은 별만 필터링 (현재 V≤5, 1,625개)
 2. **toVector**: RA/Dec 천문학 좌표 → 3D 단위 벡터 (x, y, z)
 3. **createHashFromDatabase**: HEALPix로 천구를 192개 셀(nside=4, 600 arcmin)로 분할 → 각 셀에서 4개 별 조합(quad) 생성 → 별쌍이 모두 10° 이내인 compact quad만 남김(84,962개) → 접선 평면 투영 → 정규화된 4D 해시 (`hashed-database.json` 10.8MB)
-4. **buildConstellations**: 별자리 연결선 데이터를 벡터 형식으로 변환
+4. **encodeHashedDatabase**: 브라우저용 이진 형식 `hashed-database.bin`(2.04MB, gzip 1.46MB)으로 변환. 별 번호는 vectors-database.json 순서
+5. **buildConstellations**: 별자리 연결선 데이터를 벡터 형식으로 변환
 
 ### 런타임 Plate Solving (브라우저)
 

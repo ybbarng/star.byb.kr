@@ -2,6 +2,7 @@ import type { Point3D } from "@/scripts/hash/types";
 import type { HashedQuad } from "@/search/findCandidatesCore";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { decodeHashedDatabase } from "@/search/hashedDatabaseFormat";
 
 // 빌드 산출물(build/database/vectors-database.json)을 테스트용으로 로드한다.
 // 시스템 DB와 동일한 별 집합·좌표를 써야 합성 데이터가 의미를 갖는다.
@@ -35,13 +36,24 @@ export const loadCatalog = (): CatalogStar[] => {
   }));
 };
 
-// 미리 계산된 DB quad 해시(build/hash/hashed-database.json) 로더.
+// 미리 계산된 DB quad 해시 로더. 앱(Worker)과 같은 이진 파일(build/hash/hashed-database.bin)을
+// 같은 함수로 읽는다. 별 번호는 카탈로그(vectors-database.json) 순서를 따른다.
 export const hashesPath = resolve(
   process.cwd(),
-  "build/hash/hashed-database.json",
+  "build/hash/hashed-database.bin",
 );
 
 export const hashesExist = (): boolean => existsSync(hashesPath);
 
-export const loadHashes = (): HashedQuad[] =>
-  JSON.parse(readFileSync(hashesPath, "utf-8")) as HashedQuad[];
+export const loadHashes = (): HashedQuad[] => {
+  const file = readFileSync(hashesPath);
+  const buffer = file.buffer.slice(
+    file.byteOffset,
+    file.byteOffset + file.byteLength,
+  );
+
+  return decodeHashedDatabase(
+    buffer,
+    loadCatalog().map((s) => s.hr),
+  );
+};

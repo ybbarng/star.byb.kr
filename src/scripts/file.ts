@@ -34,3 +34,18 @@ export const save = (path: Path, fileName: string, payload: string) => {
   fs.writeFileSync(`${outputDirPath}/${fileName}`, payload, "utf8");
   console.log(`파일이 성공적으로 저장되었습니다: ${outputFilePath}`);
 };
+
+export const saveBinary = (
+  path: Path,
+  fileName: string,
+  payload: ArrayBuffer,
+) => {
+  const outputDirPath = `${ROOT}/${path}`;
+
+  if (!fs.existsSync(outputDirPath)) {
+    fs.mkdirSync(outputDirPath, { recursive: true });
+  }
+
+  fs.writeFileSync(`${outputDirPath}/${fileName}`, Buffer.from(payload));
+  console.log(`파일이 성공적으로 저장되었습니다: ${outputDirPath}/${fileName}`);
+};
