@@ -5,6 +5,10 @@
 밤하늘 사진을 분석하여 사진 속 별자리를 찾는 **Plate Solver** 웹 애플리케이션.
 발표(Dev Seminar)용 데모 페이지와 시각화 도구를 함께 포함.
 
+**작업 기준: [`docs/project-principles.md`](docs/project-principles.md)** — 직접 구현, 일반인 사진에 대한 강건성,
+사람 협업에서 자동으로, 프론트 실행·저비용, 10초 목표, 단계별 테스트, 발표용 문서화 등.
+설계·우선순위를 정할 때 이 문서를 먼저 따른다.
+
 ## 기술 스택
 
 - **프레임워크**: Next.js 15 (App Router, Turbopack dev)
