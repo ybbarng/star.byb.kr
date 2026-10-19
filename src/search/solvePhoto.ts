@@ -36,6 +36,8 @@ export const SEARCH_REGIONS = [
   { label: "사진 전체", keepTop: 1 },
   { label: "위쪽 75%", keepTop: 0.75 },
   { label: "위쪽 55%", keepTop: 0.55 },
+  // 하늘이 사진 위쪽 절반 남짓인 사진(서울 누각, 오로라 아래 나무·산)
+  { label: "위쪽 45%", keepTop: 0.45 },
 ];
 // 영역 안 별이 이보다 적으면 그 영역은 건너뛴다
 const MIN_REGION_STARS = 8;

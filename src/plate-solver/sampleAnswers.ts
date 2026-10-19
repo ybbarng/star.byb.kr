@@ -53,7 +53,21 @@ const byFilename: Record<string, SampleAnswer> = {
     fovDeg: 59.1,
     name: "남십자·켄타우루스 (남반구)",
   },
-  // 아래 넷은 지면을 뺀 위쪽 영역으로 자동으로 확신한 해. 예측 위치에 겹친 별을 눈으로 확인.
+  // 아래 여섯은 지면을 뺀 위쪽 영역으로 자동으로 확신한 해. 예측 위치에 겹친 별을 눈으로 확인.
+  // 카시오페이아 W(Navi·Schedar·Caph)·북극성·Alderamin (데네브는 산 너머 자리)
+  "20220607-berry-seoul.jpg": {
+    centerRaDeg: 320.7,
+    centerDecDeg: 61,
+    fovDeg: 56.1,
+    name: "카시오페이아·케페우스·북극성",
+  },
+  // 오로라 속 북두칠성(Dubhe·Merak·Phecda·Alioth·Mizar·Alkaid)
+  "20250117-carl-aurora-02.jpg": {
+    centerRaDeg: 191.3,
+    centerDecDeg: 33,
+    fovDeg: 52.7,
+    name: "큰곰자리 (북두칠성)",
+  },
   // 북두칠성 7별·북극성·Kochab (구름 낀 초저녁 하늘)
   "20230904-nike-jeungseun-01.png": {
     centerRaDeg: 182.7,

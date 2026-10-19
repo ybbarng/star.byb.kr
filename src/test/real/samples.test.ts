@@ -33,6 +33,7 @@ const UNSOLVED_BUDGET_MS = DEFAULT_TIME_BUDGET_MS;
 const MUST_SOLVE = [
   "big-dipper.jpg",
   "cafe-orion.jpg",
+  "20220607-berry-seoul.jpg",
   "20230904-nike-jeungseun-01.png",
   "20230904-nike-jeungseun-02.png",
   "20230904-nike-jeungseun-03.png",
@@ -40,6 +41,7 @@ const MUST_SOLVE = [
   "20231012-nike-aust-01.jpg",
   "20231012-nike-aust-02.jpg",
   "20250117-carl-aurora-01.jpg",
+  "20250117-carl-aurora-02.jpg",
   "20250117-carl-aurora-03.jpg",
   "20250117-carl-aurora-04.jpg",
 ];
