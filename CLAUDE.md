@@ -53,10 +53,18 @@ src/
 │   ├── SelectPhotoStep.tsx    # Step 0: 사진 선택
 │   ├── DetectStarsStep.tsx    # Step 1: 별 검출 (OpenCV)
 │   └── PlateSolvingStep.tsx   # Step 2: 매칭 & 별자리 표시
-├── search/                    # 검색 알고리즘
-│   ├── hooks/                 # useFindCandidates, useFindNearestStars, useFindConstellations
-│   ├── workers/               # Web Worker (findCandidatesWorker)
-│   └── utils/                 # 벡터 변환
+├── search/                    # 풀이 알고리즘 (순수 함수 코어 + 얇은 Worker/hook)
+│   ├── solvePhoto.ts          # 앱의 풀이 흐름 전체 (Worker·테스트가 같이 씀)
+│   ├── solveCore.ts           # 후보 하나 검증: RANSAC + 광축 재추정 + log-odds
+│   ├── solvers/               # triangle(앱 사용)·improved·baseline·voting, 판정 기준(candidates.ts)
+│   ├── catalogGeometry.ts     # 삼각형 인덱스 (2D 격자)
+│   ├── fisheyeSolve.ts        # 어안 blind 풀이
+│   ├── detectCore.ts          # 별 검출 순수 JS (테스트용, 브라우저는 cv.worker.js)
+│   ├── solverClient.ts        # 공유 풀이 Worker 클라이언트 (미리 준비·요청 번호)
+│   ├── hooks/                 # useSolve, useSkyOverlay
+│   ├── workers/               # solverWorker
+│   └── utils/                 # wcs·similarity·fisheye·stats·gridIndex2D·selectStars
+├── test/                      # vitest: synthetic(합성 사진)·unit·e2e·real(실제 샘플)
 ├── scripts/                   # 데이터베이스 빌드 스크립트 (tsx로 실행)
 │   ├── database/              # 카탈로그 축소, 벡터 변환, 별자리 빌드
 │   ├── hash/                  # quad 해시 생성 알고리즘
@@ -77,19 +85,24 @@ public/
 
 ### 데이터 준비 (오프라인, build_database.sh)
 
-1. **reduceDatabase**: BSC5 카탈로그에서 설정 등급 이하의 밝은 별만 필터링 (현재 4등급, 517개)
+1. **reduceDatabase**: BSC5 카탈로그에서 설정 등급 이하의 밝은 별만 필터링 (현재 V≤5, 1,625개)
 2. **toVector**: RA/Dec 천문학 좌표 → 3D 단위 벡터 (x, y, z)
-3. **createHashFromDatabase**: HEALPix로 천구를 192개 셀(nside=4, 600 arcmin)로 분할 → 각 셀에서 4개 별 조합(quad) 생성 → 접선 평면 투영 → 정규화된 4D 해시 생성
+3. **createHashFromDatabase**: HEALPix로 천구를 192개 셀(nside=4, 600 arcmin)로 분할 → 각 셀에서 4개 별 조합(quad) 생성 → 별쌍이 모두 10° 이내인 compact quad만 남김(84,962개) → 접선 평면 투영 → 정규화된 4D 해시 (`hashed-database.json` 10.8MB)
 4. **buildConstellations**: 별자리 연결선 데이터를 벡터 형식으로 변환
 
 ### 런타임 Plate Solving (브라우저)
 
-1. **사진 선택**: 샘플 또는 업로드
-2. **별 검출**: OpenCV Local Maxima (Web Worker) → 적응적 threshold(mean+3σ) → brightness 순 상위 100개
-3. **후보 검색**: 검출된 상위 15개 별에서 C(15,4)=1,365개 quad 생성 → 4D 해시 계산 → KD-Tree k=3으로 DB 매칭 → 중복 제거
-4. **정렬 & 투영**: 매칭된 quad의 3D 벡터로 접선 평면 투영 → 아핀 변환으로 사진↔천구 좌표 매핑
-5. **Verification**: 후보의 변환 행렬로 카탈로그 별을 사진에 투영 → 검출 별과의 매칭률/오차 계산
-6. **별자리 표시**: 동적 FOV 계산 → FOV×1.2 범위 내 별/별자리를 사진 좌표로 투영
+1. **사진 선택**: 샘플 또는 업로드. 이때 풀이 Worker가 DB를 미리 받아 인덱스를 만든다 (`preloadSolver`)
+2. **별 검출**: OpenCV Local Maxima (Web Worker) → 적응적 threshold(mean+3σ) → 가까운 중복 합치기 → 밝기 상위 100개.
+   사람이 마커를 지우거나 추가하고, 영역만 재검출할 수 있다
+3. **풀이** (`solvePhoto`, 시간 상한 8초): 밝기 상위 15·25·40·60개로 차례로 푼다. 확신하면 바로 멈춘다
+   - **매칭**: 밝은 별 10개의 삼각형을 FOV 후보(10~47°)마다 접선평면 형태로 바꿔 카탈로그 삼각형 인덱스(18° 이내, 2D 격자)에서 k=8 검색
+   - **검증** (`solveCore`): 대응 3별로 RANSAC + 광축 재추정 → 카탈로그 전체를 투영해 inlier 수집 → 우연일 확률(log-odds) 계산
+   - **판정** (`candidates.ts`): log-odds ≥ 9(우연일 확률 10억 분의 1)일 때만 "해 찾음". 아니면 후보만 사람에게 제시
+   - 직선투영으로 확신 못 하면 어안 blind 풀이 시도
+4. **별자리 표시**: 선택한 해의 변환으로 카탈로그 별/별자리를 사진 좌표로 투영 (카메라 뒤쪽 별은 제외)
+
+점검 결과와 개선 계획: `docs/improvement-plan.md`, 시도·발견 기록: `docs/experiments-journey.md`
 
 ## 핵심 알고리즘: Geometric Hashing
 
@@ -113,9 +126,10 @@ HEALPix nside=4, 192셀, 600 arcmin 기준. 2025-02-08 측정.
 
 | 등급 한계 | 별 수 | quad 수 | 최대 셀 별 수 | 평균 셀 별 수 | 예상 DB 크기 |
 |-----------|-------|---------|--------------|--------------|-------------|
-| **V<=4.0 (현재)** | **518** | **8,344** | **15** | **3.9** | **~1MB** |
+| V<=4.0 | 518 | 8,344 | 15 | 3.9 | ~1MB |
 | V<=4.5 | 904 | 55,399 | 23 | 6.8 | ~6MB |
 | V<=5.0 | 1,630 | 553,137 | 38 | 12.4 | ~63MB |
+| **V<=5.0 + compact(10°) (현재)** | **1,625** | **84,962** | | | **10.8MB** |
 | V<=5.5 | 2,887 | 4,966,646 | 64 | 21.9 | ~568MB |
 | V<=6.0 | 5,080 | 41,280,631 | 104 | 38.5 | ~4.7GB |
 
