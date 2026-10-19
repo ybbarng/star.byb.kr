@@ -1,4 +1,10 @@
-import type { ImageSize, InputStar, Solver, SolverContext } from "./types";
+import type {
+  ImageSize,
+  InputStar,
+  SolveRunOptions,
+  Solver,
+  SolverContext,
+} from "./types";
 import type { Point2D, Point3D } from "@/scripts/hash/types";
 import { isConfident, pickBest, topCandidates } from "./candidates";
 import { findCandidates } from "@/search/findCandidatesCore";
@@ -22,8 +28,14 @@ export const improvedSolver: Solver = {
   description:
     "격자 균등 선택 20개 quad → 각 후보를 RANSAC·유의도로 검증, inlier 최다 채택",
 
-  solve(stars: InputStar[], size: ImageSize, ctx: SolverContext) {
+  solve(
+    stars: InputStar[],
+    size: ImageSize,
+    ctx: SolverContext,
+    options: SolveRunOptions = {},
+  ) {
     const t0 = performance.now();
+    const deadline = options.deadline ?? Infinity;
     const matchStars = selectByGrid(stars, size, 4, 3, 8, MATCH_STARS);
     const photo = { width: size.width, height: size.height, stars: matchStars };
     const cands = findCandidates(photo, ctx.index, {
@@ -34,6 +46,10 @@ export const improvedSolver: Solver = {
     const results: NonNullable<ReturnType<typeof solveCandidate>>[] = [];
 
     for (const cand of cands.slice(0, MAX_CANDIDATES_TO_VERIFY)) {
+      if (performance.now() >= deadline) {
+        break;
+      }
+
       const photoQuad: Point2D[] = cand.input.map((i) => matchStars[i]);
       const dbQuad = cand.output.map((o) => ctx.byHrVec.get(o.hr));
 

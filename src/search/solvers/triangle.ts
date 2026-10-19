@@ -1,4 +1,10 @@
-import type { ImageSize, InputStar, Solver, SolverContext } from "./types";
+import type {
+  ImageSize,
+  InputStar,
+  SolveRunOptions,
+  Solver,
+  SolverContext,
+} from "./types";
 import type { Point2D, Point3D } from "@/scripts/hash/types";
 import {
   byReliability,
@@ -34,8 +40,14 @@ export const triangleSolver: Solver = {
   description:
     "3별 삼각형의 스케일 불변 형태로 카탈로그 검색 → 3별 대응을 RANSAC 검증",
 
-  solve(stars: InputStar[], size: ImageSize, ctx: SolverContext) {
+  solve(
+    stars: InputStar[],
+    size: ImageSize,
+    ctx: SolverContext,
+    options: SolveRunOptions = {},
+  ) {
     const t0 = performance.now();
+    const deadline = options.deadline ?? Infinity;
     const tri = ctx.triangleIndex;
 
     if (!tri) {
@@ -55,6 +67,10 @@ export const triangleSolver: Solver = {
 
     outer: for (let i = 0; i < photoTop.length - 2; i++) {
       for (let j = i + 1; j < photoTop.length - 1; j++) {
+        if (performance.now() >= deadline) {
+          break outer;
+        }
+
         for (let k = j + 1; k < photoTop.length; k++) {
           // FOV를 모르므로 후보 FOV마다 사진 삼각형을 카탈로그와 같은 기준
           // (삼각형 중심 접선평면)으로 재투영해 형태를 맞춘다.

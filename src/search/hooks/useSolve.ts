@@ -6,6 +6,7 @@ export default function useSolve() {
   const [outcome, setOutcome] = useState<SolveOutcome | null>(null);
   const [solving, setSolving] = useState(false);
   const [ready, setReady] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const workerRef = useRef<Worker | undefined>(undefined);
 
   useEffect(() => {
@@ -18,6 +19,9 @@ export default function useSolve() {
         setReady(true);
       } else if (e.data.fn === "onSolved") {
         setOutcome(e.data.payload as SolveOutcome);
+        setSolving(false);
+      } else if (e.data.fn === "onError") {
+        setError(e.data.payload as string);
         setSolving(false);
       }
     };
@@ -40,6 +44,7 @@ export default function useSolve() {
     ) => {
       setSolving(true);
       setOutcome(null);
+      setError(null);
       workerRef.current?.postMessage({
         fn: "solve",
         payload: { stars, width, height, solverKey },
@@ -48,5 +53,5 @@ export default function useSolve() {
     [],
   );
 
-  return { solve, outcome, solving, ready };
+  return { solve, outcome, solving, ready, error };
 }

@@ -55,9 +55,20 @@ export interface SolveOutcome {
   fisheyeCamera?: FisheyeCamera | null;
 }
 
+// 한 번의 solve 호출에 주는 실행 조건.
+export interface SolveRunOptions {
+  // performance.now() 기준 마감 시각. 넘으면 지금까지 찾은 것으로 끝낸다.
+  deadline?: number;
+}
+
 export interface Solver {
   key: string;
   name: string;
   description: string;
-  solve(stars: InputStar[], size: ImageSize, ctx: SolverContext): SolveOutcome;
+  solve(
+    stars: InputStar[],
+    size: ImageSize,
+    ctx: SolverContext,
+    options?: SolveRunOptions,
+  ): SolveOutcome;
 }
