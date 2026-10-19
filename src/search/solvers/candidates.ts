@@ -9,20 +9,40 @@ export const ACCEPT = {
   // 일반 사진의 대각 시야는 이 정도를 넘지 않는다. 더 넓게 나오는 해는
   // 변환이 느슨/붕괴해 넓은 하늘이 우연히 맞은 비현실적 결과다.
   maxFovDeg: 80,
+  // "해를 찾았다"고 확신하려면 시드 밖 inlier가 우연히 맞을 확률이 10^-9 이하여야 한다.
+  // 풀이는 후보를 1만 개 넘게 검사하고 최댓값을 고르므로, 배수(유의도)만으로는 우연히
+  // 높은 값이 쉽게 나온다. 실측(샘플 16장)에서 진짜 해는 14 이상, 가짜는 모두 3.9 이하였다.
+  minLogOdds: 9,
 };
 
-// 거대 FOV(하늘 전체)·빈약 inlier·우연 수준 유의도를 모두 거른다.
-export const isPlausible = (
-  r: { inlierCount: number; significance: number; fovDeg: number },
-  accept = ACCEPT,
-): boolean =>
+type Judged = Pick<
+  SolveResult,
+  "inlierCount" | "significance" | "fovDeg" | "logOdds"
+>;
+
+// 사람에게 후보로 보여줄 만한가. 거대 FOV(하늘 전체)·빈약 inlier·우연 수준 유의도를 거른다.
+export const isPlausible = (r: Judged, accept = ACCEPT): boolean =>
   r.inlierCount >= accept.minInlier &&
   r.significance >= accept.minSignificance &&
   Number.isFinite(r.fovDeg) &&
   r.fovDeg > 0 &&
   r.fovDeg <= accept.maxFovDeg;
 
-// 검증 결과들을 유의도/inlier 순으로 정렬하되, 같은 하늘 위치(서로 dedupeDeg 이내)는
+// 컴퓨터가 "해를 찾았다"고 확신해도 되는가. 아니면 후보만 제시하고 사람이 고른다.
+export const isConfident = (r: Judged, accept = ACCEPT): boolean =>
+  isPlausible(r, accept) && r.logOdds >= accept.minLogOdds;
+
+// 더 믿을 만한 해가 앞에 오도록 정렬하는 비교 함수. 우연일 확률이 낮은 순, 같으면 inlier 많은 순.
+export const byReliability = (
+  a: Pick<SolveResult, "logOdds" | "inlierCount">,
+  b: Pick<SolveResult, "logOdds" | "inlierCount">,
+): number => b.logOdds - a.logOdds || b.inlierCount - a.inlierCount;
+
+// 그럴듯한 결과 중 가장 믿을 만한 것 (없으면 null)
+export const pickBest = (results: SolveResult[]): SolveResult | null =>
+  results.filter((r) => isPlausible(r)).sort(byReliability)[0] ?? null;
+
+// 검증 결과들을 믿을 만한 순으로 정렬하되, 같은 하늘 위치(서로 dedupeDeg 이내)는
 // 하나로 묶어 "서로 다른 상위 후보 N개"를 만든다. 유일한 해를 못 찾아도 사람이
 // 이 후보들 중 고를 수 있게 하기 위함이다.
 // 그럴듯하지 않은 후보(거대 FOV·빈약 inlier·우연 수준)는 아예 제시하지 않는다.
@@ -30,13 +50,33 @@ export const topCandidates = (
   results: SolveResult[],
   maxN: number,
   dedupeDeg = 4,
-): SolveCandidateResult[] => {
-  const plausible = results.filter((r) => isPlausible(r));
-  const sorted = plausible.sort(
-    (a, b) => b.inlierCount - a.inlierCount || b.significance - a.significance,
+): SolveCandidateResult[] =>
+  dedupeBySky(
+    results
+      .filter((r) => isPlausible(r))
+      .sort(byReliability)
+      .map((r) => ({
+        centerVector: r.centerVector,
+        fovDeg: r.fovDeg,
+        transform: r.TP,
+        confidence: r.logOdds,
+        inlierCount: r.inlierCount,
+      })),
+    maxN,
+    dedupeDeg,
   );
+
+// 이미 믿을 만한 순으로 정렬된 후보에서, 앞선 후보와 같은 하늘 위치(dedupeDeg 이내)는
+// 버리고 서로 다른 위치 maxN개를 고른다.
+export const dedupeBySky = <
+  T extends { centerVector: SolveResult["centerVector"] },
+>(
+  sorted: T[],
+  maxN: number,
+  dedupeDeg = 4,
+): T[] => {
   const cosThresh = Math.cos((dedupeDeg * Math.PI) / 180);
-  const picked: SolveResult[] = [];
+  const picked: T[] = [];
 
   for (const r of sorted) {
     if (picked.length >= maxN) {
@@ -57,11 +97,5 @@ export const topCandidates = (
     }
   }
 
-  return picked.map((r) => ({
-    centerVector: r.centerVector,
-    fovDeg: r.fovDeg,
-    transform: r.TP,
-    confidence: r.significance,
-    inlierCount: r.inlierCount,
-  }));
+  return picked;
 };

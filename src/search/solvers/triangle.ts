@@ -1,6 +1,11 @@
 import type { ImageSize, InputStar, Solver, SolverContext } from "./types";
 import type { Point2D, Point3D } from "@/scripts/hash/types";
-import { isPlausible, topCandidates } from "./candidates";
+import {
+  byReliability,
+  isConfident,
+  isPlausible,
+  topCandidates,
+} from "./candidates";
 import {
   pixelToCamera3D,
   projectTriangle,
@@ -18,7 +23,6 @@ const MATCH_STARS = 10;
 // 형태(비율)는 크기를 구분 못 하므로 후보를 넓게 가져와 검증으로 거른다.
 // KD_K를 키워도 사진/카탈로그 삼각형 형태가 어긋나면(큰 별자리) 정답을 못 찾는다.
 const KD_K = 8;
-const EARLY_ACCEPT_INLIER = 10; // 충분한 inlier를 찾으면 즉시 채택
 const MAX_PRESENTED_CANDIDATES = 5;
 // blind FOV 후보. 사진 삼각형을 카탈로그와 같은 "삼각형 중심" 기준으로
 // 재투영하려면 픽셀→각 스케일(FOV)이 필요한데 모르므로 스캔한다.
@@ -42,9 +46,7 @@ export const triangleSolver: Solver = {
     const allStars: Point2D[] = stars.map((s) => [s.x, s.y]);
 
     const results: SolveResult[] = [];
-    let best: SolveResult | null = null;
-    let bestInlier = -1;
-    let bestSig = -Infinity;
+    let best = null as SolveResult | null;
     let evaluated = 0;
 
     const cx = size.width / 2;
@@ -98,19 +100,16 @@ export const triangleSolver: Solver = {
                 // 그럴듯한 해(거대 FOV·빈약 inlier 제외)만 best 후보로
                 if (
                   isPlausible(res) &&
-                  (res.inlierCount > bestInlier ||
-                    (res.inlierCount === bestInlier &&
-                      res.significance > bestSig))
+                  (best === null || byReliability(res, best) < 0)
                 ) {
                   best = res;
-                  bestInlier = res.inlierCount;
-                  bestSig = res.significance;
                 }
               }
             }
           }
 
-          if (bestInlier >= EARLY_ACCEPT_INLIER) {
+          // 확신할 해를 찾으면 나머지 삼각형은 볼 필요가 없다
+          if (best && isConfident(best)) {
             break outer;
           }
         }
@@ -135,11 +134,10 @@ export const triangleSolver: Solver = {
     }
 
     return {
-      // best는 이미 그럴듯한 해(isPlausible)만 통과시켜 선택했다
-      found: isPlausible(best),
+      found: isConfident(best),
       centerVector: best.centerVector,
       fovDeg: best.fovDeg,
-      confidence: best.significance,
+      confidence: best.logOdds,
       inlierCount: best.inlierCount,
       candidatesEvaluated: evaluated,
       timeMs,

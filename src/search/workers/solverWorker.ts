@@ -10,42 +10,23 @@ import { buildTriangleIndex } from "@/search/catalogGeometry";
 import { buildCandidateIndex } from "@/search/findCandidatesCore";
 import { blindSolveFisheye } from "@/search/fisheyeSolve";
 import { improvedSolver, triangleSolver } from "@/search/solvers";
+import { dedupeBySky } from "@/search/solvers/candidates";
 
 // 검출 노이즈 비율을 모르므로 입력을 여러 크기로 잘라 각각 풀고 합친다.
 // 노이즈가 적은 크기에서 정답이 나오고, 후보군은 모두 합쳐 사람에게 제시한다.
 const INPUT_SIZES = [15, 25, 40, 60];
 
-// 후보들을 신뢰도 순으로 정렬하고 같은 하늘 위치(4도 이내)는 하나로 묶는다.
+// 후보들을 믿을 만한 순(log-odds, 같으면 inlier)으로 정렬하고 같은 하늘 위치(4도 이내)는 하나로 묶는다.
 const mergeCandidates = (
   all: SolveCandidateResult[],
   maxN: number,
-): SolveCandidateResult[] => {
-  const cosThresh = Math.cos((4 * Math.PI) / 180);
-  const sorted = [...all].sort(
-    (a, b) => b.inlierCount - a.inlierCount || b.confidence - a.confidence,
+): SolveCandidateResult[] =>
+  dedupeBySky(
+    [...all].sort(
+      (a, b) => b.confidence - a.confidence || b.inlierCount - a.inlierCount,
+    ),
+    maxN,
   );
-  const picked: SolveCandidateResult[] = [];
-
-  for (const c of sorted) {
-    if (picked.length >= maxN) {
-      break;
-    }
-
-    const dup = picked.some(
-      (p) =>
-        p.centerVector[0] * c.centerVector[0] +
-          p.centerVector[1] * c.centerVector[1] +
-          p.centerVector[2] * c.centerVector[2] >=
-        cosThresh,
-    );
-
-    if (!dup) {
-      picked.push(c);
-    }
-  }
-
-  return picked;
-};
 
 // 검증된 solver 코어(solveCore + solvers)를 브라우저에서 실행하는 Worker.
 // DB(매칭 해시 + 검증 카탈로그)를 받아 ctx를 한 번 만들고, 사진 별 목록으로
@@ -160,7 +141,7 @@ onmessage = async function (e) {
       );
       merged.forEach((c, i) => {
         console.log(
-          `  #${i + 1} ${fmt(c.centerVector)} · FOV ${c.fovDeg.toFixed(1)}° · inlier ${c.inlierCount} · 유의도 ${c.confidence.toFixed(1)}`,
+          `  #${i + 1} ${fmt(c.centerVector)} · FOV ${c.fovDeg.toFixed(1)}° · inlier ${c.inlierCount} · log-odds ${c.confidence.toFixed(1)}`,
         );
       });
 

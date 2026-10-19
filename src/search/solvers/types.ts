@@ -38,10 +38,11 @@ export interface SolveCandidateResult {
 }
 
 export interface SolveOutcome {
-  found: boolean; // 알고리즘이 "해를 찾았다"고 판단했는지 (최상위 후보가 신뢰할 만한지)
+  found: boolean; // 알고리즘이 "해를 찾았다"고 확신하는지 (최상위 후보가 우연으로 설명되지 않는지)
   centerVector: Point3D | null; // 최상위 후보의 광축 방향
   fovDeg: number | null; // 최상위 후보의 시야각
-  confidence: number; // 신뢰 지표(원본은 1/거리, 개선·최선은 유의도)
+  // 신뢰 지표. 원본은 1/거리, 나머지는 log-odds(우연일 확률의 -log10, 클수록 믿을 만함)
+  confidence: number;
   inlierCount: number; // 매칭된 별 수 (원본은 0)
   candidatesEvaluated: number; // 검토한 후보 수
   timeMs: number;

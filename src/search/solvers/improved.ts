@@ -1,6 +1,6 @@
 import type { ImageSize, InputStar, Solver, SolverContext } from "./types";
 import type { Point2D, Point3D } from "@/scripts/hash/types";
-import { isPlausible, topCandidates } from "./candidates";
+import { isConfident, pickBest, topCandidates } from "./candidates";
 import { findCandidates } from "@/search/findCandidatesCore";
 import { solveCandidate } from "@/search/solveCore";
 import { selectByGrid } from "@/search/utils/selectStars";
@@ -32,9 +32,6 @@ export const improvedSolver: Solver = {
     const allStars: Point2D[] = stars.map((s) => [s.x, s.y]);
 
     const results: NonNullable<ReturnType<typeof solveCandidate>>[] = [];
-    let best: ReturnType<typeof solveCandidate> = null;
-    let bestInlier = -1;
-    let bestSig = -Infinity;
 
     for (const cand of cands.slice(0, MAX_CANDIDATES_TO_VERIFY)) {
       const photoQuad: Point2D[] = cand.input.map((i) => matchStars[i]);
@@ -57,18 +54,10 @@ export const improvedSolver: Solver = {
       }
 
       results.push(res);
-
-      // 그럴듯한 해(거대 FOV·빈약 inlier 제외)만 best 후보로. inlier 1순위, 동률 시 유의도
-      if (
-        isPlausible(res) &&
-        (res.inlierCount > bestInlier ||
-          (res.inlierCount === bestInlier && res.significance > bestSig))
-      ) {
-        best = res;
-        bestInlier = res.inlierCount;
-        bestSig = res.significance;
-      }
     }
+
+    // 그럴듯한 해(거대 FOV·빈약 inlier 제외) 중 가장 믿을 만한 것
+    const best = pickBest(results);
 
     const timeMs = performance.now() - t0;
     const candidates = topCandidates(results, MAX_PRESENTED_CANDIDATES);
@@ -88,11 +77,10 @@ export const improvedSolver: Solver = {
     }
 
     return {
-      // best는 이미 그럴듯한 해(isPlausible)만 통과시켜 선택했다
-      found: isPlausible(best),
+      found: isConfident(best),
       centerVector: best.centerVector,
       fovDeg: best.fovDeg,
-      confidence: best.significance,
+      confidence: best.logOdds,
       inlierCount: best.inlierCount,
       candidatesEvaluated: cands.length,
       timeMs,

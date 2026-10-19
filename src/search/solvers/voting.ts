@@ -1,6 +1,6 @@
 import type { ImageSize, InputStar, Solver, SolverContext } from "./types";
 import type { Point2D, Point3D } from "@/scripts/hash/types";
-import { topCandidates } from "./candidates";
+import { isConfident, topCandidates } from "./candidates";
 import { searchTriangle, triangleShape } from "@/search/catalogGeometry";
 import { solveCandidate } from "@/search/solveCore";
 import { selectTopByBrightness } from "@/search/utils/selectStars";
@@ -20,8 +20,6 @@ import { selectTopByBrightness } from "@/search/utils/selectStars";
 const MATCH_STARS = 12;
 const KD_K = 4;
 const MIN_VOTES = 2;
-const MIN_INLIER = 6;
-const MIN_SIGNIFICANCE = 5;
 
 const pixDist = (a: Point2D, b: Point2D): number =>
   Math.hypot(a[0] - b[0], a[1] - b[1]);
@@ -134,11 +132,10 @@ export const votingSolver: Solver = {
     }
 
     return {
-      found:
-        res.significance > MIN_SIGNIFICANCE && res.inlierCount >= MIN_INLIER,
+      found: isConfident(res),
       centerVector: res.centerVector,
       fovDeg: res.fovDeg,
-      confidence: res.significance,
+      confidence: res.logOdds,
       inlierCount: res.inlierCount,
       candidatesEvaluated: 1,
       timeMs,

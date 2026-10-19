@@ -4,6 +4,7 @@ import {
   applySimilarity,
   umeyamaSimilarity2D,
 } from "@/search/utils/similarity";
+import { poissonTailNegLog10 } from "@/search/utils/stats";
 import {
   mat3Mul,
   mat3MulVec,
@@ -37,6 +38,9 @@ export interface SolveResult {
   rmsError: number; // inlier 잔차 RMS(px)
   expectedRandom: number; // 우연히 맞을 inlier 기대 수
   significance: number; // inlierCount / expectedRandom (>1이면 우연 이상)
+  // 시드 밖 inlier가 우연히 이만큼 맞을 확률의 -log10 (Poisson 꼬리).
+  // 후보를 수천 개 검사해도 우연으로 설명되지 않는지 판정하는 기준이다.
+  logOdds: number;
   centerVector: Point3D;
   fovDeg: number;
   tolerancePx: number;
@@ -307,6 +311,11 @@ export const solveCandidate = (
   const areaRatio = (Math.PI * tol2) / (W * H);
   const expectedRandom = photoStars.length * projectedInFov * areaRatio;
   const significance = inlierCount / Math.max(1e-6, expectedRandom);
+  // 시드 별(photoQuad)은 대응이 정해진 채 들어오므로 우연 비교에서 뺀다.
+  const logOdds = poissonTailNegLog10(
+    inlierCount - photoQuad.length,
+    expectedRandom,
+  );
 
   return {
     TP,
@@ -316,6 +325,7 @@ export const solveCandidate = (
     rmsError,
     expectedRandom,
     significance,
+    logOdds,
     centerVector,
     fovDeg,
     tolerancePx,
