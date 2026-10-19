@@ -65,12 +65,16 @@ interface SolveRequest {
   solverKey?: "improved" | "triangle";
 }
 
+// 메시지마다 요청 번호(id)를 그대로 돌려줘, 화면이 어느 요청의 응답인지 구분하게 한다.
+// 응답: onPhase(진행 단계) → onDone(결과) 또는 onError(오류 메시지)
 onmessage = async function (e) {
+  const { fn, id } = e.data;
+
   try {
-    switch (e.data.fn) {
+    switch (fn) {
       case "loadDatabase": {
         await loadDatabase();
-        postMessage({ fn: "onDatabaseLoaded" });
+        postMessage({ fn: "onDone", id });
         break;
       }
 
@@ -82,10 +86,10 @@ onmessage = async function (e) {
           solverKey === "improved" ? improvedSolver : triangleSolver;
         const result = solvePhoto(stars, { width, height }, ctx, solver, {
           onPhase: (phase: SolvePhase) =>
-            postMessage({ fn: "onPhase", payload: phase }),
+            postMessage({ fn: "onPhase", id, payload: phase }),
         });
 
-        postMessage({ fn: "onSolved", payload: result });
+        postMessage({ fn: "onDone", id, payload: result });
         break;
       }
 
@@ -97,6 +101,7 @@ onmessage = async function (e) {
     loadPromise = null;
     postMessage({
       fn: "onError",
+      id,
       payload: error instanceof Error ? error.message : String(error),
     });
   }

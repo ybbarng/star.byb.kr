@@ -35,7 +35,6 @@ export default function PlateSolvingStep() {
       photoStars.map((s) => ({ x: s.x, y: s.y, brightness: s.brightness })),
       image.width,
       image.height,
-      "triangle",
     );
   }, [image, photoStars, ready, solve]);
 
