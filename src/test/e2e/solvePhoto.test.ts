@@ -4,8 +4,7 @@ import type { SolverContext } from "@/search/solvers";
 import { beforeAll, describe, expect, it } from "vitest";
 import { buildTriangleIndex } from "@/search/catalogGeometry";
 import { buildCandidateIndex } from "@/search/findCandidatesCore";
-import { solvePhoto } from "@/search/solvePhoto";
-import { triangleSolver } from "@/search/solvers";
+import { DEFAULT_SOLVERS, solvePhoto } from "@/search/solvePhoto";
 import { generateSyntheticImage } from "@/test/synthetic/generateSyntheticImage";
 import {
   catalogExists,
@@ -72,7 +71,7 @@ describe.skipIf(!ready)("solvePhoto: 앱의 풀이 흐름", () => {
       cleanImage().stars,
       { width: W, height: H },
       ctx,
-      triangleSolver,
+      DEFAULT_SOLVERS,
       { onPhase: (p) => phases.push(p) },
     );
 
@@ -80,7 +79,11 @@ describe.skipIf(!ready)("solvePhoto: 앱의 풀이 흐름", () => {
     expect(angleDeg(out.centerVector as Point3D, center)).toBeLessThan(0.5);
     // 첫 크기에서 확신했으므로 다른 입력 크기·어안 풀이는 돌지 않는다
     expect(phases).toHaveLength(1);
-    expect(phases[0]).toMatchObject({ kind: "linear", inputSize: 15 });
+    expect(phases[0]).toMatchObject({
+      kind: "linear",
+      solverKey: DEFAULT_SOLVERS[0].key,
+      inputSize: 15,
+    });
     expect(out.timedOut).toBe(false);
   });
 
@@ -89,7 +92,7 @@ describe.skipIf(!ready)("solvePhoto: 앱의 풀이 흐름", () => {
       cleanImage().stars,
       { width: W, height: H },
       ctx,
-      triangleSolver,
+      DEFAULT_SOLVERS,
       { timeBudgetMs: 0 },
     );
 
@@ -101,16 +104,18 @@ describe.skipIf(!ready)("solvePhoto: 앱의 풀이 흐름", () => {
     const phases: SolvePhase[] = [];
     const stars = cleanImage().stars.slice(0, 20);
 
-    solvePhoto(stars, { width: W, height: H }, ctx, triangleSolver, {
+    solvePhoto(stars, { width: W, height: H }, ctx, DEFAULT_SOLVERS, {
       onPhase: (p) => phases.push(p),
     });
 
-    const sizes = phases.flatMap((p) =>
-      p.kind === "linear" ? [p.inputSize] : [],
-    );
+    // solver마다: 15개로 못 풀었을 때만 20개(전체)를 한 번 더 본다. 25·40·60은 같은 입력이라 건너뛴다.
+    for (const solver of DEFAULT_SOLVERS) {
+      const sizes = phases.flatMap((p) =>
+        p.kind === "linear" && p.solverKey === solver.key ? [p.inputSize] : [],
+      );
 
-    // 15개로 못 풀었을 때만 20개(전체)를 한 번 더 본다. 25·40·60은 같은 입력이라 건너뛴다.
-    expect(sizes.every((n) => n <= 20)).toBe(true);
-    expect(new Set(sizes).size).toBe(sizes.length);
+      expect(sizes.every((n) => n <= 20)).toBe(true);
+      expect(new Set(sizes).size).toBe(sizes.length);
+    }
   });
 });

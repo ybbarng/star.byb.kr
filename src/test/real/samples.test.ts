@@ -6,8 +6,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { answerVector, getSampleAnswer } from "@/plate-solver/sampleAnswers";
 import { buildTriangleIndex } from "@/search/catalogGeometry";
 import { buildCandidateIndex } from "@/search/findCandidatesCore";
-import { solvePhoto } from "@/search/solvePhoto";
-import { triangleSolver } from "@/search/solvers";
+import { DEFAULT_SOLVERS, solvePhoto } from "@/search/solvePhoto";
 import { detectLikeApp } from "@/test/real/detectImage";
 import {
   catalogExists,
@@ -27,7 +26,10 @@ const ANSWER_TOLERANCE_DEG = 6;
 const MUST_SOLVE = [
   "big-dipper.jpg",
   "cafe-orion.jpg",
+  "20230904-nike-jeungseun-03.png",
+  "20230904-nike-jeungseun-04.png",
   "20231012-nike-aust-01.jpg",
+  "20231012-nike-aust-02.jpg",
 ];
 
 // 정답은 알지만 아직 자동으로는 못 푸는 샘플. 풀지 못해도 되지만 틀린 해를 확신하면 안 된다.
@@ -65,7 +67,7 @@ describe.skipIf(!ready)("실제 샘플: 앱 흐름 회귀", () => {
     );
     // 맞히는지를 보는 테스트라 시간 상한은 끈다. 실제 시계 기준 상한은 CPU 부하에 따라
     // 결과가 달라져(병렬 실행 시 시간 초과) 테스트가 결정적이지 않게 된다.
-    const out = solvePhoto(stars, { width, height }, ctx, triangleSolver, {
+    const out = solvePhoto(stars, { width, height }, ctx, DEFAULT_SOLVERS, {
       timeBudgetMs: Infinity,
     });
     await yieldToEventLoop();

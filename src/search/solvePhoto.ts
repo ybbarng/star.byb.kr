@@ -8,14 +8,16 @@ import type {
   SolverContext,
 } from "@/search/solvers";
 import { blindSolveFisheye } from "@/search/fisheyeSolve";
+import { improvedSolver, triangleSolver } from "@/search/solvers";
 import { dedupeBySky } from "@/search/solvers/candidates";
 
 // 사진 한 장의 검출 별 목록을 받아 앱과 똑같은 흐름으로 푼다.
 // Worker(solverWorker)는 이 함수를 감싸기만 하고, Node 테스트도 이 함수를 그대로 쓴다.
 //
 // 흐름:
-// 1) 검출 노이즈 비율을 모르므로 밝기 상위 N개를 여러 크기로 잘라 차례로 푼다.
-//    노이즈가 적은 크기에서 정답이 나온다. 확신할 해가 나오면 바로 멈춘다.
+// 1) solver를 차례로 쓰고, 각 solver는 밝기 상위 N개를 여러 크기로 잘라 차례로 푼다.
+//    (검출 노이즈 비율을 모르므로 노이즈가 적은 크기에서 정답이 나오길 기대한다.)
+//    확신할 해가 나오면 바로 멈춘다.
 // 2) 직선투영으로 확신하지 못하면 어안(초광각) blind 풀이를 시도한다.
 // 3) 확신하지 못해도 서로 다른 하늘 위치의 후보들을 모아 사람이 고를 수 있게 돌려준다.
 
@@ -23,12 +25,21 @@ export const INPUT_SIZES = [15, 25, 40, 60];
 // 일반인이 기다릴 수 있는 시간(목표 10초) 안에서 풀이를 멈춘다. 확신할 해를 못 찾으면
 // 그때까지 모은 후보만 돌려준다.
 export const DEFAULT_TIME_BUDGET_MS = 8000;
+// 쓰는 순서. 개선 quad는 빠르고 노이즈에 강하며(실제 샘플 5장 확신), 삼각형은 별이 적은
+// 사진(북두칠성)을 푼다. 서로 못 푸는 사진을 보완한다 (journey 13장).
+export const DEFAULT_SOLVERS: Solver[] = [improvedSolver, triangleSolver];
 const MAX_PRESENTED_CANDIDATES = 8;
 // 어안 blind 풀이 결과를 채택하는 기준(우연/오답을 줄이려 inlier가 많고 재투영 오차가 작을 때만)
 const FISHEYE_ACCEPT = { minInliers: 25, maxRmsPx: 6 };
 
 export type SolvePhase =
-  | { kind: "linear"; inputSize: number; index: number; total: number }
+  | {
+      kind: "linear";
+      solverKey: string;
+      inputSize: number;
+      index: number; // 전체 직선투영 단계(solver × 입력 크기) 중 몇 번째인지
+      total: number;
+    }
   | { kind: "fisheye" };
 
 export interface SolvePhotoOptions {
@@ -68,33 +79,38 @@ export const solvePhoto = (
   stars: InputStar[],
   size: ImageSize,
   ctx: SolverContext,
-  solver: Solver,
+  solvers: Solver[] = DEFAULT_SOLVERS,
   options: SolvePhotoOptions = {},
 ): SolvePhotoResult => {
   const t0 = performance.now();
   const deadline = t0 + (options.timeBudgetMs ?? DEFAULT_TIME_BUDGET_MS);
   const sorted = [...stars].sort((a, b) => b.brightness - a.brightness);
-  const sizes = inputSizesFor(sorted.length);
+  const steps = solvers.flatMap((solver) =>
+    inputSizesFor(sorted.length).map((inputSize) => ({ solver, inputSize })),
+  );
 
   const allCandidates: SolveCandidateResult[] = [];
   let best: SolveOutcome | null = null;
   let evaluated = 0;
   let timedOut = false;
 
-  for (let i = 0; i < sizes.length; i++) {
+  for (let i = 0; i < steps.length; i++) {
     if (performance.now() >= deadline) {
       timedOut = true;
       break;
     }
 
+    const { solver, inputSize } = steps[i];
+
     options.onPhase?.({
       kind: "linear",
-      inputSize: sizes[i],
+      solverKey: solver.key,
+      inputSize,
       index: i,
-      total: sizes.length,
+      total: steps.length,
     });
 
-    const out = solver.solve(sorted.slice(0, sizes[i]), size, ctx, {
+    const out = solver.solve(sorted.slice(0, inputSize), size, ctx, {
       deadline,
     });
     allCandidates.push(...out.candidates);

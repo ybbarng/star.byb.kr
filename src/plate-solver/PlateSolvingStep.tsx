@@ -269,6 +269,12 @@ export default function PlateSolvingStep() {
   );
 }
 
+// solver가 쓰는 별 패턴 이름 (진행 문구용)
+const SOLVER_PATTERN_NAMES: Record<string, string> = {
+  improved: "4개 별 패턴(quad)",
+  triangle: "3개 별 패턴(삼각형)",
+};
+
 // 풀이 진행 단계를 사람이 읽는 문장으로
 const describePhase = (ready: boolean, phase: SolvePhase | null): string => {
   if (!ready) {
@@ -283,7 +289,9 @@ const describePhase = (ready: boolean, phase: SolvePhase | null): string => {
     return "초광각(어안) 렌즈로 보고 다시 찾고 있습니다";
   }
 
-  return `밝은 별 ${phase.inputSize}개로 별자리를 찾고 있습니다 (${phase.index + 1}/${phase.total})`;
+  const pattern = SOLVER_PATTERN_NAMES[phase.solverKey] ?? "별 패턴";
+
+  return `밝은 별 ${phase.inputSize}개의 ${pattern}으로 찾고 있습니다 (${phase.index + 1}/${phase.total})`;
 };
 
 // 풀이가 진행 중임을 보여 준다. 몇 초 걸릴 수 있어 단계·경과 시간을 함께 보여 준다.

@@ -5,7 +5,6 @@ import type { InputStar, SolverContext } from "@/search/solvers";
 import { buildTriangleIndex } from "@/search/catalogGeometry";
 import { buildCandidateIndex } from "@/search/findCandidatesCore";
 import { solvePhoto } from "@/search/solvePhoto";
-import { improvedSolver, triangleSolver } from "@/search/solvers";
 
 // 검증된 풀이 코어(solvePhoto)를 브라우저에서 실행하는 Worker.
 // DB(매칭 해시 + 검증 카탈로그)를 받아 ctx를 한 번 만들고, 사진 별 목록으로 풀어
@@ -62,7 +61,6 @@ interface SolveRequest {
   stars: InputStar[];
   width: number;
   height: number;
-  solverKey?: "improved" | "triangle";
 }
 
 // 메시지마다 요청 번호(id)를 그대로 돌려줘, 화면이 어느 요청의 응답인지 구분하게 한다.
@@ -80,11 +78,8 @@ onmessage = async function (e) {
 
       case "solve": {
         const ctx = await loadDatabase();
-        const { stars, width, height, solverKey } = e.data
-          .payload as SolveRequest;
-        const solver =
-          solverKey === "improved" ? improvedSolver : triangleSolver;
-        const result = solvePhoto(stars, { width, height }, ctx, solver, {
+        const { stars, width, height } = e.data.payload as SolveRequest;
+        const result = solvePhoto(stars, { width, height }, ctx, undefined, {
           onPhase: (phase: SolvePhase) =>
             postMessage({ fn: "onPhase", id, payload: phase }),
         });
