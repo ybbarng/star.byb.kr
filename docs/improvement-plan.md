@@ -82,4 +82,5 @@
 | 11 | 노이즈 강건화 연구 (지면 제외, 검출 품질, 은하수·오로라) | 4 | ⬜ (1~10 이후) |
 | 12 | DB 크기 줄이기 (binary 형식 등) | 6 | ⬜ (나중) |
 | 13 | `npm test`가 `docs/benchmark-results.json`을 매번 다시 써서 작업 트리를 더럽힌다 | 10 | ✅ `npm run benchmark:update`일 때만 쓴다 |
+| 15 | 커밋 전 lint·타입 검사 자동화 (lefthook) | 10 | ✅ pre-commit: 커밋 파일 ESLint + tsc, pre-push: 전체 lint |
 | 14 | 후보 검증 비용 줄이기 (aust-01이 입력 크기마다 ~1.7초, 총 5.3초로 시간 상한에 가깝다) | 9 | ⬜ |

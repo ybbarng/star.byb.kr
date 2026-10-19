@@ -1,0 +1,18 @@
+# 커밋·push 전에 자동으로 확인한다. (설치: npm install 시 prepare 스크립트가 훅을 건다)
+
+pre-commit:
+  parallel: true
+  commands:
+    # 이번에 커밋하는 파일만 lint (빠르게)
+    lint:
+      glob: "*.{ts,tsx,js,jsx,mjs}"
+      run: npx eslint {staged_files}
+    # 타입 오류는 다른 파일에서 드러날 수 있어 프로젝트 전체를 본다
+    types:
+      glob: "*.{ts,tsx}"
+      run: npx tsc --noEmit -p .
+
+pre-push:
+  commands:
+    lint:
+      run: npm run lint

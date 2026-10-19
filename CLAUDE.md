@@ -28,6 +28,8 @@ npm install           # 의존성 설치
 npm run dev           # 개발 서버 (http://localhost:5025)
 npm run build         # 프로덕션 빌드
 npm run lint          # ESLint
+npm test              # vitest (합성·실제 샘플 회귀 포함, 약 90초)
+npm run benchmark:update  # 알고리즘 비교 결과를 docs/benchmark-results.json에 갱신
 ```
 
 ## 디렉토리 구조
@@ -148,6 +150,8 @@ HEALPix nside=4, 192셀, 600 arcmin 기준. 2025-02-08 측정.
 4. **셀당 최대 별 수 제한**: 밝은 별 우선으로 셀당 N개까지만 사용
 
 ## 코드 스타일
+
+- 커밋 전 lefthook이 자동 확인: pre-commit(커밋 파일 ESLint + 전체 tsc), pre-push(`npm run lint`)
 
 - ESLint + Prettier (tailwindcss 플러그인)
 - import 정렬: type → builtin → external → parent → sibling
