@@ -1,18 +1,20 @@
 import type { SampleAnswer } from "@/plate-solver/sampleAnswers";
+import type { SolvePhase } from "@/search/solvePhoto";
 import type { SolveCandidateResult } from "@/search/solvers";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { getSampleAnswer, matchesAnswer } from "@/plate-solver/sampleAnswers";
 import StepMover from "@/plate-solver/StepMover";
 import { useContextStore } from "@/plate-solver/store/context";
 import useSkyOverlay from "@/search/hooks/useSkyOverlay";
 import useSolve from "@/search/hooks/useSolve";
+import { ACCEPT } from "@/search/solvers/candidates";
 import { cn } from "@/utils/cn";
 
 export default function PlateSolvingStep() {
   const image = useContextStore((state) => state.image);
   const photoStars = useContextStore((state) => state.photoStars);
   const canvasElement = useRef<HTMLCanvasElement>(null);
-  const { solve, outcome, solving, ready } = useSolve();
+  const { solve, outcome, solving, ready, phase, error } = useSolve();
   const {
     stars: skyStars,
     constellations: skyConstellations,
@@ -26,8 +28,8 @@ export default function PlateSolvingStep() {
   const fisheyeCamera = outcome?.fisheyeCamera ?? null;
 
   // 검출된 별로 plate solving 실행 (직선/어안 자동 판별은 worker에서)
-  useEffect(() => {
-    if (!image || photoStars.length < 1 || !ready) {
+  const runSolve = useCallback(() => {
+    if (!image || photoStars.length < 1) {
       return;
     }
 
@@ -36,7 +38,13 @@ export default function PlateSolvingStep() {
       image.width,
       image.height,
     );
-  }, [image, photoStars, ready, solve]);
+  }, [image, photoStars, solve]);
+
+  useEffect(() => {
+    if (ready) {
+      runSolve();
+    }
+  }, [ready, runSolve]);
 
   // 결과가 오면 최상위 후보 선택
   useEffect(() => {
@@ -195,7 +203,16 @@ export default function PlateSolvingStep() {
   return (
     <div className="flex size-full flex-col justify-stretch gap-4">
       <div className="flex h-full flex-row overflow-hidden">
-        {fisheyeCamera && (
+        {error && !solving && (
+          <div className="bg-base-200 rounded-box flex h-full w-100 shrink-0 flex-col items-center justify-center gap-3 p-4 text-center">
+            <div className="text-error text-xl">풀이 중 문제가 생겼습니다.</div>
+            <div className="text-sm opacity-70">{error}</div>
+            <button className="btn btn-sm" onClick={runSolve}>
+              다시 시도
+            </button>
+          </div>
+        )}
+        {!error && fisheyeCamera && (
           <div className="bg-base-200 rounded-box flex h-full w-100 shrink-0 flex-col gap-2 p-4">
             <div className="text-success font-bold">별자리를 찾았습니다</div>
             <div className="text-xs opacity-60">
@@ -203,28 +220,30 @@ export default function PlateSolvingStep() {
             </div>
           </div>
         )}
-        {!fisheyeCamera && (solving || !ready) && (
-          <div className="bg-base-200 rounded-box flex h-full w-100 shrink-0 flex-col items-center justify-center gap-2">
-            <div className="text-xl">
-              {!ready ? "데이터베이스 로딩" : "별자리 분석"} 중입니다.
-            </div>
-            <span className="loading loading-spinner loading-lg"></span>
-          </div>
+        {!error && !fisheyeCamera && (solving || !ready) && (
+          <SolveProgress ready={ready} phase={phase} />
         )}
-        {!fisheyeCamera && !solving && outcome && candidates.length === 0 && (
-          <div className="bg-base-200 rounded-box flex h-full w-100 shrink-0 flex-col items-center justify-center gap-2 p-4 text-center">
-            <div className="text-xl">별자리를 찾지 못했습니다.</div>
-            <div className="text-sm opacity-70">
-              별을 더 정확히 표시하거나 더 많이 선택해 보세요.
+        {!error &&
+          !fisheyeCamera &&
+          !solving &&
+          outcome &&
+          candidates.length === 0 && (
+            <div className="bg-base-200 rounded-box flex h-full w-100 shrink-0 flex-col items-center justify-center gap-2 p-4 text-center">
+              <div className="text-xl">별자리를 찾지 못했습니다.</div>
+              <div className="text-sm opacity-70">
+                별이 아닌 마커(지면 불빛·나무 등)를 지우거나, 별이 있는 영역만
+                골라 다시 시도해 보세요.
+              </div>
+              {answer && <KnownAnswerNote answer={answer} found={false} />}
             </div>
-            {answer && <KnownAnswerNote answer={answer} found={false} />}
-          </div>
-        )}
-        {!fisheyeCamera && !solving && candidates.length > 0 && (
+          )}
+        {!error && !fisheyeCamera && !solving && candidates.length > 0 && (
           <CandidateList
             candidates={candidates}
             selected={selected}
             found={outcome?.found ?? false}
+            timeMs={outcome?.timeMs ?? 0}
+            timedOut={outcome?.timedOut ?? false}
             answer={answer}
             onSelect={setSelected}
           />
@@ -244,10 +263,74 @@ export default function PlateSolvingStep() {
   );
 }
 
+// 풀이 진행 단계를 사람이 읽는 문장으로
+const describePhase = (ready: boolean, phase: SolvePhase | null): string => {
+  if (!ready) {
+    return "별 데이터베이스를 준비하고 있습니다";
+  }
+
+  if (!phase) {
+    return "풀이를 시작합니다";
+  }
+
+  if (phase.kind === "fisheye") {
+    return "초광각(어안) 렌즈로 보고 다시 찾고 있습니다";
+  }
+
+  return `밝은 별 ${phase.inputSize}개로 별자리를 찾고 있습니다 (${phase.index + 1}/${phase.total})`;
+};
+
+// 풀이가 진행 중임을 보여 준다. 몇 초 걸릴 수 있어 단계·경과 시간을 함께 보여 준다.
+function SolveProgress({
+  ready,
+  phase,
+}: {
+  ready: boolean;
+  phase: SolvePhase | null;
+}) {
+  const [elapsedSec, setElapsedSec] = useState(0);
+
+  useEffect(() => {
+    const startedAt = Date.now();
+    const timer = setInterval(
+      () => setElapsedSec((Date.now() - startedAt) / 1000),
+      200,
+    );
+
+    return () => clearInterval(timer);
+  }, []);
+
+  // 직선투영 단계는 입력 크기 순서로, 어안 시도는 마지막 단계로 본다
+  const progress = !phase
+    ? 0
+    : phase.kind === "fisheye"
+      ? 0.95
+      : (phase.index + 0.5) / (phase.total + 1);
+
+  return (
+    <div className="bg-base-200 rounded-box flex h-full w-100 shrink-0 flex-col items-center justify-center gap-3 p-4 text-center">
+      <span className="loading loading-spinner loading-lg"></span>
+      <div className="text-lg">{describePhase(ready, phase)}</div>
+      {ready && (
+        <progress
+          className="progress progress-primary w-full"
+          value={progress}
+          max={1}
+        />
+      )}
+      <div className="text-xs opacity-60">
+        {elapsedSec.toFixed(1)}초 · 보통 10초 안에 끝납니다
+      </div>
+    </div>
+  );
+}
+
 interface CandidateListProps {
   candidates: SolveCandidateResult[];
   selected: number;
   found: boolean;
+  timeMs: number;
+  timedOut: boolean;
   answer: SampleAnswer | null;
   onSelect: (index: number) => void;
 }
@@ -256,6 +339,8 @@ function CandidateList({
   candidates,
   selected,
   found,
+  timeMs,
+  timedOut,
   answer,
   onSelect,
 }: CandidateListProps) {
@@ -266,10 +351,16 @@ function CandidateList({
           <div className="text-success font-bold">해를 찾았습니다 (1순위)</div>
         ) : (
           <div className="opacity-70">
-            확신할 수 없습니다. 후보 중 골라 보세요.
+            확신할 수 없습니다. 후보 중 별자리가 사진과 맞는 것을 골라 보세요.
+            {timedOut && " (시간 안에 다 찾지 못했습니다)"}
           </div>
         )}
-        <div>후보 {candidates.length}개 (신뢰도 순)</div>
+        <div
+          title={`신뢰도 N은 우연히 이만큼 맞을 확률이 10^-N이라는 뜻입니다. ${ACCEPT.minLogOdds} 이상이면 확신합니다.`}
+        >
+          후보 {candidates.length}개 (신뢰도 순) · {(timeMs / 1000).toFixed(1)}
+          초
+        </div>
         {answer && <KnownAnswerNote answer={answer} found />}
       </div>
       <ul className="menu h-full flex-col flex-nowrap items-start overflow-y-scroll">
