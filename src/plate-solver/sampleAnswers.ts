@@ -53,6 +53,35 @@ const byFilename: Record<string, SampleAnswer> = {
     fovDeg: 59.1,
     name: "남십자·켄타우루스 (남반구)",
   },
+  // 아래 넷은 지면을 뺀 위쪽 영역으로 자동으로 확신한 해. 예측 위치에 겹친 별을 눈으로 확인.
+  // 북두칠성 7별·북극성·Kochab (구름 낀 초저녁 하늘)
+  "20230904-nike-jeungseun-01.png": {
+    centerRaDeg: 182.7,
+    centerDecDeg: 57.8,
+    fovDeg: 55.2,
+    name: "큰곰자리 (북두칠성)·북극성",
+  },
+  // 오로라 너머 페르세우스(Mirfak·Algol)·안드로메다(Almach·Mirach)·플레이아데스
+  "20250117-carl-aurora-01.jpg": {
+    centerRaDeg: 41.1,
+    centerDecDeg: 22.5,
+    fovDeg: 52.3,
+    name: "페르세우스·안드로메다·플레이아데스",
+  },
+  // 오로라 너머 카시오페이아 W·북극성·데네브
+  "20250117-carl-aurora-03.jpg": {
+    centerRaDeg: 340.6,
+    centerDecDeg: 61.8,
+    fovDeg: 52.6,
+    name: "카시오페이아·북극성",
+  },
+  // 오로라 아래 직녀성·데네브·Sadr (견우성은 지면 아래 자리)
+  "20250117-carl-aurora-04.jpg": {
+    centerRaDeg: 278.1,
+    centerDecDeg: 41.6,
+    fovDeg: 52.7,
+    name: "거문고·백조 (여름의 대삼각형)",
+  },
   // 아래 셋은 개선 quad solver가 자동으로 확신한 해. 예측 위치에 겹친 별을 눈으로 확인.
   // 카시오페이아 W(Caph·Schedar·Navi·Ruchbah)·북극성·Kochab
   "20230904-nike-jeungseun-03.png": {
