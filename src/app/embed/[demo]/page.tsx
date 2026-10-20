@@ -1,0 +1,47 @@
+import { notFound } from "next/navigation";
+import ChanceDemo from "@/learn/ChanceDemo";
+import DetectPipelineDemo from "@/learn/DetectPipelineDemo";
+import FindStarsDemo from "@/learn/FindStarsDemo";
+import LuckyFakeDemo from "@/learn/LuckyFakeDemo";
+import PoleHeightDemo from "@/learn/PoleHeightDemo";
+import ProjectionDemo from "@/learn/ProjectionDemo";
+import QuadHashDemo from "@/learn/QuadHashDemo";
+import SameSkyDemo from "@/learn/SameSkyDemo";
+import ShapeDemo from "@/learn/ShapeDemo";
+import SkySphere from "@/learn/SkySphere";
+import TriangleSearchDemo from "@/learn/TriangleSearchDemo";
+import VerifyOverlayDemo from "@/learn/VerifyOverlayDemo";
+
+// 찾는 원리(/learn)의 데모를 발표 화면에 하나씩 띄운다: /embed/<이름>
+const DEMOS = {
+  "sky-sphere": SkySphere,
+  "detect-pipeline": DetectPipelineDemo,
+  "find-stars": FindStarsDemo,
+  shape: ShapeDemo,
+  "triangle-search": TriangleSearchDemo,
+  "quad-hash": QuadHashDemo,
+  "verify-overlay": VerifyOverlayDemo,
+  chance: ChanceDemo,
+  "lucky-fake": LuckyFakeDemo,
+  projection: ProjectionDemo,
+  "pole-height": PoleHeightDemo,
+  "same-sky": SameSkyDemo,
+};
+
+export const dynamicParams = false;
+
+export const generateStaticParams = () =>
+  Object.keys(DEMOS).map((demo) => ({ demo }));
+
+export default async function Page({
+  params,
+}: {
+  params: Promise<{ demo: string }>;
+}) {
+  const { demo } = await params;
+  const Demo = DEMOS[demo as keyof typeof DEMOS];
+
+  if (!Demo) notFound();
+
+  return <Demo />;
+}

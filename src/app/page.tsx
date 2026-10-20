@@ -106,8 +106,11 @@ export default function Page() {
               ybbarng
             </a>
           </span>
+          <a className="link link-hover" href="/presentation/v3.html">
+            발표 자료 V3
+          </a>
           <a className="link link-hover" href="/presentation/index.html">
-            발표 자료
+            V2
           </a>
           <span>
             별 자료:{" "}
