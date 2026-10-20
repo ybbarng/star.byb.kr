@@ -90,10 +90,13 @@ const sameTopStars = (a: InputStar[], b: InputStar[]): boolean => {
 };
 
 // 입력 별 수보다 큰 크기는 같은 입력을 되풀이할 뿐이라, 처음으로 전체를 덮는 크기까지만 쓴다.
-const inputSizesFor = (starCount: number): number[] => {
+const inputSizesFor = (
+  starCount: number,
+  candidates: number[] = INPUT_SIZES,
+): number[] => {
   const sizes: number[] = [];
 
-  for (const n of INPUT_SIZES) {
+  for (const n of candidates) {
     sizes.push(Math.min(n, starCount));
 
     if (n >= starCount) {
@@ -203,11 +206,13 @@ export const solvePhoto = (
   const stepsFor = (regions: typeof regionInputs) =>
     solvers.flatMap((solver) => {
       const perRegion = regions.map((region) =>
-        inputSizesFor(region.stars.length).map((inputSize) => ({
-          solver,
-          region,
-          inputSize,
-        })),
+        inputSizesFor(region.stars.length, solver.inputSizes).map(
+          (inputSize) => ({
+            solver,
+            region,
+            inputSize,
+          }),
+        ),
       );
       const rounds = Math.max(...perRegion.map((list) => list.length), 0);
 

@@ -70,6 +70,8 @@ export interface Solver {
   key: string;
   name: string;
   description: string;
+  // 앱 흐름(solvePhoto)이 이 solver에 넣어 볼 입력 크기들. 없으면 INPUT_SIZES
+  inputSizes?: number[];
   solve(
     stars: InputStar[],
     size: ImageSize,
