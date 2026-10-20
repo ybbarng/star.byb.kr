@@ -1,5 +1,5 @@
 import type { ShotTime } from "@/plate-solver/shotTime";
-import type { Point2D } from "@/scripts/hash/types";
+import type { EstimateMarks } from "@/plate-solver/types";
 import type { ShotCandidate } from "@/search/shotTimeEstimate";
 import type { Mat3 } from "@/search/utils/similarity";
 import { useMemo, useState } from "react";
@@ -9,19 +9,10 @@ import {
   zenithFromHorizon,
 } from "@/search/shotTimeEstimate";
 import { photoToSky } from "@/search/utils/wcs";
-import { cn } from "@/utils/cn";
 
 // 사진에서 촬영 시각을 거꾸로 찾는다 (발표 "이과생의 별 헤는 밤"을 계산으로).
-// 사람이 지평선 두 점(과 있으면 달)을 찍으면, 같은 하늘이 되는 밤 시각을 날짜별로 보여 준다.
-// 거꾸로, 촬영 시각·장소를 알면 같은 지평선으로 별이 적은 사진을 풀 수 있다 (사이판, horizonSolve).
-
-export type PickTarget = "horizon" | "moon" | null;
-
-export interface EstimateMarks {
-  horizon: Point2D[]; // 최대 2개
-  horizonAuto?: boolean; // 자동으로 찾은 지평선이면 true (사람이 다시 찍으면 false)
-  moon: Point2D | null;
-}
+// 지평선 두 점(과 있으면 달)이 있으면, 같은 하늘이 되는 밤 시각을 날짜별로 보여 준다.
+// 지평선·달은 별 고치기 화면에서 찍는다.
 
 const MAX_SHOWN = 12;
 
@@ -30,26 +21,15 @@ export default function ShotTimeEstimator({
   width,
   shot,
   marks,
-  picking,
-  onPick,
-  onClear,
   onApply,
-  horizonSolve,
+  onPickHorizon,
 }: {
-  transform?: Mat3; // 풀린 변환 (없으면 시각 추정은 못 하고 시각·장소 풀이만 할 수 있다)
+  transform: Mat3; // 풀린 변환
   width: number;
   shot: ShotTime | null;
   marks: EstimateMarks;
-  picking: PickTarget;
-  onPick: (target: PickTarget) => void;
-  onClear: () => void;
   onApply: (shot: ShotTime) => void;
-  horizonSolve: {
-    ready: boolean; // 촬영 시각·장소와 지평선 두 점이 다 있다
-    running: boolean;
-    message: string | null;
-    onRun: () => void;
-  };
+  onPickHorizon: () => void;
 }) {
   // 시간대로 경도를 어림한다 (UTC+9 → 135°). 촬영지를 알면 그 경도를 쓴다.
   const defaultLon =
@@ -63,7 +43,7 @@ export default function ShotTimeEstimator({
   );
 
   const result = useMemo(() => {
-    if (!transform || marks.horizon.length < 2) {
+    if (marks.horizon.length < 2) {
       return null;
     }
 
@@ -88,6 +68,20 @@ export default function ShotTimeEstimator({
     return { clock, candidates };
   }, [transform, width, marks, lonDeg, year]);
 
+  if (marks.horizon.length < 2) {
+    return (
+      <div className="flex flex-col gap-2">
+        <p className="opacity-70">
+          사진에 지평선(먼 산·바다 끝)이 보이면, 하늘의 기울기로 위도와 촬영
+          시각을 거꾸로 계산할 수 있어요.
+        </p>
+        <button className="btn btn-sm self-start" onClick={onPickHorizon}>
+          지평선 찍으러 가기
+        </button>
+      </div>
+    );
+  }
+
   // 시간대: 경도 15°마다 1시간 (모르면 이것으로 보여 준다)
   const offsetHours = shot
     ? parseInt(shot.offset, 10)
@@ -111,32 +105,8 @@ export default function ShotTimeEstimator({
     : [];
 
   return (
-    <div className="bg-base-200 rounded-box flex w-full max-w-3xl flex-col gap-2 p-3 text-sm">
+    <div className="flex flex-col gap-2">
       <div className="flex flex-wrap items-center gap-2">
-        <span className="font-bold">지평선으로</span>
-        <button
-          className={cn("btn btn-xs", picking === "horizon" && "btn-primary")}
-          onClick={() => onPick(picking === "horizon" ? null : "horizon")}
-        >
-          지평선 두 점 찍기 ({marks.horizon.length}/2)
-        </button>
-        <button
-          className={cn("btn btn-xs", picking === "moon" && "btn-primary")}
-          onClick={() => onPick(picking === "moon" ? null : "moon")}
-        >
-          달 찍기 {marks.moon ? "✓" : "(있으면)"}
-        </button>
-        <button className="btn btn-xs btn-ghost" onClick={onClear}>
-          지우기
-        </button>
-        <button
-          className="btn btn-xs btn-primary"
-          disabled={!horizonSolve.ready || horizonSolve.running}
-          title="촬영 시각·장소와 지평선으로 풉니다. 별이 적어 자동으로 못 푸는 사진용입니다."
-          onClick={horizonSolve.onRun}
-        >
-          {horizonSolve.running ? "푸는 중…" : "시각·장소로 풀기"}
-        </button>
         <label className="flex items-center gap-1">
           경도
           <input
@@ -155,39 +125,25 @@ export default function ShotTimeEstimator({
             onChange={(e) => setYear(Number(e.target.value))}
           />
         </label>
+        <button className="btn btn-xs btn-ghost" onClick={onPickHorizon}>
+          지평선·달 고치기
+        </button>
       </div>
-      {marks.horizonAuto && marks.horizon.length === 2 && !picking && (
-        <div className="text-xs opacity-70">
-          초록 선은 자동으로 찾은 지평선입니다. 틀리면 &quot;지평선 두 점
-          찍기&quot;로 다시 찍으세요 (먼 바다·산 끝이 가장 좋습니다).
-        </div>
-      )}
-      {horizonSolve.message && (
-        <div className="text-xs">{horizonSolve.message}</div>
-      )}
-      {!horizonSolve.ready && !transform && (
-        <div className="text-xs opacity-60">
-          별이 적어 자동으로 못 풀었다면: 위에 촬영 시각·장소를 넣고 지평선 두
-          점을 찍은 뒤 &quot;시각·장소로 풀기&quot;를 누르세요.
-        </div>
-      )}
-      {picking && (
-        <div className="text-info text-xs">
-          {picking === "horizon"
-            ? "사진에서 땅과 하늘이 만나는 곳(먼 산·바다 끝)을 좌우로 떨어진 두 곳 클릭하세요."
-            : "사진에서 달(또는 달빛 중심)을 클릭하세요."}
-        </div>
+      {!result && (
+        <p className="opacity-70">
+          이 지평선으로는 하늘의 기울기를 알 수 없어요. 지평선을 다시 찍어
+          보세요.
+        </p>
       )}
       {result && (
         <>
-          <div className="text-xs opacity-70">
-            위도 약 {result.clock.latDeg.toFixed(0)}° · 지방 항성시{" "}
-            {(result.clock.lstDeg / 15).toFixed(2)}시 · 해가 12° 아래인 밤만
+          <p className="text-xs opacity-70">
+            위도 약 {result.clock.latDeg.toFixed(0)}° · 해가 진 밤만
             {marks.moon
               ? " · 달 위치가 맞는 순 (달은 27일마다 같은 자리로 와서, 달 모양으로 가르세요)"
-              : " · 같은 하늘은 하루 4분씩 일찍 옵니다 (보름 간격만 표시)"}
-          </div>
-          <ul className="grid grid-cols-2 gap-1 md:grid-cols-3">
+              : " · 같은 하늘은 하루 4분씩 일찍 와서 보름 간격으로만 보여요. 달을 찍으면 날짜가 좁혀져요"}
+          </p>
+          <ul className="grid grid-cols-2 gap-1">
             {shown.map((c) => {
               const local = toLocal(c);
 
@@ -195,6 +151,7 @@ export default function ShotTimeEstimator({
                 <li key={c.date.getTime()}>
                   <button
                     className="btn btn-xs btn-ghost w-full justify-start font-normal"
+                    title="이 시각으로 해·달·행성을 그려요"
                     onClick={() =>
                       onApply({
                         local,
@@ -210,7 +167,7 @@ export default function ShotTimeEstimator({
                   >
                     {local.replace("T", " ")}
                     {c.moonErrorDeg !== undefined &&
-                      ` · 달 ${c.moonErrorDeg.toFixed(1)}° · ${moonShape(c.moonLit!)}`}
+                      ` · ${moonShape(c.moonLit!)}`}
                   </button>
                 </li>
               );

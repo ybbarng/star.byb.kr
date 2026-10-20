@@ -1,19 +1,15 @@
 import type { SampleAnswer } from "@/plate-solver/sampleAnswers";
 import type { ShotTime } from "@/plate-solver/shotTime";
-import type {
-  EstimateMarks,
-  PickTarget,
-} from "@/plate-solver/ShotTimeEstimator";
 import type { HorizonSolveResult } from "@/search/horizonSolve";
 import type { SolvePhase } from "@/search/solvePhoto";
 import type { SolveCandidateResult } from "@/search/solvers";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { autoHorizon } from "@/plate-solver/autoHorizon";
+import { detectPhotoStars } from "@/plate-solver/detectPhotoStars";
 import { getSampleAnswer, matchesAnswer } from "@/plate-solver/sampleAnswers";
 import { getSampleShot, shotDate, shotFromExif } from "@/plate-solver/shotTime";
 import ShotTimeControl from "@/plate-solver/ShotTimeControl";
 import ShotTimeEstimator from "@/plate-solver/ShotTimeEstimator";
-import StepMover from "@/plate-solver/StepMover";
 import { useContextStore } from "@/plate-solver/store/context";
 import useSkyOverlay from "@/search/hooks/useSkyOverlay";
 import useSolve from "@/search/hooks/useSolve";
@@ -21,13 +17,21 @@ import { HORIZON_ACCEPT_LOG_ODDS } from "@/search/horizonSolve";
 import { DEEP_SKY_OBJECTS, solarSystemObjects } from "@/search/skyObjects";
 import { horizonSolveInWorker } from "@/search/solverClient";
 import { ACCEPT } from "@/search/solvers/candidates";
+import { DEFAULT_DISPLAY_STARS } from "@/search/utils/selectStars";
 import { readExif } from "@/services/exif";
 import { cn } from "@/utils/cn";
 
+// 별자리 찾기: 사진을 고르면 별 찾기 → 풀이까지 자동으로 하고 결과를 보여 준다.
+// 못 찾거나 틀렸으면 별 고치기(별·지평선·달)로 사람이 돕는다.
 export default function PlateSolvingStep() {
   const image = useContextStore((state) => state.image);
   const photoStars = useContextStore((state) => state.photoStars);
   const hiddenStars = useContextStore((state) => state.hiddenStars);
+  const marks = useContextStore((state) => state.marks);
+  const setPhotoStars = useContextStore((state) => state.setPhotoStars);
+  const setDetections = useContextStore((state) => state.setDetections);
+  const setMarks = useContextStore((state) => state.setMarks);
+  const goTo = useContextStore((state) => state.goTo);
   const canvasElement = useRef<HTMLCanvasElement>(null);
   const { solve, outcome, solving, ready, phase, error } = useSolve();
   const {
@@ -38,10 +42,11 @@ export default function PlateSolvingStep() {
     updateFisheye,
     clear: clearSky,
   } = useSkyOverlay();
+  const [detecting, setDetecting] = useState(false);
+  const [detectError, setDetectError] = useState<string | null>(null);
   const [selected, setSelected] = useState(0);
   const [shot, setShot] = useState<ShotTime | null>(null);
-  const [picking, setPicking] = useState<PickTarget>(null);
-  const [marks, setMarks] = useState<EstimateMarks>(NO_MARKS);
+  const [showDetected, setShowDetected] = useState(false);
   // 시각·장소·지평선 풀이 결과 (확신했을 때만 result가 있다)
   const [horizonRun, setHorizonRun] = useState<{
     running: boolean;
@@ -50,42 +55,45 @@ export default function PlateSolvingStep() {
   }>(NO_HORIZON_RUN);
   const horizonTP = horizonRun.result?.TP;
 
-  // 사진이 바뀌면 찍은 점도 지운다
+  // 1. 사진에서 별을 찾는다 (처음 한 번). 지평선도 자동으로 찾아 제안한다.
   useEffect(() => {
-    setMarks(NO_MARKS);
-    setPicking(null);
-    setHorizonRun(NO_HORIZON_RUN);
-  }, [image]);
-
-  // 촬영 시각 추정용으로 사진을 클릭해 지평선·달 위치를 찍는다
-  const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!picking || !image) {
+    // 별 고치기에서 돌아온 경우처럼 이미 찾았으면 다시 찾지 않는다
+    if (!image || useContextStore.getState().detections.length > 0) {
       return;
     }
 
-    const rect = e.currentTarget.getBoundingClientRect();
-    const point: [number, number] = [
-      ((e.clientX - rect.left) / rect.width) * image.width,
-      ((e.clientY - rect.top) / rect.height) * image.height,
-    ];
+    let alive = true;
+    setDetecting(true);
+    setDetectError(null);
+    detectPhotoStars(image)
+      .then((all) => {
+        if (!alive) {
+          return;
+        }
 
-    if (picking === "moon") {
-      setMarks((m) => ({ ...m, moon: point }));
-      setPicking(null);
+        setDetections(all);
+        setPhotoStars(
+          all.slice(0, DEFAULT_DISPLAY_STARS),
+          all.slice(DEFAULT_DISPLAY_STARS),
+        );
 
-      return;
-    }
+        const found = autoHorizon(
+          image,
+          all.slice(0, 60).map((s): [number, number] => [s.x, s.y]),
+        );
+        const current = useContextStore.getState().marks;
 
-    setMarks((m) => {
-      const horizon = m.horizon.length >= 2 ? [point] : [...m.horizon, point];
+        if (found && current.horizon.length === 0) {
+          setMarks({ ...current, horizon: found, horizonAuto: true });
+        }
+      })
+      .catch((e: Error) => alive && setDetectError(e.message))
+      .finally(() => alive && setDetecting(false));
 
-      if (horizon.length === 2) {
-        setPicking(null);
-      }
-
-      return { ...m, horizon, horizonAuto: false };
-    });
-  };
+    return () => {
+      alive = false;
+    };
+  }, [image, setDetections, setPhotoStars, setMarks]);
 
   // 촬영 시각·장소와 지평선 두 점으로 푼다 (별이 적어 자동으로 못 푸는 사진)
   const runHorizonSolve = useCallback(() => {
@@ -115,7 +123,7 @@ export default function PlateSolvingStep() {
           setHorizonRun({
             running: false,
             result: null,
-            message: "지평선 위에 별이 너무 적어 풀 수 없습니다.",
+            message: "지평선 위에 별이 너무 적어 풀 수 없어요.",
           });
 
           return;
@@ -130,8 +138,8 @@ export default function PlateSolvingStep() {
           running: false,
           result: accepted ? r : null,
           message: accepted
-            ? `시각·장소로 찾았습니다 · 맞는 별 ${r.inlierCount}/${r.photoCount}개 · 신뢰도 ${r.logOdds.toFixed(1)} · 하늘이 맞는 촬영 시각 ${local}`
-            : `확신하지 못했습니다 (맞는 별 ${r.inlierCount}/${r.photoCount}개, 신뢰도 ${r.logOdds.toFixed(1)}). 시각·장소·지평선을 확인해 보세요.`,
+            ? `맞는 별 ${r.inlierCount}/${r.photoCount}개 · 하늘이 맞는 촬영 시각 ${local}`
+            : `확신하지 못했어요 (맞는 별 ${r.inlierCount}/${r.photoCount}개). 시각·장소·지평선을 확인해 보세요.`,
         });
       })
       .catch((e: Error) =>
@@ -139,30 +147,13 @@ export default function PlateSolvingStep() {
       );
   }, [image, shot, marks.horizon, photoStars, hiddenStars]);
 
-  // 지평선을 자동으로 찾아 제안한다 (사람이 찍은 게 없을 때). 틀리면 사람이 다시 찍는다.
-  useEffect(() => {
-    if (!image || photoStars.length === 0) {
-      return;
-    }
-
-    const found = autoHorizon(
-      image,
-      photoStars.slice(0, 60).map((s): [number, number] => [s.x, s.y]),
-    );
-
-    if (found) {
-      setMarks((m) =>
-        m.horizon.length > 0 ? m : { ...m, horizon: found, horizonAuto: true },
-      );
-    }
-  }, [image, photoStars]);
-
   // 자동 풀이가 확신하지 못했고 촬영 시각·장소와 지평선이 있으면, 시각·장소 풀이를 한 번 자동으로 돌린다
   const autoHorizonTried = useRef(false);
 
   useEffect(() => {
     autoHorizonTried.current = false;
-  }, [image]);
+    setHorizonRun(NO_HORIZON_RUN);
+  }, [image, photoStars, marks]);
 
   useEffect(() => {
     if (
@@ -218,10 +209,10 @@ export default function PlateSolvingStep() {
       : DEEP_SKY_OBJECTS;
   }, [shot]);
 
-  // 그릴 어안 카메라: worker의 blind 어안 풀이가 성공했을 때만(라벨 하드코딩 없음).
+  // 그릴 어안 카메라: worker의 blind 어안 풀이가 성공했을 때만
   const fisheyeCamera = outcome?.fisheyeCamera ?? null;
 
-  // 검출된 별로 plate solving 실행 (직선/어안 자동 판별은 worker에서)
+  // 2. 찾은 별로 plate solving (직선/어안 자동 판별은 worker에서)
   const runSolve = useCallback(() => {
     if (!image || photoStars.length < 1) {
       return;
@@ -269,15 +260,11 @@ export default function PlateSolvingStep() {
       return;
     }
 
-    if (!outcome || outcome.candidates.length === 0) {
+    const c = outcome?.candidates[selected];
+
+    if (!c || solving) {
       clearSky();
 
-      return;
-    }
-
-    const c = outcome.candidates[selected];
-
-    if (!c) {
       return;
     }
 
@@ -289,6 +276,7 @@ export default function PlateSolvingStep() {
     horizonTP,
     outcome,
     selected,
+    solving,
     updateSky,
     updateFisheye,
     clearSky,
@@ -318,7 +306,7 @@ export default function PlateSolvingStep() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [outcome]);
 
-  // Canvas 렌더링
+  // 사진 위에 그리기
   useEffect(() => {
     if (!canvasElement.current || !image) {
       return;
@@ -331,150 +319,50 @@ export default function PlateSolvingStep() {
     }
 
     context.drawImage(image, 0, 0, image.width, image.height);
-
-    // 사진 크기와 무관하게 비슷한 크기로 보이도록 표시 크기를 대각선 길이에 맞춘다
-    const unit = Math.hypot(image.width, image.height) / 1400;
-    const fontPx = Math.round(18 * unit);
-
-    photoStars.forEach(({ x, y }) => {
-      context.beginPath();
-      context.arc(x, y, 5 * unit, 0, 2 * Math.PI);
-      context.strokeStyle = "oklch(0.704 0.191 22.216)";
-      context.lineWidth = 2 * unit;
-      context.stroke();
+    drawOverlay(context, image, {
+      photoStars: showDetected || detecting ? photoStars : [],
+      skyStars,
+      skyConstellations,
+      skyObjects,
+      horizon: horizonTP ? marks.horizon : [],
     });
-
-    skyStars.forEach(({ name, x, y }) => {
-      context.beginPath();
-      context.arc(x, y, (name ? 10 : 6) * unit, 0, 2 * Math.PI);
-      context.strokeStyle = "oklch(.606 .25 292.717)";
-      context.lineWidth = (name ? 3 : 1.5) * unit;
-      context.stroke();
-
-      if (name) {
-        context.font = `bold ${fontPx}px Arial`;
-        context.fillStyle = "oklch(.606 .25 292.717)";
-        context.fillText(name, x + 14 * unit, y + 6 * unit);
-      }
-    });
-
-    skyConstellations.forEach(({ label, lines }) => {
-      context.strokeStyle = "oklch(0.905 0.182 98.111)";
-      context.lineWidth = 1.5 * unit;
-
-      for (let i = 0; i < lines.length - 1; i++) {
-        const a = lines[i];
-        const b = lines[i + 1];
-
-        // 한쪽 정점이라도 뒤쪽 반구/먼 영역(null)이면 그 선분은 그리지 않는다
-        if (!a || !b) {
-          continue;
-        }
-
-        context.beginPath();
-        context.moveTo(a[0], a[1]);
-        context.lineTo(b[0], b[1]);
-        context.stroke();
-      }
-
-      const visible = lines.filter(
-        (l): l is [number, number] =>
-          l !== null &&
-          l[0] >= 0 &&
-          l[0] < image.width &&
-          l[1] >= 0 &&
-          l[1] < image.height,
-      );
-
-      if (visible.length === 0) {
-        return;
-      }
-
-      const center = visible
-        .reduce((sum, l) => [sum[0] + l[0], sum[1] + l[1]], [0, 0])
-        .map((v) => v / visible.length);
-
-      context.font = `bold ${fontPx}px Arial`;
-      context.fillStyle = "oklch(0.905 0.182 98.111)";
-      context.fillText(label, center[0], center[1]);
-    });
-
-    // 달은 밝은 빛 한가운데 있곤 해서, 어두운 테두리를 먼저 그리고 그 위에 색을 칠한다
-    const SHADOW = "oklch(0 0 0 / 0.75)";
-
-    skyObjects.forEach(({ name, kind, x, y, radiusPx }) => {
-      const color = OBJECT_COLORS[kind];
-      const r = Math.max(radiusPx, 12 * unit);
-      const labelX = x + r * 0.75 + 4 * unit;
-      const labelY = y - r * 0.75;
-
-      context.setLineDash(kind === "deepSky" ? [6 * unit, 4 * unit] : []);
-
-      for (const [style, width] of [
-        [SHADOW, 5 * unit],
-        [color, 2 * unit],
-      ] as const) {
-        context.strokeStyle = style;
-        context.lineWidth = width;
-        context.beginPath();
-        context.arc(x, y, r, 0, 2 * Math.PI);
-        context.stroke();
-      }
-
-      context.setLineDash([]);
-      context.font = `bold ${fontPx}px Arial`;
-      context.strokeStyle = SHADOW;
-      context.lineWidth = 4 * unit;
-      context.strokeText(name, labelX, labelY);
-      context.fillStyle = color;
-      context.fillText(name, labelX, labelY);
-    });
-
-    // 촬영 시각 추정용으로 찍은 점: 지평선은 초록 선, 달은 흰 십자
-    context.strokeStyle = "oklch(0.792 0.209 151.711)";
-    context.lineWidth = 3 * unit;
-    marks.horizon.forEach(([x, y]) => {
-      context.beginPath();
-      context.arc(x, y, 8 * unit, 0, 2 * Math.PI);
-      context.stroke();
-    });
-
-    if (marks.horizon.length === 2) {
-      context.beginPath();
-      context.moveTo(...marks.horizon[0]);
-      context.lineTo(...marks.horizon[1]);
-      context.stroke();
-    }
-
-    if (marks.moon) {
-      const [x, y] = marks.moon;
-      context.strokeStyle = "oklch(0.97 0 0)";
-      context.beginPath();
-      context.moveTo(x - 14 * unit, y);
-      context.lineTo(x + 14 * unit, y);
-      context.moveTo(x, y - 14 * unit);
-      context.lineTo(x, y + 14 * unit);
-      context.stroke();
-    }
   }, [
-    canvasElement,
     image,
     photoStars,
+    showDetected,
+    detecting,
     skyStars,
     skyConstellations,
     skyObjects,
+    horizonTP,
     marks,
   ]);
 
-  if (!image || !image.width) {
-    return (
-      <div className="flex size-full flex-col gap-4">
-        <div className="flex size-full items-center justify-center">
-          <span className="loading loading-spinner loading-lg"></span>
-        </div>
-        <StepMover disableNext={true} />
-      </div>
-    );
+  // 사진 안에 보이는 별자리 이름
+  const visibleConstellations = useMemo(() => {
+    if (!image) {
+      return [];
+    }
+
+    // 한 별자리가 여러 선 묶음으로 나뉘어 있을 수 있어 이름은 한 번만
+    const names = skyConstellations
+      .filter(({ lines }) =>
+        lines.some(
+          (l) =>
+            l !== null &&
+            l[0] >= 0 &&
+            l[0] < image.width &&
+            l[1] >= 0 &&
+            l[1] < image.height,
+        ),
+      )
+      .map((c) => c.label);
+
+    return [...new Set(names)];
+  }, [skyConstellations, image]);
+
+  if (!image) {
+    return null;
   }
 
   const candidates = outcome?.candidates ?? [];
@@ -483,97 +371,268 @@ export default function PlateSolvingStep() {
     !fisheyeCamera && !solving
       ? (horizonTP ?? candidates[selected]?.transform)
       : undefined;
+  // 별을 찾은 뒤 풀이가 시작되기 전 잠깐도 진행 중으로 본다
+  const busy =
+    detecting ||
+    solving ||
+    !ready ||
+    (photoStars.length > 0 && !outcome && !error);
+  const confident = Boolean(
+    !busy && (fisheyeCamera || horizonTP || outcome?.found),
+  );
+  const failed = !busy && !confident && outcome !== null;
 
   return (
-    <div className="flex size-full flex-col justify-stretch gap-4">
-      <div className="flex h-full flex-row overflow-hidden">
-        {error && !solving && (
-          <div className="bg-base-200 rounded-box flex h-full w-100 shrink-0 flex-col items-center justify-center gap-3 p-4 text-center">
-            <div className="text-error text-xl">풀이 중 문제가 생겼습니다.</div>
-            <div className="text-sm opacity-70">{error}</div>
-            <button className="btn btn-sm" onClick={runSolve}>
-              다시 시도
-            </button>
-          </div>
-        )}
-        {!error && fisheyeCamera && (
-          <div className="bg-base-200 rounded-box flex h-full w-100 shrink-0 flex-col gap-2 p-4">
-            <div className="text-success font-bold">별자리를 찾았습니다</div>
-            <div className="text-xs opacity-60">
-              초광각(어안) 렌즈 보정을 적용했습니다.
-            </div>
-          </div>
-        )}
-        {!error && !fisheyeCamera && (solving || !ready) && (
-          <SolveProgress ready={ready} phase={phase} />
-        )}
-        {!error &&
-          !fisheyeCamera &&
-          !solving &&
-          outcome &&
-          candidates.length === 0 && (
-            <div className="bg-base-200 rounded-box flex h-full w-100 shrink-0 flex-col items-center justify-center gap-2 p-4 text-center">
-              <div className="text-xl">별자리를 찾지 못했습니다.</div>
-              <div className="text-sm opacity-70">
-                별이 아닌 마커(지면 불빛·나무 등)를 지우거나, 별이 있는 영역만
-                골라 다시 시도해 보세요.
-              </div>
-              {answer && <KnownAnswerNote answer={answer} found={false} />}
+    <div className="flex w-full max-w-[1400px] flex-col gap-4 lg:flex-row lg:items-start">
+      <div className="flex min-w-0 flex-col gap-2 lg:flex-1">
+        <div className="rounded-box relative overflow-hidden bg-black">
+          <canvas
+            className="mx-auto block max-w-full lg:max-h-[calc(100dvh-9rem)]"
+            ref={canvasElement}
+            width={image.width}
+            height={image.height}
+            style={{ aspectRatio: image.width / image.height }}
+          />
+          {busy && !error && !detectError && (
+            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-4 pt-10">
+              <SolveProgress
+                detecting={detecting}
+                ready={ready}
+                phase={phase}
+              />
             </div>
           )}
-        {!error && !fisheyeCamera && !solving && candidates.length > 0 && (
-          <CandidateList
-            candidates={candidates}
-            selected={selected}
-            found={outcome?.found ?? false}
-            timeMs={outcome?.timeMs ?? 0}
-            timedOut={outcome?.timedOut ?? false}
-            answer={answer}
-            onSelect={setSelected}
+        </div>
+        <label className="flex cursor-pointer items-center gap-2 self-end text-xs opacity-70">
+          <input
+            type="checkbox"
+            className="toggle toggle-xs"
+            checked={showDetected}
+            onChange={(e) => setShowDetected(e.target.checked)}
           />
-        )}
-        <div className="flex grow flex-col items-center gap-2">
-          <ShotTimeControl shot={shot} onChange={setShot} />
-          <div className="flex min-h-0 w-full flex-1 justify-center">
-            <canvas
-              className={cn(
-                "max-h-full max-w-full",
-                picking && "cursor-crosshair",
+          컴퓨터가 찾은 별 표시 ({photoStars.length}개)
+        </label>
+      </div>
+
+      <aside className="flex w-full flex-col gap-3 lg:w-96 lg:shrink-0">
+        <div className="bg-base-200/90 rounded-box flex flex-col gap-3 p-4 backdrop-blur">
+          {error || detectError ? (
+            <>
+              <div className="text-error text-lg font-bold">
+                문제가 생겼어요
+              </div>
+              <div className="text-sm opacity-70">{error ?? detectError}</div>
+              <button className="btn btn-sm self-start" onClick={runSolve}>
+                다시 시도
+              </button>
+            </>
+          ) : busy ? (
+            <>
+              <div className="text-lg font-bold">찾는 중…</div>
+              <p className="text-sm opacity-70">
+                사진 속 밝은 별들이 이루는 모양을 별 지도의 모양과 맞춰 보고
+                있어요. 보통 몇 초면 끝나요.
+              </p>
+            </>
+          ) : confident ? (
+            <>
+              <div className="fx-pop text-success text-2xl font-black">
+                ✨ 찾았어요!
+              </div>
+              {visibleConstellations.length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {visibleConstellations.slice(0, 8).map((name) => (
+                    <span
+                      key={name}
+                      className="badge badge-outline border-yellow-300/50 text-yellow-200"
+                    >
+                      {name}
+                    </span>
+                  ))}
+                </div>
               )}
-              ref={canvasElement}
-              width={image.width}
-              height={image.height}
-              style={{ aspectRatio: image.width / image.height }}
-              onClick={handleCanvasClick}
-            />
+              <div className="text-sm opacity-70">
+                {fisheyeCamera
+                  ? "초광각(어안) 렌즈 왜곡까지 풀었어요."
+                  : horizonTP
+                    ? `촬영 시각·장소와 지평선으로 풀었어요. ${horizonRun.message ?? ""}`
+                    : `맞는 별 ${candidates[selected]?.inlierCount}개 · 화각 약 ${candidates[selected]?.fovDeg.toFixed(0)}° · ${((outcome?.timeMs ?? 0) / 1000).toFixed(1)}초`}
+              </div>
+            </>
+          ) : failed && candidates.length > 0 ? (
+            <>
+              <div className="text-warning text-lg font-bold">
+                확신하지 못했어요
+              </div>
+              <p className="text-sm opacity-70">
+                가장 그럴듯한 답을 그렸어요. 별자리 선이 사진의 별과 맞는지 봐
+                주세요. 아니라면 별을 고쳐서 다시 찾아 보세요.
+                {outcome?.timedOut && " (시간 안에 다 찾아보지 못했어요)"}
+              </p>
+            </>
+          ) : (
+            <>
+              <div className="text-lg font-bold">별자리를 찾지 못했어요</div>
+              <p className="text-sm opacity-70">
+                나무·건물 불빛이 별로 잡혔거나, 별이 너무 적은 사진일 수 있어요.
+                별을 고치거나, 촬영 시각·장소로 풀어 보세요.
+              </p>
+            </>
+          )}
+          {answer && !busy && (
+            <KnownAnswerNote answer={answer} found={confident} />
+          )}
+          <div className="flex flex-wrap gap-2">
+            <button
+              className={cn("btn btn-sm", failed && "btn-primary")}
+              disabled={busy}
+              onClick={() => goTo("edit")}
+            >
+              ✎ 별 고치기
+            </button>
+            <button
+              className={cn(
+                "btn btn-sm",
+                confident ? "btn-primary" : "btn-ghost",
+              )}
+              onClick={() => goTo("select")}
+            >
+              다른 사진으로
+            </button>
           </div>
-          {!fisheyeCamera && !solving && ready && (
+        </div>
+
+        {!busy && candidates.length > 1 && !fisheyeCamera && !horizonTP && (
+          <Section
+            title={`다른 후보 ${candidates.length}개`}
+            summary="신뢰도가 높은 순서예요"
+            defaultOpen={!outcome?.found}
+          >
+            <CandidateList
+              candidates={candidates}
+              selected={selected}
+              answer={answer}
+              onSelect={setSelected}
+            />
+          </Section>
+        )}
+
+        <Section
+          title="촬영 시각·장소"
+          summary={
+            shot
+              ? `${shot.local.replace("T", " ")} · ${shot.note ?? "직접 입력"}`
+              : "모름 · 넣으면 해·달·행성도 그려요"
+          }
+        >
+          <ShotTimeControl shot={shot} onChange={setShot} />
+        </Section>
+
+        {!busy && !fisheyeCamera && (
+          <Section
+            title="별이 적은 사진이라면"
+            summary="촬영 시각·장소와 지평선으로 풀기"
+            defaultOpen={failed}
+          >
+            <div className="flex flex-col gap-2">
+              <p className="opacity-70">
+                언제 어디서 찍었는지 알면, 지평선만으로 하늘의 방향이 거의
+                정해져서 별이 열 개 남짓이어도 풀 수 있어요.
+              </p>
+              <ul className="flex flex-col gap-1">
+                <li>
+                  {shot?.observer ? "✓" : "○"} 촬영 시각·장소{" "}
+                  {!shot?.observer && (
+                    <span className="opacity-60">(위에서 위도·경도까지)</span>
+                  )}
+                </li>
+                <li className="flex items-center gap-2">
+                  {marks.horizon.length === 2 ? "✓" : "○"} 지평선{" "}
+                  <span className="opacity-60">
+                    {marks.horizon.length === 2
+                      ? marks.horizonAuto
+                        ? "(자동으로 찾음)"
+                        : "(직접 찍음)"
+                      : "(아직 없음)"}
+                  </span>
+                  <button
+                    className="btn btn-xs btn-ghost"
+                    onClick={() => goTo("edit", "horizon")}
+                  >
+                    {marks.horizon.length === 2 ? "고치기" : "찍기"}
+                  </button>
+                </li>
+              </ul>
+              <button
+                className="btn btn-sm btn-primary self-start"
+                disabled={
+                  !shot?.observer ||
+                  marks.horizon.length < 2 ||
+                  horizonRun.running
+                }
+                onClick={runHorizonSolve}
+              >
+                {horizonRun.running ? "푸는 중…" : "시각·장소로 풀기"}
+              </button>
+              {horizonRun.message && !horizonTP && (
+                <p className="text-xs">{horizonRun.message}</p>
+              )}
+            </div>
+          </Section>
+        )}
+
+        {selectedTransform && !busy && (
+          <Section
+            title="언제 찍었을까?"
+            summary="지평선으로 촬영 시각 거꾸로 찾기"
+          >
             <ShotTimeEstimator
               transform={selectedTransform}
               width={image.width}
               shot={shot}
               marks={marks}
-              picking={picking}
-              onPick={setPicking}
-              onClear={() => setMarks(NO_MARKS)}
               onApply={setShot}
-              horizonSolve={{
-                ready: Boolean(shot?.observer) && marks.horizon.length === 2,
-                running: horizonRun.running,
-                message: horizonRun.message,
-                onRun: runHorizonSolve,
-              }}
+              onPickHorizon={() => goTo("edit", "horizon")}
             />
-          )}
-        </div>
-      </div>
-      <StepMover disableNext={true} />
+          </Section>
+        )}
+      </aside>
     </div>
   );
 }
 
-const NO_MARKS: EstimateMarks = { horizon: [], moon: null };
 const NO_HORIZON_RUN = { running: false, result: null, message: null };
+
+// 접었다 펼 수 있는 곁 패널 칸
+function Section({
+  title,
+  summary,
+  defaultOpen,
+  children,
+}: {
+  title: string;
+  summary: string;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <details
+      className="bg-base-200/70 rounded-box group text-sm backdrop-blur"
+      open={defaultOpen}
+    >
+      <summary className="flex cursor-pointer list-none items-center gap-2 p-3">
+        <span className="font-bold">{title}</span>
+        <span className="min-w-0 flex-1 truncate text-xs opacity-60">
+          {summary}
+        </span>
+        <span className="opacity-60 transition-transform group-open:rotate-90">
+          ›
+        </span>
+      </summary>
+      <div className="px-3 pb-3">{children}</div>
+    </details>
+  );
+}
 
 // 천체 종류별 표시 색 (별은 보라, 별자리선은 노랑)
 const OBJECT_COLORS = {
@@ -583,36 +642,159 @@ const OBJECT_COLORS = {
   planet: "oklch(0.75 0.183 55.934)",
 };
 
-// solver가 쓰는 별 패턴 이름 (진행 문구용)
-const SOLVER_PATTERN_NAMES: Record<string, string> = {
-  improved: "4개 별 패턴(quad)",
-  triangle: "3개 별 패턴(삼각형)",
+type Overlay = ReturnType<typeof useSkyOverlay>;
+
+// 찾은 별·별자리·천체를 사진 위에 그린다
+const drawOverlay = (
+  context: CanvasRenderingContext2D,
+  image: HTMLImageElement,
+  layers: {
+    photoStars: { x: number; y: number }[];
+    skyStars: Overlay["stars"];
+    skyConstellations: Overlay["constellations"];
+    skyObjects: Overlay["objects"];
+    horizon: [number, number][];
+  },
+) => {
+  // 사진 크기와 무관하게 비슷한 크기로 보이도록 표시 크기를 대각선 길이에 맞춘다
+  const unit = Math.hypot(image.width, image.height) / 1400;
+  const fontPx = Math.round(18 * unit);
+  // 밝은 빛 위에서도 글자가 보이도록 어두운 테두리를 먼저 그린다
+  const SHADOW = "oklch(0 0 0 / 0.75)";
+
+  const label = (text: string, x: number, y: number, color: string) => {
+    context.font = `bold ${fontPx}px Pretendard Variable, sans-serif`;
+    context.strokeStyle = SHADOW;
+    context.lineWidth = 4 * unit;
+    context.strokeText(text, x, y);
+    context.fillStyle = color;
+    context.fillText(text, x, y);
+  };
+
+  layers.photoStars.forEach(({ x, y }) => {
+    context.beginPath();
+    context.arc(x, y, 5 * unit, 0, 2 * Math.PI);
+    context.strokeStyle = "oklch(0.704 0.191 22.216)";
+    context.lineWidth = 2 * unit;
+    context.stroke();
+  });
+
+  layers.skyConstellations.forEach(({ label: name, lines }) => {
+    context.strokeStyle = "oklch(0.905 0.182 98.111 / 0.85)";
+    context.lineWidth = 1.5 * unit;
+
+    for (let i = 0; i < lines.length - 1; i++) {
+      const a = lines[i];
+      const b = lines[i + 1];
+
+      // 한쪽 정점이라도 뒤쪽 반구/먼 영역(null)이면 그 선분은 그리지 않는다
+      if (!a || !b) {
+        continue;
+      }
+
+      context.beginPath();
+      context.moveTo(a[0], a[1]);
+      context.lineTo(b[0], b[1]);
+      context.stroke();
+    }
+
+    const visible = lines.filter(
+      (l): l is [number, number] =>
+        l !== null &&
+        l[0] >= 0 &&
+        l[0] < image.width &&
+        l[1] >= 0 &&
+        l[1] < image.height,
+    );
+
+    if (visible.length === 0) {
+      return;
+    }
+
+    const center = visible
+      .reduce((sum, l) => [sum[0] + l[0], sum[1] + l[1]], [0, 0])
+      .map((v) => v / visible.length);
+
+    label(name, center[0], center[1], "oklch(0.905 0.182 98.111)");
+  });
+
+  layers.skyStars.forEach(({ name, x, y }) => {
+    context.beginPath();
+    context.arc(x, y, (name ? 10 : 6) * unit, 0, 2 * Math.PI);
+    context.strokeStyle = "oklch(.75 .17 292.717)";
+    context.lineWidth = (name ? 2.5 : 1.2) * unit;
+    context.stroke();
+
+    if (name) {
+      label(name, x + 14 * unit, y + 6 * unit, "oklch(.82 .12 292.717)");
+    }
+  });
+
+  layers.skyObjects.forEach(({ name, kind, x, y, radiusPx }) => {
+    const color = OBJECT_COLORS[kind];
+    const r = Math.max(radiusPx, 12 * unit);
+
+    context.setLineDash(kind === "deepSky" ? [6 * unit, 4 * unit] : []);
+
+    for (const [style, width] of [
+      [SHADOW, 5 * unit],
+      [color, 2 * unit],
+    ] as const) {
+      context.strokeStyle = style;
+      context.lineWidth = width;
+      context.beginPath();
+      context.arc(x, y, r, 0, 2 * Math.PI);
+      context.stroke();
+    }
+
+    context.setLineDash([]);
+    label(name, x + r * 0.75 + 4 * unit, y - r * 0.75, color);
+  });
+
+  if (layers.horizon.length === 2) {
+    context.strokeStyle = "oklch(0.792 0.209 151.711)";
+    context.lineWidth = 3 * unit;
+    context.beginPath();
+    context.moveTo(...layers.horizon[0]);
+    context.lineTo(...layers.horizon[1]);
+    context.stroke();
+  }
 };
 
 // 풀이 진행 단계를 사람이 읽는 문장으로
-const describePhase = (ready: boolean, phase: SolvePhase | null): string => {
+const describePhase = (
+  detecting: boolean,
+  ready: boolean,
+  phase: SolvePhase | null,
+): string => {
+  if (detecting) {
+    return "사진에서 별을 찾고 있어요";
+  }
+
   if (!ready) {
-    return "별 데이터베이스를 준비하고 있습니다";
+    return "별 지도를 펼치고 있어요";
   }
 
   if (!phase) {
-    return "풀이를 시작합니다";
+    return "별자리를 맞춰 보기 시작해요";
   }
 
   if (phase.kind === "fisheye") {
-    return "초광각(어안) 렌즈로 보고 다시 찾고 있습니다";
+    return "초광각 렌즈 사진으로 보고 다시 찾고 있어요";
   }
 
-  const pattern = SOLVER_PATTERN_NAMES[phase.solverKey] ?? "별 패턴";
+  const where = phase.region === "사진 전체" ? "" : ` (${phase.region})`;
 
-  return `${phase.region}에서 밝은 별 ${phase.inputSize}개의 ${pattern}으로 찾고 있습니다 (${phase.index + 1}/${phase.total})`;
+  return `밝은 별 ${phase.inputSize}개의 모양을 맞춰 보는 중${where}`;
 };
 
-// 풀이가 진행 중임을 보여 준다. 몇 초 걸릴 수 있어 단계·경과 시간을 함께 보여 준다.
+// 풀이가 진행 중임을 사진 아래쪽에 보여 준다. 몇 초 걸릴 수 있어 경과 시간을 함께 보여 준다.
 function SolveProgress({
+  detecting,
   ready,
   phase,
 }: {
+  detecting: boolean;
   ready: boolean;
   phase: SolvePhase | null;
 }) {
@@ -628,110 +810,88 @@ function SolveProgress({
     return () => clearInterval(timer);
   }, []);
 
-  // 직선투영 단계는 입력 크기 순서로, 어안 시도는 마지막 단계로 본다
-  const progress = !phase
-    ? 0
-    : phase.kind === "fisheye"
-      ? 0.95
-      : (phase.index + 0.5) / (phase.total + 1);
+  // 별 찾기 10%, 직선투영 단계는 입력 크기 순서로, 어안 시도는 마지막 단계로 본다
+  const progress = detecting
+    ? 0.05
+    : !phase
+      ? 0.1
+      : phase.kind === "fisheye"
+        ? 0.95
+        : 0.1 + (0.85 * (phase.index + 0.5)) / (phase.total + 1);
 
   return (
-    <div className="bg-base-200 rounded-box flex h-full w-100 shrink-0 flex-col items-center justify-center gap-3 p-4 text-center">
-      <span className="loading loading-spinner loading-lg"></span>
-      <div className="text-lg">{describePhase(ready, phase)}</div>
-      {ready && (
-        <progress
-          className="progress progress-primary w-full"
-          value={progress}
-          max={1}
-        />
-      )}
-      <div className="text-xs opacity-60">
-        {elapsedSec.toFixed(1)}초 · 보통 10초 안에 끝납니다
+    <div className="flex flex-col gap-2 text-white">
+      <div className="flex items-center gap-2">
+        <span className="loading loading-spinner loading-sm" />
+        <span className="font-bold">
+          {describePhase(detecting, ready, phase)}
+        </span>
+        <span className="ml-auto text-xs opacity-70">
+          {elapsedSec.toFixed(1)}초
+        </span>
       </div>
+      <progress
+        className="progress progress-primary w-full"
+        value={progress}
+        max={1}
+      />
     </div>
   );
-}
-
-interface CandidateListProps {
-  candidates: SolveCandidateResult[];
-  selected: number;
-  found: boolean;
-  timeMs: number;
-  timedOut: boolean;
-  answer: SampleAnswer | null;
-  onSelect: (index: number) => void;
 }
 
 function CandidateList({
   candidates,
   selected,
-  found,
-  timeMs,
-  timedOut,
   answer,
   onSelect,
-}: CandidateListProps) {
+}: {
+  candidates: SolveCandidateResult[];
+  selected: number;
+  answer: SampleAnswer | null;
+  onSelect: (index: number) => void;
+}) {
   return (
-    <div className="bg-base-200 rounded-box flex h-full w-100 shrink-0 flex-col overflow-hidden">
-      <div className="border-base-300 border-b p-2 text-sm">
-        {found ? (
-          <div className="text-success font-bold">해를 찾았습니다 (1순위)</div>
-        ) : (
-          <div className="opacity-70">
-            확신할 수 없습니다. 후보 중 별자리가 사진과 맞는 것을 골라 보세요.
-            {timedOut && " (시간 안에 다 찾지 못했습니다)"}
-          </div>
-        )}
-        <div
-          title={`신뢰도 N은 우연히 이만큼 맞을 확률이 10^-N이라는 뜻입니다. ${ACCEPT.minLogOdds} 이상이면 확신합니다.`}
-        >
-          후보 {candidates.length}개 (신뢰도 순) · {(timeMs / 1000).toFixed(1)}
-          초
-        </div>
-        {answer && <KnownAnswerNote answer={answer} found />}
-      </div>
-      <ul className="menu h-full flex-col flex-nowrap items-start overflow-y-scroll">
-        {candidates.map((c, i) => {
-          // 검증된 정답(approximate 아님)일 때만 후보에 ✓를 단다
-          const isAnswer =
-            answer && !answer.approximate
-              ? matchesAnswer(c.centerVector, answer)
-              : false;
+    <ul
+      className="flex max-h-64 flex-col gap-1 overflow-y-auto"
+      title={`신뢰도 N은 우연히 이만큼 맞을 확률이 10^-N이라는 뜻이에요. ${ACCEPT.minLogOdds} 이상이면 확신해요.`}
+    >
+      {candidates.map((c, i) => {
+        // 검증된 정답(approximate 아님)일 때만 후보에 ✓를 단다
+        const isAnswer =
+          answer && !answer.approximate
+            ? matchesAnswer(c.centerVector, answer)
+            : false;
 
-          return (
-            <li
-              key={`candidate-${i}`}
-              className="w-full"
-              ref={(el) => {
-                if (el && selected === i) {
-                  el.scrollIntoView({ block: "nearest" });
-                }
-              }}
+        return (
+          <li key={`candidate-${i}`}>
+            <button
+              className={cn(
+                "flex w-full items-center gap-2 rounded px-2 py-1 text-left",
+                selected === i
+                  ? "bg-primary/25 font-bold"
+                  : "hover:bg-base-300/60",
+              )}
+              onClick={() => onSelect(i)}
             >
-              <a
-                className={cn(
-                  selected === i
-                    ? "bg-primary/20 font-bold"
-                    : "hover:bg-base-300/50",
-                )}
-                onClick={() => onSelect(i)}
-              >
-                {isAnswer && (
-                  <span className="badge badge-success badge-sm">✓ 정답</span>
-                )}
-                {`${i + 1}. 매칭 ${c.inlierCount}개, 신뢰도 ${c.confidence.toFixed(0)}, FOV ${c.fovDeg.toFixed(0)}°`}
-              </a>
-            </li>
-          );
-        })}
-      </ul>
-    </div>
+              <span className="w-5 opacity-60">{i + 1}</span>
+              <span className="flex-1">
+                맞는 별 {c.inlierCount}개 · 화각 {c.fovDeg.toFixed(0)}°
+              </span>
+              <span className="text-xs opacity-60">
+                신뢰도 {c.confidence.toFixed(0)}
+              </span>
+              {isAnswer && (
+                <span className="badge badge-success badge-xs">정답</span>
+              )}
+            </button>
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 
-// 이 샘플의 알려진 정답(검증된 ground truth)을 안내한다. 후보 중 ✓ 표시와 함께
-// 사람이 헷갈리지 않게 한다.
+// 이 샘플의 알려진 정답(검증된 ground truth)을 안내한다
 function KnownAnswerNote({
   answer,
   found,
@@ -742,7 +902,7 @@ function KnownAnswerNote({
   return (
     <div
       className={cn(
-        "mt-1 text-xs",
+        "text-xs",
         answer.approximate
           ? "text-warning/80"
           : found
@@ -750,9 +910,8 @@ function KnownAnswerNote({
             : "text-info/80",
       )}
     >
-      {answer.approximate ? "예상 영역(대략): " : "알려진 정답: "}
-      {answer.name} · 중심 RA {answer.centerRaDeg.toFixed(0)}° Dec{" "}
-      {answer.centerDecDeg.toFixed(0)}° · 시야 약 {answer.fovDeg.toFixed(0)}°
+      {answer.approximate ? "샘플의 예상 영역(대략): " : "샘플의 알려진 정답: "}
+      {answer.name} · 시야 약 {answer.fovDeg.toFixed(0)}°
     </div>
   );
 }

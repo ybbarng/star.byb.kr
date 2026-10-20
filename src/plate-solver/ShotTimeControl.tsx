@@ -45,46 +45,54 @@ export default function ShotTimeControl({
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-2 text-sm">
-      <span className="opacity-70">촬영 시각</span>
-      <input
-        type="datetime-local"
-        className="input input-sm w-auto"
-        value={local}
-        onChange={(e) => setLocal(e.target.value)}
-      />
-      <select
-        className="select select-sm w-auto"
-        value={offset}
-        onChange={(e) => setOffset(e.target.value)}
-      >
-        {OFFSETS.includes(offset) ? null : (
-          <option value={offset}>{offset}</option>
-        )}
-        {OFFSETS.map((o) => (
-          <option key={o} value={o}>
-            UTC{o}
-          </option>
-        ))}
-      </select>
-      <span className="opacity-70">장소</span>
-      <input
-        className="input input-sm w-20"
-        placeholder="위도"
-        value={lat}
-        onChange={(e) => setLat(e.target.value)}
-      />
-      <input
-        className="input input-sm w-20"
-        placeholder="경도"
-        value={lon}
-        onChange={(e) => setLon(e.target.value)}
-      />
-      <button className="btn btn-sm" onClick={apply}>
-        적용
-      </button>
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <input
+          type="datetime-local"
+          className="input input-sm w-auto"
+          aria-label="촬영 시각"
+          value={local}
+          onChange={(e) => setLocal(e.target.value)}
+        />
+        <select
+          className="select select-sm w-auto"
+          aria-label="시간대"
+          value={offset}
+          onChange={(e) => setOffset(e.target.value)}
+        >
+          {OFFSETS.includes(offset) ? null : (
+            <option value={offset}>{offset}</option>
+          )}
+          {OFFSETS.map((o) => (
+            <option key={o} value={o}>
+              UTC{o}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <input
+          className="input input-sm w-24"
+          placeholder="위도 (예 37.5)"
+          aria-label="위도"
+          value={lat}
+          onChange={(e) => setLat(e.target.value)}
+        />
+        <input
+          className="input input-sm w-24"
+          placeholder="경도 (예 127)"
+          aria-label="경도"
+          value={lon}
+          onChange={(e) => setLon(e.target.value)}
+        />
+        <button className="btn btn-sm" onClick={apply}>
+          적용
+        </button>
+      </div>
       <span className="text-xs opacity-60">
-        {shot ? (shot.note ?? "직접 입력") : "넣으면 달·행성도 표시합니다"}
+        {shot
+          ? `${shot.note ?? "직접 입력"}${shot.observer ? "" : " · 장소를 넣으면 달 위치가 더 정확해져요"}`
+          : "시각을 넣으면 해·달·행성도 사진 위에 그려요."}
       </span>
     </div>
   );
