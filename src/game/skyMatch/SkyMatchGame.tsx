@@ -3,7 +3,24 @@
 import type { SkyItem } from "@/game/sky/drawSky";
 import type { Difficulty } from "@/game/sky/scene";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { CONSTELLATIONS, pickItem, STARS } from "@/game/sky/catalog";
+import {
+  ChoiceCards,
+  Confetti,
+  FxLayer,
+  GameIntro,
+  readBest,
+  saveBest,
+  StarRating,
+  useFx,
+} from "@/game/fx/Fx";
+import LineReveal from "@/game/fx/LineReveal";
+import { sfx } from "@/game/fx/sound";
+import {
+  CONSTELLATIONS,
+  pickItem,
+  projectLines,
+  STARS,
+} from "@/game/sky/catalog";
 import { drawSky } from "@/game/sky/drawSky";
 import ItemInfo, { canvasPoint } from "@/game/sky/ItemInfo";
 import { dailySeed, localMeanTime, makeSkyScene } from "@/game/sky/scene";
@@ -23,11 +40,14 @@ import { cn } from "@/utils/cn";
 // 위도를 돌리면 하늘이 기울고, 시각·날짜를 돌리면 하늘이 돈다. 지식이 없어도 만지작거리다 보면 맞고,
 // 그 과정에서 하늘의 움직임을 몸으로 익힌다. 같은 하늘이면 어느 날짜·시각 조합이든 정답이다.
 
-const DIFFICULTY_LABEL: Record<Difficulty, string> = {
-  easy: "쉬움 (방위 표시, 별 많음)",
-  normal: "보통",
-  hard: "어려움 (광해, 별 적음)",
-};
+const DIFFICULTIES: { value: Difficulty; title: string; note: string }[] = [
+  { value: "easy", title: "쉬움", note: "방위 표시, 별이 많아요" },
+  { value: "normal", title: "보통", note: "방위 없이" },
+  { value: "hard", title: "어려움", note: "도시 불빛, 별이 적어요" },
+];
+
+// 다이얼을 적게 잡을수록 별이 많다
+const starsFor = (moves: number) => (moves <= 8 ? 3 : moves <= 16 ? 2 : 1);
 
 const pad = (n: number) => String(n).padStart(2, "0");
 const MONTH_STARTS = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
@@ -54,7 +74,34 @@ const startDials = () => {
 };
 
 export default function SkyMatchGame() {
+  const [started, setStarted] = useState(false);
   const [difficulty, setDifficulty] = useState<Difficulty>("easy");
+
+  if (!started) {
+    return (
+      <GameIntro
+        title="하늘 맞추기"
+        tagline="다이얼을 돌려 사진 속 하늘을 똑같이 만들어라!"
+        howTo={[
+          "파란 고리는 정답 사진에서 별이 있던 자리예요.",
+          "위도·날짜·시각 다이얼을 돌려 내 하늘의 별을 고리 안에 넣으세요. 위도는 하늘을 기울이고, 시각은 하늘을 돌려요.",
+          `고리 ${Math.round(SOLVED_RATIO * 100)}%가 초록이 되면 성공! 다이얼을 적게 움직일수록 별을 많이 받아요.`,
+        ]}
+        onStart={() => setStarted(true)}
+      >
+        <ChoiceCards
+          options={DIFFICULTIES}
+          value={difficulty}
+          onChange={setDifficulty}
+        />
+      </GameIntro>
+    );
+  }
+
+  return <SkyMatchPlay difficulty={difficulty} />;
+}
+
+function SkyMatchPlay({ difficulty }: { difficulty: Difficulty }) {
   const [seed, setSeed] = useState(() => dailySeed());
   const [dials, setDials] = useState(startDials);
   const [hint, setHint] = useState(false);
@@ -66,6 +113,13 @@ export default function SkyMatchGame() {
   } | null>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const items = useRef<SkyItem[]>([]);
+  const fx = useFx();
+  const [fire, setFire] = useState(0);
+  const [result, setResult] = useState<{
+    newBest: boolean;
+    best: number | null;
+  } | null>(null);
+  const prevFlags = useRef<boolean[]>([]);
 
   const scene = useMemo(
     () => makeSkyScene(seed, difficulty),
@@ -95,6 +149,54 @@ export default function SkyMatchGame() {
   );
   const ratio = flags.filter(Boolean).length / Math.max(1, flags.length);
   const solved = ratio >= SOLVED_RATIO;
+  // 다 맞춘 하늘에 이어 그릴 별자리선 (사진 안에 걸친 것만)
+  const solvedLines = useMemo(
+    () =>
+      solved
+        ? projectLines(player.TP, CONSTELLATIONS).filter((l) =>
+            l.some(
+              ([x, y]) => x > 0 && x < scene.width && y > 0 && y < scene.height,
+            ),
+          )
+        : [],
+    [solved, player, scene],
+  );
+
+  // 새로 고리에 들어간 별: 초록 고리가 퍼지고, 맞은 수가 늘수록 높은 음
+  useEffect(() => {
+    const fresh = flags.flatMap((f, i) =>
+      f && !prevFlags.current[i] && prevFlags.current.length ? [i] : [],
+    );
+    prevFlags.current = flags;
+
+    if (fresh.length === 0) {
+      return;
+    }
+
+    for (const i of fresh) {
+      fx.ring(
+        targets[i].at[0] / scene.width,
+        targets[i].at[1] / scene.height,
+        "#5ae678",
+      );
+    }
+
+    sfx.twinkle(flags.filter(Boolean).length);
+  }, [flags, targets, scene, fx]);
+
+  // 다 맞췄을 때 한 번: 팡파르, 색종이, 최고 기록
+  useEffect(() => {
+    if (!solved || result) {
+      return;
+    }
+
+    const key = `sky-match-${difficulty}`;
+    const best = readBest(key);
+    setResult({ newBest: saveBest(key, moves, true), best });
+    setFire(Date.now());
+    sfx.win();
+    fx.popup(0.5, 0.45, "맞췄어요!", "#7dffa0", 56);
+  }, [solved, result, difficulty, moves, fx]);
 
   useEffect(() => {
     const ctx = canvas.current?.getContext("2d");
@@ -114,7 +216,7 @@ export default function SkyMatchGame() {
       lightPollution: scene.lightPollution,
       groundSeed: scene.seed,
       stars: STARS,
-      constellations: hint || solved ? CONSTELLATIONS : undefined,
+      constellations: hint && !solved ? CONSTELLATIONS : undefined,
       compass: scene.difficulty === "easy" || solved,
     });
 
@@ -137,37 +239,26 @@ export default function SkyMatchGame() {
     setHint(false);
     setMoves(0);
     setInfo(null);
+    setResult(null);
+    prevFlags.current = [];
+    sfx.whoosh();
   };
 
   const setDial = (patch: Partial<typeof dials>) => {
     setDials((d) => ({ ...d, ...patch }));
-    setMoves((m) => m + 1);
     setInfo(null);
   };
 
+  // 다이얼을 한 번 잡을 때마다 한 수
+  const countMove = () => setMoves((m) => m + 1);
+
   return (
     <div className="flex w-full max-w-[1280px] flex-col gap-4">
-      <div className="flex flex-wrap items-center gap-3">
-        <h1 className="text-2xl font-bold">하늘 맞추기</h1>
-        <span className="text-sm opacity-70">
-          다이얼을 돌려 내 하늘의 별을 고리 안에 넣어 보세요. 별을 누르면
-          무엇인지 알려 줘요.
-        </span>
+      <Confetti fire={fire} />
+      <div className="bg-base-200/80 rounded-box flex flex-wrap items-center gap-3 px-4 py-2 backdrop-blur">
+        <h1 className="text-xl font-bold">하늘 맞추기</h1>
+        <span className="badge badge-ghost tabular-nums">다이얼 {moves}번</span>
         <div className="grow" />
-        <select
-          className="select select-sm w-auto"
-          value={difficulty}
-          onChange={(e) => {
-            setDifficulty(e.target.value as Difficulty);
-            newRound(seed);
-          }}
-        >
-          {(Object.keys(DIFFICULTY_LABEL) as Difficulty[]).map((d) => (
-            <option key={d} value={d}>
-              {DIFFICULTY_LABEL[d]}
-            </option>
-          ))}
-        </select>
         <button className="btn btn-sm" onClick={() => newRound(dailySeed())}>
           오늘의 문제
         </button>
@@ -184,7 +275,7 @@ export default function SkyMatchGame() {
           ref={canvas}
           width={scene.width}
           height={scene.height}
-          className="rounded-box w-full cursor-help bg-black"
+          className="rounded-box block w-full cursor-help bg-black"
           onClick={(e) => {
             const p = canvasPoint(e);
             setInfo({
@@ -194,6 +285,17 @@ export default function SkyMatchGame() {
             });
           }}
         />
+        {solved && (
+          <LineReveal
+            width={scene.width}
+            height={scene.height}
+            lines={solvedLines}
+            color="rgba(140,230,170,0.85)"
+            duration={2200}
+            lineWidth={1.5}
+          />
+        )}
+        <FxLayer fx={fx} />
         {info && (
           <ItemInfo
             item={info.item}
@@ -202,22 +304,29 @@ export default function SkyMatchGame() {
             onClose={() => setInfo(null)}
           />
         )}
-        <div className="absolute top-3 left-3 flex items-center gap-2 rounded bg-black/50 px-3 py-1 text-sm">
+        <div
+          className={cn(
+            "absolute top-3 left-3 flex items-center gap-2 rounded-full bg-black/60 px-4 py-1.5 text-sm backdrop-blur transition",
+            solved && "fx-glow",
+          )}
+        >
           <span>일치도</span>
           <progress
             className={cn(
-              "progress w-32",
+              "progress w-24 md:w-40",
               solved ? "progress-success" : "progress-info",
             )}
             value={ratio}
             max={1}
           />
-          <span>{Math.round(ratio * 100)}%</span>
+          <span className="w-10 text-right font-bold tabular-nums">
+            {Math.round(ratio * 100)}%
+          </span>
         </div>
       </div>
 
       {!solved ? (
-        <div className="bg-base-200 rounded-box grid grid-cols-1 gap-4 p-4 md:grid-cols-3">
+        <div className="bg-base-200/80 rounded-box grid grid-cols-1 gap-4 p-4 backdrop-blur md:grid-cols-3">
           <Dial
             label={`위도: ${latLabel(dials.latDeg)}`}
             note="돌리면 하늘이 기울어요"
@@ -226,6 +335,7 @@ export default function SkyMatchGame() {
             step={1}
             value={dials.latDeg}
             onChange={(v) => setDial({ latDeg: v })}
+            onGrab={countMove}
           />
           <Dial
             label={`날짜: ${dayLabel(dials.dayOfYear)}`}
@@ -235,6 +345,7 @@ export default function SkyMatchGame() {
             step={1}
             value={dials.dayOfYear}
             onChange={(v) => setDial({ dayOfYear: v })}
+            onGrab={countMove}
           />
           <Dial
             label={`현지 시각: ${pad(Math.floor(dials.minutes / 60))}:${pad(dials.minutes % 60)}`}
@@ -244,6 +355,7 @@ export default function SkyMatchGame() {
             step={5}
             value={dials.minutes}
             onChange={(v) => setDial({ minutes: v })}
+            onGrab={countMove}
           />
           <div className="flex items-center gap-2 md:col-span-3">
             <button className="btn btn-sm" onClick={() => setHint((h) => !h)}>
@@ -260,6 +372,7 @@ export default function SkyMatchGame() {
           scene={scene}
           dials={dials}
           moves={moves}
+          result={result}
           onNext={() => newRound(Math.floor(Math.random() * 1e9))}
         />
       )}
@@ -275,6 +388,7 @@ function Dial({
   step,
   value,
   onChange,
+  onGrab,
 }: {
   label: string;
   note: string;
@@ -283,9 +397,13 @@ function Dial({
   step: number;
   value: number;
   onChange: (v: number) => void;
+  onGrab: () => void;
 }) {
-  const nudge = (d: number) =>
+  const nudge = (d: number) => {
+    onGrab();
+    sfx.tick();
     onChange(Math.min(max, Math.max(min, value + d)));
+  };
 
   return (
     <div className="flex flex-col gap-1">
@@ -306,7 +424,9 @@ function Dial({
         max={max}
         step={step}
         value={value}
-        className="range range-sm w-full"
+        className="range range-sm range-primary w-full"
+        onPointerDown={onGrab}
+        onKeyDown={onGrab}
         onChange={(e) => onChange(Number(e.target.value))}
       />
       <span className="text-xs opacity-60">{note}</span>
@@ -318,11 +438,13 @@ function Solved({
   scene,
   dials,
   moves,
+  result,
   onNext,
 }: {
   scene: ReturnType<typeof makeSkyScene>;
   dials: { latDeg: number; dayOfYear: number; minutes: number };
   moves: number;
+  result: { newBest: boolean; best: number | null } | null;
   onNext: () => void;
 }) {
   const answer = answerDials(scene);
@@ -352,23 +474,42 @@ function Solved({
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="bg-base-200 rounded-box flex flex-wrap items-center gap-6 p-4">
-        <div className="text-success text-2xl font-bold">맞췄어요!</div>
+      <div className="bg-base-200/80 rounded-box fx-rise flex flex-wrap items-center gap-6 p-4 backdrop-blur">
+        <StarRating stars={starsFor(moves)} />
+        <div className="flex flex-col">
+          <div className="text-success text-2xl font-bold">맞췄어요!</div>
+          <div className="text-sm">
+            다이얼 {moves}번 만에
+            {result?.newBest ? (
+              <span className="badge badge-warning fx-pop ml-2 font-bold">
+                최소 기록!
+              </span>
+            ) : (
+              result?.best != null && (
+                <span className="ml-2 opacity-60">
+                  (최소 기록 {result.best}번)
+                </span>
+              )
+            )}
+          </div>
+        </div>
         <div className="text-sm">
-          다이얼 {moves}번 만에 · 내 답 {latLabel(dials.latDeg)},{" "}
-          {dayLabel(dials.dayOfYear)} {pad(Math.floor(dials.minutes / 60))}:
-          {pad(dials.minutes % 60)}
+          내 답 {latLabel(dials.latDeg)}, {dayLabel(dials.dayOfYear)}{" "}
+          {pad(Math.floor(dials.minutes / 60))}:{pad(dials.minutes % 60)}
         </div>
         <div className="text-sm opacity-80">
           실제로 찍은 곳·때: {latLabel(Math.round(answer.latDeg))},{" "}
           {fmt(truthLocal)}
         </div>
         <div className="grow" />
-        <button className="btn btn-primary" onClick={onNext}>
-          다음 문제
+        <button className="btn btn-primary btn-lg" onClick={onNext}>
+          다음 문제 →
         </button>
       </div>
-      <div className="bg-base-200 rounded-box flex flex-col gap-2 p-4 text-sm">
+      <div
+        className="bg-base-200/80 rounded-box fx-rise flex flex-col gap-2 p-4 text-sm backdrop-blur"
+        style={{ animationDelay: "200ms" }}
+      >
         <div className="font-bold">알고 보면</div>
         <div>
           <b>위도</b>: 천구의{" "}
