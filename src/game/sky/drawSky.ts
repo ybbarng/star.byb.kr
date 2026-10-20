@@ -40,7 +40,7 @@ export interface DrawSkyOptions {
   compass?: boolean; // 지평선에 동서남북 표시 (쉬움)
   // 달빛이 어두운 별을 지우게 할지 (기본 true). 별을 눌러 보는 게 목적이면 끈다.
   moonlightDimsStars?: boolean;
-  // 산: 그 방위 둘레로 땅이 솟아 별을 가린다 (지오게서에서 극을 가리는 데 쓴다)
+  // 산: 그 방위 둘레로 땅이 솟아 별을 가린다 (SkyGuessr에서 극을 가리는 데 쓴다)
   mountains?: Mountain[];
   // 구름: 하늘의 그 자리(고도·방위)를 덮어 별을 가린다
   clouds?: Cloud[];

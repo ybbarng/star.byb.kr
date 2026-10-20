@@ -11,8 +11,8 @@ export interface GameEntry {
 
 export const GAMES: GameEntry[] = [
   {
-    href: "/games/star-geoguessr",
-    title: "별하늘 지오게서",
+    href: "/games/sky-guessr",
+    title: "SkyGuessr",
     summary:
       "밤하늘을 360°로 둘러보고, 이 사진을 지구 어디서 찍었는지 세계 지도에 핀을 찍어요. 가까울수록 높은 점수!",
     learn:

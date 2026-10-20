@@ -29,7 +29,7 @@ import SkyViewer from "@/game/geo/SkyViewer";
 import WorldMap from "@/game/geo/WorldMap";
 import { cn } from "@/utils/cn";
 
-// 별하늘 지오게서 (docs/game-plans.md): 밤하늘을 360°로 둘러보고, 세계 공통 시각(UTC)과 낮밤 지도를 시계 삼아
+// SkyGuessr (docs/game-plans.md): 밤하늘을 360°로 둘러보고, 세계 공통 시각(UTC)과 낮밤 지도를 시계 삼아
 // 찍은 곳을 세계 지도에 핀으로 찍는다. 위도는 천구의 극 높이(또는 남쪽 별의 높이), 경도는 하늘에서 읽은 현지 시각과
 // 지도의 현지 시각이 같은 곳. 다섯 라운드, 라운드마다 최고 5,000점.
 
@@ -78,7 +78,7 @@ export default function GeoGame() {
   if (phase === "intro") {
     return (
       <GameIntro
-        title="별하늘 지오게서"
+        title="SkyGuessr"
         tagline="밤하늘 사진 한 장, 이 사진은 지구 어디서 찍었을까?"
         howTo={[
           "하늘을 끌어서 사방을 둘러보세요. 찍은 날짜와 세계 공통 시각(UTC)을 알려 줘요.",
@@ -240,7 +240,7 @@ function GeoRound({
     <div className="flex w-full max-w-[1400px] flex-col gap-3">
       {/* 상단: 라운드, 점수, 문제 정보 */}
       <div className="bg-base-200/80 rounded-box flex flex-wrap items-center gap-x-5 gap-y-2 px-4 py-2 backdrop-blur">
-        <h1 className="text-xl font-bold">별하늘 지오게서</h1>
+        <h1 className="text-xl font-bold">SkyGuessr</h1>
         <div className="flex items-center gap-1.5">
           {Array.from({ length: ROUNDS }, (_, i) => (
             <span

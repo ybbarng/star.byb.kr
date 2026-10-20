@@ -11,7 +11,7 @@ import {
 } from "@/search/utils/ephemeris";
 import { createRng } from "@/utils/rng";
 
-// 별하늘 지오게서 (docs/game-plans.md): 밤하늘 사진 한 장(360°로 둘러볼 수 있다)과 촬영 순간의 세계 공통 시각(UTC)만 보고
+// SkyGuessr (docs/game-plans.md): 밤하늘 사진 한 장(360°로 둘러볼 수 있다)과 촬영 순간의 세계 공통 시각(UTC)만 보고
 // 찍은 곳을 세계 지도에 핀으로 찍는다. 정답과의 거리로 점수.
 //
 // 왜 UTC만 주나: 별 배치는 위도와 그곳의 별시각(지방 항성시)으로만 정해지는데, 별시각과 현지 시각은 둘 다
@@ -225,7 +225,7 @@ export const distanceKm = (
 };
 
 export const MAX_ROUND_POINTS = 5000;
-// 지오게서처럼 거리에 따라 지수로 줄어든다 (1,500km마다 약 1/e)
+// GeoGuessr처럼 거리에 따라 지수로 줄어든다 (1,500km마다 약 1/e)
 const POINT_SCALE_KM = 1500;
 
 export const pointsFor = (km: number, penalty: number) =>

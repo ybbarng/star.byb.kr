@@ -11,7 +11,7 @@ import {
 import { isLand } from "@/game/geo/world";
 import { altAzOf, julianDay, sunVector } from "@/search/utils/ephemeris";
 
-// 별하늘 지오게서: 문제는 땅 위, 고른 하늘 때(저녁·한밤·새벽)에 맞고, 점수는 거리로 줄어든다.
+// SkyGuessr: 문제는 땅 위, 고른 하늘 때(저녁·한밤·새벽)에 맞고, 점수는 거리로 줄어든다.
 
 const sunAlt = (p: ReturnType<typeof makeGeoProblem>) => {
   const jd = julianDay(p.date);
