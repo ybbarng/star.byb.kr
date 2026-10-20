@@ -38,7 +38,7 @@ export const GAMES: GameEntry[] = [
     summary:
       "점을 하나씩 찍으면 지금까지의 모양과 가장 닮은 진짜 별자리를 알려 줘요.",
     learn: "모양은 크기·회전과 상관없다 (플레이트 솔버의 기하 해싱)",
-    ready: false,
+    ready: true,
   },
   {
     href: "/games/light-time-capsule",
