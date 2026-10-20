@@ -1,7 +1,7 @@
 "use client";
 
 import type { Birth } from "@/game/birthday/BirthdayPicker";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import BirthdayChart from "@/game/birthday/BirthdayChart";
 import {
   BirthdayCalendar,
@@ -9,6 +9,7 @@ import {
 } from "@/game/birthday/BirthdayPicker";
 import { BIRTH_COLOR, SIGN_COLOR } from "@/game/birthday/drawChart";
 import { birthdaySky, ZODIAC, zodiacWidthDeg } from "@/game/birthday/zodiac";
+import { sfx } from "@/game/fx/sound";
 import { cn } from "@/utils/cn";
 
 // 생일 별자리 (docs/game-plans.md): 생일에 해가 실제로 있던 별자리와 점성술의 별자리를 천문도로 비교하고,
@@ -47,6 +48,7 @@ export default function BirthdayGame() {
           className="btn btn-primary btn-lg w-48"
           disabled={!draft || phase === "leaving"}
           onClick={() => {
+            sfx.whoosh();
             setBirth(draft);
             setPhase("leaving");
             setTimeout(() => setPhase("result"), LEAVE_MS);
@@ -75,6 +77,9 @@ function BirthdayResult({
   const same = sky.constellation.label === sky.sign;
   const width = zodiacWidthDeg(sky.constellation);
   const bestMonth = ((birth.month + 5) % 12) + 1;
+
+  // 결과가 나오거나 날짜가 바뀔 때 반짝
+  useEffect(() => sfx.twinkle(birth.month), [birth]);
 
   return (
     <div className="flex w-full flex-col items-center gap-4">
