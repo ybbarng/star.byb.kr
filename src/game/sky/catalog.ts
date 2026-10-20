@@ -1,5 +1,7 @@
 import type { DrawConstellation, DrawStar, SkyItem } from "@/game/sky/drawSky";
-import type { Point3D } from "@/scripts/hash/types";
+import type { Point2D, Point3D } from "@/scripts/hash/types";
+import type { Mat3 } from "@/search/utils/similarity";
+import { projectVecToPhoto } from "@/search/utils/wcs";
 import constellationData from "@build/database/vectors-constellations.json";
 import catalogData from "@build/database/vectors-database.json";
 
@@ -87,3 +89,24 @@ export const pickItem = (
 
   return hits[0]?.it ?? null;
 };
+
+// 별자리선들을 사진 좌표 꺾은선으로 (카메라 뒤로 가는 별에서 선을 끊는다). 선이 그려지는 효과(LineReveal)에 쓴다
+export const projectLines = (
+  TP: Mat3,
+  parts: DrawConstellation[],
+): Point2D[][] =>
+  parts.flatMap((c) => {
+    const lines: Point2D[][] = [[]];
+
+    for (const v of c.stars) {
+      const p = projectVecToPhoto(TP, v);
+
+      if (p) {
+        lines[lines.length - 1].push(p);
+      } else if (lines[lines.length - 1].length) {
+        lines.push([]);
+      }
+    }
+
+    return lines.filter((l) => l.length > 1);
+  });
