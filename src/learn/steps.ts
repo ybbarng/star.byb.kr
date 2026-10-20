@@ -44,6 +44,13 @@ export const LEARN_STEPS: LearnStep[] = [
     title: "어려운 사진들",
     summary: "초광각 렌즈, 별이 열 개 남짓인 사진, 촬영 시각 거꾸로 찾기까지.",
   },
+  {
+    slug: "history",
+    icon: "🧭",
+    title: "걸어온 길",
+    summary:
+      "사각형 해싱 하나로 시작해, 틀린 답을 확신하지 않는 솔버가 되기까지의 전환점들.",
+  },
 ];
 
 export const learnHref = (slug: string) => `/learn/${slug}`;
