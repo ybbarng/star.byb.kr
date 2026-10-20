@@ -17,8 +17,10 @@ import {
 } from "@/test/synthetic/loadCatalog";
 import { yieldToEventLoop } from "@/test/yieldToEventLoop";
 
-// 외부(네이버 카페, 2026-10-09 화악산)에서 받은 사진. 저작권이 있어 저장소에 올리지 않고
+// 외부에서 받은 사진 (2026-10-09 화악산). 출처: 네이버 카페 "스카이가이드" 글
+// https://cafe.naver.com/skyguide/392491 — 저작권이 있어 저장소에 올리지 않고
 // public/samples-external/에 로컬로만 둔다. 파일이 없으면 건너뛴다.
+// 파일 이름: hwaak-<원본 번호>.jpg, 작성자가 별자리를 그린 그림은 hwaak-<번호>-labeled.jpg
 // 이 방법을 만들 때 한 번도 보지 않은 사진이라, 기준을 맞추는 데 쓴 샘플과 달리 일반화를 잰다.
 const dir = resolve(process.cwd(), "public/samples-external");
 const ready = catalogExists() && hashesExist() && existsSync(dir);
