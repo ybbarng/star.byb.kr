@@ -118,9 +118,26 @@ export const buildTriangleIndex = (
   const isCenter = (c: number, u: number, v: number) =>
     adjacent[c * n + u] === 1 && adjacent[c * n + v] === 1;
 
-  const vertices: number[] = [];
-  const xs: number[] = [];
-  const ys: number[] = [];
+  // 삼각형이 백만 개를 넘어 일반 배열에 쌓으면 만드는 동안 메모리가 수백 MB로 치솟는다.
+  // 타입 배열에 쌓고 모자라면 두 배로 늘린다.
+  let capacity = 1 << 16;
+  let count = 0;
+  let vertices = new Int32Array(capacity * 3);
+  let xs = new Float64Array(capacity);
+  let ys = new Float64Array(capacity);
+
+  const grow = () => {
+    capacity *= 2;
+    const v = new Int32Array(capacity * 3);
+    v.set(vertices);
+    vertices = v;
+    const x = new Float64Array(capacity);
+    x.set(xs);
+    xs = x;
+    const y = new Float64Array(capacity);
+    y.set(ys);
+    ys = y;
+  };
 
   for (let i = 0; i < n; i++) {
     const list = nb[i];
@@ -148,16 +165,23 @@ export const buildTriangleIndex = (
         const d12 = Math.hypot(pp[1][0] - pp[2][0], pp[1][1] - pp[2][1]);
         const { order, shape } = triangleShape(d01, d02, d12, [p, q, r]);
 
-        vertices.push(order[0], order[1], order[2]);
-        xs.push(shape[0]);
-        ys.push(shape[1]);
+        if (count === capacity) {
+          grow();
+        }
+
+        vertices[3 * count] = order[0];
+        vertices[3 * count + 1] = order[1];
+        vertices[3 * count + 2] = order[2];
+        xs[count] = shape[0];
+        ys[count] = shape[1];
+        count++;
       }
     }
   }
 
   return {
-    grid: buildGridIndex2D(Float64Array.from(xs), Float64Array.from(ys)),
-    vertices: Int32Array.from(vertices),
+    grid: buildGridIndex2D(xs.slice(0, count), ys.slice(0, count)),
+    vertices: vertices.slice(0, 3 * count),
     hrs: stars.map((s) => s.hr),
   };
 };
