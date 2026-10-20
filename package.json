@@ -26,7 +26,9 @@
     "react-konva": "^19.2.5",
     "sharp": "^0.35.1",
     "three": "^0.172.0",
+    "topojson-client": "^3.1.0",
     "tsx": "^4.19.2",
+    "world-atlas": "^2.0.2",
     "zustand": "^5.0.3"
   },
   "devDependencies": {
@@ -37,6 +39,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/three": "^0.172.0",
+    "@types/topojson-client": "^3.1.5",
     "daisyui": "^5.0.0-beta.2",
     "eslint": "^9",
     "eslint-config-next": "15.5.19",

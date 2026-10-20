@@ -5,6 +5,15 @@ import { readBest } from "@/game/fx/Fx";
 
 // 허브 카드에 보여 줄 내 기록 (이 브라우저에 남긴 최고 기록)
 const RECORDS: Record<string, () => string | null> = {
+  "/games/star-geoguessr": () => {
+    const scores = ["easy", "normal", "hard"]
+      .map((d) => readBest(`geo-${d}`))
+      .filter((v): v is number => v !== null);
+
+    return scores.length
+      ? `최고 ${Math.max(...scores).toLocaleString()}점`
+      : null;
+  },
   "/games/sky-match": () => {
     const moves = ["easy", "normal", "hard"]
       .map((d) => readBest(`sky-match-${d}`))
