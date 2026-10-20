@@ -1006,3 +1006,7 @@ node 테스트도 sharp로 픽셀만 풀고 **같은 코드**로 별을 찾게 �
   - 지금 ✓는 **직선투영 후보에만** 붙는다. **어안 자동 풀이 결과(FisheyeCamera)도 등록
     정답과 비교해 ✓를 띄워야** 한다 (어안 사진이 자동으로 풀리게 되면). 어안은 사진 중심
     방향 = `photoToSky(중심픽셀)`로 비교.
+- **발표 준비 때 결정 — 해시 시각화 데모(`/hash/feasibility`)** (2026-10-20 기록): 이 페이지는 `/data/hashed-database.json`(10.8MB)을
+  받는데, 그 파일은 `public/data`에 없어 지금은 동작하지 않을 것이다 (28장에서 패턴 DB를 브라우저가 만들게 바꾸기 전부터).
+  발표에 쓸지 정한 뒤 고친다: 쓴다면 `generateQuadDatabase`(search/quadDatabase.ts)로 브라우저에서 만든 해시를 쓰게 바꾸면
+  파일을 받지 않아도 된다. `/hash/sample`도 같이 확인할 것.
