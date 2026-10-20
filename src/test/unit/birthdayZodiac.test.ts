@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { chartProjection } from "@/game/birthday/drawChart";
+import { chartProjection, daylight } from "@/game/birthday/drawChart";
 import {
   birthdaySky,
   toEcliptic,
@@ -81,5 +81,15 @@ describe("띠 모양 천문도 투영", () => {
 
     expect(P.y(38)).toBeCloseTo(0, 0);
     expect(chartProjection(5000, 600, 0).spanDeg).toBeCloseTo(360);
+  });
+});
+
+describe("해 둘레의 낮 하늘", () => {
+  it("해 곁은 낮(1), 멀어질수록 어두워져 100° 밖은 밤(0)", () => {
+    expect(daylight(0)).toBeCloseTo(1);
+    expect(daylight(30)).toBeGreaterThan(daylight(60));
+    expect(daylight(60)).toBeGreaterThan(0);
+    expect(daylight(100)).toBe(0);
+    expect(daylight(170)).toBe(0);
   });
 });

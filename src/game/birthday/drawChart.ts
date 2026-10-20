@@ -24,6 +24,14 @@ const VISIBLE_LAT_DEG = 38;
 // 황도대: 해·달·행성이 지나는 황도 위아래 띠
 const BAND_LAT_DEG = 9;
 
+// 해에서 이만큼 떨어지면 밤하늘 (해가 지평선 아래로 내려간 쪽)
+const DAY_RADIUS_DEG = 100;
+// 낮 하늘은 작게 그려 늘린다 (끌 때도 매끄럽게)
+const SKY_SCALE = 6;
+const NIGHT_RGB = [7, 11, 24];
+const DAY_RGB = [96, 150, 220];
+const SUN_RGB = [255, 244, 214];
+
 export const BIRTH_COLOR = "rgb(250,200,60)";
 export const SIGN_COLOR = "rgb(255,120,170)";
 
@@ -32,6 +40,62 @@ export const wrap180 = (deg: number) =>
 // 메르카토르 세로 좌표 (각도 단위)
 const mercator = (latDeg: number) =>
   Math.log(Math.tan(Math.PI / 4 + (latDeg * D) / 2)) / D;
+
+// 해와의 각거리(°) → 낮 하늘 밝기 (해 곁 1 → 약 100° 밖 0). 해와 같은 쪽 하늘은 낮이라 별이 안 보인다
+export const daylight = (sunDistanceDeg: number) => {
+  const t = Math.min(1, Math.max(0, sunDistanceDeg / DAY_RADIUS_DEG));
+
+  return 1 - t * t * (3 - 2 * t);
+};
+
+// 황경 차이·황위(°) → 해(황도 위)와의 각거리(°)
+const sunDistance = (dLonDeg: number, latDeg: number) =>
+  Math.acos(
+    Math.max(-1, Math.min(1, Math.cos(latDeg * D) * Math.cos(dLonDeg * D))),
+  ) / D;
+
+let skyCanvas: HTMLCanvasElement | null = null;
+
+// 해 둘레가 밝은 낮 하늘 (해 아주 가까이는 흰빛, 멀어지며 파랑 → 밤)
+const drawDaySky = (
+  ctx: CanvasRenderingContext2D,
+  W: number,
+  H: number,
+  P: ChartProjection,
+  sunDLon: number,
+) => {
+  const w = Math.ceil(W / SKY_SCALE);
+  const h = Math.ceil(H / SKY_SCALE);
+  skyCanvas ??= document.createElement("canvas");
+  skyCanvas.width = w;
+  skyCanvas.height = h;
+  const small = skyCanvas.getContext("2d")!;
+  const image = small.createImageData(w, h);
+
+  for (let j = 0; j < h; j++) {
+    const m = (H / 2 - (j + 0.5) * SKY_SCALE) / P.pxPerDeg;
+    const lat = (2 * Math.atan(Math.exp(m * D))) / D - 90;
+
+    for (let i = 0; i < w; i++) {
+      const dLon = (W / 2 - (i + 0.5) * SKY_SCALE) / P.pxPerDeg;
+      const d = sunDistance(wrap180(dLon - sunDLon), lat);
+      const b = daylight(d);
+      const glow = Math.max(0, 1 - d / 12) ** 2;
+      const k = (j * w + i) * 4;
+
+      for (let c = 0; c < 3; c++) {
+        const day = DAY_RGB[c] + (SUN_RGB[c] - DAY_RGB[c]) * glow;
+        image.data[k + c] = NIGHT_RGB[c] + (day - NIGHT_RGB[c]) * b;
+      }
+
+      image.data[k + 3] = 255;
+    }
+  }
+
+  small.putImageData(image, 0, 0);
+  ctx.imageSmoothingEnabled = true;
+  ctx.drawImage(skyCanvas, 0, 0, w * SKY_SCALE, h * SKY_SCALE);
+};
 
 export interface ChartProjection {
   pxPerDeg: number;
@@ -114,8 +178,8 @@ export const drawBirthdayChart = (
         ? SIGN_COLOR
         : null;
 
-  ctx.fillStyle = "#070b18";
-  ctx.fillRect(0, 0, W, H);
+  const sunDLon = P.dLon(sky.sunLonJ2000);
+  drawDaySky(ctx, W, H, P, sunDLon);
 
   // 황도대 띠와 황도 별자리 구간 (내 별자리 금색, 점성술 별자리 분홍)
   const bandTop = P.y(BAND_LAT_DEG);
@@ -164,12 +228,24 @@ export const drawBirthdayChart = (
       continue;
     }
 
+    // 낮 하늘에 묻힌 별은 흐려진다
+    const day = daylight(sunDistance(P.dLon(s.lon) - sunDLon, s.lat));
+    const alpha = Math.min(1, 1.2 - s.mag * 0.15) * (1 - 0.92 * day);
+
+    if (alpha < 0.03) {
+      continue;
+    }
+
     const r = Math.max(0.6, 3.2 - s.mag * 0.55);
     ctx.beginPath();
     ctx.arc(x, y, r, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(255,255,255,${Math.min(1, 1.2 - s.mag * 0.15)})`;
+    ctx.fillStyle = `rgba(255,255,255,${alpha})`;
     ctx.fill();
   }
+
+  // 밝은 낮 하늘에서도 선·글자가 보이게 그림자를 둔다
+  ctx.shadowColor = "rgba(0,0,0,0.75)";
+  ctx.shadowBlur = 4;
 
   // 별자리선: 내 별자리(금색)·점성술 별자리(분홍)는 굵게, 다른 황도 별자리는 하늘색, 나머지는 흐리게
   const zodiacLabels = new Set(ZODIAC.map((z) => z.label));
@@ -293,6 +369,8 @@ export const drawBirthdayChart = (
     ctx.fillText(`점성술의 ${signLabel} 구간 (30°)`, (xa + xb) / 2, y - 8);
   }
 
+  ctx.shadowBlur = 0;
+
   // 생일의 해
   const sx = P.x(P.dLon(sky.sunLonJ2000));
   const sy = H / 2;
@@ -307,7 +385,10 @@ export const drawBirthdayChart = (
   ctx.fill();
   ctx.font = "bold 15px Arial";
   ctx.fillStyle = "rgb(255,235,150)";
+  ctx.shadowColor = "rgba(0,0,0,0.9)";
+  ctx.shadowBlur = 6;
   ctx.fillText(`생일의 해 (${birth.month}월 ${birth.day}일)`, sx, sy - 22);
+  ctx.shadowBlur = 0;
 
   ctx.textAlign = "left";
   ctx.font = "12px Arial";
