@@ -3,17 +3,7 @@
 import Graph from "@/app/hash/feasibility/components/Graph";
 import { GraphType } from "@/app/hash/feasibility/hooks/useThreeData";
 
-/**
- * What we're going to render is:
- *
- * 1. A video component so the user can see what's on the camera.
- *
- * 2. A button to generate an image of the video, load OpenCV and
- * process the image.
- *
- * 3. A canvas to allow us to capture the image of the video and
- * show it to the user.
- */
+// 해시 타당성 시각화: 카탈로그 quad 해시를 세 축 평면(XYZ·YZX)에 뿌려 본다 (발표 데모)
 export default function Page() {
   return (
     <div className="flex flex-col items-start gap-5 p-4">

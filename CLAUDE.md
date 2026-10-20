@@ -83,7 +83,6 @@ build/                         # 빌드된 데이터베이스 (gitignore 대상)
 public/
 ├── catalogs/                  # bsc5.dat, ConstellationLines.dat
 ├── samples/                   # 샘플 사진들
-├── js/                        # opencv.js (쓰지 않음, 직접 빌드 백업과 함께 남겨 둠)
 └── presentation/              # Reveal.js 발표 슬라이드
 ```
 

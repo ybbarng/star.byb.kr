@@ -7,17 +7,7 @@ import { useThreeStars } from "@/app/hash/sample/hooks/useThreeStars";
 import samples from "@/services/samples";
 import "./style.css";
 
-/**
- * What we're going to render is:
- *
- * 1. A video component so the user can see what's on the camera.
- *
- * 2. A button to generate an image of the video, load OpenCV and
- * process the image.
- *
- * 3. A canvas to allow us to capture the image of the video and
- * show it to the user.
- */
+// 샘플 해시 시각화: 샘플 사진의 별과 quad 해시를 3D로 보여 준다 (발표 데모)
 export default function Page() {
   const imageElement = useRef<HTMLImageElement>(null);
   const canvasElement = useRef<HTMLCanvasElement>(null);
