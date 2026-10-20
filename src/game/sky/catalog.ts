@@ -23,6 +23,7 @@ export const STARS: (DrawStar & { hr: string })[] = (
   mag: parseFloat(s.V),
   kelvin: s.K ? parseFloat(s.K) : 6000,
   name: s.N,
+  id: s.HR,
 }));
 
 export const CONSTELLATIONS: DrawConstellation[] = (

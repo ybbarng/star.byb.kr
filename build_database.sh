@@ -10,3 +10,5 @@ npx tsx src/scripts/hash/createHashFromDatabase.ts
 npx tsx src/scripts/hash/encodeHashedDatabase.ts
 # 별자리 표시를 위해 별자리 데이터베이스 생성
 npx tsx src/scripts/database/buildConstellations.ts
+# 빛의 타임캡슐(게임)용 별 거리(연주 시차)
+npx tsx src/scripts/database/buildParallax.ts

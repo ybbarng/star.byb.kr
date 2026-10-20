@@ -17,6 +17,7 @@ export interface DrawStar {
   mag: number;
   kelvin: number;
   name?: string; // 고유 이름 (시리우스 등)
+  id?: string; // 카탈로그 번호 (HR)
 }
 
 export interface DrawConstellation {
@@ -37,6 +38,8 @@ export interface DrawSkyOptions {
   stars: DrawStar[];
   constellations?: DrawConstellation[]; // 주면 별자리선을 그린다 (풀이 화면)
   compass?: boolean; // 지평선에 동서남북 표시 (쉬움)
+  // 달빛이 어두운 별을 지우게 할지 (기본 true). 별을 눌러 보는 게 목적이면 끈다.
+  moonlightDimsStars?: boolean;
 }
 
 const D = Math.PI / 180;
@@ -65,6 +68,7 @@ const starColor = (kelvin: number) =>
 // 그린 것 하나 ("이건 뭐예요?"·숨은그림찾기 판정에 쓴다)
 export interface SkyItem {
   kind: "star" | "planet" | "moon" | "town";
+  id?: string; // 별이면 카탈로그 번호 (HR)
   x: number;
   y: number;
   radius: number; // 누를 수 있는 반지름 (px)
@@ -133,7 +137,8 @@ export const drawSky = (
   ctx.fillRect(0, 0, W, H);
 
   // 2) 별: 밝은 달과 광해가 어두운 별을 지운다. 지평선 근처는 대기에 묻힌다.
-  const limit = o.magLimit - 1.5 * moonGlow;
+  const limit =
+    o.magLimit - (o.moonlightDimsStars === false ? 0 : 1.5 * moonGlow);
 
   for (const s of o.stars) {
     const alt = altOf(s.vector);
@@ -158,6 +163,7 @@ export const drawSky = (
     drawPoint(ctx, p, limit - mag, starColor(s.kelvin));
     items.push({
       kind: "star",
+      id: s.id,
       x: p[0],
       y: p[1],
       radius: 6 + Math.max(0, limit - mag) * 2,

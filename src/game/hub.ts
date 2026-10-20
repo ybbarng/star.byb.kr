@@ -46,7 +46,7 @@ export const GAMES: GameEntry[] = [
     summary:
       "별을 누르면 그 빛이 언제 출발했는지, 그때 지구에서는 무슨 일이 있었는지 알려 줘요.",
     learn: "광년, 연주 시차, 하늘은 서로 다른 과거의 모음",
-    ready: false,
+    ready: true,
   },
   {
     href: "/plate-solver",
