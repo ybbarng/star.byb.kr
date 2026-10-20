@@ -28,6 +28,8 @@ const byFilename: Record<string, SampleAnswer> = {
     name: "센타우루스·남십자 (남반구)",
   },
   // 여름 은하수(은하 중심부). 처음엔 어안으로 봤지만, 건물을 세운 원근 보정 사진이었다.
+  // 촬영 기록(출처 https://naver.me/5xgcLXzT): 2022-03-27 04:30 서울 송파구 석촌호수, 24mm,
+  // 소니 A7s 근적외선 개조 + IR720 필터, ISO1000 15초 1장. 파일 이름의 날짜(28일)는 촬영일이 아니다.
   // 자동 풀이(밝은 별 삼각형 + 원근 정밀화)가 log-odds 18.5로 확신한 중심이 이 값과 0.5° 이내.
   "20220328-brice-Milky Way over Buzzvil.jpg": {
     centerRaDeg: 277,
