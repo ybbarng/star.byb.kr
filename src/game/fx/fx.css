@@ -1,64 +1,4 @@
-/* 별 놀이터 공용 효과 (src/game/fx). 게임 틀(app/games/layout.tsx)에서 불러온다. */
-
-/* 배경: 천천히 반짝이는 별밭 */
-.fx-starfield {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  background: radial-gradient(
-      ellipse at 20% 0%,
-      rgba(70, 90, 180, 0.25),
-      transparent 60%
-    ),
-    radial-gradient(
-      ellipse at 90% 100%,
-      rgba(120, 60, 160, 0.2),
-      transparent 55%
-    ),
-    #0a0e1c;
-}
-
-.fx-starfield::before,
-.fx-starfield::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-repeat: repeat;
-  animation: fx-twinkle 5s ease-in-out infinite alternate;
-}
-
-.fx-starfield::before {
-  background-image: radial-gradient(1px 1px at 20px 30px, #fff, transparent),
-    radial-gradient(1px 1px at 140px 80px, #cde, transparent),
-    radial-gradient(1.5px 1.5px at 260px 160px, #fff, transparent),
-    radial-gradient(1px 1px at 90px 210px, #ffe, transparent),
-    radial-gradient(1px 1px at 330px 40px, #fff, transparent),
-    radial-gradient(1px 1px at 190px 250px, #fff, transparent),
-    radial-gradient(1px 1px at 50px 150px, #cde, transparent);
-  background-size: 373px 271px;
-}
-
-.fx-starfield::after {
-  background-image: radial-gradient(1px 1px at 60px 120px, #fff, transparent),
-    radial-gradient(2px 2px at 210px 20px, #fdf6d8, transparent),
-    radial-gradient(1px 1px at 300px 190px, #dfe8ff, transparent),
-    radial-gradient(1px 1px at 450px 330px, #fff, transparent),
-    radial-gradient(1.5px 1.5px at 380px 90px, #fff, transparent),
-    radial-gradient(1px 1px at 120px 380px, #ffe, transparent);
-  background-size: 523px 419px;
-  animation-delay: -2.5s;
-  animation-duration: 7s;
-}
-
-@keyframes fx-twinkle {
-  from {
-    opacity: 0.35;
-  }
-  to {
-    opacity: 0.9;
-  }
-}
+/* 별 놀이터 공용 효과 (src/game/fx). 사이트 공용 틀(ui/SiteShell)에서 불러온다. */
 
 /* 점수 팝업: 떠오르며 사라진다 */
 .fx-popup {
@@ -272,6 +212,49 @@
   .fx-starfield::after,
   .fx-shake,
   .fx-glow {
+    animation: none;
+  }
+}
+
+/* 사이트 배경: 실제 서울 하늘 (ui/SkyBackground). 두 별 층이 번갈아 밝아지며 반짝인다 */
+.fx-sky {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(
+      ellipse at 20% 0%,
+      rgba(70, 90, 180, 0.22),
+      transparent 60%
+    ),
+    radial-gradient(ellipse at 90% 100%, rgba(120, 60, 160, 0.18), transparent 55%),
+    #0a0e1c;
+}
+
+.fx-sky-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  animation: fx-sky-twinkle 6s ease-in-out infinite alternate;
+}
+
+.fx-sky-layer-alt {
+  animation-delay: -3s;
+  animation-duration: 7s;
+}
+
+@keyframes fx-sky-twinkle {
+  from {
+    opacity: 0.7;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fx-sky-layer {
     animation: none;
   }
 }
