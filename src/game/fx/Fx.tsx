@@ -385,12 +385,14 @@ export function ChoiceCards<T extends string>({
   options,
   value,
   onChange,
+  label,
 }: {
   options: { value: T; title: string; note: string }[];
   value: T;
   onChange: (v: T) => void;
+  label?: string; // 고르는 줄이 여럿일 때 무엇을 고르는 줄인지
 }) {
-  return (
+  const cards = (
     <div className="grid w-full grid-cols-3 gap-2">
       {options.map((o) => (
         <button
@@ -410,6 +412,17 @@ export function ChoiceCards<T extends string>({
           <div className="text-xs opacity-70">{o.note}</div>
         </button>
       ))}
+    </div>
+  );
+
+  if (!label) {
+    return cards;
+  }
+
+  return (
+    <div className="flex w-full flex-col gap-1">
+      <div className="text-left text-xs font-bold opacity-70">{label}</div>
+      {cards}
     </div>
   );
 }

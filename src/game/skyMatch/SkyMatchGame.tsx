@@ -162,6 +162,16 @@ export default function SkyMatchGame() {
   const [level, setLevel] = useState<Level>("1");
   const [difficulty, setDifficulty] = useState<Difficulty>("easy");
 
+  // 깬 단계가 있으면 그다음 단계를 미리 골라 둔다 (처음이면 1단계)
+  useEffect(() => {
+    const cleared = LEVELS.filter((l) =>
+      DIFFICULTIES.some((d) => readBest(`sky-match-${d.value}-${l.value}`)),
+    ).map((l) => Number(l.value));
+    const next = Math.min(3, Math.max(0, ...cleared) + 1);
+
+    setLevel(String(next) as Level);
+  }, []);
+
   if (!started) {
     return (
       <GameIntro
@@ -175,8 +185,14 @@ export default function SkyMatchGame() {
         ]}
         onStart={() => setStarted(true)}
       >
-        <ChoiceCards options={LEVELS} value={level} onChange={setLevel} />
         <ChoiceCards
+          label="단계 · 무엇을 돌릴까요?"
+          options={LEVELS}
+          value={level}
+          onChange={setLevel}
+        />
+        <ChoiceCards
+          label="난이도 · 얼마나 도와줄까요?"
           options={DIFFICULTIES}
           value={difficulty}
           onChange={setDifficulty}

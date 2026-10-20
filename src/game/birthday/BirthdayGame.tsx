@@ -6,6 +6,7 @@ import BirthdayChart from "@/game/birthday/BirthdayChart";
 import {
   BirthdayCalendar,
   BirthdayField,
+  birthLabel,
 } from "@/game/birthday/BirthdayPicker";
 import { BIRTH_COLOR, SIGN_COLOR } from "@/game/birthday/drawChart";
 import { birthdaySky, ZODIAC, zodiacWidthDeg } from "@/game/birthday/zodiac";
@@ -19,6 +20,26 @@ import { cn } from "@/utils/cn";
 // 첫 화면이 사라지는 시간 (ms)
 const LEAVE_MS = 450;
 
+const SAVED_KEY = "birthday-last";
+
+const readSavedBirth = (): Birth | null => {
+  try {
+    const v = localStorage.getItem(SAVED_KEY);
+
+    return v ? (JSON.parse(v) as Birth) : null;
+  } catch {
+    return null;
+  }
+};
+
+const saveBirth = (b: Birth) => {
+  try {
+    localStorage.setItem(SAVED_KEY, JSON.stringify(b));
+  } catch {
+    // 저장이 막힌 브라우저면 다음에 다시 고르면 된다
+  }
+};
+
 // 결과 화면의 덩어리들이 차례로 떠오르게
 const rise = (order: number) => ({ animationDelay: `${order * 120}ms` });
 
@@ -26,6 +47,27 @@ export default function BirthdayGame() {
   const [phase, setPhase] = useState<"intro" | "leaving" | "result">("intro");
   const [draft, setDraft] = useState<Birth | null>(null);
   const [birth, setBirth] = useState<Birth | null>(null);
+
+  // 지난번에 넣은 생일이 있으면 미리 골라 둔다 (이 브라우저에만 남는다)
+  // 달력은 처음 그릴 때의 달을 보여 주므로, 불러온 뒤 한 번 다시 그린다
+  const [calendarKey, setCalendarKey] = useState("empty");
+
+  useEffect(() => {
+    const saved = readSavedBirth();
+
+    if (saved) {
+      setDraft(saved);
+      setCalendarKey("saved");
+    }
+  }, []);
+
+  const start = (b: Birth) => {
+    sfx.whoosh();
+    saveBirth(b);
+    setBirth(b);
+    setPhase("leaving");
+    setTimeout(() => setPhase("result"), LEAVE_MS);
+  };
 
   if (phase !== "result" || !birth) {
     return (
@@ -42,20 +84,38 @@ export default function BirthdayGame() {
           점성술의 별자리와 비교하고, 왜 다른지 천문도에서 확인해 봐요.
         </p>
         <div className="bg-base-200 rounded-box p-3 shadow-lg">
-          <BirthdayCalendar value={draft} onChange={setDraft} />
+          <BirthdayCalendar
+            key={calendarKey}
+            value={draft}
+            onChange={setDraft}
+          />
         </div>
-        <button
-          className="btn btn-primary btn-lg w-48"
-          disabled={!draft || phase === "leaving"}
-          onClick={() => {
-            sfx.whoosh();
-            setBirth(draft);
-            setPhase("leaving");
-            setTimeout(() => setPhase("result"), LEAVE_MS);
-          }}
-        >
-          찾기
-        </button>
+        <div className="flex flex-col items-center gap-2">
+          <button
+            className="btn btn-primary btn-lg min-w-48"
+            disabled={!draft || phase === "leaving"}
+            onClick={() => draft && start(draft)}
+          >
+            {draft
+              ? `${birthLabel(draft)}로 찾기`
+              : "달력에서 생일을 골라 주세요"}
+          </button>
+          <button
+            className="link link-hover text-sm opacity-70"
+            disabled={phase === "leaving"}
+            onClick={() => {
+              const now = new Date();
+
+              start({
+                year: now.getFullYear(),
+                month: now.getMonth() + 1,
+                day: now.getDate(),
+              });
+            }}
+          >
+            생일 대신 오늘로 해 보기
+          </button>
+        </div>
       </div>
     );
   }
