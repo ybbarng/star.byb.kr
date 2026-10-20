@@ -1,6 +1,7 @@
 import type { DrawConstellation, DrawStar, SkyItem } from "@/game/sky/drawSky";
 import type { Point2D, Point3D } from "@/scripts/hash/types";
 import type { Mat3 } from "@/search/utils/similarity";
+import { koreanStarName } from "@/game/sky/starNames";
 import { projectVecToPhoto } from "@/search/utils/wcs";
 import constellationData from "@build/database/vectors-constellations.json";
 import catalogData from "@build/database/vectors-database.json";
@@ -17,14 +18,16 @@ interface VectorStar {
   z: number;
 }
 
-export const STARS: (DrawStar & { hr: string })[] = (
+// name은 게임에 보여 줄 한글 이름 (starNames.ts), latinName은 카탈로그의 원래 이름
+export const STARS: (DrawStar & { hr: string; latinName?: string })[] = (
   catalogData as VectorStar[]
 ).map((s) => ({
   hr: s.HR,
   vector: [s.x, s.y, s.z],
   mag: parseFloat(s.V),
   kelvin: s.K ? parseFloat(s.K) : 6000,
-  name: s.N,
+  name: s.N ? koreanStarName(s.N) : undefined,
+  latinName: s.N,
   id: s.HR,
 }));
 

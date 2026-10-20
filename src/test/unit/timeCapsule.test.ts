@@ -16,10 +16,10 @@ const hrOf = (name: string) => STARS.find((s) => s.name === name)!.hr;
 
 describe("별까지 거리", () => {
   it.each([
-    ["Sirius", 8.6],
-    ["Vega", 25],
-    ["Altair", 16.7],
-    ["Arcturus", 36.7],
+    ["시리우스", 8.6],
+    ["직녀성", 25],
+    ["견우성", 16.7],
+    ["아크투루스", 36.7],
   ])("%s: 약 %f광년 (15% 안)", (name, ly) => {
     const d = distanceOf(hrOf(name as string))!;
 
@@ -47,11 +47,11 @@ describe("빛이 출발한 해", () => {
 
 describe("내 나이 별", () => {
   it("25살이면 직녀성(약 25광년)이 나온다", () => {
-    expect(ageStars(25).map((s) => s.name)).toContain("Vega");
+    expect(ageStars(25).map((s) => s.name)).toContain("직녀성");
   });
 
   it("시리우스(적경 6.75시)는 1~2월 저녁에 잘 보인다", () => {
-    const sirius = STARS.find((s) => s.name === "Sirius")!;
+    const sirius = STARS.find((s) => s.name === "시리우스")!;
 
     expect([1, 2]).toContain(bestMonthOf(sirius.vector));
   });
@@ -59,7 +59,7 @@ describe("내 나이 별", () => {
 
 describe("별빛 도감 업적", () => {
   it("2026년에 시리우스(8.6광년)를 처음 누르면 이웃 별만 딴다", () => {
-    const d = distanceOf(hrOf("Sirius"))!;
+    const d = distanceOf(hrOf("시리우스"))!;
     const trip = {
       lightYears: d.lightYears,
       year: departure(d.lightYears, 2026).year,
