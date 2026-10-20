@@ -9,6 +9,10 @@ export const MIN_ALIGNED_POINTS = 5;
 // 줄 위 점들의 간격이 규칙적인가: 모든 간격이 기준 간격의 정수배(±15%)이고, 기준 간격 그대로인
 // 간격이 둘 이상이어야 한다. 비행기 불빛은 같은 간격으로 깜빡이고, 창문은 꺼진 창문 자리만큼
 // 정수배로 벌어진다. 별이 빽빽한 사진에서 우연히 한 줄에 선 별들은 간격이 제멋대로라 여기서 빠진다.
+// 배수는 MAX_GAP_MULTIPLE까지만 인정한다: 허용 오차가 배수에 비례해 커져서, 큰 배수면 아무 간격이나
+// 정수배가 된다 (사이판 사진에서 바다 불빛 기둥 + 잡음 + 진짜 별 하나가 12px의 9~12배 간격으로 묶였다).
+const MAX_GAP_MULTIPLE = 4;
+
 const isRegularlySpaced = (positions: number[]): boolean => {
   const gaps = positions
     .slice(1)
@@ -26,7 +30,10 @@ const isRegularlySpaced = (positions: number[]): boolean => {
     const ratio = g / base;
     const multiple = Math.round(ratio);
 
-    if (Math.abs(ratio - multiple) > 0.15 * multiple) {
+    if (
+      multiple > MAX_GAP_MULTIPLE ||
+      Math.abs(ratio - multiple) > 0.15 * multiple
+    ) {
       return false;
     }
 

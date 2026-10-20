@@ -38,3 +38,15 @@ describe("findAlignedStars", () => {
     expect(findAlignedStars(stars, W, H).size).toBeLessThan(10);
   });
 });
+
+describe("findAlignedStars — 큰 배수 간격", () => {
+  it("촘촘한 몇 점 뒤에 기준의 9~12배 간격으로 이어진 점들은 줄로 보지 않는다", () => {
+    // 사이판 사진: 바다 불빛 기둥(12px 간격) 위로 잡음과 진짜 별이 띄엄띄엄
+    const row = [-25, -13, 0, 146, 258, 385].map((t) => ({
+      x: 600,
+      y: 600 - t,
+    }));
+
+    expect(findAlignedStars(row, W, H).size).toBe(0);
+  });
+});
