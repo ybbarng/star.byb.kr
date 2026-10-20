@@ -117,27 +117,42 @@ describe("접선평면(gnomonic) 투영 왕복", () => {
 
 // 빌드 산출물(gitignore)이 있을 때만: 저장된 x,y,z가 RA/Dec 재계산과 일치하는지 확인.
 // 합성 데이터 생성기가 쓰는 좌표 규약이 시스템 DB와 동일함을 보증한다.
+// 앱이 싣는 vectors-database.json은 RA/Dec 문자열을 빼고 좌표를 소수 8자리로 줄였으므로,
+// RA/Dec는 원본(reduced-database.json)에서 HR로 찾아 비교한다.
 const dbPath = resolve(process.cwd(), "build/database/vectors-database.json");
-const dbExists = existsSync(dbPath);
+const reducedPath = resolve(
+  process.cwd(),
+  "build/database/reduced-database.json",
+);
+const dbExists = existsSync(dbPath) && existsSync(reducedPath);
 
 describe.skipIf(!dbExists)("DB 산출물과 좌표 규약 일치", () => {
   it("저장된 x,y,z가 RA/Dec로부터 재계산한 값과 일치한다", () => {
     const stars = JSON.parse(readFileSync(dbPath, "utf-8")) as {
-      Dec: string;
-      RA: string;
+      HR: string;
       x: number;
       y: number;
       z: number;
     }[];
+    const raDec = new Map(
+      (
+        JSON.parse(readFileSync(reducedPath, "utf-8")) as {
+          HR: string;
+          Dec: string;
+          RA: string;
+        }[]
+      ).map((s) => [s.HR, s]),
+    );
 
     expect(stars.length).toBeGreaterThan(0);
 
     for (const star of stars.slice(0, 30)) {
-      const { x, y, z } = convertTo3DCoordinates(star.Dec, star.RA);
+      const { Dec, RA } = raDec.get(star.HR)!;
+      const { x, y, z } = convertTo3DCoordinates(Dec, RA);
 
-      expect(x).toBeCloseTo(star.x, 9);
-      expect(y).toBeCloseTo(star.y, 9);
-      expect(z).toBeCloseTo(star.z, 9);
+      expect(x).toBeCloseTo(star.x, 7);
+      expect(y).toBeCloseTo(star.y, 7);
+      expect(z).toBeCloseTo(star.z, 7);
     }
   });
 });

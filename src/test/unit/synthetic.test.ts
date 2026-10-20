@@ -56,7 +56,10 @@ describe.skipIf(!hasCatalog)("합성 이미지 생성기", () => {
 
       expect(cv).toBeDefined();
 
-      const dot = v[0] * cv![0] + v[1] * cv![1] + v[2] * cv![2];
+      // 카탈로그 좌표는 소수 8자리로 줄여 길이가 1에서 1e-8쯤 벗어난다. acos는 1 근처에서 민감해
+      // 그 차이가 각으로 부풀므로, 방향끼리 비교하도록 정규화한다.
+      const n = Math.hypot(cv![0], cv![1], cv![2]);
+      const dot = (v[0] * cv![0] + v[1] * cv![1] + v[2] * cv![2]) / n;
 
       // 부동소수점 누적 한도. 1e-4도 ≈ 0.36 arcsec로 사실상 완벽한 일치다.
       expect((Math.acos(Math.min(1, dot)) * 180) / Math.PI).toBeLessThan(1e-4);
