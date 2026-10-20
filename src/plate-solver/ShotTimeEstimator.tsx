@@ -19,6 +19,7 @@ export type PickTarget = "horizon" | "moon" | null;
 
 export interface EstimateMarks {
   horizon: Point2D[]; // 최대 2개
+  horizonAuto?: boolean; // 자동으로 찾은 지평선이면 true (사람이 다시 찍으면 false)
   moon: Point2D | null;
 }
 
@@ -155,6 +156,12 @@ export default function ShotTimeEstimator({
           />
         </label>
       </div>
+      {marks.horizonAuto && marks.horizon.length === 2 && !picking && (
+        <div className="text-xs opacity-70">
+          초록 선은 자동으로 찾은 지평선입니다. 틀리면 &quot;지평선 두 점
+          찍기&quot;로 다시 찍으세요 (먼 바다·산 끝이 가장 좋습니다).
+        </div>
+      )}
       {horizonSolve.message && (
         <div className="text-xs">{horizonSolve.message}</div>
       )}

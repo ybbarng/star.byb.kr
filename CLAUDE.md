@@ -119,6 +119,8 @@ public/
 6. **시각·장소·지평선 풀이** (`horizonSolve.ts`, 별이 10개 안팎이라 blind가 확신 못 하는 사진): 촬영 시각(범위)·장소와
    지평선 두 점으로 미지수를 방위·시야각으로 줄여 투표 → 모델 안에서만 다듬기 → 칸 수로 깎은 log-odds ≥ 0이면 확신.
    기준은 합성 장면 130개(`synthetic/horizonScene.ts`)로 정했다 (사이판 사진이 이것으로 풀린다)
+   - 지평선은 자동으로 제안한다 (`utils/horizonDetect.ts`: 열마다 밝기 계단 → RANSAC 직선). 틀리면 사람이 다시 찍는다.
+     blind가 확신 못 하고 촬영 시각·장소가 있으면 시각·장소 풀이가 자동으로 돈다 (사이판 샘플은 클릭 없이 풀린다)
 
 점검 결과와 개선 계획: `docs/improvement-plan.md`, 시도·발견 기록: `docs/experiments-journey.md`
 

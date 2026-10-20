@@ -8,6 +8,7 @@ import type { HorizonSolveResult } from "@/search/horizonSolve";
 import type { SolvePhase } from "@/search/solvePhoto";
 import type { SolveCandidateResult } from "@/search/solvers";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { autoHorizon } from "@/plate-solver/autoHorizon";
 import { getSampleAnswer, matchesAnswer } from "@/plate-solver/sampleAnswers";
 import { getSampleShot, shotDate, shotFromExif } from "@/plate-solver/shotTime";
 import ShotTimeControl from "@/plate-solver/ShotTimeControl";
@@ -82,9 +83,103 @@ export default function PlateSolvingStep() {
         setPicking(null);
       }
 
-      return { ...m, horizon };
+      return { ...m, horizon, horizonAuto: false };
     });
   };
+
+  // 촬영 시각·장소와 지평선 두 점으로 푼다 (별이 적어 자동으로 못 푸는 사진)
+  const runHorizonSolve = useCallback(() => {
+    const observer = shot?.observer;
+
+    if (!image || !observer || marks.horizon.length < 2) {
+      return;
+    }
+
+    const offsetHours = parseInt(shot.offset, 10);
+    setHorizonRun({ running: true, result: null, message: null });
+    horizonSolveInWorker(
+      [...photoStars, ...hiddenStars].map((s) => ({
+        x: s.x,
+        y: s.y,
+        brightness: s.brightness,
+        ringContrast: s.ringContrast,
+      })),
+      image.width,
+      image.height,
+      [marks.horizon[0], marks.horizon[1]],
+      shotDate(shot),
+      observer,
+    )
+      .then((r) => {
+        if (!r) {
+          setHorizonRun({
+            running: false,
+            result: null,
+            message: "지평선 위에 별이 너무 적어 풀 수 없습니다.",
+          });
+
+          return;
+        }
+
+        const accepted = r.logOdds >= HORIZON_ACCEPT_LOG_ODDS;
+        const local = new Date(r.date.getTime() + offsetHours * 3600000)
+          .toISOString()
+          .slice(0, 16)
+          .replace("T", " ");
+        setHorizonRun({
+          running: false,
+          result: accepted ? r : null,
+          message: accepted
+            ? `시각·장소로 찾았습니다 · 맞는 별 ${r.inlierCount}/${r.photoCount}개 · 신뢰도 ${r.logOdds.toFixed(1)} · 하늘이 맞는 촬영 시각 ${local}`
+            : `확신하지 못했습니다 (맞는 별 ${r.inlierCount}/${r.photoCount}개, 신뢰도 ${r.logOdds.toFixed(1)}). 시각·장소·지평선을 확인해 보세요.`,
+        });
+      })
+      .catch((e: Error) =>
+        setHorizonRun({ running: false, result: null, message: e.message }),
+      );
+  }, [image, shot, marks.horizon, photoStars, hiddenStars]);
+
+  // 지평선을 자동으로 찾아 제안한다 (사람이 찍은 게 없을 때). 틀리면 사람이 다시 찍는다.
+  useEffect(() => {
+    if (!image || photoStars.length === 0) {
+      return;
+    }
+
+    const found = autoHorizon(
+      image,
+      photoStars.slice(0, 60).map((s): [number, number] => [s.x, s.y]),
+    );
+
+    if (found) {
+      setMarks((m) =>
+        m.horizon.length > 0 ? m : { ...m, horizon: found, horizonAuto: true },
+      );
+    }
+  }, [image, photoStars]);
+
+  // 자동 풀이가 확신하지 못했고 촬영 시각·장소와 지평선이 있으면, 시각·장소 풀이를 한 번 자동으로 돌린다
+  const autoHorizonTried = useRef(false);
+
+  useEffect(() => {
+    autoHorizonTried.current = false;
+  }, [image]);
+
+  useEffect(() => {
+    if (
+      autoHorizonTried.current ||
+      solving ||
+      !outcome ||
+      outcome.found ||
+      outcome.fisheyeCamera ||
+      !shot?.observer ||
+      marks.horizon.length < 2
+    ) {
+      return;
+    }
+
+    autoHorizonTried.current = true;
+    runHorizonSolve();
+  }, [solving, outcome, shot, marks.horizon, runHorizonSolve]);
 
   // 촬영 시각: 기록을 아는 샘플이면 그 기록, 아니면 사진의 EXIF. 둘 다 없으면 사람이 넣는다.
   useEffect(() => {
@@ -388,58 +483,6 @@ export default function PlateSolvingStep() {
     !fisheyeCamera && !solving
       ? (horizonTP ?? candidates[selected]?.transform)
       : undefined;
-
-  // 촬영 시각·장소와 지평선 두 점으로 푼다 (별이 적어 자동으로 못 푸는 사진)
-  const runHorizonSolve = () => {
-    const observer = shot?.observer;
-
-    if (!observer || marks.horizon.length < 2) {
-      return;
-    }
-
-    const offsetHours = parseInt(shot.offset, 10);
-    setHorizonRun({ running: true, result: null, message: null });
-    horizonSolveInWorker(
-      [...photoStars, ...hiddenStars].map((s) => ({
-        x: s.x,
-        y: s.y,
-        brightness: s.brightness,
-        ringContrast: s.ringContrast,
-      })),
-      image.width,
-      image.height,
-      [marks.horizon[0], marks.horizon[1]],
-      shotDate(shot),
-      observer,
-    )
-      .then((r) => {
-        if (!r) {
-          setHorizonRun({
-            running: false,
-            result: null,
-            message: "지평선 위에 별이 너무 적어 풀 수 없습니다.",
-          });
-
-          return;
-        }
-
-        const accepted = r.logOdds >= HORIZON_ACCEPT_LOG_ODDS;
-        const local = new Date(r.date.getTime() + offsetHours * 3600000)
-          .toISOString()
-          .slice(0, 16)
-          .replace("T", " ");
-        setHorizonRun({
-          running: false,
-          result: accepted ? r : null,
-          message: accepted
-            ? `시각·장소로 찾았습니다 · 맞는 별 ${r.inlierCount}/${r.photoCount}개 · 신뢰도 ${r.logOdds.toFixed(1)} · 하늘이 맞는 촬영 시각 ${local}`
-            : `확신하지 못했습니다 (맞는 별 ${r.inlierCount}/${r.photoCount}개, 신뢰도 ${r.logOdds.toFixed(1)}). 시각·장소·지평선을 확인해 보세요.`,
-        });
-      })
-      .catch((e: Error) =>
-        setHorizonRun({ running: false, result: null, message: e.message }),
-      );
-  };
 
   return (
     <div className="flex size-full flex-col justify-stretch gap-4">
