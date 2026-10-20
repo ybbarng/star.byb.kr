@@ -1,4 +1,3 @@
-import * as math from "mathjs";
 import {
   NamedQuadrilateral2D,
   Point2D,
@@ -61,47 +60,25 @@ const findPointsOfMaxDistance = (points: Point2D[]): [number, number] => {
 };
 
 /**
- * p1을 원점으로, p2를 (1, 1)로 하는 좌표 변환 함수 생성
+ * p1을 원점으로, p2를 (1, 1)로 하는 좌표 변환 함수 생성 (평행 이동 → 회전 → 확대).
+ * 순수 JS (예전에는 mathjs 3×3 행렬 곱이었다 — 브라우저 Worker에 mathjs를 싣지 않으려고 바꿨다).
  * @param p1 원점이 될 점
  * @param p2 (1, 1)이 될 점
  */
 const buildTransform = (p1: Point2D, p2: Point2D) => {
-  // 평행 이동 행렬 T: p1을 원점으로 이동
-  const T = math.matrix([
-    [1, 0, -p1[0]],
-    [0, 1, -p1[1]],
-    [0, 0, 1],
-  ]);
-
-  // 이후의 연산을 위해서 vector(p1, p2)를 준비
-  // 이 벡터 값은 T * p2 와 같다.
   const v12 = [p2[0] - p1[0], p2[1] - p1[1]];
-
-  // 회전 행렬 R: v12를 회전시켜서 y=x 선분에 위치
+  // v12를 y=x 방향으로 돌리는 각
   const angle = -Math.atan2(v12[1] - v12[0], v12[0] + v12[1]);
-  const R = math.matrix([
-    [Math.cos(angle), -Math.sin(angle), 0],
-    [Math.sin(angle), Math.cos(angle), 0],
-    [0, 0, 1],
-  ]);
-
-  // 스케일 행렬 S: 회전한 v12를 (1, 1)로 위치시키기 위해 스케일
-  const hv12 = [v12[0], v12[1], 1];
-  const scale = 1 / math.multiply(R, hv12).get([0]);
-  const S = math.matrix([
-    [scale, 0, 0],
-    [0, scale, 0],
-    [0, 0, 1],
-  ]);
-
-  // 최종 변환 행렬 M 준비 완료
-  const M = math.multiply(S, R, T);
+  const cos = Math.cos(angle);
+  const sin = Math.sin(angle);
+  // 돌린 v12의 x가 1이 되도록 확대
+  const scale = 1 / (cos * v12[0] - sin * v12[1]);
 
   return (point: Point2D): Point2D => {
-    const homogeneousPoint = [point[0], point[1], 1];
-    const transformedPoint = math.multiply(M, homogeneousPoint);
+    const x = point[0] - p1[0];
+    const y = point[1] - p1[1];
 
-    return [transformedPoint.get([0]), transformedPoint.get([1])];
+    return [scale * (cos * x - sin * y), scale * (sin * x + cos * y)];
   };
 };
 

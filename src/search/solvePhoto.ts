@@ -9,8 +9,10 @@ import type {
 } from "@/search/solvers";
 import { blindSolveFisheye } from "@/search/fisheyeSolve";
 import { refineSolution } from "@/search/solveCore";
-import { improvedSolver, triangleSolver } from "@/search/solvers";
+// 비교용 전체 목록(solvers/index)은 mathjs를 쓰는 원본(baseline)까지 싣기 때문에, 앱이 쓰는 둘만 직접 불러온다
 import { dedupeBySky } from "@/search/solvers/candidates";
+import { improvedSolver } from "@/search/solvers/improved";
+import { triangleSolver } from "@/search/solvers/triangle";
 import { rankForSolving } from "@/search/utils/selectStars";
 
 // 사진 한 장의 검출 별 목록을 받아 앱과 똑같은 흐름으로 푼다.
