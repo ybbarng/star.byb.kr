@@ -13,8 +13,9 @@ export interface DetectImageResult {
   height: number;
 }
 
+// path 대신 파일 내용(Buffer)을 줘도 된다 (WebP 등 다른 형식으로 바꾼 사진을 디스크에 쓰지 않고 시험할 때)
 export const detectStarsFromFile = async (
-  path: string,
+  path: string | Buffer,
 ): Promise<DetectImageResult> => {
   const { data, info } = await sharp(path)
     .ensureAlpha()
@@ -31,7 +32,7 @@ export const detectStarsFromFile = async (
 // 앱의 검출 단계(DetectStarsStep)가 사람 손을 거치지 않고 풀이에 넘기는 별 목록을 만든다.
 // 가까운 중복을 합친 검출 전체(별다움 값 포함). 풀이가 우선순위대로 필요한 만큼 고른다.
 export const detectLikeApp = async (
-  path: string,
+  path: string | Buffer,
 ): Promise<{ stars: InputStar[]; width: number; height: number }> => {
   const { stars, width, height } = await detectStarsFromFile(path);
   const merged = mergeCloseStars(
