@@ -41,7 +41,7 @@ import {
   SOLVED_RATIO,
   targetStars,
 } from "@/game/skyMatch/match";
-import { computerSolve, hintFor } from "@/game/skyMatch/solveSteps";
+import { computerSolve, dragDials, hintFor } from "@/game/skyMatch/solveSteps";
 import { horizonCameraTP } from "@/search/horizonSolve";
 import { estimateShotTimes } from "@/search/shotTimeEstimate";
 import {
@@ -50,7 +50,7 @@ import {
   julianDay,
   localSiderealDeg,
 } from "@/search/utils/ephemeris";
-import { projectVecToPhoto } from "@/search/utils/wcs";
+import { photoToSky, projectVecToPhoto } from "@/search/utils/wcs";
 import { cn } from "@/utils/cn";
 
 // 하늘 맞추기 퍼즐 (docs/game-plans.md 1): 정답 사진의 밝은 별 자리(고리)에 내 하늘을 겹친다.
@@ -170,6 +170,7 @@ export default function SkyMatchGame() {
         howTo={[
           "고리는 정답 사진에서 별이 있던 자리예요. 내 하늘의 별을 고리 안에 넣으세요.",
           "위도는 하늘을 기울이고, 날짜·시각은 하늘을 돌려요. 오른쪽 하늘 전체 뷰에서 그 모습이 보여요.",
+          "하늘을 직접 끌어도 돼요. 별을 잡고 끌면 그 별이 따라오도록 다이얼이 저절로 돌아가요.",
           `고리 ${Math.round(SOLVED_RATIO * 100)}%가 초록이 되면 성공! 막히면 힌트가 조금씩 나와요.`,
         ]}
         onStart={() => setStarted(true)}
@@ -225,6 +226,14 @@ function SkyMatchPlay({
   const progress = useRef({ best: 0, at: Date.now() });
   const cueTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const trails = useRef<{ TP: Mat3; at: number }[]>([]);
+  // 하늘을 끌 때 잡은 별 (그 별이 커서를 따라오게 다이얼을 고친다)
+  const grab = useRef<{
+    vector: Point3D;
+    x: number;
+    y: number;
+    moved: boolean;
+  } | null>(null);
+  const dialsRef = useRef<Dials>({ latDeg: 0, dayOfYear: 0, minutes: 0 });
   const fx = useFx();
 
   const scene = useMemo(
@@ -232,6 +241,7 @@ function SkyMatchPlay({
     [seed, difficulty],
   );
   const dials = dialState ?? startDials(scene, level);
+  dialsRef.current = dials;
   const locked = LOCKED[level];
   const targets = useMemo(() => targetStars(scene, STARS), [scene]);
   // 하늘 단서에 쓸, 정답 사진에서 가장 밝은 이름 있는 별 (지평선에 붙은 별보다 사진 위쪽 별)
@@ -566,14 +576,70 @@ function SkyMatchPlay({
             ref={canvas}
             width={scene.width}
             height={scene.height}
-            className="rounded-box block w-full cursor-help bg-black"
-            onClick={(e) => {
+            className={cn(
+              "rounded-box block w-full touch-none bg-black",
+              solved ? "cursor-help" : "cursor-grab active:cursor-grabbing",
+            )}
+            onPointerDown={(e) => {
               const p = canvasPoint(e);
-              setInfo({
-                item: pickItem(items.current, p.x, p.y),
-                fx: p.fx,
-                fy: p.fy,
-              });
+              grab.current = {
+                vector: photoToSky(player.TP, [p.x, p.y]),
+                x: e.clientX,
+                y: e.clientY,
+                moved: false,
+              };
+              e.currentTarget.setPointerCapture(e.pointerId);
+            }}
+            onPointerMove={(e) => {
+              const g = grab.current;
+
+              if (!g || solved || robot) {
+                return;
+              }
+
+              if (
+                !g.moved &&
+                Math.hypot(e.clientX - g.x, e.clientY - g.y) < 5
+              ) {
+                return;
+              }
+
+              if (!g.moved) {
+                g.moved = true;
+                countMove();
+              }
+
+              const p = canvasPoint(e);
+              const next = dragDials(
+                scene,
+                dialsRef.current,
+                g.vector,
+                [p.x, p.y],
+                locked,
+                [LAT_MIN, LAT_MAX],
+              );
+              const which: Emphasis =
+                Math.abs(next.latDeg - dialsRef.current.latDeg) > 0.05
+                  ? "lat"
+                  : "time";
+              setDial({ latDeg: next.latDeg, minutes: next.minutes }, which);
+            }}
+            onPointerUp={(e) => {
+              const g = grab.current;
+              grab.current = null;
+
+              // 끌지 않고 눌렀으면 "이건 뭐예요?"
+              if (g && !g.moved) {
+                const p = canvasPoint(e);
+                setInfo({
+                  item: pickItem(items.current, p.x, p.y),
+                  fx: p.fx,
+                  fy: p.fy,
+                });
+              }
+            }}
+            onPointerCancel={() => {
+              grab.current = null;
             }}
           />
           {solved && !robot && (
@@ -668,7 +734,7 @@ function SkyMatchPlay({
       {!solved ? (
         <div className="bg-base-200/80 rounded-box grid grid-cols-1 gap-4 p-4 backdrop-blur md:grid-cols-3">
           <Dial
-            label={`위도: ${latLabel(dials.latDeg)}`}
+            label={`위도: ${latLabel(Math.round(dials.latDeg))}`}
             note="돌리면 하늘이 기울어요 (극의 높이가 바뀌어요)"
             min={LAT_MIN}
             max={LAT_MAX}
@@ -1309,8 +1375,8 @@ function Solved({
           )}
         </div>
         <div className="text-sm">
-          내 답 {latLabel(dials.latDeg)}, {dayLabel(dials.dayOfYear)}{" "}
-          {timeLabel(dials.minutes)}
+          내 답 {latLabel(Math.round(dials.latDeg))},{" "}
+          {dayLabel(dials.dayOfYear)} {timeLabel(dials.minutes)}
         </div>
         <div className="text-sm opacity-80">
           실제로 찍은 곳·때: {latLabel(Math.round(answer.latDeg))},{" "}

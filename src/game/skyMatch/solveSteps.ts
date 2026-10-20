@@ -1,6 +1,7 @@
 import type { SkyScene } from "@/game/sky/scene";
 import type { Point2D, Point3D } from "@/scripts/hash/types";
 import { dialDate } from "@/game/skyMatch/match";
+import { horizonCameraTP } from "@/search/horizonSolve";
 import {
   nextTimeWithLst,
   skyClockOf,
@@ -267,5 +268,90 @@ export const computerSolve = (
     latDeg: clock.latDeg,
     lstDeg: clock.lstDeg,
     minutes: wrapMinutes(Math.round((when.getTime() - from.getTime()) / 60000)),
+  };
+};
+
+// ---------- 하늘을 손으로 끌기 ----------
+
+// 잡은 별(v)이 커서(target)를 따라오도록 다이얼(위도·시각)을 고친다. 잠긴 다이얼은 그대로.
+// 숫자 미분으로 가우스-뉴턴 몇 번: 극을 중심으로 돌리듯 끌면 시각이, 위아래로 끌면 위도가 바뀐다.
+const DRAG_LAT_STEP = 0.5;
+const DRAG_MIN_STEP = 4;
+const DRAG_DAMPING = 1e-3;
+
+export const dragDials = (
+  scene: SkyScene,
+  dials: Dials,
+  v: Point3D,
+  target: Point2D,
+  locked: HintDial | null,
+  latRange: [number, number],
+): Dials => {
+  const proj = (lat: number, minutes: number) =>
+    projectVecToPhoto(
+      horizonCameraTP(
+        dialDate(scene, dials.dayOfYear, minutes),
+        { latDeg: lat, lonDeg: scene.observer.lonDeg },
+        scene.view,
+        scene.width,
+        scene.height,
+      ),
+      v,
+    );
+  let lat = dials.latDeg;
+  let min = dials.minutes;
+
+  for (let it = 0; it < 4; it++) {
+    const p = proj(lat, min);
+
+    if (!p) {
+      break;
+    }
+
+    const r = [p[0] - target[0], p[1] - target[1]];
+    const qLat = locked === "lat" ? null : proj(lat + DRAG_LAT_STEP, min);
+    const qMin = locked === "time" ? null : proj(lat, min + DRAG_MIN_STEP);
+    const dLat = qLat
+      ? [(qLat[0] - p[0]) / DRAG_LAT_STEP, (qLat[1] - p[1]) / DRAG_LAT_STEP]
+      : null;
+    const dMin = qMin
+      ? [(qMin[0] - p[0]) / DRAG_MIN_STEP, (qMin[1] - p[1]) / DRAG_MIN_STEP]
+      : null;
+    const dot = (a: number[], b: number[]) => a[0] * b[0] + a[1] * b[1];
+    let stepLat = 0;
+    let stepMin = 0;
+
+    if (dLat && dMin) {
+      // (JᵀJ + λ) δ = -Jᵀ r
+      const a = dot(dLat, dLat) + DRAG_DAMPING;
+      const b = dot(dLat, dMin);
+      const c = dot(dMin, dMin) + DRAG_DAMPING;
+      const det = a * c - b * b;
+
+      if (Math.abs(det) < 1e-12) {
+        break;
+      }
+
+      const g1 = -dot(dLat, r);
+      const g2 = -dot(dMin, r);
+      stepLat = (c * g1 - b * g2) / det;
+      stepMin = (a * g2 - b * g1) / det;
+    } else if (dLat) {
+      stepLat = -dot(dLat, r) / (dot(dLat, dLat) + DRAG_DAMPING);
+    } else if (dMin) {
+      stepMin = -dot(dMin, r) / (dot(dMin, dMin) + DRAG_DAMPING);
+    }
+
+    lat = Math.max(
+      latRange[0],
+      Math.min(latRange[1], lat + Math.max(-10, Math.min(10, stepLat))),
+    );
+    min += Math.max(-120, Math.min(120, stepMin));
+  }
+
+  return {
+    ...dials,
+    latDeg: locked === "lat" ? dials.latDeg : Math.round(lat * 10) / 10,
+    minutes: locked === "time" ? dials.minutes : Math.round(wrapMinutes(min)),
   };
 };

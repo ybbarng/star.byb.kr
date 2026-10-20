@@ -9,12 +9,14 @@ import {
 } from "@/game/skyMatch/match";
 import {
   computerSolve,
+  dragDials,
   hintFor,
   skyClues,
   skyError,
   storyClues,
 } from "@/game/skyMatch/solveSteps";
 import { horizonCameraTP } from "@/search/horizonSolve";
+import { projectVecToPhoto } from "@/search/utils/wcs";
 import { contextStars, loadCatalog } from "@/test/synthetic/loadCatalog";
 
 // 하늘 맞추기 도우미: 방향 힌트가 정답 쪽을 가리키는지, 컴퓨터 풀이(지평선 → 천정 → 위도·시각)가 정답 하늘을 만드는지.
@@ -119,5 +121,38 @@ describe("이야기·하늘 단서", () => {
     expect(storyClues(scene, "lat")).toHaveLength(1);
     expect(storyClues(scene, "time")).toHaveLength(1);
     expect(skyClues(scene, "time")[0]).toContain("40°");
+  });
+});
+
+describe("하늘을 손으로 끌기", () => {
+  const scene = makeSkyScene(11, "easy");
+  const a = answerDials(scene);
+  const targets = targetStars(scene, stars);
+  const tpOf = (d: { latDeg: number; dayOfYear: number; minutes: number }) =>
+    horizonCameraTP(
+      dialDate(scene, d.dayOfYear, d.minutes),
+      { latDeg: d.latDeg, lonDeg: scene.observer.lonDeg },
+      scene.view,
+      scene.width,
+      scene.height,
+    );
+
+  it("정답에서 40분 늦은 하늘의 별을 정답 자리로 끌면 시각이 정답으로 돌아온다 (위도 잠김)", () => {
+    const start = { ...a, minutes: a.minutes + 40 };
+    const t = targets[0];
+    const after = dragDials(scene, start, t.vector, t.at, "lat", [-60, 70]);
+    const gap = Math.abs(((after.minutes - a.minutes + 720) % 1440) - 720);
+
+    expect(gap).toBeLessThan(3);
+    expect(after.latDeg).toBe(start.latDeg);
+  });
+
+  it("위도와 시각이 모두 어긋나도 별 하나를 끌어다 놓으면 그 별은 커서 자리에 온다", () => {
+    const start = { ...a, latDeg: a.latDeg + 8, minutes: a.minutes - 30 };
+    const t = targets[0];
+    const after = dragDials(scene, start, t.vector, t.at, null, [-60, 70]);
+    const p = projectVecToPhoto(tpOf(after), t.vector)!;
+
+    expect(Math.hypot(p[0] - t.at[0], p[1] - t.at[1])).toBeLessThan(15);
   });
 });
