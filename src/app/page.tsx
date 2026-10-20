@@ -27,9 +27,6 @@ export default function Page() {
               별 놀이터 가기
             </Link>
           </div>
-          <p className="text-xs opacity-60">
-            🔒 사진은 서버로 보내지 않아요. 모든 계산을 내 기기에서 해요.
-          </p>
         </section>
 
         <figure
