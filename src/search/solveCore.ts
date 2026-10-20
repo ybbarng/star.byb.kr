@@ -196,6 +196,48 @@ const photoGridOf = (
   return grid;
 };
 
+// 원근 변환이 받아들일 만큼 완만한가. 사진 중심 광축 기준의 접선평면 → 사진 변환에서,
+// 분모 w(원근 항)가 사진 네 모서리에서 모두 양수이고(변환의 지평선이 사진 밖) 선형 배율 비가
+// MAX_PERSPECTIVE_SCALE_RATIO 이하여야 한다. 정상 해는 1.0~1.15, 원근 보정된 은하수가 1.58이었다.
+// 지평선이 사진을 가로지르는 퇴화 해는 카탈로그 별을 한 줄로 몰아 지면 불빛 줄과 우연히
+// 겹치게 만들어 log-odds를 부풀린다(오로라-02에서 시야 0.57°짜리 오답이 9.8로 확신된 적이 있다).
+const MAX_PERSPECTIVE_SCALE_RATIO = 2.5;
+
+export const isMildPerspective = (TP: Mat3, W: number, H: number): boolean => {
+  const P = projectionMatrix(recoverCenter(TP, W, H));
+  // P는 직교행렬이라 역행렬이 전치다
+  const Pt: Mat3 = [
+    [P[0][0], P[1][0], P[2][0]],
+    [P[0][1], P[1][1], P[2][1]],
+    [P[0][2], P[1][2], P[2][2]],
+  ];
+  const T = mat3Mul(TP, Pt);
+  const inv = mat3Inv(T);
+  let wMin = Infinity;
+  let wMax = -Infinity;
+
+  for (const [x, y] of [
+    [0, 0],
+    [W, 0],
+    [0, H],
+    [W, H],
+  ]) {
+    const q = mat3MulVec(inv, [x, y, 1]);
+
+    if (Math.abs(q[2]) < 1e-12) {
+      return false;
+    }
+
+    // 모서리의 접선평면 좌표에서 T의 분모 (T[2][2]로 나눠 중심에서 1이 되게)
+    const w =
+      (T[2][0] * (q[0] / q[2]) + T[2][1] * (q[1] / q[2]) + T[2][2]) / T[2][2];
+    wMin = Math.min(wMin, w);
+    wMax = Math.max(wMax, w);
+  }
+
+  return wMin > 0 && (wMax / wMin) ** 1.5 <= MAX_PERSPECTIVE_SCALE_RATIO;
+};
+
 // 원근 정밀화를 시도할 최소 대응 수. 대응이 적으면 8자유도 변환이 노이즈에 끌려간다.
 const PERSPECTIVE_MIN_MATCHES = 8;
 
@@ -482,22 +524,22 @@ export const solveCandidate = (
 
   if (best.length >= PERSPECTIVE_MIN_MATCHES) {
     for (let iter = 0; iter < 3; iter++) {
-      const H = fitHomography2D(
+      const Hm = fitHomography2D(
         best.map((c) => c.plane),
         best.map((c) => c.photo),
       );
 
-      if (!H) {
+      if (!Hm || !isMildPerspective(mat3Mul(Hm, P), W, H)) {
         break;
       }
 
-      const m = collectMatches(H, P).matches;
+      const m = collectMatches(Hm, P).matches;
 
       if (m.length <= best.length) {
         break;
       }
 
-      T = H;
+      T = Hm;
       best = m;
       perspective = true;
     }
