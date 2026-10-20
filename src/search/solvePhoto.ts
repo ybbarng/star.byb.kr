@@ -8,9 +8,10 @@ import type {
   SolverContext,
 } from "@/search/solvers";
 import { blindSolveFisheye } from "@/search/fisheyeSolve";
+import { refineSolution } from "@/search/solveCore";
 import { improvedSolver, triangleSolver } from "@/search/solvers";
 import { dedupeBySky } from "@/search/solvers/candidates";
-import { byStarPriority } from "@/search/utils/selectStars";
+import { rankForSolving } from "@/search/utils/selectStars";
 
 // 사진 한 장의 검출 별 목록을 받아 앱과 똑같은 흐름으로 푼다.
 // Worker(solverWorker)는 이 함수를 감싸기만 하고, Node 테스트도 이 함수를 그대로 쓴다.
@@ -101,6 +102,46 @@ const inputSizesFor = (starCount: number): number[] => {
   return sizes;
 };
 
+// 확신한 답을 그 영역의 별 POLISH_INPUT_STARS개로 다시 검증해, 점수가 오르면 그 결과로 바꾼다.
+// 처음 확신한 순간의 점수는 입력 크기(15·25…)에 따라 기준 근처에서 출렁이기 때문이다.
+const POLISH_INPUT_STARS = INPUT_SIZES[INPUT_SIZES.length - 1];
+
+const polish = (
+  out: SolveOutcome,
+  stars: InputStar[],
+  size: ImageSize,
+  ctx: SolverContext,
+): SolveOutcome => {
+  if (!out.transform) {
+    return out;
+  }
+
+  const refined = refineSolution(
+    out.transform,
+    stars.slice(0, POLISH_INPUT_STARS).map((s): Point2D => [s.x, s.y]),
+    ctx.catalog,
+    { imageWidth: size.width, imageHeight: size.height },
+  );
+
+  if (!refined || refined.logOdds <= out.confidence) {
+    return out;
+  }
+
+  const candidate = {
+    centerVector: refined.centerVector,
+    fovDeg: refined.fovDeg,
+    transform: refined.TP,
+    confidence: refined.logOdds,
+    inlierCount: refined.inlierCount,
+  };
+
+  return {
+    ...out,
+    ...candidate,
+    candidates: [candidate, ...out.candidates],
+  };
+};
+
 // stars는 검출 전체를 넣어도 된다. 영역마다 우선순위(별다움 → 밝기) 순으로 필요한 만큼만 쓴다.
 export const solvePhoto = (
   stars: InputStar[],
@@ -111,7 +152,7 @@ export const solvePhoto = (
 ): SolvePhotoResult => {
   const t0 = performance.now();
   const deadline = t0 + (options.timeBudgetMs ?? DEFAULT_TIME_BUDGET_MS);
-  const sorted = [...stars].sort(byStarPriority);
+  const sorted = rankForSolving(stars, size.width, size.height);
   const regionInputs = SEARCH_REGIONS.map((region) => ({
     label: region.label,
     stars: sorted.filter((s) => s.y < size.height * region.keepTop),
@@ -174,7 +215,8 @@ export const solvePhoto = (
     evaluated += out.candidatesEvaluated;
 
     if (out.found) {
-      best = out;
+      best = polish(out, region.stars, size, ctx);
+      allCandidates.push(...best.candidates);
       break;
     }
   }

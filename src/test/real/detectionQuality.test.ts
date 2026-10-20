@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import { byStarPriority } from "@/search/utils/selectStars";
+import { rankForSolving } from "@/search/utils/selectStars";
 import { detectLikeApp } from "@/test/real/detectImage";
 import { labelDetections, loadSolvedPoses } from "@/test/real/detectionLabels";
 import { catalogExists, loadCatalog } from "@/test/synthetic/loadCatalog";
@@ -21,7 +21,9 @@ describe.skipIf(!ready)("검출 품질: 우선순위 상위의 진짜 별", () =
     const rows: string[] = [];
 
     for (const [file, pose] of Object.entries(loadSolvedPoses())) {
-      const { stars } = await detectLikeApp(resolve(samplesDir, file));
+      const { stars, width, height } = await detectLikeApp(
+        resolve(samplesDir, file),
+      );
       const count = (sorted: typeof stars) =>
         labelDetections(
           sorted.slice(0, TOP).map((s) => [s.x, s.y]),
@@ -29,7 +31,7 @@ describe.skipIf(!ready)("검출 품질: 우선순위 상위의 진짜 별", () =
           catalog,
         ).filter(Boolean).length;
       const b = count([...stars].sort((x, y) => y.brightness - x.brightness));
-      const p = count([...stars].sort(byStarPriority));
+      const p = count(rankForSolving(stars, width, height));
       byBrightness += b;
       byPriority += p;
       rows.push(`${file}: 밝기순 ${b} → 우선순위 ${p}`);
@@ -40,7 +42,7 @@ describe.skipIf(!ready)("검출 품질: 우선순위 상위의 진짜 별", () =
       `${rows.join("\n")}\n합계: 밝기순 ${byBrightness} → 우선순위 ${byPriority}`,
     );
 
-    // 2026-10-20: 밝기순 124 → 별다움 우선 280
+    // 2026-10-20: 밝기순 134 → 별다움·줄지음 우선 283
     expect(byPriority).toBeGreaterThan(byBrightness * 1.5);
     expect(byPriority).toBeGreaterThanOrEqual(250);
   }, 120000);

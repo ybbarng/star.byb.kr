@@ -12,6 +12,7 @@ import {
   loadHashes,
   contextStars,
 } from "@/test/synthetic/loadCatalog";
+import { createRng } from "@/test/synthetic/rng";
 
 const ready = catalogExists() && hashesExist();
 
@@ -119,10 +120,12 @@ describe.skipIf(!ready)("solvePhoto: 앱의 풀이 흐름", () => {
 
   it("아래쪽에 밝은 지면 불빛이 몰려 있어도 위쪽 영역에서 찾는다", () => {
     const img = cleanImage();
-    // 사진 아래 20%에 진짜 별보다 밝은 가짜 불빛 150개 (지평선 마을·가로등을 흉내)
+    // 사진 아래 20%에 진짜 별보다 밝은 가짜 불빛 150개 (지평선 마을·가로등을 흉내).
+    // 무작위 위치라 줄지음(규칙적 간격)으로는 걸러지지 않는다. 영역 자르기 대비책을 시험한다.
+    const rng = createRng(11);
     const groundLights = Array.from({ length: 150 }, (_, i) => ({
-      x: ((i * 97) % 150) * (W / 150),
-      y: H * 0.8 + ((i * 37) % 100) * (H * 0.002),
+      x: rng() * W,
+      y: H * 0.8 + rng() * H * 0.2,
       brightness: 1000 + i,
     }));
     const phases: SolvePhase[] = [];

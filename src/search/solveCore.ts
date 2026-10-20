@@ -241,9 +241,40 @@ export const isMildPerspective = (TP: Mat3, W: number, H: number): boolean => {
 // 원근 정밀화를 시도할 최소 대응 수. 대응이 적으면 8자유도 변환이 노이즈에 끌려간다.
 const PERSPECTIVE_MIN_MATCHES = 8;
 
+// 검증의 출발점: 매칭이 준 대응(사진 별 ↔ 카탈로그 별) 몇 쌍, 또는 이미 찾은 변환
+type SolveStart =
+  | { kind: "seeds"; photoQuad: Point2D[]; databaseQuad: Point3D[] }
+  | { kind: "pose"; TP: Mat3 };
+
 export const solveCandidate = (
   photoQuad: Point2D[],
   databaseQuad: Point3D[],
+  photoStars: Point2D[],
+  catalog: SolveStar[],
+  options: SolveOptions,
+): SolveResult | null =>
+  solveFrom(
+    { kind: "seeds", photoQuad, databaseQuad },
+    photoStars,
+    catalog,
+    options,
+  );
+
+// 이미 확신한 변환에서 출발해, 더 많은 사진 별로 대응을 다시 모으고 정밀화한다.
+// 처음 확신한 순간 멈추면 적은 별로 잰 점수(log-odds)가 기준 근처에서 출렁인다.
+// 변환은 다른 대응으로 이미 정해졌으므로 우연 비교에서 원근 변환과 같이 4쌍을 뺀다.
+export const refineSolution = (
+  TP: Mat3,
+  photoStars: Point2D[],
+  catalog: SolveStar[],
+  options: SolveOptions,
+): SolveResult | null =>
+  solveFrom({ kind: "pose", TP }, photoStars, catalog, options);
+
+const POSE_FIXED_MATCHES = 4;
+
+const solveFrom = (
+  start: SolveStart,
   photoStars: Point2D[],
   catalog: SolveStar[],
   options: SolveOptions,
@@ -394,18 +425,40 @@ export const solveCandidate = (
     return { matches, projectedInFov: pred.length };
   };
 
-  // 초기 광축 P (DB quad 중심)와 초기 변환 T (quad 4점 최소제곱)
-  let P = projectionMatrix(findCenter(databaseQuad));
-  const dbQuadPlane: Point2D[] = [];
+  // 초기 광축 P와 변환 T. 대응에서 출발하면 DB quad 중심 광축 + quad 최소제곱,
+  // 변환에서 출발하면 사진 중심 광축 + 그 광축 기준으로 나눈 변환(TP = T·P).
+  const seedCount =
+    start.kind === "seeds" ? start.photoQuad.length : POSE_FIXED_MATCHES;
+  let P: Mat3;
+  let T: Mat3;
 
-  for (const v of databaseQuad) {
-    const pl = toPlane(P, v);
+  if (start.kind === "seeds") {
+    P = projectionMatrix(findCenter(start.databaseQuad));
 
-    if (!pl) {
-      return null;
+    const dbQuadPlane: Point2D[] = [];
+
+    for (const v of start.databaseQuad) {
+      const pl = toPlane(P, v);
+
+      if (!pl) {
+        return null;
+      }
+
+      dbQuadPlane.push(pl);
     }
 
-    dbQuadPlane.push(pl);
+    T = umeyamaSimilarity2D(dbQuadPlane, start.photoQuad).matrix;
+  } else {
+    P = projectionMatrix(recoverCenter(start.TP, W, H));
+    // P는 직교행렬이라 역행렬이 전치다
+    T = mat3Mul(start.TP, [
+      [P[0][0], P[1][0], P[2][0]],
+      [P[0][1], P[1][1], P[2][1]],
+      [P[0][2], P[1][2], P[2][2]],
+    ]);
+
+    const k = T[2][2];
+    T = T.map((row) => row.map((x) => x / k)) as Mat3;
   }
 
   // 광축 재추정 한 번: 지금 변환이 가리키는 화면 중심을 새 광축으로 잡고, 대응들을 새 광축
@@ -438,8 +491,6 @@ export const solveCandidate = (
     return { T: Tnew, P: Pnew, matches: collectMatches(Tnew, Pnew).matches };
   };
 
-  let T = umeyamaSimilarity2D(dbQuadPlane, photoQuad).matrix;
-
   // 초기 대응
   let best = collectMatches(T, P).matches;
 
@@ -447,7 +498,7 @@ export const solveCandidate = (
   // 되지 못한다. 대부분의 오답 후보가 여기서 걸러져 검증 비용이 크게 준다.
   // 다만 시야가 넓으면 시드 중심 광축으로는 가장자리가 어긋나 시드만 맞을 수 있어,
   // 광축을 한 번 다시 잡아 보고도 그대로일 때만 버린다.
-  const minUseful = photoQuad.length + 1;
+  const minUseful = seedCount + 1;
 
   if (best.length < minUseful) {
     const r = recenter(best, T, P);
@@ -568,9 +619,7 @@ export const solveCandidate = (
   const significance = inlierCount / Math.max(1e-6, expectedRandom);
   // 시드 별(photoQuad)은 대응이 정해진 채 들어오므로 우연 비교에서 뺀다.
   // 원근 변환은 대응 4쌍으로 정해지므로, 그때는 적어도 4개를 뺀다.
-  const fixedMatches = perspective
-    ? Math.max(photoQuad.length, 4)
-    : photoQuad.length;
+  const fixedMatches = perspective ? Math.max(seedCount, 4) : seedCount;
   const logOdds = poissonTailNegLog10(
     inlierCount - fixedMatches,
     expectedRandom,

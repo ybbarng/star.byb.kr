@@ -14,6 +14,8 @@ export interface InputStar {
   brightness: number;
   // 주변 고리가 고른 정도(detectCore.ringContrast). 작을수록 별답다. 없으면(사람이 찍은 별 등) 별로 본다.
   ringContrast?: number;
+  // 다른 검출 여럿과 한 직선 위에 줄지어 있다 (비행기 점선·창문 줄, utils/alignment)
+  aligned?: boolean;
 }
 
 export interface ImageSize {

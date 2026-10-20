@@ -1,5 +1,6 @@
 import type { Point2D } from "@/scripts/hash/types";
 import type { ImageSize, InputStar } from "@/search/solvers/types";
+import { findAlignedStars } from "@/search/utils/alignment";
 
 // 매칭에 쓸 별을 고르는 전략들. quad 생성은 C(N,4)라 N을 제한해야 한다.
 
@@ -45,16 +46,40 @@ export const mergeDistancePx = (width: number, height: number): number =>
 // 진짜 별은 중앙값 0.02~0.19, 거짓 검출(창문·경계선·줄기)은 0.3~1.6이었다. 0.08~0.2에서 결과가 비슷하다.
 export const STARLIKE_RING_CONTRAST = 0.12;
 
-export const isStarlike = (s: { ringContrast?: number }): boolean =>
-  s.ringContrast === undefined || s.ringContrast < STARLIKE_RING_CONTRAST;
+export const isStarlike = (s: {
+  ringContrast?: number;
+  aligned?: boolean;
+}): boolean =>
+  !s.aligned &&
+  (s.ringContrast === undefined || s.ringContrast < STARLIKE_RING_CONTRAST);
 
 // 풀이에 쓸 우선순위: 별다운 검출 먼저, 그 안에서는 밝은 순.
 // 밝기만 보면 조명 받은 창문·나무 줄기·지붕 경계선이 진짜 별보다 앞에 온다.
-export const byStarPriority = (
-  a: { brightness: number; ringContrast?: number },
-  b: { brightness: number; ringContrast?: number },
-): number =>
+type Prioritized = {
+  brightness: number;
+  ringContrast?: number;
+  aligned?: boolean;
+};
+
+export const byStarPriority = (a: Prioritized, b: Prioritized): number =>
   Number(isStarlike(b)) - Number(isStarlike(a)) || b.brightness - a.brightness;
+
+// 우선순위 상위 검출 중 한 직선에 줄지은 것을 표시하고(aligned), 다시 우선순위 순으로 정렬한다.
+// 점 하나는 별처럼 생겨도 줄지어 있으면 비행기 불빛·창문 줄일 가능성이 높아 뒤로 민다.
+export const rankForSolving = <
+  T extends Prioritized & { x: number; y: number },
+>(
+  stars: T[],
+  width: number,
+  height: number,
+): T[] => {
+  const sorted = [...stars].sort(byStarPriority);
+  const aligned = findAlignedStars(sorted, width, height);
+
+  return sorted
+    .map((s, i) => (aligned.has(i) ? { ...s, aligned: true } : s))
+    .sort(byStarPriority);
+};
 
 // 검출 단계가 화면에 기본으로 띄우고 풀이에 넘기는 별 수(밝기 상위).
 // 전부 그리면 노이즈 마커가 진짜 별을 가린다.

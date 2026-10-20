@@ -68,7 +68,7 @@ src/
 │   ├── workers/               # solverWorker
 │   ├── solverContext.ts       # 풀이 인덱스 묶음 (quad·삼각형·밝은 별 삼각형)
 │   └── utils/                 # wcs·similarity·homography·fisheye·stats·gridIndex2D·selectStars
-├── test/                      # vitest: synthetic(합성 사진)·unit·e2e·real(실제 샘플)
+├── test/                      # vitest: synthetic(합성 사진·픽셀 장면)·unit·e2e·real(실제 샘플·정답 포즈)
 ├── scripts/                   # 데이터베이스 빌드 스크립트 (tsx로 실행)
 │   ├── database/              # 카탈로그 축소, 벡터 변환, 별자리 빌드
 │   ├── hash/                  # quad 해시 생성 알고리즘
@@ -99,7 +99,8 @@ public/
 
 1. **사진 선택**: 샘플 또는 업로드. 이때 풀이 Worker가 DB를 미리 받아 인덱스를 만든다 (`preloadSolver`)
 2. **별 검출**: OpenCV Local Maxima (Web Worker) → 적응적 threshold(mean+3σ) → 가까운 중복 합치기 →
-   별다움(`ringContrast`: 주변 고리가 고른 하늘인지) 계산 → 별다운 것 먼저, 그 안에서 밝은 순으로 상위 100개 표시.
+   별다움(`ringContrast`: 주변 고리가 고른 하늘인지) 계산 → 별다운 것 먼저, 그 안에서 밝은 순.
+   한 줄에 규칙적인 간격으로 줄지은 검출(비행기 불빛·창문 줄, `findAlignedStars`)은 뒤로. 상위 100개 표시.
    사람이 마커를 지우거나 추가하고, 영역만 재검출할 수 있다
 3. **풀이** (`solvePhoto`, 시간 상한 8초): 우선순위(별다움 → 밝기) 상위 15·25·40·60개로 차례로 푼다.
    모든 solver로 사진 전체를 먼저 보고, 못 풀면 위쪽 영역(75·55·45%)으로. 확신하면 바로 멈춘다
@@ -107,6 +108,7 @@ public/
      밝은 별(3.5등급 이하, 30° 이내) 인덱스에서 각각 k=8 검색. 그 FOV에서 크기(각거리)가 2배 넘게 다른 삼각형은 버린다
    - **검증** (`solveCore`): 대응 3별로 RANSAC + 광축 재추정 → 대응이 8개 이상이면 원근 변환(호모그래피)으로 정밀화
      (원근 보정된 사진 대응) → 카탈로그를 투영해 inlier 수집 → 우연일 확률(log-odds) 계산
+   - **마무리** (`refineSolution`): 확신한 변환을 그 영역의 별 60개로 다시 검증해 점수가 오르면 바꾼다
    - **판정** (`candidates.ts`): log-odds ≥ 9(우연일 확률 10억 분의 1)일 때만 "해 찾음". 아니면 후보만 사람에게 제시
    - 직선투영으로 확신 못 하면 어안 blind 풀이 시도
 4. **별자리 표시**: 선택한 해의 변환으로 카탈로그 별/별자리를 사진 좌표로 투영 (카메라 뒤쪽 별은 제외)

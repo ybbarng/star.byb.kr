@@ -11,6 +11,7 @@ import {
   DEFAULT_DISPLAY_STARS,
   mergeCloseStars,
   mergeDistancePx,
+  rankForSolving,
 } from "@/search/utils/selectStars";
 import cv from "@/services/cv";
 
@@ -279,11 +280,16 @@ export default function DetectStarStep() {
         ringContrast: star.ringContrast,
       })),
       minDistPx,
-    ).sort(byStarPriority);
-    allDetectionsRef.current = all;
+    );
+    // 별다운 것 먼저, 줄지은 것(비행기 불빛·창문 줄)은 뒤로 — 풀이와 같은 순서
+    allDetectionsRef.current = rankForSolving(
+      all,
+      imageData.width,
+      imageData.height,
+    );
 
     // 기본 화면은 우선순위 상위 일부만(전체를 다 그리면 노이즈가 가림)
-    return all.slice(0, DEFAULT_DISPLAY_STARS);
+    return allDetectionsRef.current.slice(0, DEFAULT_DISPLAY_STARS);
   }
 
   // 선택한 영역 안에서만 별을 다시 표시한다. 전역 밝기 상위 100에서 밀려
