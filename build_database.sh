@@ -10,3 +10,6 @@ npx tsx src/scripts/hash/createHashFromDatabase.ts
 npx tsx src/scripts/database/buildConstellations.ts
 # 빛의 타임캡슐(게임)용 별 거리(연주 시차)
 npx tsx src/scripts/database/buildParallax.ts
+# 발표용 해시 시각화 데모(/hash/sample, /hash/feasibility)가 읽는 샘플 해시
+npx tsx src/scripts/hash/sample/createHashFromSampleDatabase.ts
+npx tsx src/scripts/hash/sample/createHashFromPhoto.ts
