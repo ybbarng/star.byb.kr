@@ -3,7 +3,6 @@
 import dynamic from "next/dynamic";
 import { useEffect } from "react";
 import { useContextStore } from "@/plate-solver/store/context";
-import cv from "@/services/cv";
 import samples from "@/services/samples";
 
 /**
@@ -22,8 +21,6 @@ export default function Page() {
 
   useEffect(() => {
     const init = async () => {
-      await cv.load();
-
       // 버즈빌 은하수 샘플 이미지
       const selectedSampleId = 2;
       const selectedSample = samples[selectedSampleId];

@@ -7,9 +7,9 @@ export interface DetectedStar {
   ringContrast?: number; // 별다움 (ringContrast, 회색조 영상을 줄 때만)
 }
 
-// 별 검출의 순수 JS 부분 (cv.worker.js findStars에서 포팅).
-// 입력은 차영상 diff = grayscale - blur (음수 클램프, 1채널). OpenCV에 의존하는
-// grayscale/blur/subtract는 호출 측에서(브라우저는 OpenCV, node는 sharp) 만든다.
+// 별 검출의 핵심 (예전 브라우저 cv.worker.js의 findStars에서 옮겨 왔다).
+// 입력은 차영상 diff = grayscale - blur (음수 클램프, 1채널). 회색조·흐림·빼기는 detectImage.ts가 만든다
+// (브라우저 Worker와 node 테스트가 같은 코드).
 // 적응적 threshold(mean+3σ) → local maxima → 유효 반경 → NMS → weighted centroid.
 export const detectStarsFromDiff = (
   diff: Float32Array | Uint8Array | Uint8ClampedArray,
@@ -234,7 +234,6 @@ const ringOffsets = (r1: number, r2: number, step: number): Int32Array => {
 // 나눈 값이다. 배경은 부채꼴 평균 8개의 중앙값이다. 진짜 별은 고른 하늘 위에 떠 있어 0.1 안팎이다.
 // 밝기 경계선(지붕·능선)은 한쪽만, 줄기·전선은 마주 보는 두 쪽이, 창문은 이웃 창문과 벽이 고리에
 // 걸려 커진다. unit은 사진 크기 단위(대각선/1400, 최소 1)라 큰 사진에서도 같은 비율의 고리를 본다.
-// public/js/cv.worker.js에 같은 계산을 옮겨 두었다 — 바꿀 때 둘을 같이 바꾼다.
 export const ringContrast = (
   gray: Uint8Array | Uint8ClampedArray,
   cols: number,

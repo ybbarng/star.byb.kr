@@ -2,9 +2,9 @@
 
 ## 개요
 
-사진 속 별을 자동으로 검출하는 알고리즘이다. Plate Solving의 첫 번째 단계로, 검출 품질이 이후 매칭 정확도에 직접적인 영향을 미친다. OpenCV.js Web Worker에서 실행된다.
+사진 속 별을 자동으로 검출하는 알고리즘이다. Plate Solving의 첫 번째 단계로, 검출 품질이 이후 매칭 정확도에 직접적인 영향을 미친다. Web Worker에서 순수 JS로 실행된다 (2026-10까지는 OpenCV.js).
 
-**파일**: `public/js/cv.worker.js` → `findStars()`
+**파일**: `src/search/detectImage.ts`(회색조·흐림·차영상) → `src/search/detectCore.ts`(검출), Worker는 `src/search/workers/detectWorker.ts`
 
 ## 기존 방식: 이진화 + Contour
 

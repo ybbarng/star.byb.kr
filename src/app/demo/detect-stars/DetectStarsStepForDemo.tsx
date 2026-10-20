@@ -6,7 +6,7 @@ import { Stage, Layer, Rect } from "react-konva";
 import SelectableStarMarker from "@/plate-solver/SelectableStarMarker";
 import StepMover from "@/plate-solver/StepMover";
 import { useContextStore } from "@/plate-solver/store/context";
-import cv from "@/services/cv";
+import { detectStars as detectStarsInWorker } from "@/search/detectClient";
 
 interface CanvasStar {
   x: number;
@@ -124,16 +124,14 @@ export default function DetectStarStepForDemo() {
 
   async function findStars(imageData: ImageData) {
     // Processing image
-    const result = await cv.findStars(imageData);
-    let stars: { cx: number; cy: number; radius: number }[] =
-      result.data.payload;
-    stars = stars.sort((a, b) => b.radius - a.radius);
-    stars = stars.slice(0, 100);
+    const stars = (await detectStarsInWorker(imageData))
+      .sort((a, b) => b.brightness - a.brightness)
+      .slice(0, 100);
 
     return stars.map((star) => ({
       x: star.cx,
       y: star.cy,
-      radius: star.radius,
+      radius: star.brightness,
     }));
   }
 

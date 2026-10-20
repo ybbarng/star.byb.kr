@@ -16,7 +16,7 @@
 - **UI**: React 19, Tailwind CSS 4, DaisyUI 5
 - **상태 관리**: Zustand
 - **시각화**: Three.js (3D 천구), Konva/react-konva (2D 캔버스)
-- **이미지 처리**: OpenCV.js (Web Worker)
+- **이미지 처리**: 순수 JS 별 검출 (Web Worker, `search/detectImage.ts`). OpenCV.js는 2026-10에 뺐다 (다운로드 3.9MB 절약)
 - **수학/검색**: mathjs, kd-tree-javascript, @hscmap/healpix
 - **Node**: v20.11.0 (.nvmrc)
 
@@ -56,7 +56,7 @@ src/
 ├── plate-solver/              # Plate Solver UI 컴포넌트 & 상태
 │   ├── store/                 # Zustand store (context, steps)
 │   ├── SelectPhotoStep.tsx    # Step 0: 사진 선택
-│   ├── DetectStarsStep.tsx    # Step 1: 별 검출 (OpenCV)
+│   ├── DetectStarsStep.tsx    # Step 1: 별 검출
 │   └── PlateSolvingStep.tsx   # Step 2: 매칭 & 별자리 표시
 ├── search/                    # 풀이 알고리즘 (순수 함수 코어 + 얇은 Worker/hook)
 │   ├── solvePhoto.ts          # 앱의 풀이 흐름 전체 (Worker·테스트가 같이 씀)
@@ -64,7 +64,7 @@ src/
 │   ├── solvers/               # triangle(앱 사용)·improved·baseline·voting, 판정 기준(candidates.ts)
 │   ├── catalogGeometry.ts     # 삼각형 인덱스 (2D 격자)
 │   ├── fisheyeSolve.ts        # 어안 blind 풀이
-│   ├── detectCore.ts          # 별 검출 순수 JS (테스트용, 브라우저는 cv.worker.js)
+│   ├── detectCore.ts          # 별 검출 핵심 (detectImage.ts가 회색조·흐림·차영상을 만들어 넘김, 브라우저·테스트 공통)
 │   ├── solverClient.ts        # 공유 풀이 Worker 클라이언트 (미리 준비·요청 번호)
 │   ├── hooks/                 # useSolve, useSkyOverlay
 │   ├── workers/               # solverWorker
@@ -75,7 +75,7 @@ src/
 │   ├── database/              # 카탈로그 축소, 벡터 변환, 별자리 빌드
 │   ├── hash/                  # quad 해시 생성 알고리즘
 │   └── search/                # 검색 테스트/벤치마크
-├── services/                  # OpenCV 래퍼(cv.js), 샘플 사진 목록
+├── services/                  # 샘플 사진 목록, EXIF
 └── ui/                        # 폰트 등 공용 리소스
 
 data/                          # 원본 카탈로그 및 입력 데이터
@@ -83,7 +83,7 @@ build/                         # 빌드된 데이터베이스 (gitignore 대상)
 public/
 ├── catalogs/                  # bsc5.dat, ConstellationLines.dat
 ├── samples/                   # 샘플 사진들
-├── js/                        # opencv.js, cv.worker.js
+├── js/                        # opencv.js (쓰지 않음, 직접 빌드 백업과 함께 남겨 둠)
 └── presentation/              # Reveal.js 발표 슬라이드
 ```
 
@@ -100,7 +100,7 @@ public/
 ### 런타임 Plate Solving (브라우저)
 
 1. **사진 선택**: 샘플 또는 업로드. 이때 풀이 Worker가 DB를 미리 받아 인덱스를 만든다 (`preloadSolver`)
-2. **별 검출**: OpenCV Local Maxima (Web Worker) → 적응적 threshold(mean+3σ) → 가까운 중복 합치기 →
+2. **별 검출**: 순수 JS Local Maxima (Web Worker, 회색조 → 상자 흐림 3번(σ≈8) → 차영상) → 적응적 threshold(mean+3σ) → 가까운 중복 합치기 →
    별다움(`ringContrast`: 주변 고리가 고른 하늘인지) 계산 → 별다운 것 먼저, 그 안에서 밝은 순.
    한 줄에 규칙적인 간격으로 줄지은 검출(비행기 불빛·창문 줄, `findAlignedStars`)은 뒤로. 상위 100개 표시.
    사람이 마커를 지우거나 추가하고, 영역만 재검출할 수 있다

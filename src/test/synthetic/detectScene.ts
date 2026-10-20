@@ -3,7 +3,7 @@ import { detectStarsFromDiff, ringContrast } from "@/search/detectCore";
 import { mergeCloseStars, mergeDistancePx } from "@/search/utils/selectStars";
 
 // 회색조 영상에서 앱과 같은 방식으로 별을 검출한다 (detectImage.detectLikeApp과 같은 흐름).
-// 차영상 = 회색조 - 가우시안 블러(σ=8, cv.worker의 51×51과 같음) → 검출 → 별다움 → 중복 합치기.
+// 차영상 = 회색조 - 가우시안 블러(σ=8, 예전 OpenCV 51×51과 같은 세기) → 검출 → 별다움 → 중복 합치기.
 const BLUR_SIGMA = 8;
 
 const gaussianBlur = (
@@ -66,7 +66,7 @@ export const detectFromGray = (
   const diff = new Float32Array(width * height);
 
   for (let i = 0; i < width * height; i++) {
-    // 앱(OpenCV subtract)처럼 정수 회색조 차이를 0 아래로 자른다
+    // 앱(detectImage)처럼 정수 회색조 차이를 0 아래로 자른다
     const v = gray[i] - Math.round(blurred[i]);
     diff[i] = v > 0 ? v : 0;
   }

@@ -6,6 +6,7 @@ import { Stage, Layer, Rect, Image as KonvaImage } from "react-konva";
 import SelectableStarMarker from "@/plate-solver/SelectableStarMarker";
 import StepMover from "@/plate-solver/StepMover";
 import { useContextStore } from "@/plate-solver/store/context";
+import { detectStars as detectStarsInWorker } from "@/search/detectClient";
 import {
   byStarPriority,
   DEFAULT_DISPLAY_STARS,
@@ -13,7 +14,6 @@ import {
   mergeDistancePx,
   rankForSolving,
 } from "@/search/utils/selectStars";
-import cv from "@/services/cv";
 
 interface CanvasStar {
   x: number;
@@ -78,7 +78,7 @@ export default function DetectStarStep() {
   const [isPanning, setIsPanning] = useState(false);
   const panStartRef = useRef({ x: 0, y: 0 });
   const spaceHeldRef = useRef(false);
-  // cv 검출 전체 결과(별다움 → 밝기 순, 캡 없음). 영역 재검출 때 가려진 어두운 별을 꺼내 쓴다.
+  // 검출 전체 결과(별다움 → 밝기 순, 캡 없음). 영역 재검출 때 가려진 어두운 별을 꺼내 쓴다.
   const allDetectionsRef = useRef<
     {
       x: number;
@@ -259,14 +259,7 @@ export default function DetectStarStep() {
 
   async function findStars(imageData: ImageData) {
     // Processing image
-    const result = await cv.findStars(imageData);
-    const raw: {
-      cx: number;
-      cy: number;
-      brightness: number;
-      fwhm?: number;
-      ringContrast?: number;
-    }[] = result.data.payload;
+    const raw = await detectStarsInWorker(imageData);
     // 너무 가까운 중복 검출은 밝은 것만 남긴다(거의 같은 위치의 별쌍 정리).
     const minDistPx = mergeDistancePx(imageData.width, imageData.height);
     // 전체 검출을 별다운 것 먼저, 그 안에서 밝은 순으로 보관(영역 재검출에서 어두운 별까지 꺼내 쓴다).
