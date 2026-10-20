@@ -198,16 +198,21 @@
           <h1>Plate Solving</h1>
           <div class="body center">
             <div class="two-col">
-              <img src="/home/solved-milky-way.webp" style="border-radius: 12px;">
-              <div>
+              <div class="r-stack">
+                <img src="/samples/20220328-brice-Milky Way over Buzzvil.jpg" style="border-radius: 12px;">
+                <img class="fragment" data-fragment-index="1" src="/home/solved-milky-way.webp" style="border-radius: 12px;">
+              </div>
+              <div class="fragment" data-fragment-index="1">
                 <p>사진 속 점 하나하나가</p>
                 <p>하늘의 <span class="yellow">어느 방향</span>인지 알아내는 일</p>
-                <p class="fragment subtitle">= 이 사진에 찍힌 별은 무엇이고, 어떤 별자리일까?</p>
+                <p class="fragment subtitle" data-fragment-index="2">= 이 사진에 찍힌 별은 무엇이고, 어떤 별자리일까?</p>
               </div>
             </div>
           </div>
           <aside class="notes">
-            Plate Solving은 사진에 찍힌 별들과 별 목록을 맞춰서, 사진의 각 점이 하늘의 어느 방향인지 알아내는 일입니다.
+            (사진만 보여 주고) 석촌호수에서 찍은 은하수 사진입니다. 어떤 별들이 찍혔을까요?
+            <br>
+            (넘기면) Plate Solving은 사진에 찍힌 별들과 별 목록을 맞춰서, 사진의 각 점이 하늘의 어느 방향인지 알아내는 일입니다.
             <br>
             사람은 별자리 모양을 보고 "아, 전갈자리!" 하는데, 이걸 컴퓨터가 하게 만드는 게 목표였습니다.
           </aside>
@@ -215,7 +220,8 @@
 
         <section class="fullscreen-slide">
           <div class="r-stack">
-            <img src="resources/wip-01.svg"/>
+            <img src="resources/v3-wip-01-original.svg"/>
+            <img class="fragment" src="resources/wip-01.svg"/>
             <img class="fragment" src="resources/wip-02.svg"/>
             <img class="fragment" src="resources/wip-03.svg"/>
             <img class="fragment" src="resources/wip-04.svg"/>
@@ -223,7 +229,9 @@
           <aside class="notes">
             V2 마지막에 남은 일 세 가지를 말씀드렸습니다.
             <br>
-            하나, 올바른 결정하기. 논문은 베이즈 요인으로 결정한다고 했습니다.
+            하나, 올바른 결정하기. (원본 사진) 북두칠성 사진입니다. (넘기면) V2는 이걸 오리온자리라고 답했습니다. 틀린 답을 걸러 낼 방법이 없었습니다.
+            <br>
+            논문은 베이즈 요인으로 결정한다고 했습니다.
             <br>
             둘, 주변 별 정보를 표시할 때 생기는 오차 보정하기.
             <br>

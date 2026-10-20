@@ -36,7 +36,7 @@ export default function Page() {
             src="/home/solved-milky-way.webp"
             alt="석촌호수 위 여름 은하수 사진에 궁수자리·전갈자리·독수리자리 선과 별 이름이 그려진 모습"
             width={1200}
-            height={800}
+            height={801}
             className="block h-auto w-full"
           />
           <figcaption className="bg-base-200/80 px-4 py-2 text-xs opacity-80">
