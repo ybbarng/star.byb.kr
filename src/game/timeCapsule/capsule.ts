@@ -1,5 +1,8 @@
 import type { Point3D } from "@/scripts/hash/types";
 import { STARS } from "@/game/sky/catalog";
+import { EARTH_RADIUS_KM, PLANETS } from "@/search/skyObjects";
+import { julianDay, moonPosition } from "@/search/utils/ephemeris";
+import { planetPosition } from "@/search/utils/planets";
 import parallaxData from "@build/database/parallax.json";
 
 // 빛의 타임캡슐: 별빛이 지금 우리 눈에 닿기까지 걸린 시간 = 그 별까지의 거리(광년).
@@ -123,3 +126,80 @@ export const bestMonthOf = (v: Point3D) => {
 
   return (((Math.round((raHours - 4) / 2) % 12) + 12) % 12) + 1;
 };
+
+// 별빛 도감의 업적: 별을 누를 때마다 확인한다 (collected는 지금까지 모은 별 수, 이번 별 포함)
+export interface CapsuleBadge {
+  id: string;
+  title: string;
+  note: string;
+  test: (trip: {
+    lightYears: number;
+    year: number;
+    collected: number;
+  }) => boolean;
+}
+
+export const CAPSULE_BADGES: CapsuleBadge[] = [
+  {
+    id: "neighbor",
+    title: "이웃 별",
+    note: "20광년 안의 별",
+    test: (t) => t.lightYears <= 20,
+  },
+  {
+    id: "my-century",
+    title: "20세기의 빛",
+    note: "1901~2000년에 출발한 빛",
+    test: (t) => t.year >= 1901 && t.year <= 2000,
+  },
+  {
+    id: "joseon",
+    title: "조선의 빛",
+    note: "조선 시대(1392~1897)에 출발한 빛",
+    test: (t) => t.year >= 1392 && t.year <= 1897,
+  },
+  {
+    id: "millennium",
+    title: "천 년 여행자",
+    note: "1,000광년보다 먼 별",
+    test: (t) => t.lightYears >= 1000,
+  },
+  {
+    id: "collector",
+    title: "별빛 수집가",
+    note: "별 10개 모으기",
+    test: (t) => t.collected >= 10,
+  },
+];
+
+// 이번에 새로 딴 업적
+export const newBadges = (
+  trip: { lightYears: number; year: number; collected: number },
+  owned: ReadonlySet<string>,
+) => CAPSULE_BADGES.filter((b) => !owned.has(b.id) && b.test(trip));
+
+// 해·달·행성의 빛이 지구까지 오는 데 걸린 시간 (초). 별과 달리 몇 초~몇십 분이다
+const LIGHT_KM_PER_S = 299792.458;
+const AU_KM = 149597870.7;
+
+export const solarLightSeconds = (name: string, date: Date): number | null => {
+  const jd = julianDay(date);
+
+  if (name === "달") {
+    return (
+      (moonPosition(jd).distanceEarthRadii * EARTH_RADIUS_KM) / LIGHT_KM_PER_S
+    );
+  }
+
+  const planet = PLANETS.find(([, korean]) => korean === name);
+
+  return planet
+    ? (planetPosition(planet[0], jd).distanceAu * AU_KM) / LIGHT_KM_PER_S
+    : null;
+};
+
+// 몇 초 → "1.3초", "43분 12초"
+export const durationLabel = (seconds: number) =>
+  seconds < 60
+    ? `${seconds.toFixed(1)}초`
+    : `${Math.floor(seconds / 60)}분 ${Math.round(seconds % 60)}초`;

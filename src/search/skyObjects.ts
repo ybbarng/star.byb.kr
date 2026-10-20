@@ -60,7 +60,7 @@ export const DEEP_SKY_OBJECTS: SkyObject[] = DEEP_SKY.map(
 );
 
 // 맨눈으로 보이는 행성만 (천왕성·해왕성은 일반 사진에서 별과 구분하기 어렵다)
-const PLANETS: [PlanetName, string][] = [
+export const PLANETS: [PlanetName, string][] = [
   ["Mercury", "수성"],
   ["Venus", "금성"],
   ["Mars", "화성"],
@@ -69,7 +69,7 @@ const PLANETS: [PlanetName, string][] = [
 ];
 
 const MOON_RADIUS_KM = 1737.4;
-const EARTH_RADIUS_KM = 6378.14;
+export const EARTH_RADIUS_KM = 6378.14;
 
 // 그 시각의 해·달·행성. 관측지를 알면 달은 관측지에서 본 방향(최대 1° 차이)으로 쓴다.
 export const solarSystemObjects = (
