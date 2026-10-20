@@ -1,0 +1,88 @@
+import type { DrawConstellation, DrawStar, SkyItem } from "@/game/sky/drawSky";
+import type { Point3D } from "@/scripts/hash/types";
+import constellationData from "@build/database/vectors-constellations.json";
+import catalogData from "@build/database/vectors-database.json";
+
+// 게임들이 같이 쓰는 별·별자리 데이터 (5등급까지의 별 1,625개, 별자리선 88개)
+
+interface VectorStar {
+  HR: string;
+  N?: string;
+  V: string;
+  K?: string;
+  x: number;
+  y: number;
+  z: number;
+}
+
+export const STARS: (DrawStar & { hr: string })[] = (
+  catalogData as VectorStar[]
+).map((s) => ({
+  hr: s.HR,
+  vector: [s.x, s.y, s.z],
+  mag: parseFloat(s.V),
+  kelvin: s.K ? parseFloat(s.K) : 6000,
+  name: s.N,
+}));
+
+export const CONSTELLATIONS: DrawConstellation[] = (
+  constellationData as { label: string; stars: number[][] }[]
+).map((c) => ({ label: c.label, stars: c.stars as Point3D[] }));
+
+// 한 별자리의 선 묶음들 (남십자·뱀자리처럼 선이 두 갈래로 나뉜 별자리가 있다)
+export const constellationParts = (label: string): DrawConstellation[] =>
+  CONSTELLATIONS.filter((c) => c.label === label);
+
+// 별자리를 이루는 서로 다른 별들 (선 데이터에는 같은 별이 여러 번 나온다)
+export const uniqueStars = (parts: DrawConstellation[]): Point3D[] => {
+  const out: Point3D[] = [];
+
+  for (const v of parts.flatMap((c) => c.stars)) {
+    if (
+      !out.some(
+        (u) =>
+          Math.abs(u[0] - v[0]) < 1e-9 &&
+          Math.abs(u[1] - v[1]) < 1e-9 &&
+          Math.abs(u[2] - v[2]) < 1e-9,
+      )
+    ) {
+      out.push(v);
+    }
+  }
+
+  return out;
+};
+
+// 별자리 가운데 방향 (별들의 평균)
+export const constellationCenter = (parts: DrawConstellation[]): Point3D => {
+  const stars = uniqueStars(parts);
+  const s = stars.reduce(
+    (a, v) => [a[0] + v[0], a[1] + v[1], a[2] + v[2]],
+    [0, 0, 0],
+  );
+  const n = Math.hypot(s[0], s[1], s[2]);
+
+  return [s[0] / n, s[1] / n, s[2] / n];
+};
+
+// 누른 자리의 천체: 반지름 안에 든 것 중 달·행성·이름 있는 별을 먼저, 그다음 가까운 것
+export const pickItem = (
+  items: SkyItem[],
+  x: number,
+  y: number,
+): SkyItem | null => {
+  const rank = (it: SkyItem) =>
+    it.kind === "moon"
+      ? 0
+      : it.kind === "planet"
+        ? 1
+        : it.kind === "star" && it.label !== "이름 없는 별"
+          ? 2
+          : 3;
+  const hits = items
+    .map((it) => ({ it, d: Math.hypot(it.x - x, it.y - y) }))
+    .filter(({ it, d }) => d <= it.radius)
+    .sort((a, b) => rank(a.it) - rank(b.it) || a.d - b.d);
+
+  return hits[0]?.it ?? null;
+};

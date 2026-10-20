@@ -76,7 +76,7 @@ const koreanName: { [key: string]: string } = {
   And: "안드로메다자리",
   Ant: "공기펌프자리",
   Aps: "극락조자리",
-  Apr: "물병자리",
+  Aqr: "물병자리",
   Aql: "독수리자리",
   Ara: "제단자리",
   Ari: "양자리",

@@ -13,7 +13,7 @@ export default function Page() {
             <Link href="/plate-solver">Plate Solver</Link>
           </li>
           <li className="text-xl">
-            <Link href="/games/star-guessr">별하늘 지오게서 (게임)</Link>
+            <Link href="/games">별 놀이터 (게임)</Link>
           </li>
           <li className="text-xl">
             <Link href="/presentation/index.html">

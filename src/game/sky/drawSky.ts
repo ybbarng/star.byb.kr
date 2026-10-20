@@ -9,13 +9,14 @@ import {
 } from "@/search/utils/ephemeris";
 import { createRng } from "@/utils/rng";
 
-// 별하늘 지오게서의 사진을 Canvas 2D로 그린다. 별(등급에 따라 크기, 표면 온도에 따라 색), 위상까지 그린 달,
+// 게임의 밤하늘을 Canvas 2D로 그린다. 별(등급에 따라 크기, 표면 온도에 따라 색), 위상까지 그린 달,
 // 행성, 광해, 들쭉날쭉한 땅과 마을 불빛. 하늘의 모든 것은 카메라 변환(TP)으로 투영해서, 정답과 어긋나지 않는다.
 
 export interface DrawStar {
   vector: Point3D;
   mag: number;
   kelvin: number;
+  name?: string; // 고유 이름 (시리우스 등)
 }
 
 export interface DrawConstellation {
@@ -61,10 +62,32 @@ const starColor = (kelvin: number) =>
           ? "225,233,255"
           : "190,208,255";
 
+// 그린 것 하나 ("이건 뭐예요?"·숨은그림찾기 판정에 쓴다)
+export interface SkyItem {
+  kind: "star" | "planet" | "moon" | "town";
+  x: number;
+  y: number;
+  radius: number; // 누를 수 있는 반지름 (px)
+  label: string;
+  detail: string;
+}
+
+export const moonShapeName = (lit: number) =>
+  lit < 0.05
+    ? "그믐달 무렵 (거의 안 보임)"
+    : lit < 0.35
+      ? "초승달·그믐달"
+      : lit < 0.65
+        ? "반달"
+        : lit < 0.95
+          ? "볼록한 달"
+          : "보름달";
+
 export const drawSky = (
   ctx: CanvasRenderingContext2D,
   o: DrawSkyOptions,
-): void => {
+): SkyItem[] => {
+  const items: SkyItem[] = [];
   const { width: W, height: H, TP } = o;
   const jd = julianDay(o.date);
   const frame = horizontalFrameJ2000(jd, o.observer);
@@ -133,6 +156,14 @@ export const drawSky = (
     }
 
     drawPoint(ctx, p, limit - mag, starColor(s.kelvin));
+    items.push({
+      kind: "star",
+      x: p[0],
+      y: p[1],
+      radius: 6 + Math.max(0, limit - mag) * 2,
+      label: s.name ?? "이름 없는 별",
+      detail: `${s.mag.toFixed(1)}등급 · 표면 온도 약 ${Math.round(s.kelvin / 100) * 100}K`,
+    });
   }
 
   // 3) 행성
@@ -142,6 +173,15 @@ export const drawSky = (
 
     if (look && p && altOf(pl.vector) > 0) {
       drawPoint(ctx, p, limit - look.mag, look.color);
+      items.push({
+        kind: "planet",
+        x: p[0],
+        y: p[1],
+        radius: 14,
+        label: pl.name,
+        detail:
+          "행성 — 별처럼 보이지만 반짝임이 적고, 날마다 별자리 사이를 조금씩 옮겨 다녀요",
+      });
     }
   }
 
@@ -153,13 +193,22 @@ export const drawSky = (
     );
 
     if (p && toward) {
+      const radius = Math.max(7, moon.radiusDeg * pxPerDeg);
       drawMoon(
         ctx,
         p,
-        Math.max(7, moon.radiusDeg * pxPerDeg),
+        radius,
         Math.atan2(toward[1] - p[1], toward[0] - p[0]),
         moonLit,
       );
+      items.push({
+        kind: "moon",
+        x: p[0],
+        y: p[1],
+        radius: radius + 10,
+        label: "달",
+        detail: `${moonShapeName(moonLit)} — 밝은 쪽이 해가 있는 방향이에요`,
+      });
     }
   }
 
@@ -255,6 +304,14 @@ export const drawSky = (
 
     // 지평선 위로 낮게 깔리는 빛 (가로로 길쭉한 타원)
     const spread = (6 + rng() * 10) * pxPerDeg;
+    items.push({
+      kind: "town",
+      x: base[0],
+      y: base[1],
+      radius: spread * 0.4,
+      label: "마을 불빛",
+      detail: "광해 — 도시·마을의 불빛이 하늘을 밝혀 어두운 별을 지워요",
+    });
     ctx.save();
     ctx.translate(base[0], base[1]);
     ctx.scale(1, 0.18);
@@ -313,6 +370,8 @@ export const drawSky = (
 
     ctx.textAlign = "start";
   }
+
+  return items;
 };
 
 // 집 한 채: 벽(직사각형) + 지붕(삼각형) 실루엣, 창문 몇 개에 불이 켜져 있다. foot은 바닥 가운데.

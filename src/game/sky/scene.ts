@@ -5,12 +5,12 @@ import { horizonCameraTP } from "@/search/horizonSolve";
 import { altAzOf, julianDay, sunVector } from "@/search/utils/ephemeris";
 import { createRng } from "@/utils/rng";
 
-// 별하늘 지오게서의 문제: 아무 위도·밤 시각·카메라 방향에서 본 하늘. 정답(위도·날짜·현지 시각)을 함께 갖는다.
+// 게임용 밤하늘 문제: 아무 위도·밤 시각·카메라 방향에서 본 하늘. 정답(위도·날짜·현지 시각)을 함께 갖는다.
 // 같은 시드면 같은 문제다 ("오늘의 문제"는 날짜를 시드로 쓴다).
 
 export type Difficulty = "easy" | "normal" | "hard";
 
-export interface GuessrScene {
+export interface SkyScene {
   seed: number;
   difficulty: Difficulty;
   date: Date; // 촬영 순간 (UTC)
@@ -36,10 +36,10 @@ const DIFFICULTY = {
 // 해가 이보다 낮아야 밤으로 친다 (천문 박명이 끝나 가는 정도)
 const NIGHT_SUN_ALT_DEG = -15;
 
-export const makeGuessrScene = (
+export const makeSkyScene = (
   seed: number,
   difficulty: Difficulty,
-): GuessrScene => {
+): SkyScene => {
   const rng = createRng(seed);
   let date: Date;
   let observer: Observer;
