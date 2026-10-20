@@ -42,6 +42,7 @@ src/
 ├── app/                       # Next.js App Router 페이지
 │   ├── page.tsx               # 홈 (/)
 │   ├── plate-solver/          # Plate Solver 메인 (/plate-solver)
+│   ├── games/                 # 별 놀이터 (/games, 게임 다섯 개)
 │   ├── database/              # 별 DB 3D 시각화 (/database)
 │   ├── demo/                  # 발표용 데모 페이지들
 │   │   ├── upload-photo/      # 사진 선택 데모
@@ -51,6 +52,7 @@ src/
 │   └── hash/                  # 해시 알고리즘 시각화
 │       ├── sample/            # 샘플 해시 시각화
 │       └── feasibility/       # 해시 타당성 검증
+├── game/                      # 별 놀이터(게임): sky(공용 밤하늘 그리기·장면·카탈로그), 게임별 폴더 — docs/game-plans.md
 ├── plate-solver/              # Plate Solver UI 컴포넌트 & 상태
 │   ├── store/                 # Zustand store (context, steps)
 │   ├── SelectPhotoStep.tsx    # Step 0: 사진 선택
