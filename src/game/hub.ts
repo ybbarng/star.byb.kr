@@ -30,7 +30,7 @@ export const GAMES: GameEntry[] = [
     summary:
       "내 생일에 해가 실제로 어느 별자리에 있었는지, 점성술 별자리와 왜 다른지 천문도로 보여 줘요.",
     learn: "황도, 세차 운동, 13번째 별자리",
-    ready: false,
+    ready: true,
   },
   {
     href: "/games/draw-constellation",
