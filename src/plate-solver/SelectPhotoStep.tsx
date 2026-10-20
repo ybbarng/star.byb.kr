@@ -67,7 +67,13 @@ export default function SelectPhotoStep() {
           onFocus={() => setImageType(ImageType.UPLOAD)}
           tabIndex={0}
         >
-          <ImageUpload setUploadedImage={setUploadedImage} />
+          <ImageUpload
+            setUploadedImage={(file) => {
+              // 칸에 포커스가 없어도(끌어다 놓기·키보드) 파일을 고르면 그 사진을 쓴다
+              setImageType(ImageType.UPLOAD);
+              setUploadedImage(file);
+            }}
+          />
         </div>
       </div>
       <div className="flex-1 overflow-hidden">
