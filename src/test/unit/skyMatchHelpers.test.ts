@@ -7,7 +7,13 @@ import {
   SOLVED_RATIO,
   targetStars,
 } from "@/game/skyMatch/match";
-import { computerSolve, hintFor, skyError } from "@/game/skyMatch/solveSteps";
+import {
+  computerSolve,
+  hintFor,
+  skyClues,
+  skyError,
+  storyClues,
+} from "@/game/skyMatch/solveSteps";
 import { horizonCameraTP } from "@/search/horizonSolve";
 import { contextStars, loadCatalog } from "@/test/synthetic/loadCatalog";
 
@@ -31,18 +37,19 @@ describe("방향 힌트", () => {
   });
 
   it("위도만 남쪽으로 20° 틀리면 위도를 북쪽으로 옮기라고 한다", () => {
-    const h = hintFor(scene, { ...a, latDeg: a.latDeg - 20 }, 2, null);
+    const h = hintFor(scene, { ...a, latDeg: a.latDeg - 20 }, 3, null);
 
     expect(h.dial).toBe("lat");
-    expect(h.text).toContain("북쪽");
+    expect(h.texts.join()).toContain("북쪽");
+    expect(h.arrows).toBe(true);
   });
 
-  it("시각만 2시간 이르면 늦게 돌리라고 하고, 3단계 구간이 정답 시각을 품는다", () => {
+  it("시각만 2시간 이르면 늦게 돌리라고 하고, 4단계 구간이 정답 시각을 품는다", () => {
     const dials = { ...a, minutes: a.minutes - 120 };
 
-    expect(hintFor(scene, dials, 2, null).text).toContain("늦게");
+    expect(hintFor(scene, dials, 3, null).texts.join()).toContain("늦게");
 
-    const t = hintFor(scene, dials, 3, null).target!;
+    const t = hintFor(scene, dials, 4, null).target!;
     const gap = Math.abs(((t.center - a.minutes + 720) % 1440) - 720);
 
     expect(gap).toBeLessThan(5);
@@ -51,7 +58,7 @@ describe("방향 힌트", () => {
   it("잠긴 다이얼은 힌트로 고르지 않는다", () => {
     const dials = { ...a, latDeg: a.latDeg - 30 };
 
-    expect(hintFor(scene, dials, 1, "lat").dial).toBe("time");
+    expect(hintFor(scene, dials, 3, "lat").dial).toBe("time");
   });
 });
 
@@ -82,4 +89,35 @@ describe("컴퓨터는 이렇게 푼다", () => {
       ).toBeGreaterThanOrEqual(SOLVED_RATIO);
     },
   );
+});
+
+describe("이야기·하늘 단서", () => {
+  const at = (latDeg: number, iso: string, lonDeg = 0) => ({
+    ...makeSkyScene(5, "easy"),
+    observer: { latDeg, lonDeg },
+    date: new Date(iso),
+  });
+
+  it("적도 근처는 일 년 내내 덥고, 남반구면 그렇게 말한다", () => {
+    expect(storyClues(at(5, "2026-01-10T22:00:00Z"), null)[0]).toContain(
+      "덥고",
+    );
+    expect(storyClues(at(-33, "2026-01-10T22:00:00Z"), null)[0]).toContain(
+      "남반구",
+    );
+  });
+
+  it("남반구의 1월은 여름, 22시는 자정이 다가오는 밤", () => {
+    expect(storyClues(at(-33, "2026-01-10T22:00:00Z"), null)[1]).toBe(
+      "남반구의 여름, 자정이 다가오는 밤이에요.",
+    );
+  });
+
+  it("잠긴 다이얼에 대한 단서는 내지 않는다", () => {
+    const scene = at(40, "2026-07-01T01:00:00Z");
+
+    expect(storyClues(scene, "lat")).toHaveLength(1);
+    expect(storyClues(scene, "time")).toHaveLength(1);
+    expect(skyClues(scene, "time")[0]).toContain("40°");
+  });
 });

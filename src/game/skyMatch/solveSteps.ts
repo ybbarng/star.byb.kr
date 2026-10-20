@@ -47,25 +47,126 @@ export const skyError = (scene: SkyScene, dials: Dials): SkyError => {
 };
 
 export type HintDial = "lat" | "time";
+export type HintStage = 1 | 2 | 3 | 4;
 
 export interface Hint {
-  dial: HintDial;
-  stage: 1 | 2 | 3; // 1: 어느 다이얼, 2: 어느 쪽으로, 3: 대략 어디쯤
-  text: string;
-  target?: { center: number; halfWidth: number }; // 3단계: 다이얼에서 정답 근처 구간
+  stage: HintStage; // 1: 이야기 단서, 2: 하늘 단서, 3: 연한 화살표와 방향, 4: 다이얼 위 대략의 구간
+  texts: string[];
+  dial?: HintDial; // 3단계부터: 움직일 다이얼
+  arrows: boolean; // 3단계부터: 사진에 별이 가야 할 쪽으로 연한 화살표
+  target?: { center: number; halfWidth: number }; // 4단계: 다이얼에서 정답 근처 구간
 }
 
 // 이만큼보다 덜 어긋났으면 그 다이얼은 거의 맞았다
 const LAT_CLOSE_DEG = 2;
 const TURN_CLOSE_DEG = 3;
 
+const DIRECTIONS = ["북", "북동", "동", "남동", "남", "남서", "서", "북서"];
+
+// 이야기 단서: 사진 찍은 곳·때를 말로 유추하게 한다 (잠긴 다이얼은 건너뛴다)
+export const storyClues = (scene: SkyScene, locked: HintDial | null) => {
+  const lat = scene.observer.latDeg;
+  const a = Math.abs(lat);
+  const south = lat < -5;
+  const clues: string[] = [];
+
+  if (locked !== "lat") {
+    clues.push(
+      (a < 15
+        ? "일 년 내내 덥고, 한낮의 해가 거의 머리 위를 지나는 곳이에요."
+        : a < 35
+          ? "겨울에도 눈 보기가 어려운 따뜻한 곳이에요."
+          : a < 50
+            ? "사계절이 뚜렷한 곳이에요 (서울과 비슷해요)."
+            : "여름밤은 아주 짧고 겨울밤은 아주 긴 곳이에요.") +
+        (south ? " 북극성이 보이지 않는 남반구예요." : ""),
+    );
+  }
+
+  if (locked !== "time") {
+    const local = new Date(
+      scene.date.getTime() + (scene.observer.lonDeg / 15) * 3600000,
+    );
+    const month = local.getUTCMonth(); // 0~11
+    const season = [
+      "겨울",
+      "겨울",
+      "봄",
+      "봄",
+      "봄",
+      "여름",
+      "여름",
+      "여름",
+      "가을",
+      "가을",
+      "가을",
+      "겨울",
+    ][south ? (month + 6) % 12 : month];
+    const hour = local.getUTCHours() + local.getUTCMinutes() / 60;
+    const when =
+      hour >= 17 && hour < 21
+        ? "해가 진 지 얼마 안 된 초저녁"
+        : hour >= 21
+          ? "자정이 다가오는 밤"
+          : hour < 2
+            ? "자정을 막 넘긴 한밤"
+            : hour < 4
+              ? "모두 잠든 새벽"
+              : "곧 동이 트는 새벽";
+    clues.push(`${south ? "남반구" : "북반구"}의 ${season}, ${when}이에요.`);
+  }
+
+  return clues;
+};
+
+// 하늘 단서: 하늘 전체 뷰와 이어지는 단서 (극의 높이, 밝은 별의 자리)
+export const skyClues = (
+  scene: SkyScene,
+  locked: HintDial | null,
+  landmark?: { name: string; vector: Point3D },
+) => {
+  const clues: string[] = [];
+  const lat = scene.observer.latDeg;
+
+  if (locked !== "lat") {
+    clues.push(
+      Math.abs(lat) < 3
+        ? "천구의 극이 지평선에 걸려 있어요 (하늘 전체 뷰의 ★)."
+        : `천구의 ${lat >= 0 ? "북극" : "남극"}이 지평선에서 약 ${Math.max(5, Math.round(Math.abs(lat) / 5) * 5)}° 높이에 떠 있어요 (하늘 전체 뷰의 ★).`,
+    );
+  }
+
+  if (locked !== "time" && landmark) {
+    const frame = horizontalFrameJ2000(julianDay(scene.date), scene.observer);
+    const v = landmark.vector;
+    const dot = (b: Point3D) => v[0] * b[0] + v[1] * b[1] + v[2] * b[2];
+    const alt = Math.asin(dot(frame.zenith)) / (Math.PI / 180);
+    const az = (Math.atan2(dot(frame.east), dot(frame.north)) * 180) / Math.PI;
+    const dir = DIRECTIONS[Math.round((((az % 360) + 360) % 360) / 45) % 8];
+    clues.push(
+      `밝은 별 ${landmark.name} — ${dir}쪽 하늘 약 ${Math.round(alt / 5) * 5}° 높이에 있어요.`,
+    );
+  }
+
+  return clues;
+};
+
 // 지금 어긋난 정도로 힌트를 고른다. locked는 이 단계에서 움직이지 않는 다이얼
 export const hintFor = (
   scene: SkyScene,
   dials: Dials,
-  stage: 1 | 2 | 3,
+  stage: HintStage,
   locked: HintDial | null,
+  landmark?: { name: string; vector: Point3D },
 ): Hint => {
+  if (stage === 1) {
+    return { stage, texts: storyClues(scene, locked), arrows: false };
+  }
+
+  if (stage === 2) {
+    return { stage, texts: skyClues(scene, locked, landmark), arrows: false };
+  }
+
   const err = skyError(scene, dials);
   const latOff = Math.abs(err.latDeg) >= LAT_CLOSE_DEG;
   const turnOff = Math.abs(err.turnDeg) >= TURN_CLOSE_DEG;
@@ -81,52 +182,51 @@ export const hintFor = (
           : "time";
 
   if (dial === "lat") {
-    const north = err.latDeg < 0;
-
-    return stage === 1
-      ? { dial, stage, text: "위도 다이얼을 움직여 보세요. 하늘이 기울어요." }
-      : stage === 2
-        ? {
-            dial,
-            stage,
-            text: north
+    return stage === 3
+      ? {
+          stage,
+          dial,
+          arrows: true,
+          texts: [
+            err.latDeg < 0
               ? "위도를 더 북쪽(오른쪽)으로 옮겨 보세요."
               : "위도를 더 남쪽(왼쪽)으로 옮겨 보세요.",
-          }
-        : {
-            dial,
-            stage,
-            text: "위도는 반짝이는 구간 어딘가예요.",
-            target: { center: scene.observer.latDeg, halfWidth: 6 },
-          };
+          ],
+        }
+      : {
+          stage,
+          dial,
+          arrows: true,
+          texts: ["위도는 반짝이는 구간 어딘가예요."],
+          target: { center: scene.observer.latDeg, halfWidth: 6 },
+        };
   }
 
   // 시각 다이얼: 지금 날짜에서 같은 하늘이 되는 시각
   const targetMinutes = wrapMinutes(
     dials.minutes - (err.turnDeg / 360) * SIDEREAL_MINUTES,
   );
-  const later = err.turnDeg < 0;
 
-  return stage === 1
+  return stage === 3
     ? {
-        dial,
         stage,
-        text: "시각(또는 날짜) 다이얼을 돌려 보세요. 하늘이 돌아요.",
+        dial,
+        arrows: true,
+        texts: [
+          err.turnDeg < 0
+            ? "시각을 더 늦게(오른쪽으로) 돌려 보세요."
+            : "시각을 더 이르게(왼쪽으로) 돌려 보세요.",
+        ],
       }
-    : stage === 2
-      ? {
-          dial,
-          stage,
-          text: later
-            ? "시각을 더 늦게(오른쪽으로) 돌려 보세요. 별이 서쪽으로 움직여요."
-            : "시각을 더 이르게(왼쪽으로) 돌려 보세요. 별이 동쪽으로 돌아와요.",
-        }
-      : {
-          dial,
-          stage,
-          text: `시각은 반짝이는 구간 어딘가예요. (날짜를 하루 바꾸면 같은 하늘이 약 ${Math.round((DEG_PER_DAY / 360) * SIDEREAL_MINUTES)}분 일찍 와요)`,
-          target: { center: targetMinutes, halfWidth: 40 },
-        };
+    : {
+        stage,
+        dial,
+        arrows: true,
+        texts: [
+          `시각은 반짝이는 구간 어딘가예요. (날짜를 하루 바꾸면 같은 하늘이 약 ${Math.round((DEG_PER_DAY / 360) * SIDEREAL_MINUTES)}분 일찍 와요)`,
+        ],
+        target: { center: targetMinutes, halfWidth: 40 },
+      };
 };
 
 export interface ComputerSolve {

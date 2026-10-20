@@ -8,7 +8,8 @@ import type {
   Dials,
   HintDial,
 } from "@/game/skyMatch/solveSteps";
-import type { Point2D } from "@/scripts/hash/types";
+import type { HintStage } from "@/game/skyMatch/solveSteps";
+import type { Point2D, Point3D } from "@/scripts/hash/types";
 import type { Mat3 } from "@/search/utils/similarity";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -86,6 +87,17 @@ const LOCKED: Record<Level, HintDial | null> = {
   "2": "time",
   "3": null,
 };
+
+const HINT_TITLES: Record<HintStage, string> = {
+  1: "이야기 단서",
+  2: "하늘 단서",
+  3: "별이 가야 할 쪽",
+  4: "다이얼 구간",
+};
+// 연한 화살표를 그릴 별 수 (밝은 순)
+const ARROW_STARS = 4;
+// 화살표 길이 상한 (정답 자리까지 잇지 않고 방향만)
+const ARROW_MAX_PX = 70;
 
 // 진전이 없으면 이만큼마다 힌트를 한 단계씩 더 준다
 const HINT_INTERVAL_MS = 15000;
@@ -193,7 +205,7 @@ function SkyMatchPlay({
   const [dialState, setDialState] = useState<Dials | null>(null);
   const [lines, setLines] = useState(false);
   const [moves, setMoves] = useState(0);
-  const [hintStage, setHintStage] = useState<0 | 1 | 2 | 3>(0);
+  const [hintStage, setHintStage] = useState<0 | HintStage>(0);
   const [emphasis, setEmphasis] = useState<Emphasis>(null);
   const [robot, setRobot] = useState<RobotState | null>(null);
   const [info, setInfo] = useState<{
@@ -222,6 +234,19 @@ function SkyMatchPlay({
   const dials = dialState ?? startDials(scene, level);
   const locked = LOCKED[level];
   const targets = useMemo(() => targetStars(scene, STARS), [scene]);
+  // 하늘 단서에 쓸, 정답 사진에서 가장 밝은 이름 있는 별 (지평선에 붙은 별보다 사진 위쪽 별)
+  const landmark = useMemo(() => {
+    const named = targets.flatMap((t) => {
+      const star = STARS.find((s) => s.vector === t.vector);
+
+      return star?.name
+        ? [{ name: star.name, vector: t.vector, y: t.at[1] }]
+        : [];
+    });
+    const high = named.find((n) => n.y < scene.height * 0.55) ?? named[0];
+
+    return high && { name: high.name, vector: high.vector };
+  }, [targets, scene]);
   // 다이얼로 정한 내 하늘 (같은 카메라 방향, 내 위도·날짜·시각)
   const player = useMemo(() => {
     const date = dialDate(scene, dials.dayOfYear, dials.minutes);
@@ -267,7 +292,7 @@ function SkyMatchPlay({
   );
   const hint =
     hintStage > 0 && !solved
-      ? hintFor(scene, dials, hintStage as 1 | 2 | 3, locked)
+      ? hintFor(scene, dials, hintStage as HintStage, locked, landmark)
       : null;
 
   // 새로 고리에 들어간 별: 초록 고리가 퍼지고, 맞은 수가 늘수록 높은 음
@@ -311,13 +336,13 @@ function SkyMatchPlay({
 
       progress.current.at = Date.now();
       setHintStage((s) => {
-        if (s >= 3) {
+        if (s >= 4) {
           return s;
         }
 
         sfx.twinkle(2);
 
-        return (s + 1) as 1 | 2 | 3;
+        return (s + 1) as HintStage;
       });
     }, 1000);
 
@@ -385,6 +410,17 @@ function SkyMatchPlay({
     drawGhost(ctx, scene, ghost);
     drawCues(ctx, scene, player.TP, emphasis, trails.current);
 
+    if (hint?.arrows) {
+      drawHintArrows(
+        ctx,
+        scene,
+        targets,
+        flags,
+        player.TP,
+        horizontalFrameJ2000(julianDay(player.date), player.observer).zenith,
+      );
+    }
+
     // 정답 사진의 별 자리: 맞으면 초록, 아직이면 하늘색 고리
     targets.forEach((t, i) => {
       const r = 7 + Math.max(0, 3.5 - t.mag) * 2;
@@ -400,7 +436,18 @@ function SkyMatchPlay({
     if (robot) {
       drawRobot(ctx, scene, robot);
     }
-  }, [scene, player, lines, solved, targets, flags, ghost, emphasis, robot]);
+  }, [
+    scene,
+    player,
+    lines,
+    solved,
+    targets,
+    flags,
+    ghost,
+    emphasis,
+    robot,
+    hint?.arrows,
+  ]);
 
   const newRound = (next: number, nextLevel = level) => {
     setLevel(nextLevel);
@@ -572,7 +619,14 @@ function SkyMatchPlay({
               key={`${hint.stage}-${hint.dial}`}
               className="fx-rise absolute right-3 bottom-3 left-3 rounded-xl bg-amber-300/90 px-4 py-2 text-sm font-bold text-black shadow-lg"
             >
-              💡 힌트 {hint.stage}/3 · {hint.text}
+              <span className="mr-2">
+                💡 힌트 {hint.stage}/4 · {HINT_TITLES[hint.stage]}
+              </span>
+              {hint.texts.map((t) => (
+                <span key={t} className="mr-2 font-normal">
+                  {t}
+                </span>
+              ))}
             </div>
           )}
         </div>
@@ -634,7 +688,7 @@ function SkyMatchPlay({
             step={1}
             value={dials.dayOfYear}
             locked={locked === "time"}
-            glow={hint?.dial === "time" && hint.stage === 1}
+            glow={false}
             onChange={(v) => setDial({ dayOfYear: v }, "time")}
             onGrab={countMove}
           />
@@ -690,6 +744,75 @@ function SkyMatchPlay({
     </div>
   );
 }
+
+// 힌트 3단계부터: 아직 고리에 안 들어간 밝은 별 곁에, 그 별이 가야 할 쪽으로 짧고 연한 화살표
+const drawHintArrows = (
+  ctx: CanvasRenderingContext2D,
+  scene: SkyScene,
+  targets: { vector: Point3D; at: Point2D }[],
+  flags: boolean[],
+  TP: Mat3,
+  zenith: Point3D, // 내 하늘의 천정: 땅 아래로 내려간 별에는 그리지 않는다
+) => {
+  ctx.save();
+  ctx.strokeStyle = "rgba(255,230,140,0.55)";
+  ctx.fillStyle = "rgba(255,230,140,0.55)";
+  ctx.lineWidth = 3;
+  ctx.lineCap = "round";
+  let drawn = 0;
+
+  for (let i = 0; i < targets.length && drawn < ARROW_STARS; i++) {
+    const v = targets[i].vector;
+
+    if (
+      flags[i] ||
+      v[0] * zenith[0] + v[1] * zenith[1] + v[2] * zenith[2] < 0.02
+    ) {
+      continue;
+    }
+
+    const from = projectVecToPhoto(TP, targets[i].vector);
+
+    if (
+      !from ||
+      from[0] < 0 ||
+      from[0] > scene.width ||
+      from[1] < 0 ||
+      from[1] > scene.height
+    ) {
+      continue;
+    }
+
+    const dx = targets[i].at[0] - from[0];
+    const dy = targets[i].at[1] - from[1];
+    const dist = Math.hypot(dx, dy);
+
+    if (dist < 12) {
+      continue;
+    }
+
+    const len = Math.min(ARROW_MAX_PX, dist * 0.6);
+    const ux = dx / dist;
+    const uy = dy / dist;
+    const sx = from[0] + ux * 12;
+    const sy = from[1] + uy * 12;
+    const ex = sx + ux * len;
+    const ey = sy + uy * len;
+    ctx.beginPath();
+    ctx.moveTo(sx, sy);
+    ctx.lineTo(ex, ey);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(ex + ux * 6, ey + uy * 6);
+    ctx.lineTo(ex - uy * 7 - ux * 6, ey + ux * 7 - uy * 6);
+    ctx.lineTo(ex + uy * 7 - ux * 6, ey - ux * 7 - uy * 6);
+    ctx.closePath();
+    ctx.fill();
+    drawn++;
+  }
+
+  ctx.restore();
+};
 
 // 땅 아래는 그리지 않는다: 사진 속 지평선(고도 0°) 위쪽만 남긴다 (카메라가 지평선에 고정이라 내 하늘도 같다)
 const clipAboveHorizon = (ctx: CanvasRenderingContext2D, scene: SkyScene) => {
