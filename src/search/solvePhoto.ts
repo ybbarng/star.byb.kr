@@ -102,9 +102,13 @@ const inputSizesFor = (starCount: number): number[] => {
   return sizes;
 };
 
-// 확신한 답을 그 영역의 별 POLISH_INPUT_STARS개로 다시 검증해, 점수가 오르면 그 결과로 바꾼다.
+// 확신한 답을 그 영역의 별 더 많이로 다시 검증해, 점수가 오르면 그 결과로 바꾼다.
 // 처음 확신한 순간의 점수는 입력 크기(15·25…)에 따라 기준 근처에서 출렁이기 때문이다.
-const POLISH_INPUT_STARS = INPUT_SIZES[INPUT_SIZES.length - 1];
+// 처음 해의 크기가 조금 틀리면 가장자리 별이 허용오차 밖이라 다시 맞춰도 못 잡는다. 그래서
+// 허용오차를 넓혀 한 번 맞춘 뒤 원래 허용오차로 다시 맞추는 길도 같이 보고, 가장 좋은 것을 고른다
+// (원근 보정된 은하수: 신뢰도 9.4 → 27, journey 22장). 한 번에 1ms 안팎이라 다 해 봐도 싸다.
+const POLISH_INPUT_STARS = [60, 100, 150];
+const POLISH_WIDEN = [1, 1.5, 2, 3];
 
 const polish = (
   out: SolveOutcome,
@@ -116,12 +120,40 @@ const polish = (
     return out;
   }
 
-  const refined = refineSolution(
-    out.transform,
-    stars.slice(0, POLISH_INPUT_STARS).map((s): Point2D => [s.x, s.y]),
-    ctx.catalog,
-    { imageWidth: size.width, imageHeight: size.height },
-  );
+  const base = Math.max(5, Math.hypot(size.width, size.height) * 0.006);
+  let refined: ReturnType<typeof refineSolution> = null;
+
+  for (const n of POLISH_INPUT_STARS) {
+    const points = stars.slice(0, n).map((s): Point2D => [s.x, s.y]);
+
+    for (const widen of POLISH_WIDEN) {
+      let TP = out.transform;
+      let last: ReturnType<typeof refineSolution> = null;
+
+      // 넓힌 허용오차로 두 번, 원래 허용오차로 두 번. 점수는 마지막(원래 허용오차) 것으로 본다.
+      for (const tolerancePx of [base * widen, base * widen, base, base]) {
+        last = refineSolution(TP, points, ctx.catalog, {
+          imageWidth: size.width,
+          imageHeight: size.height,
+          tolerancePx,
+        });
+
+        if (!last) {
+          break;
+        }
+
+        TP = last.TP;
+      }
+
+      if (last && (!refined || last.logOdds > refined.logOdds)) {
+        refined = last;
+      }
+    }
+
+    if (stars.length <= n) {
+      break;
+    }
+  }
 
   if (!refined || refined.logOdds <= out.confidence) {
     return out;

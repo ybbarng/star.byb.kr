@@ -511,8 +511,12 @@ const solveFrom = (
     best = r.matches;
   }
 
+  // 변환에서 출발했으면(마무리 정밀화) 닮음변환으로 다시 맞추지 않는다. 그 변환에 담긴
+  // 원근(키스톤)을 버리게 되어, 원근이 센 사진은 점수가 무너졌다 (journey 22장).
+  const fromPose = start.kind === "pose";
+
   // RANSAC: 2쌍으로 변환을 추정하며 최대 inlier 모델 탐색
-  if (best.length >= 4) {
+  if (!fromPose && best.length >= 4) {
     const m = best;
 
     for (let iter = 0; iter < ransacIterations; iter++) {
@@ -547,7 +551,7 @@ const solveFrom = (
   }
 
   // inlier 전체로 변환 refine
-  if (best.length >= 2) {
+  if (!fromPose && best.length >= 2) {
     T = umeyamaSimilarity2D(
       best.map((c) => c.plane),
       best.map((c) => c.photo),
@@ -555,7 +559,7 @@ const solveFrom = (
   }
 
   // 광축 재추정 정제: 새 광축으로 더 많은 별이 맞으면 그 대응으로 바꾸며 수렴시킨다.
-  for (let iter = 0; iter < 2; iter++) {
+  for (let iter = 0; iter < (fromPose ? 0 : 2); iter++) {
     const r = recenter(best, T, P);
 
     if (!r) {
