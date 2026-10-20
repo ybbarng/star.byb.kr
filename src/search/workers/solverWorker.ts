@@ -8,6 +8,7 @@ import { horizonSolve } from "@/search/horizonSolve";
 import { solvePhoto } from "@/search/solvePhoto";
 import { buildSolverContext } from "@/search/solverContext";
 import { rankForSolving } from "@/search/utils/selectStars";
+import { koreanStarName } from "@/search/utils/starNames";
 
 // 검증된 풀이 코어(solvePhoto)를 브라우저에서 실행하는 Worker.
 // DB(매칭 해시 + 검증 카탈로그)를 받아 ctx를 한 번 만들고, 사진 별 목록으로 풀어
@@ -68,7 +69,7 @@ const loadDatabase = (): Promise<SolverContext> => {
     }));
     horizonCatalog = stars.map(({ vector, mag }) => ({ vector, mag }));
     const nameMap = new Map<string, string | undefined>(
-      vectors.map((s) => [s.HR, s.N]),
+      vectors.map((s) => [s.HR, s.N && koreanStarName(s.N)]),
     );
     const nameOf = (hr: string) => nameMap.get(hr) ?? `HR ${hr}`;
 

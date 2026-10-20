@@ -1,7 +1,7 @@
 import type { DrawConstellation, DrawStar, SkyItem } from "@/game/sky/drawSky";
 import type { Point2D, Point3D } from "@/scripts/hash/types";
 import type { Mat3 } from "@/search/utils/similarity";
-import { koreanStarName } from "@/game/sky/starNames";
+import { koreanStarName } from "@/search/utils/starNames";
 import { projectVecToPhoto } from "@/search/utils/wcs";
 import constellationData from "@build/database/vectors-constellations.json";
 import catalogData from "@build/database/vectors-database.json";

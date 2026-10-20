@@ -4,6 +4,7 @@ import type { FisheyeCamera } from "@/search/utils/fisheye";
 import type { Mat3 } from "@/search/utils/similarity";
 import { useCallback, useState } from "react";
 import { projectFisheye } from "@/search/utils/fisheye";
+import { koreanStarName } from "@/search/utils/starNames";
 import { projectVecToPhoto } from "@/search/utils/wcs";
 import constellationData from "@build/database/vectors-constellations.json";
 import catalogData from "@build/database/vectors-database.json";
@@ -138,7 +139,11 @@ const buildOverlay = (
     );
 
     if (!overlapped) {
-      sk.push({ name: s.N ?? null, x: p[0], y: p[1] });
+      sk.push({
+        name: s.N ? koreanStarName(s.N) : null,
+        x: p[0],
+        y: p[1],
+      });
     }
   }
 
