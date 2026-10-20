@@ -102,7 +102,8 @@ export default function SkyMatchGame() {
 }
 
 function SkyMatchPlay({ difficulty }: { difficulty: Difficulty }) {
-  const [seed, setSeed] = useState(() => dailySeed());
+  // 시작할 때마다 새 문제 ("오늘의 문제" 버튼은 날짜로 정한 문제)
+  const [seed, setSeed] = useState(() => Math.floor(Math.random() * 1e9));
   const [dials, setDials] = useState(startDials);
   const [hint, setHint] = useState(false);
   const [moves, setMoves] = useState(0);

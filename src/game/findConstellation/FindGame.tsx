@@ -23,7 +23,6 @@ import { sfx } from "@/game/fx/sound";
 import { pickItem, projectLines, STARS } from "@/game/sky/catalog";
 import { drawSky } from "@/game/sky/drawSky";
 import ItemInfo, { canvasPoint } from "@/game/sky/ItemInfo";
-import { dailySeed } from "@/game/sky/scene";
 import { projectVecToPhoto } from "@/search/utils/wcs";
 import { cn } from "@/utils/cn";
 import { createRng } from "@/utils/rng";
@@ -70,8 +69,7 @@ const pointsFor = (seconds: number, misses: number) =>
 export default function FindGame() {
   const [phase, setPhase] = useState<Phase>("intro");
   const [difficulty, setDifficulty] = useState<Difficulty>("easy");
-  // 첫 판은 날짜로 정한다 (오늘의 문제)
-  const [gameSeed, setGameSeed] = useState(() => dailySeed());
+  const [gameSeed, setGameSeed] = useState(0);
   const [results, setResults] = useState<RoundResult[]>([]);
   const [newBest, setNewBest] = useState(false);
   const total = results.reduce((a, r) => a + r.points, 0);
@@ -87,6 +85,8 @@ export default function FindGame() {
           `한 문제에 틀릴 수 있는 기회는 ${MAX_MISSES}번이에요.`,
         ]}
         onStart={() => {
+          // 시작할 때마다 새 문제 (시작 화면을 거친 뒤라 서버·브라우저 화면이 어긋나지 않는다)
+          setGameSeed(Math.floor(Math.random() * 1e9));
           setResults([]);
           setPhase("play");
         }}
