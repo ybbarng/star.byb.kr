@@ -40,6 +40,23 @@ export interface DrawSkyOptions {
   compass?: boolean; // 지평선에 동서남북 표시 (쉬움)
   // 달빛이 어두운 별을 지우게 할지 (기본 true). 별을 눌러 보는 게 목적이면 끈다.
   moonlightDimsStars?: boolean;
+  // 산: 그 방위 둘레로 땅이 솟아 별을 가린다 (지오게서에서 극을 가리는 데 쓴다)
+  mountains?: Mountain[];
+  // 구름: 하늘의 그 자리(고도·방위)를 덮어 별을 가린다
+  clouds?: Cloud[];
+}
+
+export interface Mountain {
+  azDeg: number;
+  widthDeg: number; // 반폭
+  heightDeg: number;
+}
+
+export interface Cloud {
+  azDeg: number;
+  altDeg: number;
+  sizeDeg: number;
+  seed: number;
 }
 
 const D = Math.PI / 180;
@@ -121,24 +138,52 @@ export const drawSky = (
   const moonGlow =
     moonAlt > 0 ? moonLit * Math.min(1, Math.sin(moonAlt * D) * 3) : 0;
 
+  // 박명: 해가 지평선 아래 18°보다 얕으면 하늘이 밝아지고 해 쪽 지평선이 물든다 (노을·새벽빛)
+  const sunAlt = altOf(sun.vector);
+  const sunAz =
+    Math.atan2(dot(sun.vector, frame.east), dot(sun.vector, frame.north)) / D;
+  const dusk = Math.max(0, Math.min(1, (sunAlt + 18) / 18)) ** 2;
+
   // 1) 하늘: 위는 어둡고 지평선 쪽은 광해·달빛으로 밝다
   const horizonY = project(fromAltAzJ2000(frame, 0, o.azimuthDeg))?.[1] ?? H;
   const gradient = ctx.createLinearGradient(0, 0, 0, Math.max(1, horizonY));
   const lp = o.lightPollution;
   gradient.addColorStop(
     0,
-    `rgb(${4 + 20 * moonGlow},${7 + 25 * moonGlow},${18 + 40 * moonGlow})`,
+    `rgb(${4 + 20 * moonGlow + 16 * dusk},${7 + 25 * moonGlow + 30 * dusk},${18 + 40 * moonGlow + 70 * dusk})`,
   );
   gradient.addColorStop(
     1,
-    `rgb(${14 + 70 * lp + 30 * moonGlow},${22 + 45 * lp + 35 * moonGlow},${45 + 20 * lp + 50 * moonGlow})`,
+    `rgb(${14 + 70 * lp + 30 * moonGlow + 40 * dusk},${22 + 45 * lp + 35 * moonGlow + 50 * dusk},${45 + 20 * lp + 50 * moonGlow + 80 * dusk})`,
   );
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, W, H);
 
-  // 2) 별: 밝은 달과 광해가 어두운 별을 지운다. 지평선 근처는 대기에 묻힌다.
+  // 해 쪽 지평선의 노을 (해가 화면 밖이어도 빛이 번져 들어온다)
+  if (dusk > 0) {
+    const at = project(fromAltAzJ2000(frame, 0, sunAz));
+
+    if (at) {
+      const rx = 70 * pxPerDeg;
+      const ry = 22 * pxPerDeg;
+      ctx.save();
+      ctx.translate(at[0], at[1]);
+      ctx.scale(1, ry / rx);
+      const glow = ctx.createRadialGradient(0, 0, 0, 0, 0, rx);
+      glow.addColorStop(0, `rgba(255,150,70,${0.75 * dusk})`);
+      glow.addColorStop(0.35, `rgba(240,120,90,${0.35 * dusk})`);
+      glow.addColorStop(1, "rgba(80,90,160,0)");
+      ctx.fillStyle = glow;
+      ctx.fillRect(-rx, -rx, 2 * rx, 2 * rx);
+      ctx.restore();
+    }
+  }
+
+  // 2) 별: 밝은 달·박명·광해가 어두운 별을 지운다. 지평선 근처는 대기에 묻힌다.
   const limit =
-    o.magLimit - (o.moonlightDimsStars === false ? 0 : 1.5 * moonGlow);
+    o.magLimit -
+    (o.moonlightDimsStars === false ? 0 : 1.5 * moonGlow) -
+    4 * dusk;
 
   for (const s of o.stars) {
     const alt = altOf(s.vector);
@@ -259,6 +304,30 @@ export const drawSky = (
     }
   }
 
+  // 구름: 여러 덩이의 부드러운 어두운 뭉치 (마을·달빛을 받아 아주 조금 밝다)
+  for (const c of o.clouds ?? []) {
+    const crng = createRng(c.seed);
+
+    for (let k = 0; k < 7; k++) {
+      const az = c.azDeg + (crng() - 0.5) * c.sizeDeg * 1.6;
+      const alt = c.altDeg + (crng() - 0.5) * c.sizeDeg * 0.6;
+      const p = alt > 0 ? project(fromAltAzJ2000(frame, alt, az)) : null;
+
+      if (!p) {
+        continue;
+      }
+
+      const r = (0.35 + crng() * 0.4) * c.sizeDeg * pxPerDeg;
+      const puff = ctx.createRadialGradient(p[0], p[1], 0, p[0], p[1], r);
+      const tone = `${22 + 25 * moonGlow + 40 * lp},${24 + 25 * moonGlow + 30 * lp},${32 + 25 * moonGlow + 20 * lp}`;
+      puff.addColorStop(0, `rgba(${tone},0.97)`);
+      puff.addColorStop(0.7, `rgba(${tone},0.85)`);
+      puff.addColorStop(1, `rgba(${tone},0)`);
+      ctx.fillStyle = puff;
+      ctx.fillRect(p[0] - r, p[1] - r, 2 * r, 2 * r);
+    }
+  }
+
   // 5) 땅: 고도 0° 위로 솟은 능선 (산·숲), 그 아래를 어둡게 칠한다
   const rng = createRng(o.groundSeed);
   const waves = [0, 1, 2, 3].map(() => ({
@@ -266,8 +335,20 @@ export const drawSky = (
     phase: rng() * Math.PI * 2,
     amp: 0.2 + rng() * 1.2,
   }));
+  const mountain = (az: number) =>
+    (o.mountains ?? []).reduce((s, m) => {
+      const d = (((az - m.azDeg + 540) % 360) - 180) / m.widthDeg;
+
+      return Math.abs(d) < 1
+        ? s +
+            m.heightDeg *
+              (1 - d * d) *
+              (0.8 + 0.2 * Math.sin(az * 0.9 + m.azDeg))
+        : s;
+    }, 0);
   const ridge = (az: number) =>
     0.3 +
+    mountain(az) +
     waves.reduce(
       (s, w) => s + w.amp * (1 + Math.sin(w.freq * az * D + w.phase)) * 0.5,
       0,
