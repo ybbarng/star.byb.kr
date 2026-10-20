@@ -78,7 +78,6 @@ src/
 data/                          # 원본 카탈로그 및 입력 데이터
 build/                         # 빌드된 데이터베이스 (gitignore 대상)
 public/
-├── catalogs/                  # bsc5.dat, ConstellationLines.dat
 ├── samples/                   # 샘플 사진들
 └── presentation/              # Reveal.js 발표 슬라이드
 ```
