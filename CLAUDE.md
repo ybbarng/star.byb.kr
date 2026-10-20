@@ -17,17 +17,14 @@
 - **상태 관리**: Zustand
 - **시각화**: Three.js (3D 천구), Konva/react-konva (2D 캔버스)
 - **이미지 처리**: 순수 JS 별 검출 (Web Worker, `search/detectImage.ts`). OpenCV.js는 2026-10에 뺐다 (다운로드 3.9MB 절약)
-- **수학/검색**: mathjs, kd-tree-javascript, @hscmap/healpix
+- **수학/검색**: 순수 JS (풀이 경로), @hscmap/healpix. mathjs·kd-tree-javascript는 비교용 원본 solver·스크립트에만
 - **Node**: v20.11.0 (.nvmrc)
 
 ## 개발 명령어
 
 ```sh
 npm install           # 의존성 설치
-./build_database.sh   # 데이터베이스 파일 생성 (최초 1회)
-# 브라우저가 받는 DB는 public/data/에 build 산출물 symlink로 둔다 (gitignore 대상):
-#   ln -s $PWD/build/hash/hashed-database.bin public/data/
-#   ln -s $PWD/build/database/vectors-database.json public/data/
+./build_database.sh   # 데이터베이스 파일 생성 (최초 1회, 빌드 전에 필요 — 앱이 build/의 JSON을 코드에 싣는다)
 npm run dev           # 개발 서버 (http://localhost:5025)
 npm run build         # 프로덕션 빌드
 npm run lint          # ESLint
@@ -76,7 +73,6 @@ src/
 │   ├── hash/                  # quad 해시 생성 알고리즘
 │   └── search/                # 검색 테스트/벤치마크
 ├── services/                  # 샘플 사진 목록, EXIF
-└── ui/                        # 폰트 등 공용 리소스
 
 data/                          # 원본 카탈로그 및 입력 데이터
 build/                         # 빌드된 데이터베이스 (gitignore 대상)
@@ -91,14 +87,18 @@ public/
 ### 데이터 준비 (오프라인, build_database.sh)
 
 1. **reduceDatabase**: BSC5 카탈로그에서 설정 등급 이하의 밝은 별만 필터링 (현재 V≤5, 1,625개)
-2. **toVector**: RA/Dec 천문학 좌표 → 3D 단위 벡터 (x, y, z)
-3. **createHashFromDatabase**: HEALPix로 천구를 192개 셀(nside=4, 600 arcmin)로 분할 → 각 셀에서 4개 별 조합(quad) 생성 → 별쌍이 모두 10° 이내인 compact quad만 남김(84,962개) → 접선 평면 투영 → 정규화된 4D 해시 (`hashed-database.json` 10.8MB)
-4. **encodeHashedDatabase**: 브라우저용 이진 형식 `hashed-database.bin`(2.04MB, gzip 1.46MB)으로 변환. 별 번호는 vectors-database.json 순서
-5. **buildConstellations**: 별자리 연결선 데이터를 벡터 형식으로 변환
+2. **toVector**: RA/Dec 천문학 좌표 → 3D 단위 벡터. 앱이 코드에 싣는 `vectors-database.json`은 쓰는 칸(HR·N·V·K·x·y·z, 좌표 소수 8자리)만 남겨 138KB(gzip 41KB)
+3. **createHashFromDatabase**: quad 해시 JSON(발표용 해시 시각화 데모만 읽는다)
+4. **buildConstellations**: 별자리 연결선 데이터를 벡터 형식으로 변환
+5. **buildParallax**: 빛의 타임캡슐(게임)용 별 거리
+
+quad 해시 DB는 내려받지 않고 풀이 Worker가 카탈로그에서 만든다 (`search/quadDatabase.ts`, node 약 0.12~0.2초):
+HEALPix로 천구를 192개 셀(nside=4, 셀 중심에서 10°)로 나눔 → 셀마다 4개 별 조합 → 별쌍이 모두 10° 이내인 compact quad만
+→ 이웃 셀에서 겹친 것 제거(82,703개) → 접선 평면 투영 → 정규화된 4D 해시. 예전 이진 파일(gzip 1.46MB)과 같은 quad·해시다
 
 ### 런타임 Plate Solving (브라우저)
 
-1. **사진 선택**: 샘플 또는 업로드. 이때 풀이 Worker가 DB를 미리 받아 인덱스를 만든다 (`preloadSolver`)
+1. **사진 선택**: 샘플 또는 업로드. 이때 풀이 Worker가 quad 해시 DB와 인덱스(4D KD-tree `utils/kdTree4.ts`, 삼각형 인덱스)를 미리 만든다 (`preloadSolver`, node 약 0.8초)
 2. **별 검출**: 순수 JS Local Maxima (Web Worker, 회색조 → 상자 흐림 3번(σ≈8) → 차영상) → 적응적 threshold(mean+3σ) → 가까운 중복 합치기 →
    별다움(`ringContrast`: 주변 고리가 고른 하늘인지) 계산 → 별다운 것 먼저, 그 안에서 밝은 순.
    한 줄에 규칙적인 간격으로 줄지은 검출(비행기 불빛·창문 줄, `findAlignedStars`)은 뒤로. 상위 100개 표시.
@@ -161,28 +161,23 @@ HEALPix nside=4, 192셀, 600 arcmin 기준. 2025-02-08 측정.
 - 4등급: 수초 / 4.5등급: 수십초 / 5등급: 수분 / 5.5등급 이상: 수십분~수시간
 - 1회성이므로 빌드 시간 자체는 허용 가능
 
-**Plate Solving 런타임 (브라우저)**
+**Plate Solving 런타임 (브라우저)** — 2026-10-20 다시 점검 (node 측정, journey 28장)
 
-| 단계 | 별 수 의존 | 비고 |
-|------|-----------|------|
-| hashed-database.json 파싱 | O(N) | **주요 병목**. 63MB 이상이면 브라우저에서 수초~수십초 |
-| KD-Tree 초기 구축 | O(N log N) | Worker에서 1회. 100K 엔트리까지 수용 가능 |
-| KD-Tree 검색 | O(log N) | 1,365 × 3 × O(log N). N이 10배 늘어도 체감 차이 미미 |
-| 사진 quad 생성 | 무관 | C(15,4) = 1,365 고정 |
-| Verification | 무관 | 카탈로그 별 수 × 사진 별 수. 단순 거리 계산 |
+| 단계 | 시간 | 비고 |
+|------|------|------|
+| quad 해시 DB 만들기 | 0.12~0.2초 | 내려받지 않는다 (예전 gzip 1.46MB) |
+| 4D KD-tree 구축 | 0.035초 | 타입 배열 KD-tree (예전 라이브러리 0.31초) |
+| 전체 삼각형 인덱스(약 113만 개) | 0.55초 | 타입 배열에 쌓아 메모리가 수백 MB로 치솟지 않는다 |
+| 밝은 별 삼각형 인덱스 | 0.05초 | |
+
+처음 받는 양 (프로덕션, 압축): 플레이트 솔버 약 0.68MB(JS 0.31·글꼴 0.31·CSS 0.03), 게임 약 0.68MB.
+예전에는 플레이트 솔버만 약 8MB(OpenCV 3.9·패턴 DB 1.5·글꼴 2.0·mathjs 0.17 등)였다.
+글꼴은 Pretendard 동적 부분 집합(92조각 중 쓰인 글자 조각만)을 쓴다.
 
 ### 결론
 
-- **V<=4.5 (904별, ~6MB)**: 현실적인 최대치. Plate solving 속도 거의 변화 없음
-- **V<=5.0 (1,630별, ~63MB)**: 가능하나 초기 로딩이 수초 증가. JSON→binary 포맷 전환 시 해결 가능
-- **V<=5.5 이상**: 브라우저에서 감당 불가. binary 포맷 + 스트리밍 등 근본적 구조 변경 필요
-
-### 향후 최적화 방향 (별 수를 더 늘리려면)
-
-1. **hashed-database.json → Float32Array 기반 binary 포맷**: JSON 파싱 제거, 크기 1/3~1/4로 축소
-2. **KD-Tree 사전 직렬화**: ArrayBuffer로 저장하여 구축 시간 제거
-3. **HEALPix nside 조정**: 셀 크기를 줄여 셀당 별 수를 제한하면 quad 폭발 억제 가능
-4. **셀당 최대 별 수 제한**: 밝은 별 우선으로 셀당 N개까지만 사용
+- 별을 더 늘리면(V≤5.5 이상) quad가 C(k,4)로 폭발한다. 지금은 브라우저에서 만드니 받는 양은 늘지 않지만
+  만드는 시간·메모리가 문제가 된다 → 셀당 최대 별 수 제한, nside 조정이 다음 단계
 
 ## 코드 스타일
 
