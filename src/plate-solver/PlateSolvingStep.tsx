@@ -6,6 +6,7 @@ import type { SolveCandidateResult } from "@/search/solvers";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { autoHorizon } from "@/plate-solver/autoHorizon";
 import { detectPhotoStars } from "@/plate-solver/detectPhotoStars";
+import MiniSkyMap from "@/plate-solver/MiniSkyMap";
 import { getSampleAnswer, matchesAnswer } from "@/plate-solver/sampleAnswers";
 import { getSampleShot, shotDate, shotFromExif } from "@/plate-solver/shotTime";
 import ShotTimeControl from "@/plate-solver/ShotTimeControl";
@@ -502,6 +503,14 @@ export default function PlateSolvingStep() {
                     ? `촬영 시각·장소와 지평선으로 풀었어요. ${horizonRun.message ?? ""}`
                     : `맞는 별 ${candidates[selected]?.inlierCount}개 · 화각 약 ${candidates[selected]?.fovDeg.toFixed(0)}° · ${((outcome?.timeMs ?? 0) / 1000).toFixed(1)}초`}
               </div>
+              {selectedTransform && (
+                <MiniSkyMap
+                  transform={selectedTransform}
+                  width={image.width}
+                  height={image.height}
+                  photoStars={photoStars}
+                />
+              )}
             </>
           ) : failed && candidates.length > 0 ? (
             <>
