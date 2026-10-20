@@ -1,9 +1,11 @@
 import type { Point2D, Point3D } from "@/scripts/hash/types";
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
+import sharp from "sharp";
 import { beforeAll, describe, expect, it } from "vitest";
 import { answerVector, getSampleAnswer } from "@/plate-solver/sampleAnswers";
 import { HORIZON_ACCEPT_LOG_ODDS, horizonSolve } from "@/search/horizonSolve";
+import { detectHorizon } from "@/search/utils/horizonDetect";
 import { rankForSolving } from "@/search/utils/selectStars";
 import { detectLikeApp } from "@/test/real/detectImage";
 import {
@@ -67,6 +69,32 @@ describe.skipIf(!ready)("사이판 사진: 시각·장소·수평선으로 풀�
     const minutes = (r.date.getTime() - POSTED_AT.getTime()) / 60000;
     expect(minutes).toBeGreaterThan(15);
     expect(minutes).toBeLessThan(60);
+  }, 60000);
+
+  it("사람이 찍지 않고 자동으로 찾은 지평선으로도 확신한다", async () => {
+    const { data, info } = await sharp(
+      resolve(process.cwd(), "public/samples", FILE),
+    )
+      .greyscale()
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+    const found = detectHorizon(
+      data,
+      info.width,
+      info.height,
+      info.channels,
+      input.photoStars.slice(0, 60),
+    )!;
+    const r = horizonSolve({
+      ...input,
+      horizon: found.line,
+      date: POSTED_AT,
+    })!;
+
+    expect(r.logOdds).toBeGreaterThanOrEqual(HORIZON_ACCEPT_LOG_ODDS);
+    expect(
+      angleDeg(r.centerVector, answerVector(getSampleAnswer(FILE)!)),
+    ).toBeLessThan(2);
   }, 60000);
 
   it("넉 달 어긋난 날짜를 주면 확신하지 않는다", () => {

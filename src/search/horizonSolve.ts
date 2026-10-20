@@ -26,7 +26,7 @@ import { recoverCenter } from "@/search/utils/wcs";
 
 // 판정 기준. logOdds는 살펴본 모든 후보 칸으로 깎은 값이라, 0 이상이면 "어느 후보에서든 우연히 이만큼
 // 맞을 기대 횟수가 1번 미만"이다. 합성 장면 130개(별 10개 안팎, 거짓 점, 1° 안팎 틀린 지평선, 늦게 올린
-// 시각)에서 틀린 답의 최고 점수는 -1.9, 틀린 시각을 준 대조군의 최고 점수는 -2.2였다 (journey 25장).
+// 시각)에서 틀린 답의 최고 점수는 -2.1, 틀린 시각을 준 대조군의 최고 점수는 -2.2였다 (journey 25·26장).
 export const HORIZON_ACCEPT_LOG_ODDS = 0;
 
 export interface HorizonStar {
@@ -110,6 +110,8 @@ const VOTE_ALT_TOL_DEG = 1.5;
 const VOTE_MAX_MAG = 4;
 // 다듬을 후보 수
 const TOP_PEAKS = 60;
+// 다듬을 후보를 고를 때 넓히는 허용오차 배수 (지평선 높이 오차 ±1.5°쯤을 견딘다)
+const COARSE_TOLERANCE = 3;
 // 다듬는 범위: 지평선 높이(카메라 위아래 기울기)와 좌우 기울기 오차
 const PITCH_RANGE_DEG = 3;
 const ROLL_RANGE_DEG = 2;
@@ -340,9 +342,22 @@ const solveWith = (
     );
 
   // 표 수는 시야각이 작을수록 부풀어(고도 허용오차가 상대적으로 넓다) 순위로 믿기 어렵다.
-  // 후보마다 그 자리에서 맞는 별 수를 한 번 세서, 그 순서로 다듬을 후보를 고른다.
+  // 후보마다 그 자리에서 맞는 별 수를 한 번 세서, 그 순서로 다듬을 후보를 고른다. 이때는 허용오차를
+  // 넓혀 센다 — 지평선을 1~2° 틀리게 찍으면(자동으로 찾은 지평선) 다듬기 전에는 정답 후보도 맞는 별이
+  // 0개라 탈락했다 (journey 26장). 최종 판정은 원래 허용오차로 한다.
+  const coarseScore = (p: Params) =>
+    countInliers(
+      camera(p),
+      photo,
+      skyAt(p.minutes).sky,
+      W,
+      H,
+      tolPx * COARSE_TOLERANCE,
+      isSky,
+      compare.catalogRatio,
+    );
   const ranked = peaks
-    .map((peak) => ({ ...peak, inliers: score(peak.p).inliers }))
+    .map((peak) => ({ ...peak, inliers: coarseScore(peak.p).inliers }))
     .sort((a, b) => b.inliers - a.inliers || b.votes - a.votes);
 
   let best: {
