@@ -5,9 +5,10 @@ import { usePathname } from "next/navigation";
 import { MuteButton } from "@/game/fx/Fx";
 import { cn } from "@/utils/cn";
 
-// 모든 페이지 위쪽의 길잡이: 첫 화면, 사진으로 찾기, 별 놀이터. 게임에서는 소리 켜고 끄기도 둔다.
+// 모든 페이지 위쪽의 길잡이: 첫 화면, 사진으로 찾기, 찾는 원리, 별 놀이터. 게임에서는 소리 켜고 끄기도 둔다.
 const LINKS = [
   { href: "/plate-solver", label: "사진으로 찾기", short: "사진" },
+  { href: "/learn", label: "찾는 원리", short: "원리" },
   { href: "/games", label: "별 놀이터", short: "놀이터" },
 ];
 

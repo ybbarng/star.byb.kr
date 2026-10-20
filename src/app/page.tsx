@@ -1,10 +1,13 @@
 import Link from "next/link";
 import { GAMES } from "@/game/hub";
+import { LEARN_STEPS, learnHref } from "@/learn/steps";
 import SiteShell from "@/ui/SiteShell";
 
-// 첫 화면: 무엇을 하는 곳인지 풀린 사진 한 장으로 보여 주고, 두 갈래(사진으로 찾기·별 놀이터)로 보낸다.
+// 첫 화면: 무엇을 하는 곳인지 풀린 사진 한 장으로 보여 주고, 찾는 원리 세 단계와 별 놀이터를 소개한다.
+// 위쪽 길잡이와 겹치지 않게 버튼은 "내 사진으로 찾기" 하나만 둔다.
 export default function Page() {
   const games = GAMES.filter((g) => g.ready);
+  const steps = LEARN_STEPS.filter((s) => s.core);
 
   return (
     <SiteShell>
@@ -19,14 +22,9 @@ export default function Page() {
             밤하늘 사진을 올리면, 컴퓨터가 별들의 배치만 보고 하늘 어디를
             찍었는지 찾아 별자리와 별 이름을 그려 줘요.
           </p>
-          <div className="mt-2 flex flex-wrap justify-center gap-3">
-            <Link href="/plate-solver" className="btn btn-primary btn-lg">
-              내 사진으로 찾기
-            </Link>
-            <Link href="/games" className="btn btn-ghost btn-lg">
-              별 놀이터 가기
-            </Link>
-          </div>
+          <Link href="/plate-solver" className="btn btn-primary btn-lg mt-2">
+            내 사진으로 찾기
+          </Link>
         </section>
 
         <figure
@@ -48,63 +46,53 @@ export default function Page() {
         </figure>
 
         <section
-          className="fx-rise grid gap-4 md:grid-cols-3"
+          className="fx-rise flex flex-col gap-4"
           style={{ animationDelay: "250ms" }}
         >
-          {[
-            {
-              icon: "✦",
-              title: "별을 찾고",
-              body: "사진에서 별처럼 보이는 점을 골라요. 나무·건물 불빛은 뒤로 미뤄요.",
-            },
-            {
-              icon: "△",
-              title: "모양을 맞추고",
-              body: "밝은 별 몇 개가 이루는 삼각형·사각형 모양을 별 지도에서 찾아요.",
-            },
-            {
-              icon: "✓",
-              title: "확인해요",
-              body: "나머지 별까지 맞는지 보고, 우연일 확률이 10억 분의 1보다 작을 때만 답해요.",
-            },
-          ].map((step) => (
-            <div
-              key={step.title}
-              className="bg-base-200/70 rounded-box flex flex-col gap-1 p-5 backdrop-blur"
-            >
-              <span className="text-2xl text-indigo-300">{step.icon}</span>
-              <h2 className="font-bold">{step.title}</h2>
-              <p className="text-sm opacity-70">{step.body}</p>
-            </div>
-          ))}
-        </section>
-
-        <section
-          className="fx-rise flex flex-col gap-4"
-          style={{ animationDelay: "350ms" }}
-        >
           <div className="flex items-end justify-between gap-2">
-            <h2 className="text-2xl font-black">별 놀이터</h2>
-            <Link href="/games" className="link link-hover text-sm opacity-70">
-              모두 보기 →
+            <h2 className="text-2xl font-black">어떻게 찾을까요?</h2>
+            <Link href="/learn" className="link link-hover text-sm opacity-70">
+              원리 전체 보기 →
             </Link>
           </div>
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-            {games.map((g) => (
+          <div className="grid gap-4 md:grid-cols-3">
+            {steps.map((step, i) => (
               <Link
-                key={g.href}
-                href={g.href}
-                className="fx-card bg-base-200/70 rounded-box flex flex-col gap-1 p-4 backdrop-blur"
+                key={step.slug}
+                href={learnHref(step.slug)}
+                className="fx-card bg-base-200/70 rounded-box flex flex-col gap-1 p-5 backdrop-blur"
               >
-                <span className="text-3xl">{g.icon}</span>
-                <span className="font-bold">{g.title}</span>
-                <span className="line-clamp-2 text-xs opacity-60">
-                  {g.summary}
+                <span className="text-2xl text-indigo-300">{step.icon}</span>
+                <span className="text-xs opacity-50">{i + 1}단계</span>
+                <span className="font-bold">{step.title}</span>
+                <span className="text-sm opacity-70">{step.summary}</span>
+                <span className="text-primary mt-auto pt-2 text-sm">
+                  자세히 →
                 </span>
               </Link>
             ))}
           </div>
         </section>
+
+        <Link
+          href="/games"
+          className="fx-rise fx-card rounded-box flex flex-col items-center gap-4 bg-gradient-to-br from-indigo-500/25 to-fuchsia-500/10 p-6 text-center ring-1 ring-white/10 md:flex-row md:text-left"
+          style={{ animationDelay: "350ms" }}
+        >
+          <span className="flex gap-1 text-3xl">
+            {games.map((g) => (
+              <span key={g.href}>{g.icon}</span>
+            ))}
+          </span>
+          <span className="flex flex-1 flex-col gap-1">
+            <span className="text-xl font-black">별 놀이터</span>
+            <span className="text-sm opacity-75">
+              하늘 맞추기, SkyGuessr, 생일 별자리… 게임 {games.length}개로
+              놀면서 별자리와 하늘의 움직임을 배워요.
+            </span>
+          </span>
+          <span className="btn btn-sm">놀러 가기 →</span>
+        </Link>
 
         <footer className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs opacity-50">
           <span>
@@ -121,7 +109,26 @@ export default function Page() {
           <a className="link link-hover" href="/presentation/index.html">
             발표 자료
           </a>
-          <span>별 자료: 예일 밝은 별 목록(BSC5)</span>
+          <span>
+            별 자료:{" "}
+            <a
+              className="link link-hover"
+              href="https://cdsarc.cds.unistra.fr/viz-bin/cat/V/50"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              예일 밝은 별 목록(BSC5)
+            </a>
+            {" · "}
+            <a
+              className="link link-hover"
+              href="https://github.com/MarcvdSluys/ConstellationLines"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              별자리선(ConstellationLines, CC BY-SA 4.0)
+            </a>
+          </span>
         </footer>
       </div>
     </SiteShell>
