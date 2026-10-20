@@ -1,68 +1,114 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { drawBirthdayChart } from "@/game/birthday/drawChart";
+import type { Birth } from "@/game/birthday/BirthdayPicker";
+import { useMemo, useState } from "react";
+import BirthdayChart from "@/game/birthday/BirthdayChart";
+import {
+  BirthdayCalendar,
+  BirthdayField,
+} from "@/game/birthday/BirthdayPicker";
+import { BIRTH_COLOR, SIGN_COLOR } from "@/game/birthday/drawChart";
 import { birthdaySky, ZODIAC, zodiacWidthDeg } from "@/game/birthday/zodiac";
+import { cn } from "@/utils/cn";
 
 // 생일 별자리 (docs/game-plans.md): 생일에 해가 실제로 있던 별자리와 점성술의 별자리를 천문도로 비교하고,
 // 왜 다른지(세차 운동, 별자리마다 다른 폭, 뱀주인자리) 설명한다.
+// 첫 화면에서 생일을 받고, 찾기를 누르면 결과 화면으로 넘어간다. 결과 화면에서도 날짜를 바꿔 볼 수 있다.
 
-const W = 1280;
-const H = 640;
+// 첫 화면이 사라지는 시간 (ms)
+const LEAVE_MS = 450;
+
+// 결과 화면의 덩어리들이 차례로 떠오르게
+const rise = (order: number) => ({ animationDelay: `${order * 120}ms` });
 
 export default function BirthdayGame() {
-  const [birth, setBirth] = useState({ year: 1995, month: 3, day: 1 });
+  const [phase, setPhase] = useState<"intro" | "leaving" | "result">("intro");
+  const [draft, setDraft] = useState<Birth | null>(null);
+  const [birth, setBirth] = useState<Birth | null>(null);
+
+  if (phase !== "result" || !birth) {
+    return (
+      <div
+        className={cn(
+          "mt-[6vh] flex w-full max-w-md flex-col items-center gap-6 text-center transition-all duration-[450ms] ease-in",
+          phase === "leaving" && "-translate-y-10 scale-95 opacity-0",
+        )}
+      >
+        <h1 className="text-4xl font-bold">생일 별자리</h1>
+        <p className="opacity-80">
+          내 생일에 해는 정말 어느 별자리에 있었을까요?
+          <br />
+          점성술의 별자리와 비교하고, 왜 다른지 천문도에서 확인해 봐요.
+        </p>
+        <div className="bg-base-200 rounded-box p-3 shadow-lg">
+          <BirthdayCalendar value={draft} onChange={setDraft} />
+        </div>
+        <button
+          className="btn btn-primary btn-lg w-48"
+          disabled={!draft || phase === "leaving"}
+          onClick={() => {
+            setBirth(draft);
+            setPhase("leaving");
+            setTimeout(() => setPhase("result"), LEAVE_MS);
+          }}
+        >
+          찾기
+        </button>
+      </div>
+    );
+  }
+
+  return <BirthdayResult birth={birth} onChange={setBirth} />;
+}
+
+function BirthdayResult({
+  birth,
+  onChange,
+}: {
+  birth: Birth;
+  onChange: (b: Birth) => void;
+}) {
   const sky = useMemo(
     () => birthdaySky(birth.year, birth.month, birth.day),
     [birth],
   );
-  const canvas = useRef<HTMLCanvasElement>(null);
-
-  useEffect(() => {
-    const ctx = canvas.current?.getContext("2d");
-
-    if (ctx) {
-      drawBirthdayChart(ctx, W, H, birth, sky);
-    }
-  }, [birth, sky]);
-
   const same = sky.constellation.label === sky.sign;
   const width = zodiacWidthDeg(sky.constellation);
   const bestMonth = ((birth.month + 5) % 12) + 1;
 
   return (
-    <div className="flex w-full max-w-[1280px] flex-col gap-4">
-      <div className="flex flex-wrap items-end gap-4">
+    <div className="flex w-full flex-col items-center gap-4">
+      <div
+        style={rise(0)}
+        className={cn(
+          "animate-rise",
+          "flex w-full max-w-[1280px] flex-wrap items-center gap-4",
+        )}
+      >
         <h1 className="text-2xl font-bold">생일 별자리</h1>
-        <label className="flex flex-col gap-1 text-sm">
-          생일
-          <input
-            type="date"
-            className="input input-sm w-44"
-            value={`${birth.year}-${String(birth.month).padStart(2, "0")}-${String(birth.day).padStart(2, "0")}`}
-            onChange={(e) => {
-              const [y, m, d] = e.target.value.split("-").map(Number);
-
-              if (y && m && d) {
-                setBirth({ year: y, month: m, day: d });
-              }
-            }}
-          />
-        </label>
         <div className="grow" />
+        <BirthdayField value={birth} onChange={onChange} />
       </div>
 
-      <div className="bg-base-200 rounded-box grid grid-cols-1 gap-4 p-4 md:grid-cols-2">
+      <div
+        style={rise(1)}
+        className={cn(
+          "animate-rise",
+          "bg-base-200 rounded-box grid w-full max-w-[1280px] grid-cols-1 gap-4 p-4 md:grid-cols-2",
+        )}
+      >
         <div>
           <div className="text-sm opacity-70">점성술(운세)의 별자리</div>
-          <div className="text-3xl font-bold text-pink-300">{sky.sign}</div>
+          <div className="text-3xl font-bold" style={{ color: SIGN_COLOR }}>
+            {sky.sign}
+          </div>
           <div className="text-xs opacity-60">
             춘분점부터 30°씩 나눈 열두 칸 중 생일의 해가 있는 칸
           </div>
         </div>
         <div>
           <div className="text-sm opacity-70">그날 해가 실제로 있던 별자리</div>
-          <div className="text-3xl font-bold text-amber-300">
+          <div className="text-3xl font-bold" style={{ color: BIRTH_COLOR }}>
             {sky.constellation.label}
           </div>
           <div className="text-xs opacity-60">
@@ -71,14 +117,24 @@ export default function BirthdayGame() {
         </div>
       </div>
 
-      <canvas
-        ref={canvas}
-        width={W}
-        height={H}
-        className="rounded-box w-full"
-      />
+      {/* 천문도는 화면 좌우 끝까지 (게임 틀의 여백 바깥까지) */}
+      <div
+        style={rise(2)}
+        className={cn("animate-rise", "-mx-8 flex flex-col self-stretch")}
+      >
+        <BirthdayChart birth={birth} sky={sky} />
+        <div className="mt-1 text-center text-xs opacity-60 md:hidden">
+          ← 천문도를 옆으로 밀어 보세요 →
+        </div>
+      </div>
 
-      <div className="bg-base-200 rounded-box flex flex-col gap-3 p-4 text-sm">
+      <div
+        style={rise(3)}
+        className={cn(
+          "animate-rise",
+          "bg-base-200 rounded-box flex w-full max-w-[1280px] flex-col gap-3 p-4 text-sm",
+        )}
+      >
         <div className="font-bold">
           {same
             ? "두 별자리가 같아요! 하지만 늘 그렇지는 않아요."

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { chartProjection } from "@/game/birthday/drawChart";
 import {
   birthdaySky,
   toEcliptic,
@@ -61,5 +62,24 @@ describe("생일의 해", () => {
   it("지금은 두 기준이 한 별자리쯤(약 30°) 어긋나 있다", () => {
     expect(birthdaySky(2026, 1, 1).precessionDeg).toBeGreaterThan(28);
     expect(birthdaySky(2026, 1, 1).precessionDeg).toBeLessThan(32);
+  });
+});
+
+describe("띠 모양 천문도 투영", () => {
+  it("가운데 황경은 화면 가운데, 동쪽(황경이 큰 쪽)은 왼쪽", () => {
+    const P = chartProjection(1400, 600, 120);
+
+    expect(P.x(P.dLon(120))).toBeCloseTo(700);
+    expect(P.y(0)).toBeCloseTo(300);
+    expect(P.x(P.dLon(130))).toBeLessThan(700);
+    // 한 바퀴 경계를 넘어도 가까운 쪽으로 잰다
+    expect(P.dLon(-170 + 360 * 2)).toBeCloseTo(-290 + 360);
+  });
+
+  it("높이 600이면 황위 ±38°가 들어오고, 아주 넓은 화면은 황도 한 바퀴로 꽉 찬다", () => {
+    const P = chartProjection(1400, 600, 0);
+
+    expect(P.y(38)).toBeCloseTo(0, 0);
+    expect(chartProjection(5000, 600, 0).spanDeg).toBeCloseTo(360);
   });
 });
