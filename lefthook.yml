@@ -16,3 +16,6 @@ pre-push:
   commands:
     lint:
       run: npm run lint
+    # 실제 샘플·합성 장면 회귀 테스트 (약 90초). 잘 풀리던 샘플이 깨진 채로 올라가지 않게 한다
+    test:
+      run: npm test

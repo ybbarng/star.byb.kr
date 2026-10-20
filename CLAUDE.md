@@ -183,7 +183,7 @@ HEALPix nside=4, 192셀, 600 arcmin 기준. 2025-02-08 측정.
 
 ## 코드 스타일
 
-- 커밋 전 lefthook이 자동 확인: pre-commit(커밋 파일 ESLint + 전체 tsc), pre-push(`npm run lint`)
+- 커밋 전 lefthook이 자동 확인: pre-commit(커밋 파일 ESLint + 전체 tsc), pre-push(`npm run lint` + `npm test` 회귀 테스트, 약 90초)
 
 - ESLint + Prettier (tailwindcss 플러그인)
 - import 정렬: type → builtin → external → parent → sibling
