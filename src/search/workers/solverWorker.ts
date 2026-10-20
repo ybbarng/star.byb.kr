@@ -1,10 +1,9 @@
 import type { Point3D } from "@/scripts/hash/types";
 import type { SolvePhase } from "@/search/solvePhoto";
 import type { InputStar, SolverContext } from "@/search/solvers";
-import { buildTriangleIndex } from "@/search/catalogGeometry";
-import { buildCandidateIndex } from "@/search/findCandidatesCore";
 import { decodeHashedDatabase } from "@/search/hashedDatabaseFormat";
 import { solvePhoto } from "@/search/solvePhoto";
+import { buildSolverContext } from "@/search/solverContext";
 
 // 검증된 풀이 코어(solvePhoto)를 브라우저에서 실행하는 Worker.
 // DB(매칭 해시 + 검증 카탈로그)를 받아 ctx를 한 번 만들고, 사진 별 목록으로 풀어
@@ -13,6 +12,7 @@ import { solvePhoto } from "@/search/solvePhoto";
 interface VectorStar {
   HR: string;
   N?: string;
+  V: string;
   x: number;
   y: number;
   z: number;
@@ -55,24 +55,17 @@ const loadDatabase = (): Promise<SolverContext> => {
       vectors.map((s) => s.HR),
     );
 
-    const solveStars = vectors.map((s) => ({
+    const stars = vectors.map((s) => ({
       hr: s.HR,
       vector: [s.x, s.y, s.z] as Point3D,
+      mag: parseFloat(s.V),
     }));
-    const byHrVec = new Map<string, Point3D>(
-      vectors.map((s) => [s.HR, [s.x, s.y, s.z]]),
-    );
     const nameMap = new Map<string, string | undefined>(
       vectors.map((s) => [s.HR, s.N]),
     );
     const nameOf = (hr: string) => nameMap.get(hr) ?? `HR ${hr}`;
 
-    return {
-      index: buildCandidateIndex(hashes, nameOf),
-      catalog: solveStars,
-      byHrVec,
-      triangleIndex: buildTriangleIndex(solveStars, 18),
-    };
+    return buildSolverContext(stars, hashes, nameOf);
   })();
 
   return loadPromise;

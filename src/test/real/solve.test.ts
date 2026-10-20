@@ -3,9 +3,8 @@ import type { SolverContext } from "@/search/solvers";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
-import { buildTriangleIndex } from "@/search/catalogGeometry";
-import { buildCandidateIndex } from "@/search/findCandidatesCore";
 import { solveCandidate } from "@/search/solveCore";
+import { buildSolverContext } from "@/search/solverContext";
 import { solvers } from "@/search/solvers";
 import { photoToSky } from "@/search/utils/wcs";
 import { detectStarsFromFile } from "@/test/real/detectImage";
@@ -14,6 +13,7 @@ import {
   hashesExist,
   loadCatalog,
   loadHashes,
+  contextStars,
 } from "@/test/synthetic/loadCatalog";
 
 const samplesDir = resolve(process.cwd(), "public/samples");
@@ -85,15 +85,8 @@ describe.skipIf(!ready)("실제 샘플 plate solving", () => {
   let ctx: SolverContext;
 
   beforeAll(() => {
-    const catalog = loadCatalog();
-    const solveStars = catalog.map((s) => ({ hr: s.hr, vector: s.vector }));
-    ctx = {
-      index: buildCandidateIndex(loadHashes()),
-      catalog: solveStars,
-      byHrVec: new Map(catalog.map((s) => [s.hr, s.vector])),
-      // 넓은 범위(다양한 별자리 크기) + KD 후보를 늘려 검증으로 크기를 거른다
-      triangleIndex: buildTriangleIndex(solveStars, 18),
-    };
+    // 앱과 같은 인덱스 설정
+    ctx = buildSolverContext(contextStars(loadCatalog()), loadHashes());
   });
 
   it("big-dipper(북두칠성)를 정확히 푼다", async () => {

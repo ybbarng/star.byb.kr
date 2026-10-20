@@ -27,8 +27,8 @@ const byFilename: Record<string, SampleAnswer> = {
     fovDeg: 51,
     name: "센타우루스·남십자 (남반구)",
   },
-  // 여름 은하수(은하 중심부). 초광각 어안 사진. 사람이 라벨한 별 8개로 어안 카메라를
-  // 피팅해(RMS ~5px) 사진 중심 방향·시야를 검증함 — 직선투영으론 안 풀리는 사진의 정답.
+  // 여름 은하수(은하 중심부). 처음엔 어안으로 봤지만, 건물을 세운 원근 보정 사진이었다.
+  // 자동 풀이(밝은 별 삼각형 + 원근 정밀화)가 log-odds 18.5로 확신한 중심이 이 값과 0.5° 이내.
   "20220328-brice-Milky Way over Buzzvil.jpg": {
     centerRaDeg: 277,
     centerDecDeg: -12,

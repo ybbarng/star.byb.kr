@@ -25,6 +25,7 @@ export interface SolverContext {
   catalog: SolveStar[];
   byHrVec: Map<string, Point3D>;
   triangleIndex?: TriangleIndex; // 삼각형 매칭용 (최선B)
+  brightTriangleIndex?: TriangleIndex; // 밝은 별끼리만 만든 삼각형 (최선B가 함께 찾는다)
   pairIndex?: PairIndex; // 별쌍 각거리 투표용 (최선A)
 }
 

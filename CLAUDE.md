@@ -66,7 +66,8 @@ src/
 │   ├── solverClient.ts        # 공유 풀이 Worker 클라이언트 (미리 준비·요청 번호)
 │   ├── hooks/                 # useSolve, useSkyOverlay
 │   ├── workers/               # solverWorker
-│   └── utils/                 # wcs·similarity·fisheye·stats·gridIndex2D·selectStars
+│   ├── solverContext.ts       # 풀이 인덱스 묶음 (quad·삼각형·밝은 별 삼각형)
+│   └── utils/                 # wcs·similarity·homography·fisheye·stats·gridIndex2D·selectStars
 ├── test/                      # vitest: synthetic(합성 사진)·unit·e2e·real(실제 샘플)
 ├── scripts/                   # 데이터베이스 빌드 스크립트 (tsx로 실행)
 │   ├── database/              # 카탈로그 축소, 벡터 변환, 별자리 빌드
@@ -100,8 +101,10 @@ public/
 2. **별 검출**: OpenCV Local Maxima (Web Worker) → 적응적 threshold(mean+3σ) → 가까운 중복 합치기 → 밝기 상위 100개.
    사람이 마커를 지우거나 추가하고, 영역만 재검출할 수 있다
 3. **풀이** (`solvePhoto`, 시간 상한 8초): 밝기 상위 15·25·40·60개로 차례로 푼다. 확신하면 바로 멈춘다
-   - **매칭**: 밝은 별 10개의 삼각형을 FOV 후보(10~47°)마다 접선평면 형태로 바꿔 카탈로그 삼각형 인덱스(18° 이내, 2D 격자)에서 k=8 검색
-   - **검증** (`solveCore`): 대응 3별로 RANSAC + 광축 재추정 → 카탈로그 전체를 투영해 inlier 수집 → 우연일 확률(log-odds) 계산
+   - **매칭**: 밝은 별 10개의 삼각형을 FOV 후보(10~47°)마다 접선평면 형태로 바꿔 카탈로그 삼각형 인덱스(18° 이내)와
+     밝은 별(3.5등급 이하, 30° 이내) 인덱스에서 각각 k=8 검색. 그 FOV에서 크기(각거리)가 2배 넘게 다른 삼각형은 버린다
+   - **검증** (`solveCore`): 대응 3별로 RANSAC + 광축 재추정 → 대응이 8개 이상이면 원근 변환(호모그래피)으로 정밀화
+     (원근 보정된 사진 대응) → 카탈로그를 투영해 inlier 수집 → 우연일 확률(log-odds) 계산
    - **판정** (`candidates.ts`): log-odds ≥ 9(우연일 확률 10억 분의 1)일 때만 "해 찾음". 아니면 후보만 사람에게 제시
    - 직선투영으로 확신 못 하면 어안 blind 풀이 시도
 4. **별자리 표시**: 선택한 해의 변환으로 카탈로그 별/별자리를 사진 좌표로 투영 (카메라 뒤쪽 별은 제외)

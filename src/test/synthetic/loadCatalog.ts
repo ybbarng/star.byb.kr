@@ -1,5 +1,6 @@
 import type { Point3D } from "@/scripts/hash/types";
 import type { HashedQuad } from "@/search/findCandidatesCore";
+import type { ContextStar } from "@/search/solverContext";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { decodeHashedDatabase } from "@/search/hashedDatabaseFormat";
@@ -57,3 +58,7 @@ export const loadHashes = (): HashedQuad[] => {
     loadCatalog().map((s) => s.hr),
   );
 };
+
+// 풀이 컨텍스트(buildSolverContext)가 받는 형태로 바꾼다.
+export const contextStars = (catalog: CatalogStar[]): ContextStar[] =>
+  catalog.map((s) => ({ hr: s.hr, vector: s.vector, mag: s.v }));

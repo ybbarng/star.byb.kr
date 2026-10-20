@@ -2,15 +2,15 @@ import type { Point3D } from "@/scripts/hash/types";
 import type { SolvePhase } from "@/search/solvePhoto";
 import type { SolverContext } from "@/search/solvers";
 import { beforeAll, describe, expect, it } from "vitest";
-import { buildTriangleIndex } from "@/search/catalogGeometry";
-import { buildCandidateIndex } from "@/search/findCandidatesCore";
 import { DEFAULT_SOLVERS, solvePhoto } from "@/search/solvePhoto";
+import { buildSolverContext } from "@/search/solverContext";
 import { generateSyntheticImage } from "@/test/synthetic/generateSyntheticImage";
 import {
   catalogExists,
   hashesExist,
   loadCatalog,
   loadHashes,
+  contextStars,
 } from "@/test/synthetic/loadCatalog";
 
 const ready = catalogExists() && hashesExist();
@@ -41,15 +41,8 @@ describe.skipIf(!ready)("solvePhoto: 앱의 풀이 흐름", () => {
   let ctx: SolverContext;
 
   beforeAll(() => {
-    const catalog = loadCatalog();
-    const solveStars = catalog.map((s) => ({ hr: s.hr, vector: s.vector }));
     // 앱과 같은 인덱스 설정
-    ctx = {
-      index: buildCandidateIndex(loadHashes()),
-      catalog: solveStars,
-      byHrVec: new Map(catalog.map((s) => [s.hr, s.vector])),
-      triangleIndex: buildTriangleIndex(solveStars, 18),
-    };
+    ctx = buildSolverContext(contextStars(loadCatalog()), loadHashes());
   });
 
   const center = skyVector(85, 5); // 오리온 부근

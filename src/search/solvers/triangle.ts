@@ -33,6 +33,24 @@ const MAX_PRESENTED_CANDIDATES = 5;
 // blind FOV 후보. 사진 삼각형을 카탈로그와 같은 "삼각형 중심" 기준으로
 // 재투영하려면 픽셀→각 스케일(FOV)이 필요한데 모르므로 스캔한다.
 const FOV_CANDIDATES = [10, 14, 18, 23, 29, 37, 47];
+// 크기로 거르기 전 모양으로 가져오는 배수 (KD_K × 이 값)
+const SEARCH_DEPTH = 1;
+// FOV 후보 사이 간격(약 1.28배)과 렌즈 왜곡을 덮는 크기 허용 배율
+const SIZE_TOLERANCE = 2;
+
+// 세 방향 벡터 사이 각거리 중 가장 큰 것(라디안)
+const longestSide = (v: Point3D[]): number => {
+  const ang = (a: Point3D, b: Point3D) =>
+    Math.acos(
+      Math.min(
+        1,
+        (a[0] * b[0] + a[1] * b[1] + a[2] * b[2]) /
+          (Math.hypot(...a) * Math.hypot(...b)),
+      ),
+    );
+
+  return Math.max(ang(v[0], v[1]), ang(v[0], v[2]), ang(v[1], v[2]));
+};
 
 export const triangleSolver: Solver = {
   key: "triangle",
@@ -54,12 +72,16 @@ export const triangleSolver: Solver = {
       throw new Error("triangleSolver: ctx.triangleIndex가 필요하다");
     }
 
+    const indexes = ctx.brightTriangleIndex
+      ? [tri, ctx.brightTriangleIndex]
+      : [tri];
     const photoTop = selectTopByBrightness(stars, MATCH_STARS);
     const allStars: Point2D[] = stars.map((s) => [s.x, s.y]);
 
     const results: SolveResult[] = [];
     let best = null as SolveResult | null;
     let evaluated = 0;
+    const seen = new Set<string>();
 
     const cx = size.width / 2;
     const cy = size.height / 2;
@@ -85,20 +107,50 @@ export const triangleSolver: Solver = {
             const d12 = Math.hypot(pp[1][0] - pp[2][0], pp[1][1] - pp[2][1]);
             const { order, shape } = triangleShape(d01, d02, d12, [i, j, k]);
             const photo3: Point2D[] = order.map((o) => photoTop[o]);
-            const cands = searchTriangle(tri, shape, KD_K);
+            // 이 FOV라면 사진 삼각형의 가장 긴 변이 하늘에서 몇 도인지 안다
+            const photoSize = longestSide(dirs);
+            // 전체 인덱스와 밝은 별 인덱스에서 각각, 모양이 가깝고 크기도 이 FOV와 맞는
+            // 삼각형을 KD_K개까지 가져온다. 모양만 같고 크기가 다른 삼각형은 이 FOV에서는
+            // 정답일 수 없어 검증하지 않는다(검증 호출이 대부분 여기서 준다).
+            const cands = indexes.flatMap((index) =>
+              searchTriangle(index, shape, KD_K * SEARCH_DEPTH)
+                .map((ent) => ({
+                  ent,
+                  db: ent.hrs.map((hr) => ctx.byHrVec.get(hr)),
+                }))
+                .filter(({ db }) => {
+                  if (db.some((v) => !v)) {
+                    return false;
+                  }
 
-            for (const ent of cands) {
-              const db = ent.hrs.map((hr) => ctx.byHrVec.get(hr));
+                  const ratio = longestSide(db as Point3D[]) / photoSize;
 
-              if (db.some((v) => !v)) {
-                continue;
-              }
+                  return ratio <= SIZE_TOLERANCE && ratio >= 1 / SIZE_TOLERANCE;
+                })
+                .slice(0, KD_K),
+            );
 
+            for (const { ent, db } of cands) {
               const db3 = db as Point3D[];
               // 거울상이 모호하므로 정상/반사 두 정점 순서를 모두 시도
-              const orders: Point3D[][] = [db3, [db3[0], db3[2], db3[1]]];
+              const orders: { key: string; ord: Point3D[] }[] = [
+                { key: ent.hrs.join(","), ord: db3 },
+                {
+                  key: [ent.hrs[0], ent.hrs[2], ent.hrs[1]].join(","),
+                  ord: [db3[0], db3[2], db3[1]],
+                },
+              ];
 
-              for (const ord of orders) {
+              for (const { key, ord } of orders) {
+                // FOV 후보가 달라도 모양이 거의 같아 같은 대응이 다시 나오고, 두 인덱스가 같은
+                // 삼각형을 내기도 한다. 같은 (사진 별 ↔ 카탈로그 별) 대응은 한 번만 검증한다.
+                const pairKey = `${order.join(",")}|${key}`;
+
+                if (seen.has(pairKey)) {
+                  continue;
+                }
+
+                seen.add(pairKey);
                 evaluated++;
 
                 const res = solveCandidate(photo3, ord, allStars, ctx.catalog, {

@@ -2,9 +2,8 @@ import type { Point3D } from "@/scripts/hash/types";
 import type { SolverContext } from "@/search/solvers";
 import type { CatalogStar } from "@/test/synthetic/loadCatalog";
 import { beforeAll, describe, expect, it } from "vitest";
-import { buildTriangleIndex } from "@/search/catalogGeometry";
-import { buildCandidateIndex } from "@/search/findCandidatesCore";
 import { solveCandidate } from "@/search/solveCore";
+import { buildSolverContext } from "@/search/solverContext";
 import { solvers } from "@/search/solvers";
 import { comparePose } from "@/test/metrics/poseMetrics";
 import { generateSyntheticImage } from "@/test/synthetic/generateSyntheticImage";
@@ -13,6 +12,7 @@ import {
   hashesExist,
   loadCatalog,
   loadHashes,
+  contextStars,
 } from "@/test/synthetic/loadCatalog";
 import { yieldToEventLoop } from "@/test/yieldToEventLoop";
 
@@ -52,13 +52,7 @@ describe.skipIf(!ready)("견고성: FOV별 정답률", () => {
 
   beforeAll(() => {
     catalog = loadCatalog();
-    const solveStars = catalog.map((s) => ({ hr: s.hr, vector: s.vector }));
-    ctx = {
-      index: buildCandidateIndex(loadHashes()),
-      catalog: solveStars,
-      byHrVec: new Map(catalog.map((s) => [s.hr, s.vector])),
-      triangleIndex: buildTriangleIndex(solveStars, 18),
-    };
+    ctx = buildSolverContext(contextStars(catalog), loadHashes());
   });
 
   it("FOV별로 4개 알고리즘 정답률을 측정한다", async () => {

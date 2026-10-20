@@ -4,19 +4,19 @@ import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
 import { answerVector, getSampleAnswer } from "@/plate-solver/sampleAnswers";
-import { buildTriangleIndex } from "@/search/catalogGeometry";
-import { buildCandidateIndex } from "@/search/findCandidatesCore";
 import {
   DEFAULT_SOLVERS,
   DEFAULT_TIME_BUDGET_MS,
   solvePhoto,
 } from "@/search/solvePhoto";
+import { buildSolverContext } from "@/search/solverContext";
 import { detectLikeApp } from "@/test/real/detectImage";
 import {
   catalogExists,
   hashesExist,
   loadCatalog,
   loadHashes,
+  contextStars,
 } from "@/test/synthetic/loadCatalog";
 import { yieldToEventLoop } from "@/test/yieldToEventLoop";
 
@@ -33,6 +33,7 @@ const UNSOLVED_BUDGET_MS = DEFAULT_TIME_BUDGET_MS;
 const MUST_SOLVE = [
   "big-dipper.jpg",
   "cafe-orion.jpg",
+  "20220328-brice-Milky Way over Buzzvil.jpg",
   "20220607-berry-seoul.jpg",
   "20230904-nike-jeungseun-01.png",
   "20230904-nike-jeungseun-02.png",
@@ -47,10 +48,7 @@ const MUST_SOLVE = [
 ];
 
 // 정답은 알지만 아직 자동으로는 못 푸는 샘플. 풀지 못해도 되지만 틀린 해를 확신하면 안 된다.
-const MUST_NOT_BE_WRONG = [
-  "20190617-jarrod-saipan.jpg",
-  "20220328-brice-Milky Way over Buzzvil.jpg",
-];
+const MUST_NOT_BE_WRONG = ["20190617-jarrod-saipan.jpg"];
 
 // 진짜 밤하늘이 아닐 수 있는 사진 (사용자: 구글에서 찾은 가짜일 수 있음, 확인 필요).
 // 어떤 해도 확신하면 안 된다. 진짜로 밝혀지고 검증되면 MUST_SOLVE로 옮긴다.
@@ -68,14 +66,8 @@ describe.skipIf(!ready)("실제 샘플: 앱 흐름 회귀", () => {
   let ctx: SolverContext;
 
   beforeAll(() => {
-    const catalog = loadCatalog();
-    const solveStars = catalog.map((s) => ({ hr: s.hr, vector: s.vector }));
-    ctx = {
-      index: buildCandidateIndex(loadHashes()),
-      catalog: solveStars,
-      byHrVec: new Map(catalog.map((s) => [s.hr, s.vector])),
-      triangleIndex: buildTriangleIndex(solveStars, 18),
-    };
+    // 앱과 같은 인덱스 설정
+    ctx = buildSolverContext(contextStars(loadCatalog()), loadHashes());
   });
 
   // timeBudgetMs: 풀어야 하는 샘플은 상한을 끈다(무제한). 실제 시계 기준 상한은 CPU 부하에

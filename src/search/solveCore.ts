@@ -1,11 +1,10 @@
 import type { Point2D, Point3D } from "@/scripts/hash/types";
 import type { Mat3 } from "@/search/utils/similarity";
-import {
-  applySimilarity,
-  umeyamaSimilarity2D,
-} from "@/search/utils/similarity";
+import { applyHomography, fitHomography2D } from "@/search/utils/homography";
+import { umeyamaSimilarity2D } from "@/search/utils/similarity";
 import { poissonTailNegLog10 } from "@/search/utils/stats";
 import {
+  mat3Inv,
   mat3Mul,
   mat3MulVec,
   projectionMatrix,
@@ -94,6 +93,112 @@ interface Correspondence {
   dist: number;
 }
 
+// 카탈로그를 z(적위의 sin) 순으로 정렬해 둔다. 같은 카탈로그는 한 번만 정렬한다.
+const byZCache = new WeakMap<
+  SolveStar[],
+  { stars: SolveStar[]; zs: Float64Array }
+>();
+
+const sortedByZ = (catalog: SolveStar[]) => {
+  let cached = byZCache.get(catalog);
+
+  if (!cached) {
+    const stars = [...catalog].sort((a, b) => a.vector[2] - b.vector[2]);
+    cached = { stars, zs: Float64Array.from(stars, (s) => s.vector[2]) };
+    byZCache.set(catalog, cached);
+  }
+
+  return cached;
+};
+
+// 정렬된 배열에서 value 이상이 처음 나오는 위치
+const lowerBound = (xs: Float64Array, value: number): number => {
+  let lo = 0;
+  let hi = xs.length;
+
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+
+    if (xs[mid] < value) {
+      lo = mid + 1;
+    } else {
+      hi = mid;
+    }
+  }
+
+  return lo;
+};
+
+// 사진 별을 허용오차 크기 칸의 격자에 담는다 (대응 수집에서 근처 칸만 보려고).
+// 투영 별은 사진 ±허용오차 안에만 있으므로, 둘레에 2칸을 더 둔 고정 격자면 된다.
+// 한 solver 실행은 같은 사진 별 배열로 후보 수천 개를 검증하므로 배열마다 한 번만 만든다.
+interface PhotoGrid {
+  key: string;
+  gridW: number;
+  cellOf: (x: number, y: number) => number;
+  cellStart: Int32Array; // 칸 c의 사진 별 번호는 cellOrder[cellStart[c] .. cellStart[c+1])
+  cellOrder: Int32Array;
+}
+
+const photoGridCache = new WeakMap<Point2D[], PhotoGrid>();
+
+const photoGridOf = (
+  photoStars: Point2D[],
+  W: number,
+  H: number,
+  tolerancePx: number,
+): PhotoGrid => {
+  const key = `${W}x${H}/${tolerancePx}/${photoStars.length}`;
+  const cached = photoGridCache.get(photoStars);
+
+  if (cached && cached.key === key) {
+    return cached;
+  }
+
+  const PAD = 2;
+  const gridW = Math.ceil(W / tolerancePx) + 2 * PAD + 1;
+  const gridH = Math.ceil(H / tolerancePx) + 2 * PAD + 1;
+
+  const cellOf = (x: number, y: number) => {
+    const cx = Math.min(
+      gridW - 1,
+      Math.max(0, Math.floor(x / tolerancePx) + PAD),
+    );
+    const cy = Math.min(
+      gridH - 1,
+      Math.max(0, Math.floor(y / tolerancePx) + PAD),
+    );
+
+    return cy * gridW + cx;
+  };
+
+  const cellStart = new Int32Array(gridW * gridH + 1);
+  const photoCell = photoStars.map(([x, y]) => cellOf(x, y));
+
+  for (const c of photoCell) {
+    cellStart[c + 1]++;
+  }
+
+  for (let c = 0; c < gridW * gridH; c++) {
+    cellStart[c + 1] += cellStart[c];
+  }
+
+  const cellOrder = new Int32Array(photoStars.length);
+  const fill = cellStart.slice(0, gridW * gridH);
+
+  photoCell.forEach((c, i) => {
+    cellOrder[fill[c]++] = i;
+  });
+
+  const grid = { key, gridW, cellOf, cellStart, cellOrder };
+  photoGridCache.set(photoStars, grid);
+
+  return grid;
+};
+
+// 원근 정밀화를 시도할 최소 대응 수. 대응이 적으면 8자유도 변환이 노이즈에 끌려간다.
+const PERSPECTIVE_MIN_MATCHES = 8;
+
 export const solveCandidate = (
   photoQuad: Point2D[],
   databaseQuad: Point3D[],
@@ -109,6 +214,38 @@ export const solveCandidate = (
   const tolerancePx = options.tolerancePx ?? Math.max(5, diag * 0.006);
   const tol2 = tolerancePx * tolerancePx;
 
+  const { gridW, cellOf, cellStart, cellOrder } = photoGridOf(
+    photoStars,
+    W,
+    H,
+    tolerancePx,
+  );
+
+  // 변환 T로 사진(허용오차 여백 포함)에 들어오는 접선평면 영역의 가장 먼 모서리를 구해,
+  // 광축과 이루는 각의 코사인 하한으로 돌려준다. 모서리가 지평선 너머면 거르지 않는다(-1).
+  const minCosInView = (Tcur: Mat3): number => {
+    const inv = mat3Inv(Tcur);
+    let r2 = 0;
+
+    for (const [x, y] of [
+      [-tolerancePx, -tolerancePx],
+      [W + tolerancePx, -tolerancePx],
+      [-tolerancePx, H + tolerancePx],
+      [W + tolerancePx, H + tolerancePx],
+    ]) {
+      const q = applyHomography(inv, [x, y]);
+
+      if (!q) {
+        return -1;
+      }
+
+      r2 = Math.max(r2, q[0] * q[0] + q[1] * q[1]);
+    }
+
+    // 접선평면 반지름 r은 광축에서 atan(r)만큼 떨어진 방향이다. 경계 오차를 위해 약간 넓힌다.
+    return 1 / Math.sqrt(1 + r2 * 1.05) - 1e-9;
+  };
+
   // collectMatches: 주어진 광축 P·변환 T로 카탈로그를 사진에 투영해 photoStars와
   // 양방향 최근접 대응을 수집한다 (광축 재추정에 쓰도록 카탈로그 벡터도 보유).
   const collectMatches = (
@@ -116,17 +253,39 @@ export const solveCandidate = (
     Pcur: Mat3,
   ): { matches: Correspondence[]; projectedInFov: number } => {
     const pred: { vec: Point3D; plane: Point2D; xy: Point2D }[] = [];
+    const [ax, ay, az] = Pcur[2];
+    const cosMax = minCosInView(Tcur);
 
-    for (const s of catalog) {
-      const plane = toPlane(Pcur, s.vector);
+    // 광축에서 시야 반경 안의 별은 z(적위)가 [sin(δ-ρ), sin(δ+ρ)] 띠에 있다. 띠만 훑는다.
+    const byZ = sortedByZ(catalog);
+    const rho = Math.acos(Math.max(-1, Math.min(1, cosMax)));
+    const dec = Math.asin(Math.max(-1, Math.min(1, az)));
+    const zLo = Math.sin(Math.max(-Math.PI / 2, dec - rho));
+    const zHi = Math.sin(Math.min(Math.PI / 2, dec + rho));
+
+    for (let n = lowerBound(byZ.zs, zLo); n < byZ.zs.length; n++) {
+      if (byZ.zs[n] > zHi) {
+        break;
+      }
+
+      const s = byZ.stars[n];
+      const v = s.vector;
+
+      // 사진에 들어올 수 없는 먼 별은 광축과의 내적만으로 먼저 거른다 (대부분이 여기서 빠진다)
+      if (ax * v[0] + ay * v[1] + az * v[2] < cosMax) {
+        continue;
+      }
+
+      const plane = toPlane(Pcur, v);
 
       if (!plane) {
         continue;
       }
 
-      const xy = applySimilarity(Tcur, plane);
+      const xy = applyHomography(Tcur, plane);
 
       if (
+        xy &&
         xy[0] >= -tolerancePx &&
         xy[0] < W + tolerancePx &&
         xy[1] >= -tolerancePx &&
@@ -136,57 +295,56 @@ export const solveCandidate = (
       }
     }
 
-    const photoNearest = photoStars.map((ps) => {
-      let bestK = -1;
+    // 허용오차 안의 쌍만 본다. 서로 가장 가까운 쌍이 허용오차 안이면 그 둘의 최근접도
+    // 허용오차 안에 있으므로, 전체 쌍을 다 보는 것과 결과가 같다.
+    const photoBest = new Float64Array(photoStars.length).fill(Infinity);
+    const photoBestK = new Int32Array(photoStars.length).fill(-1);
+    const predBestI = new Int32Array(pred.length).fill(-1);
+
+    for (let k = 0; k < pred.length; k++) {
+      const [px, py] = pred[k].xy;
+      const center = cellOf(px, py);
       let bestD = Infinity;
 
-      for (let k = 0; k < pred.length; k++) {
-        const dx = ps[0] - pred[k].xy[0];
-        const dy = ps[1] - pred[k].xy[1];
-        const d = dx * dx + dy * dy;
+      for (let dy = -gridW; dy <= gridW; dy += gridW) {
+        for (let dx = -1; dx <= 1; dx++) {
+          const c = center + dy + dx;
 
-        if (d < bestD) {
-          bestD = d;
-          bestK = k;
+          for (let p = cellStart[c]; p < cellStart[c + 1]; p++) {
+            const i = cellOrder[p];
+            const ex = photoStars[i][0] - px;
+            const ey = photoStars[i][1] - py;
+            const d = ex * ex + ey * ey;
+
+            if (d > tol2) {
+              continue;
+            }
+
+            if (d < bestD) {
+              bestD = d;
+              predBestI[k] = i;
+            }
+
+            if (d < photoBest[i]) {
+              photoBest[i] = d;
+              photoBestK[i] = k;
+            }
+          }
         }
       }
-
-      return { k: bestK, d: bestD };
-    });
-
-    const predNearest = pred.map((p) => {
-      let bestI = -1;
-      let bestD = Infinity;
-
-      for (let i = 0; i < photoStars.length; i++) {
-        const dx = p.xy[0] - photoStars[i][0];
-        const dy = p.xy[1] - photoStars[i][1];
-        const d = dx * dx + dy * dy;
-
-        if (d < bestD) {
-          bestD = d;
-          bestI = i;
-        }
-      }
-
-      return { i: bestI, d: bestD };
-    });
+    }
 
     const matches: Correspondence[] = [];
 
     for (let i = 0; i < photoStars.length; i++) {
-      const nn = photoNearest[i];
+      const k = photoBestK[i];
 
-      if (nn.k < 0 || nn.d > tol2) {
-        continue;
-      }
-
-      if (predNearest[nn.k].i === i) {
+      if (k >= 0 && predBestI[k] === i) {
         matches.push({
-          vec: pred[nn.k].vec,
-          plane: pred[nn.k].plane,
+          vec: pred[k].vec,
+          plane: pred[k].plane,
           photo: photoStars[i],
-          dist: Math.sqrt(nn.d),
+          dist: Math.sqrt(photoBest[i]),
         });
       }
     }
@@ -280,7 +438,7 @@ export const solveCandidate = (
       const inliers: Correspondence[] = [];
 
       for (const c of m) {
-        const xy = applySimilarity(Tc, c.plane);
+        const xy = applyHomography(Tc, c.plane)!;
         const dx = xy[0] - c.photo[0];
         const dy = xy[1] - c.photo[1];
 
@@ -318,6 +476,33 @@ export const solveCandidate = (
     }
   }
 
+  // 원근 정밀화: 닮음변환으로 모은 대응에 호모그래피를 맞춰 다시 모은다.
+  // 원근(키스톤) 보정된 사진은 가장자리가 닮음변환에서 어긋나 거기 별을 놓친다.
+  let perspective = false;
+
+  if (best.length >= PERSPECTIVE_MIN_MATCHES) {
+    for (let iter = 0; iter < 3; iter++) {
+      const H = fitHomography2D(
+        best.map((c) => c.plane),
+        best.map((c) => c.photo),
+      );
+
+      if (!H) {
+        break;
+      }
+
+      const m = collectMatches(H, P).matches;
+
+      if (m.length <= best.length) {
+        break;
+      }
+
+      T = H;
+      best = m;
+      perspective = true;
+    }
+  }
+
   // 최종 검증
   const final = collectMatches(T, P);
   const inlierCount = final.matches.length;
@@ -340,8 +525,12 @@ export const solveCandidate = (
   const expectedRandom = photoStars.length * projectedInFov * areaRatio;
   const significance = inlierCount / Math.max(1e-6, expectedRandom);
   // 시드 별(photoQuad)은 대응이 정해진 채 들어오므로 우연 비교에서 뺀다.
+  // 원근 변환은 대응 4쌍으로 정해지므로, 그때는 적어도 4개를 뺀다.
+  const fixedMatches = perspective
+    ? Math.max(photoQuad.length, 4)
+    : photoQuad.length;
   const logOdds = poissonTailNegLog10(
-    inlierCount - photoQuad.length,
+    inlierCount - fixedMatches,
     expectedRandom,
   );
 
