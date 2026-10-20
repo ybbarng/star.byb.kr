@@ -1,14 +1,8 @@
 import type { Metadata } from "next";
-import localFont from "next/font/local";
-import Script from "next/script";
+// Pretendard 동적 부분 집합: 한글 전체(2MB)를 한 파일로 받는 대신, 92조각 중 화면에 쓰인 글자가 든 조각만
+// 받는다 (unicode-range). 글꼴 이름은 globals.css의 body에서 쓴다.
+import "pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css";
 import "./globals.css";
-
-const pretendard = localFont({
-  src: "../ui/fonts/PretendardVariable.woff2",
-  display: "swap",
-  weight: "45 920",
-  variable: "--font-pretendard",
-});
 
 export const metadata: Metadata = {
   title: "star.byb.kr",
@@ -22,18 +16,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <head>
-        <Script
-          src="https://cdn.jsdelivr.net/npm/mathjs@14.0.1/lib/browser/math.js"
-          strategy="beforeInteractive"
-        />
-        <Script id="mathjs-fallback" strategy="beforeInteractive">
-          {`window.math||document.write('<script src="/libs/math.js"><\\/script>')`}
-        </Script>
-      </head>
-      <body className={`${pretendard.className} h-screen antialiased`}>
-        {children}
-      </body>
+      <body className="h-screen antialiased">{children}</body>
     </html>
   );
 }
