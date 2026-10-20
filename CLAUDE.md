@@ -26,7 +26,7 @@
 npm install           # 의존성 설치
 ./build_database.sh   # 데이터베이스 파일 생성 (최초 1회, 빌드 전에 필요 — 앱이 build/의 JSON을 코드에 싣는다)
 npm run dev           # 개발 서버 (http://localhost:5025)
-npm run build         # 프로덕션 빌드
+npm run build         # 프로덕션 빌드 (정적 내보내기 → out/, 배포는 docs/deployment.md)
 npm run lint          # ESLint
 npm test              # vitest (합성·실제 샘플 회귀 포함, 약 90초)
 npm run benchmark:update  # 알고리즘 비교 결과를 docs/benchmark-results.json에 갱신

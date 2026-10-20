@@ -1,7 +1,19 @@
 # 배포 준비 메모
 
-> 상태: **준비 중** (2026-10-20). 사용자의 개인 Ubuntu 서버에 올린다. 리버스 프록시를 nginx에서 Traefik으로 바꾸는 중이라,
-> Traefik 쪽이 준비되면 이 메모를 바탕으로 배포 구성을 같이 한다.
+> 상태 (2026-10-21): **앱 저장소 쪽 완료** — 정적 내보내기(A안), `Dockerfile`(nginx), `ops/nginx.conf`, `.github/workflows/image.yml`.
+> 서버 쪽(byb.kr, Traefik + Docker)은 servers 저장소 `byb.kr/apps/star/`(compose·deploy.sh·배포 키)가 맡는다
+> (`~/personal/projects/servers/byb.kr/apps/star/HANDOFF.md`, `apps/README.md`).
+
+## 지금 구성
+
+- `next.config.ts`: `output: "export"` → `npm run build` 가 `out/` 을 만든다 (페이지마다 `games/birthday.html` 꼴)
+- `Dockerfile`: node 20 에서 `./build_database.sh && npm run build` → `nginx:1.27-alpine` 에 `out/` 과 `ops/nginx.conf` 만. 컨테이너 안 포트 80
+- `ops/nginx.conf`: gzip, 캐시 헤더(아래), `/games/birthday` → `games/birthday.html`, 없는 주소는 `404.html`(no-cache)
+- `.github/workflows/image.yml`: main push → 이미지 빌드 → `ghcr.io/ybbarng/star.byb.kr:<sha>`·`latest` → SSH 로 `deploy <sha>`.
+  문서만 바뀐 push 는 건너뛴다. 시크릿 `SERVER_HOST`·`SERVER_USER`·`SERVER_SSH_KEY`(servers 세션이 만든다)
+- 헬스체크 주소: `/` (가벼운 정적 HTML, 200)
+- 로컬 확인: `docker build -t star . && docker run -p 8080:80 star` (2026-10-21 확인: 샘플 풀이, WebP 업로드 풀이, 게임 여섯 개, 404)
+- 이미지 크기 약 197MB — 대부분 발표 슬라이드(`public/presentation`, 122MB). 외부 사진(`samples-external`)·로컬 링크(`data`)는 들어가지 않는다
 
 ## 서버가 하는 일: 정적 파일 내려주기뿐
 

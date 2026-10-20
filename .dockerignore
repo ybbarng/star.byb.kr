@@ -1,0 +1,11 @@
+# 빌드에 쓰지 않는 것 (이미지 안에서 build/·out/ 을 새로 만든다)
+node_modules
+.next
+out
+build
+.git
+public/samples-external
+public/data
+test-results
+coverage
+*.log

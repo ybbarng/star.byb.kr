@@ -1,0 +1,86 @@
+name: Image
+
+# 정적 내보내기(out/)를 담은 nginx 이미지를 빌드해 GHCR 에 올리고, 서버에 배포한다.
+#   ghcr.io/ybbarng/star.byb.kr — Dockerfile 의 runner (컨테이너 안 포트 80)
+# 빌드(별 데이터베이스 → Next 정적 내보내기)는 이미지 안에서 한다. 서버에서 빌드하지 않는다.
+# 태그: 커밋 sha 는 항상, main 이면 latest 도. (ybbarng/wine.byb.kr 의 image.yml 을 본떴다, 타깃은 하나)
+
+on:
+  push:
+    branches: [main]
+    # 문서만 바뀐 커밋은 이미지를 다시 만들거나 배포하지 않는다
+    paths-ignore:
+      - "docs/**"
+      - "**/*.md"
+  workflow_dispatch:
+
+concurrency:
+  group: image-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ghcr.io/ybbarng/star.byb.kr
+          tags: |
+            type=sha,format=long,prefix=
+            type=raw,value=latest,enable={{is_default_branch}}
+      - uses: docker/build-push-action@v7
+        with:
+          context: .
+          target: runner
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=star
+          cache-to: type=gha,scope=star,mode=max
+
+  # 서버에 배포한다. 서버의 배포 키는 forced-command 로 servers 저장소의 apps/star/deploy.sh 만 실행한다.
+  # 이미지를 받을 토큰은 이 실행의 GITHUB_TOKEN 을 표준입력으로 넘긴다(서버에 남지 않고, 실행이 끝나면 만료된다).
+  # main 이면 운영 배포, 그 밖의 브랜치(workflow_dispatch)면 띄워서 헬스체크만 하는 시험(test).
+  # 배포 키(SERVER_SSH_KEY)가 생기기 전에는 이 작업이 실패한다 — 이미지 빌드·GHCR 업로드까지는 된다.
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    concurrency:
+      group: deploy
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - name: SSH → deploy.sh
+        env:
+          KEY: ${{ secrets.SERVER_SSH_KEY }}
+          HOST: ${{ secrets.SERVER_HOST }}
+          USER: ${{ secrets.SERVER_USER }}
+          PORT: ${{ secrets.SERVER_PORT || '22' }}
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MODE: ${{ github.ref == 'refs/heads/main' && 'deploy' || 'test' }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          printf '%s\n' "$KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -p "$PORT" -H "$HOST" >> ~/.ssh/known_hosts 2>/dev/null
+          printf '%s\n' "$TOKEN" | ssh -i ~/.ssh/deploy_key -p "$PORT" \
+            -o BatchMode=yes -o ConnectTimeout=20 -o IdentitiesOnly=yes \
+            "$USER@$HOST" "$MODE $GITHUB_SHA"
+          rm -f ~/.ssh/deploy_key
