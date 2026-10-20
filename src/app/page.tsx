@@ -1,40 +1,132 @@
-export default function Page() {
-  return (
-    <div className="flex h-screen w-full flex-col items-center justify-center py-40">
-      <div className="flex h-full w-[500px] flex-col items-start justify-start gap-4">
-        <h1 className="text-5xl font-bold">star.byb.kr</h1>
-        <div className="text-neutral-300">
-          나만의 작고 소중한 Plate Solver by{" "}
-          <Link href="https://github.com/ybbarng">ybbarng</Link>
-        </div>
-        <h2 className="text-3xl font-bold">주요 링크</h2>
-        <ul className="ml-8 list-disc">
-          <li className="text-xl">
-            <Link href="/plate-solver">Plate Solver</Link>
-          </li>
-          <li className="text-xl">
-            <Link href="/games">별 놀이터 (게임)</Link>
-          </li>
-          <li className="text-xl">
-            <Link href="/presentation/index.html">
-              2025-XX-XX Dev Seminar 발표자료
-            </Link>
-          </li>
-        </ul>
-      </div>
-    </div>
-  );
-}
+import Link from "next/link";
+import { GAMES } from "@/game/hub";
+import SiteShell from "@/ui/SiteShell";
 
-function Link({ href, children }: { href: string; children: React.ReactNode }) {
+// 첫 화면: 무엇을 하는 곳인지 풀린 사진 한 장으로 보여 주고, 두 갈래(사진으로 찾기·별 놀이터)로 보낸다.
+export default function Page() {
+  const games = GAMES.filter((g) => g.ready);
+
   return (
-    <a
-      className="font-medium text-blue-600 hover:underline dark:text-blue-400"
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-      {children}
-    </a>
+    <SiteShell>
+      <div className="flex w-full max-w-5xl flex-col gap-12 pb-16">
+        <section className="fx-rise mt-4 flex flex-col items-center gap-4 text-center md:mt-10">
+          <h1 className="bg-gradient-to-b from-white via-indigo-100 to-indigo-300 bg-clip-text text-4xl leading-tight font-black text-transparent md:text-6xl">
+            사진 한 장으로
+            <br />
+            별자리를 찾아요
+          </h1>
+          <p className="max-w-xl opacity-75 md:text-lg">
+            밤하늘 사진을 올리면, 컴퓨터가 별들의 배치만 보고 하늘 어디를
+            찍었는지 찾아 별자리와 별 이름을 그려 줘요.
+          </p>
+          <div className="mt-2 flex flex-wrap justify-center gap-3">
+            <Link href="/plate-solver" className="btn btn-primary btn-lg">
+              내 사진으로 찾기
+            </Link>
+            <Link href="/games" className="btn btn-ghost btn-lg">
+              별 놀이터 가기
+            </Link>
+          </div>
+          <p className="text-xs opacity-60">
+            🔒 사진은 서버로 보내지 않아요. 모든 계산을 내 기기에서 해요.
+          </p>
+        </section>
+
+        <figure
+          className="fx-rise rounded-box overflow-hidden shadow-2xl ring-1 shadow-indigo-900/40 ring-white/10"
+          style={{ animationDelay: "150ms" }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element -- 정적 내보내기라 next/image 최적화를 쓰지 않는다 */}
+          <img
+            src="/home/solved-milky-way.webp"
+            alt="석촌호수 위 여름 은하수 사진에 궁수자리·전갈자리·독수리자리 선과 별 이름이 그려진 모습"
+            width={1200}
+            height={800}
+            className="block h-auto w-full"
+          />
+          <figcaption className="bg-base-200/80 px-4 py-2 text-xs opacity-80">
+            서울 석촌호수에서 찍은 여름 은하수. 건물 사이로 궁수자리·전갈자리가
+            보여요.
+          </figcaption>
+        </figure>
+
+        <section
+          className="fx-rise grid gap-4 md:grid-cols-3"
+          style={{ animationDelay: "250ms" }}
+        >
+          {[
+            {
+              icon: "✦",
+              title: "별을 찾고",
+              body: "사진에서 별처럼 보이는 점을 골라요. 나무·건물 불빛은 뒤로 미뤄요.",
+            },
+            {
+              icon: "△",
+              title: "모양을 맞추고",
+              body: "밝은 별 몇 개가 이루는 삼각형·사각형 모양을 별 지도에서 찾아요.",
+            },
+            {
+              icon: "✓",
+              title: "확인해요",
+              body: "나머지 별까지 맞는지 보고, 우연일 확률이 10억 분의 1보다 작을 때만 답해요.",
+            },
+          ].map((step) => (
+            <div
+              key={step.title}
+              className="bg-base-200/70 rounded-box flex flex-col gap-1 p-5 backdrop-blur"
+            >
+              <span className="text-2xl text-indigo-300">{step.icon}</span>
+              <h2 className="font-bold">{step.title}</h2>
+              <p className="text-sm opacity-70">{step.body}</p>
+            </div>
+          ))}
+        </section>
+
+        <section
+          className="fx-rise flex flex-col gap-4"
+          style={{ animationDelay: "350ms" }}
+        >
+          <div className="flex items-end justify-between gap-2">
+            <h2 className="text-2xl font-black">별 놀이터</h2>
+            <Link href="/games" className="link link-hover text-sm opacity-70">
+              모두 보기 →
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+            {games.map((g) => (
+              <Link
+                key={g.href}
+                href={g.href}
+                className="fx-card bg-base-200/70 rounded-box flex flex-col gap-1 p-4 backdrop-blur"
+              >
+                <span className="text-3xl">{g.icon}</span>
+                <span className="font-bold">{g.title}</span>
+                <span className="line-clamp-2 text-xs opacity-60">
+                  {g.summary}
+                </span>
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        <footer className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs opacity-50">
+          <span>
+            만든 사람{" "}
+            <a
+              className="link link-hover"
+              href="https://github.com/ybbarng"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              ybbarng
+            </a>
+          </span>
+          <a className="link link-hover" href="/presentation/index.html">
+            발표 자료
+          </a>
+          <span>별 자료: 예일 밝은 별 목록(BSC5)</span>
+        </footer>
+      </div>
+    </SiteShell>
   );
 }
