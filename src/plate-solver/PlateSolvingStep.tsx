@@ -1,13 +1,18 @@
 import type { SampleAnswer } from "@/plate-solver/sampleAnswers";
+import type { ShotTime } from "@/plate-solver/shotTime";
 import type { SolvePhase } from "@/search/solvePhoto";
 import type { SolveCandidateResult } from "@/search/solvers";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getSampleAnswer, matchesAnswer } from "@/plate-solver/sampleAnswers";
+import { getSampleShot, shotDate, shotFromExif } from "@/plate-solver/shotTime";
+import ShotTimeControl from "@/plate-solver/ShotTimeControl";
 import StepMover from "@/plate-solver/StepMover";
 import { useContextStore } from "@/plate-solver/store/context";
 import useSkyOverlay from "@/search/hooks/useSkyOverlay";
 import useSolve from "@/search/hooks/useSolve";
+import { DEEP_SKY_OBJECTS, solarSystemObjects } from "@/search/skyObjects";
 import { ACCEPT } from "@/search/solvers/candidates";
+import { readExif } from "@/services/exif";
 import { cn } from "@/utils/cn";
 
 export default function PlateSolvingStep() {
@@ -19,11 +24,50 @@ export default function PlateSolvingStep() {
   const {
     stars: skyStars,
     constellations: skyConstellations,
+    objects: skyObjects,
     update: updateSky,
     updateFisheye,
     clear: clearSky,
   } = useSkyOverlay();
   const [selected, setSelected] = useState(0);
+  const [shot, setShot] = useState<ShotTime | null>(null);
+
+  // 촬영 시각: 기록을 아는 샘플이면 그 기록, 아니면 사진의 EXIF. 둘 다 없으면 사람이 넣는다.
+  useEffect(() => {
+    if (!image) {
+      return;
+    }
+
+    const known = getSampleShot(image.src);
+    setShot(known);
+
+    if (known) {
+      return;
+    }
+
+    let cancelled = false;
+    fetch(image.src)
+      .then((r) => r.arrayBuffer())
+      .then((buffer) => {
+        if (!cancelled) {
+          setShot(shotFromExif(readExif(buffer)));
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
+  }, [image]);
+
+  // 딥스카이는 늘, 해·달·행성은 촬영 시각을 알 때만 그린다
+  const objects = useMemo(() => {
+    const date = shot ? shotDate(shot) : null;
+
+    return date && !Number.isNaN(date.getTime())
+      ? [...DEEP_SKY_OBJECTS, ...solarSystemObjects(date, shot?.observer)]
+      : DEEP_SKY_OBJECTS;
+  }, [shot]);
 
   // 그릴 어안 카메라: worker의 blind 어안 풀이가 성공했을 때만(라벨 하드코딩 없음).
   const fisheyeCamera = outcome?.fisheyeCamera ?? null;
@@ -65,7 +109,7 @@ export default function PlateSolvingStep() {
     }
 
     if (fisheyeCamera) {
-      updateFisheye(fisheyeCamera, image.width, image.height);
+      updateFisheye(fisheyeCamera, image.width, image.height, objects);
 
       return;
     }
@@ -82,9 +126,10 @@ export default function PlateSolvingStep() {
       return;
     }
 
-    updateSky(c.transform, image.width, image.height);
+    updateSky(c.transform, image.width, image.height, objects);
   }, [
     image,
+    objects,
     fisheyeCamera,
     outcome,
     selected,
@@ -197,7 +242,45 @@ export default function PlateSolvingStep() {
       context.fillStyle = "oklch(0.905 0.182 98.111)";
       context.fillText(label, center[0], center[1]);
     });
-  }, [canvasElement, image, photoStars, skyStars, skyConstellations]);
+
+    // 달은 밝은 빛 한가운데 있곤 해서, 어두운 테두리를 먼저 그리고 그 위에 색을 칠한다
+    const SHADOW = "oklch(0 0 0 / 0.75)";
+
+    skyObjects.forEach(({ name, kind, x, y, radiusPx }) => {
+      const color = OBJECT_COLORS[kind];
+      const r = Math.max(radiusPx, 12 * unit);
+      const labelX = x + r * 0.75 + 4 * unit;
+      const labelY = y - r * 0.75;
+
+      context.setLineDash(kind === "deepSky" ? [6 * unit, 4 * unit] : []);
+
+      for (const [style, width] of [
+        [SHADOW, 5 * unit],
+        [color, 2 * unit],
+      ] as const) {
+        context.strokeStyle = style;
+        context.lineWidth = width;
+        context.beginPath();
+        context.arc(x, y, r, 0, 2 * Math.PI);
+        context.stroke();
+      }
+
+      context.setLineDash([]);
+      context.font = `bold ${fontPx}px Arial`;
+      context.strokeStyle = SHADOW;
+      context.lineWidth = 4 * unit;
+      context.strokeText(name, labelX, labelY);
+      context.fillStyle = color;
+      context.fillText(name, labelX, labelY);
+    });
+  }, [
+    canvasElement,
+    image,
+    photoStars,
+    skyStars,
+    skyConstellations,
+    skyObjects,
+  ]);
 
   if (!image || !image.width) {
     return (
@@ -261,7 +344,8 @@ export default function PlateSolvingStep() {
             onSelect={setSelected}
           />
         )}
-        <div className="flex grow justify-center">
+        <div className="flex grow flex-col items-center gap-2">
+          <ShotTimeControl shot={shot} onChange={setShot} />
           <canvas
             className="max-h-full"
             ref={canvasElement}
@@ -275,6 +359,14 @@ export default function PlateSolvingStep() {
     </div>
   );
 }
+
+// 천체 종류별 표시 색 (별은 보라, 별자리선은 노랑)
+const OBJECT_COLORS = {
+  deepSky: "oklch(0.789 0.154 211.53)",
+  moon: "oklch(0.97 0 0)",
+  sun: "oklch(0.852 0.199 91.936)",
+  planet: "oklch(0.75 0.183 55.934)",
+};
 
 // solver가 쓰는 별 패턴 이름 (진행 문구용)
 const SOLVER_PATTERN_NAMES: Record<string, string> = {

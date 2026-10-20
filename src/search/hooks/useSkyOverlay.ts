@@ -1,4 +1,5 @@
 import type { Point2D, Point3D } from "@/scripts/hash/types";
+import type { SkyObject, SkyObjectKind } from "@/search/skyObjects";
 import type { FisheyeCamera } from "@/search/utils/fisheye";
 import type { Mat3 } from "@/search/utils/similarity";
 import { useCallback, useState } from "react";
@@ -20,6 +21,15 @@ export interface SkyConstellation {
   label: string;
   // 폴리라인 정점. 카메라 뒤쪽이거나 화면에서 너무 먼 정점은 null(그 선분은 안 그림).
   lines: (Point2D | null)[];
+}
+
+// 별이 아닌 천체(딥스카이·해·달·행성)의 사진 위치. radiusPx는 겉보기 크기(0이면 점).
+export interface SkyObjectMark {
+  name: string;
+  kind: SkyObjectKind;
+  x: number;
+  y: number;
+  radiusPx: number;
 }
 
 interface VectorStar {
@@ -49,13 +59,63 @@ type Projector = (vec: Point3D) => Point2D | null;
 interface Overlay {
   stars: SkyStar[];
   constellations: SkyConstellation[];
+  objects: SkyObjectMark[];
 }
+
+// 방향 v에서 각거리 r(°)만큼 떨어진 방향 (겉보기 크기를 픽셀로 바꿀 때 쓴다)
+const offsetBy = (v: Point3D, rDeg: number): Point3D => {
+  const axis: Point3D = Math.abs(v[2]) < 0.9 ? [0, 0, 1] : [1, 0, 0];
+  const u: Point3D = [
+    v[1] * axis[2] - v[2] * axis[1],
+    v[2] * axis[0] - v[0] * axis[2],
+    v[0] * axis[1] - v[1] * axis[0],
+  ];
+  const n = Math.hypot(u[0], u[1], u[2]);
+  const r = (rDeg * Math.PI) / 180;
+
+  return v.map((c, i) => c * Math.cos(r) + (u[i] / n) * Math.sin(r)) as Point3D;
+};
+
+const projectObjects = (
+  project: Projector,
+  objects: SkyObject[],
+  width: number,
+  height: number,
+): SkyObjectMark[] => {
+  const marks: SkyObjectMark[] = [];
+
+  for (const o of objects) {
+    const p = project(o.vector);
+
+    if (!p) {
+      continue;
+    }
+
+    const edge = o.radiusDeg > 0 ? project(offsetBy(o.vector, o.radiusDeg)) : p;
+    const radiusPx = edge ? Math.hypot(edge[0] - p[0], edge[1] - p[1]) : 0;
+
+    // 가장자리라도 사진에 걸치면 그린다
+    if (
+      p[0] + radiusPx < 0 ||
+      p[0] - radiusPx > width ||
+      p[1] + radiusPx < 0 ||
+      p[1] - radiusPx > height
+    ) {
+      continue;
+    }
+
+    marks.push({ name: o.name, kind: o.kind, x: p[0], y: p[1], radiusPx });
+  }
+
+  return marks;
+};
 
 // 투영 함수로 화면에 들어오는 별/별자리를 만든다.
 const buildOverlay = (
   project: Projector,
   width: number,
   height: number,
+  objects: SkyObject[],
 ): Overlay => {
   const sk: SkyStar[] = [];
 
@@ -114,45 +174,58 @@ const buildOverlay = (
     }
   }
 
-  return { stars: sk, constellations: cons };
+  return {
+    stars: sk,
+    constellations: cons,
+    objects: projectObjects(project, objects, width, height),
+  };
 };
 
 export default function useSkyOverlay() {
-  const [stars, setStars] = useState<SkyStar[]>([]);
-  const [constellations, setConstellations] = useState<SkyConstellation[]>([]);
+  const [overlay, setOverlay] = useState<Overlay>({
+    stars: [],
+    constellations: [],
+    objects: [],
+  });
 
   // 직선투영(핀홀) 변환행렬로 그린다.
   const update = useCallback(
-    (transform: Mat3, width: number, height: number) => {
-      const { stars: sk, constellations: cons } = buildOverlay(
-        (v) => projectVecToPhoto(transform, v),
-        width,
-        height,
+    (
+      transform: Mat3,
+      width: number,
+      height: number,
+      objects: SkyObject[] = [],
+    ) => {
+      setOverlay(
+        buildOverlay(
+          (v) => projectVecToPhoto(transform, v),
+          width,
+          height,
+          objects,
+        ),
       );
-      setStars(sk);
-      setConstellations(cons);
     },
     [],
   );
 
   // 어안 카메라로 그린다(초광각 은하수 등).
   const updateFisheye = useCallback(
-    (camera: FisheyeCamera, width: number, height: number) => {
-      const { stars: sk, constellations: cons } = buildOverlay(
-        (v) => projectFisheye(camera, v),
-        width,
-        height,
+    (
+      camera: FisheyeCamera,
+      width: number,
+      height: number,
+      objects: SkyObject[] = [],
+    ) => {
+      setOverlay(
+        buildOverlay((v) => projectFisheye(camera, v), width, height, objects),
       );
-      setStars(sk);
-      setConstellations(cons);
     },
     [],
   );
 
   const clear = useCallback(() => {
-    setStars([]);
-    setConstellations([]);
+    setOverlay({ stars: [], constellations: [], objects: [] });
   }, []);
 
-  return { stars, constellations, update, updateFisheye, clear };
+  return { ...overlay, update, updateFisheye, clear };
 }

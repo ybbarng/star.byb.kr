@@ -1,0 +1,70 @@
+import type { Observer } from "@/search/utils/ephemeris";
+import type { PhotoExif } from "@/services/exif";
+
+// 촬영 시각(과 알면 장소). 해·달·행성은 이것이 있어야 사진 위 위치가 정해진다.
+export interface ShotTime {
+  local: string; // 현지 시각 "2022-03-27T04:30"
+  offset: string; // 시간대 "+09:00"
+  observer?: Observer;
+  source: "exif" | "record" | "manual";
+  note?: string;
+}
+
+export const shotDate = (s: ShotTime) => new Date(`${s.local}${s.offset}`);
+
+// 이 브라우저의 시간대 ("+09:00")
+export const browserOffset = (at = new Date()) => {
+  const minutes = -at.getTimezoneOffset();
+  const sign = minutes >= 0 ? "+" : "-";
+  const abs = Math.abs(minutes);
+
+  return `${sign}${String(Math.floor(abs / 60)).padStart(2, "0")}:${String(abs % 60).padStart(2, "0")}`;
+};
+
+// 촬영 기록을 아는 샘플. 키는 샘플 파일명.
+const SAMPLE_SHOTS: Record<string, ShotTime> = {
+  // 출처 https://naver.me/5xgcLXzT — 서울 송파구 석촌호수
+  "20220328-brice-Milky Way over Buzzvil.jpg": {
+    local: "2022-03-27T04:30",
+    offset: "+09:00",
+    observer: { latDeg: 37.509, lonDeg: 127.1 },
+    source: "record",
+    note: "촬영 기록 (석촌호수)",
+  },
+  // 2022 발표 "이과생의 별 헤는 밤": 본인 답 "10월 3일 오전 4~5시". 장소는 모르지만 서울 근처 산
+  "20220607-berry-seoul.jpg": {
+    local: "2021-10-03T04:30",
+    offset: "+09:00",
+    observer: { latDeg: 37.5, lonDeg: 127 },
+    source: "record",
+    note: "본인 기억 (10월 3일 4~5시, 서울 근처)",
+  },
+};
+
+export const getSampleShot = (src?: string): ShotTime | null => {
+  if (!src) {
+    return null;
+  }
+
+  return SAMPLE_SHOTS[decodeURIComponent(src.split("/").pop() ?? "")] ?? null;
+};
+
+export const shotFromExif = (exif: PhotoExif | null): ShotTime | null => {
+  if (!exif?.localDateTime) {
+    return null;
+  }
+
+  const local = exif.localDateTime.slice(0, 16);
+
+  return {
+    local,
+    // 시간대가 없으면 이 브라우저의 시간대로 본다 (카메라 시계는 보통 현지 시각)
+    offset: exif.offset ?? browserOffset(new Date(local)),
+    observer:
+      exif.latDeg !== null && exif.lonDeg !== null
+        ? { latDeg: exif.latDeg, lonDeg: exif.lonDeg }
+        : undefined,
+    source: "exif",
+    note: exif.offset ? "사진 정보(EXIF)" : "사진 정보(EXIF), 시간대는 추정",
+  };
+};
