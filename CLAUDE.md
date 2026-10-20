@@ -40,6 +40,7 @@ src/
 │   ├── page.tsx               # 홈 (/)
 │   ├── plate-solver/          # Plate Solver 메인 (/plate-solver)
 │   ├── games/                 # 별 놀이터 (/games, 게임 여섯 개)
+│   ├── learn/                 # 찾는 원리 (/learn, 단계별 설명·데모 — 발표 자료로도 쓴다, 부품은 src/learn)
 │   ├── database/              # 별 DB 3D 시각화 (/database)
 │   ├── demo/                  # 발표용 데모 페이지들
 │   │   ├── upload-photo/      # 사진 선택 데모
