@@ -41,21 +41,33 @@ export const mergeCloseStars = <
 export const mergeDistancePx = (width: number, height: number): number =>
   Math.max(6, Math.hypot(width, height) * 0.005);
 
+// 주변 고리 대비(ringContrast)가 이 값보다 작으면 별답다고 본다. 14장 실제 샘플에서
+// 진짜 별은 중앙값 0.02~0.19, 거짓 검출(창문·경계선·줄기)은 0.3~1.6이었다. 0.08~0.2에서 결과가 비슷하다.
+export const STARLIKE_RING_CONTRAST = 0.12;
+
+export const isStarlike = (s: { ringContrast?: number }): boolean =>
+  s.ringContrast === undefined || s.ringContrast < STARLIKE_RING_CONTRAST;
+
+// 풀이에 쓸 우선순위: 별다운 검출 먼저, 그 안에서는 밝은 순.
+// 밝기만 보면 조명 받은 창문·나무 줄기·지붕 경계선이 진짜 별보다 앞에 온다.
+export const byStarPriority = (
+  a: { brightness: number; ringContrast?: number },
+  b: { brightness: number; ringContrast?: number },
+): number =>
+  Number(isStarlike(b)) - Number(isStarlike(a)) || b.brightness - a.brightness;
+
 // 검출 단계가 화면에 기본으로 띄우고 풀이에 넘기는 별 수(밝기 상위).
 // 전부 그리면 노이즈 마커가 진짜 별을 가린다.
 export const DEFAULT_DISPLAY_STARS = 100;
 
-// 밝기 상위 N개 (원본·개선 방식). 가짜 별이 밝으면 진짜 별을 밀어낼 수 있다.
-export const selectTopByBrightness = (
-  stars: InputStar[],
-  n: number,
-): Point2D[] =>
+// 우선순위(별다움 → 밝기) 상위 N개.
+export const selectTopByPriority = (stars: InputStar[], n: number): Point2D[] =>
   [...stars]
-    .sort((a, b) => b.brightness - a.brightness)
+    .sort(byStarPriority)
     .slice(0, n)
     .map((s) => [s.x, s.y]);
 
-// 화면을 격자로 나눠 각 셀에서 밝기 상위 perCell개씩 고른 뒤 합쳐 maxTotal개 (최선 방식).
+// 화면을 격자로 나눠 각 셀에서 우선순위 상위 perCell개씩 고른 뒤 합쳐 maxTotal개 (최선 방식).
 // 가짜 별이 한 영역에 몰려도 다른 영역의 진짜 별을 확보해 quad가 화면 전체를 덮는다.
 export const selectByGrid = (
   stars: InputStar[],
@@ -89,12 +101,12 @@ export const selectByGrid = (
   const picked: InputStar[] = [];
 
   for (const cell of cells.values()) {
-    cell.sort((a, b) => b.brightness - a.brightness);
+    cell.sort(byStarPriority);
     picked.push(...cell.slice(0, perCell));
   }
 
   return picked
-    .sort((a, b) => b.brightness - a.brightness)
+    .sort(byStarPriority)
     .slice(0, maxTotal)
     .map((s) => [s.x, s.y]);
 };

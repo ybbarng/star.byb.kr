@@ -7,6 +7,7 @@ import SelectableStarMarker from "@/plate-solver/SelectableStarMarker";
 import StepMover from "@/plate-solver/StepMover";
 import { useContextStore } from "@/plate-solver/store/context";
 import {
+  byStarPriority,
   DEFAULT_DISPLAY_STARS,
   mergeCloseStars,
   mergeDistancePx,
@@ -18,6 +19,7 @@ interface CanvasStar {
   y: number;
   brightness: number;
   fwhm: number; // 퍼짐 크기. 작을수록 또렷한 점(별), 클수록 흐리멍텅한 번짐
+  ringContrast?: number; // 별다움. 작을수록 주변이 고른 하늘 (없으면 별로 본다)
   id: string;
   isSelected: boolean;
 }
@@ -75,9 +77,15 @@ export default function DetectStarStep() {
   const [isPanning, setIsPanning] = useState(false);
   const panStartRef = useRef({ x: 0, y: 0 });
   const spaceHeldRef = useRef(false);
-  // cv 검출 전체 결과(밝기순, 캡 없음). 영역 재검출 때 가려진 어두운 별을 꺼내 쓴다.
+  // cv 검출 전체 결과(별다움 → 밝기 순, 캡 없음). 영역 재검출 때 가려진 어두운 별을 꺼내 쓴다.
   const allDetectionsRef = useRef<
-    { x: number; y: number; brightness: number; fwhm: number }[]
+    {
+      x: number;
+      y: number;
+      brightness: number;
+      fwhm: number;
+      ringContrast?: number;
+    }[]
   >([]);
   // 마지막으로 그린 선택 사각형(이미지 좌표). 영역 재검출의 대상 영역.
   const [lastBox, setLastBox] = useState<{
@@ -97,6 +105,7 @@ export default function DetectStarStep() {
           x: star.x,
           y: star.y,
           brightness: star.brightness,
+          ringContrast: star.ringContrast,
           fwhm: 0, // 복원된 별은 모양 정보가 없으므로 또렷으로 취급
           id: crypto.randomUUID(),
           isSelected: false,
@@ -255,22 +264,25 @@ export default function DetectStarStep() {
       cy: number;
       brightness: number;
       fwhm?: number;
+      ringContrast?: number;
     }[] = result.data.payload;
     // 너무 가까운 중복 검출은 밝은 것만 남긴다(거의 같은 위치의 별쌍 정리).
     const minDistPx = mergeDistancePx(imageData.width, imageData.height);
-    // 전체 검출을 밝기순으로 보관(영역 재검출에서 어두운 별까지 꺼내 쓴다)
+    // 전체 검출을 별다운 것 먼저, 그 안에서 밝은 순으로 보관(영역 재검출에서 어두운 별까지 꺼내 쓴다).
+    // 밝기만 보면 조명 받은 창문·나무 줄기·지붕 경계선이 진짜 별보다 앞에 온다.
     const all = mergeCloseStars(
       raw.map((star) => ({
         x: star.cx,
         y: star.cy,
         brightness: star.brightness,
         fwhm: star.fwhm ?? 0,
+        ringContrast: star.ringContrast,
       })),
       minDistPx,
-    ).sort((a, b) => b.brightness - a.brightness);
+    ).sort(byStarPriority);
     allDetectionsRef.current = all;
 
-    // 기본 화면은 밝기 상위 일부만(전체를 다 그리면 노이즈가 가림)
+    // 기본 화면은 우선순위 상위 일부만(전체를 다 그리면 노이즈가 가림)
     return all.slice(0, DEFAULT_DISPLAY_STARS);
   }
 
@@ -291,7 +303,7 @@ export default function DetectStarStep() {
     const inBox = allDetectionsRef.current.filter(
       (star) => star.x >= x1 && star.x <= x2 && star.y >= y1 && star.y <= y2,
     );
-    // 이미 밝기순. 영역이 넓어도 너무 많지 않게 상한을 둔다.
+    // 이미 우선순위 순. 영역이 넓어도 너무 많지 않게 상한을 둔다.
     const picked = inBox.slice(0, 120);
     setCanvasStars(
       picked.map((star) => ({
@@ -507,12 +519,14 @@ export default function DetectStarStep() {
       x: number;
       y: number;
       brightness: number;
+      ringContrast?: number;
     }) => ({
       x: star.x,
       y: star.y,
       brightness: star.brightness,
+      ringContrast: star.ringContrast,
     });
-    const sorted = [...canvasStars].sort((a, b) => b.brightness - a.brightness);
+    const sorted = [...canvasStars].sort(byStarPriority);
     // 사람이 고치지 않았으면 화면에 안 띄운 나머지 검출도 넘긴다(위쪽 영역 재선택용).
     // 이번에 검출하지 않고 복원만 했으면(단계 복귀) 이전에 넘긴 값을 그대로 쓴다.
     const hidden = editedRef.current

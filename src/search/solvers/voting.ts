@@ -3,7 +3,7 @@ import type { Point2D, Point3D } from "@/scripts/hash/types";
 import { isConfident, topCandidates } from "./candidates";
 import { searchTriangle, triangleShape } from "@/search/catalogGeometry";
 import { solveCandidate } from "@/search/solveCore";
-import { selectTopByBrightness } from "@/search/utils/selectStars";
+import { selectTopByPriority } from "@/search/utils/selectStars";
 
 // 최선A — Geometric Voting (다수결).
 // 단일 패턴(quad·삼각형 하나)으로 답을 정하지 않고, 사진의 모든 삼각형이
@@ -38,7 +38,7 @@ export const votingSolver: Solver = {
       throw new Error("votingSolver: ctx.triangleIndex가 필요하다");
     }
 
-    const photoTop = selectTopByBrightness(stars, MATCH_STARS);
+    const photoTop = selectTopByPriority(stars, MATCH_STARS);
     const allStars: Point2D[] = stars.map((s) => [s.x, s.y]);
 
     // 사진 별 i가 카탈로그 별 hr에 받은 득표

@@ -2,7 +2,7 @@ import type { ImageSize, InputStar, Solver, SolverContext } from "./types";
 import type { Point2D, Point3D } from "@/scripts/hash/types";
 import type { Mat3 } from "@/search/utils/similarity";
 import { findCandidates } from "@/search/findCandidatesCore";
-import { selectTopByBrightness } from "@/search/utils/selectStars";
+import { selectTopByPriority } from "@/search/utils/selectStars";
 import { computeTransformMatrix } from "@/search/utils/transform";
 import { recoverCenter, recoverFov } from "@/search/utils/wcs";
 
@@ -32,7 +32,7 @@ export const baselineSolver: Solver = {
       candidates: [],
     });
 
-    const photoTop = selectTopByBrightness(stars, TOP_N);
+    const photoTop = selectTopByPriority(stars, TOP_N);
     const photo = { width: size.width, height: size.height, stars: photoTop };
     const cands = findCandidates(photo, ctx.index);
 

@@ -80,6 +80,77 @@ function imageDataFromMat(cv, mat) {
  * 7. 유효 반경 범위 내에서 weighted centroid (서브픽셀 정확도)
  * 8. brightness = 유효 반경 (겉보기 크기, 밝은 별일수록 큰 값)
  */
+// 고리(반지름 r1~r2) 안 픽셀의 (dx, dy, 부채꼴 번호) 목록. 반지름 쌍마다 한 번만 만든다.
+const ringOffsetCache = new Map();
+
+function ringOffsets(r1, r2, step) {
+  const key = r1 + "/" + r2 + "/" + step;
+  let offsets = ringOffsetCache.get(key);
+
+  if (!offsets) {
+    const list = [];
+    const reach = Math.ceil(r2);
+
+    for (let dy = -reach; dy <= reach; dy += step) {
+      for (let dx = -reach; dx <= reach; dx += step) {
+        const r = Math.hypot(dx, dy);
+        if (r < r1 || r > r2) continue;
+        const sector =
+          Math.floor(((Math.atan2(dy, dx) + Math.PI) / (2 * Math.PI)) * 8) % 8;
+        list.push(dx, dy, sector);
+      }
+    }
+
+    offsets = Int32Array.from(list);
+    ringOffsetCache.set(key, offsets);
+  }
+
+  return offsets;
+}
+
+// 검출 주변이 사방으로 고른 하늘인지 잰다 (작을수록 별답다).
+// src/search/detectCore.ts의 ringContrast를 옮긴 것 — 바꿀 때 둘을 같이 바꾼다.
+// 주변 고리를 8부채꼴로 나눠 회색조 평균의 (최대 - 최소)를 별의 대비(정점 - 배경)로 나눈다.
+function ringContrast(gray, cols, rows, star) {
+  const unit = Math.max(1, Math.hypot(cols, rows) / 1400);
+  const r1 = Math.round((3 * unit + star.brightness) * 2) / 2;
+  const r2 = Math.round((6 * unit + star.brightness * 1.5) * 2) / 2;
+  const offsets = ringOffsets(r1, r2, r2 > 12 ? 2 : 1);
+  const at = (x, y) =>
+    gray[
+      Math.min(rows - 1, Math.max(0, y)) * cols +
+        Math.min(cols - 1, Math.max(0, x))
+    ];
+  const x0 = Math.round(star.cx);
+  const y0 = Math.round(star.cy);
+  const sums = [0, 0, 0, 0, 0, 0, 0, 0];
+  const counts = [0, 0, 0, 0, 0, 0, 0, 0];
+
+  for (let k = 0; k < offsets.length; k += 3) {
+    const sector = offsets[k + 2];
+    sums[sector] += at(x0 + offsets[k], y0 + offsets[k + 1]);
+    counts[sector]++;
+  }
+
+  let peak = 0;
+  const inner = Math.max(2, Math.ceil(r1 / 2));
+
+  for (let dy = -inner; dy <= inner; dy++) {
+    for (let dx = -inner; dx <= inner; dx++) {
+      peak = Math.max(peak, at(x0 + dx, y0 + dy));
+    }
+  }
+
+  const means = sums
+    .map((sum, i) => (counts[i] > 0 ? sum / counts[i] : NaN))
+    .filter((m) => !Number.isNaN(m))
+    .sort((a, b) => a - b);
+  if (means.length === 0) return 0;
+  const background = means[means.length >> 1];
+
+  return (means[means.length - 1] - means[0]) / Math.max(1, peak - background);
+}
+
 function findStars(cv, payload) {
   const image = cv.matFromImageData(payload);
   const gray = new cv.Mat();
@@ -121,9 +192,11 @@ function findStars(cv, payload) {
 
       // 8방향 이웃과 비교하여 local maxima 확인
       let isMax = true;
+
       for (let dy = -1; dy <= 1 && isMax; dy++) {
         for (let dx = -1; dx <= 1 && isMax; dx++) {
           if (dy === 0 && dx === 0) continue;
+
           if (data[(y + dy) * cols + (x + dx)] > val) {
             isMax = false;
           }
@@ -134,9 +207,16 @@ function findStars(cv, payload) {
 
       // 유효 반경 측정: 4방향(상하좌우)으로 확장하며 threshold 아래로 떨어지는 거리의 평균
       let radiusSum = 0;
-      const directions = [[0, -1], [0, 1], [-1, 0], [1, 0]];
+      const directions = [
+        [0, -1],
+        [0, 1],
+        [-1, 0],
+        [1, 0],
+      ];
+
       for (const [ddx, ddy] of directions) {
         let r = 1;
+
         while (r <= maxRadius) {
           const ny = y + ddy * r;
           const nx = x + ddx * r;
@@ -144,8 +224,10 @@ function findStars(cv, payload) {
           if (data[ny * cols + nx] < threshold) break;
           r++;
         }
+
         radiusSum += r - 1;
       }
+
       const effectiveRadius = radiusSum / directions.length;
 
       candidates.push({ x, y, peakVal: val, effectiveRadius });
@@ -154,7 +236,9 @@ function findStars(cv, payload) {
 
   // 2단계: Non-maximum suppression — 가까운 후보를 하나의 별로 합침
   // 밝은(반경 큰) 후보부터 처리하여, 이미 채택된 별의 반경 내에 있는 후보는 제거
-  candidates.sort((a, b) => b.effectiveRadius - a.effectiveRadius || b.peakVal - a.peakVal);
+  candidates.sort(
+    (a, b) => b.effectiveRadius - a.effectiveRadius || b.peakVal - a.peakVal,
+  );
 
   const suppressed = new Uint8Array(candidates.length);
   const merged = [];
@@ -172,6 +256,7 @@ function findStars(cv, payload) {
       if (suppressed[j]) continue;
       const dx = candidates[j].x - star.x;
       const dy = candidates[j].y - star.y;
+
       if (dx * dx + dy * dy <= suppressRadiusSq) {
         suppressed[j] = 1;
       }
@@ -183,7 +268,13 @@ function findStars(cv, payload) {
   // 3단계: 합쳐진 별에 대해 weighted centroid 계산
   const stars = merged.map(function (star) {
     const centroidRadius = Math.max(2, Math.ceil(star.effectiveRadius));
-    let sumW = 0, sumWx = 0, sumWy = 0, sumWxx = 0, sumWyy = 0, sumWxy = 0;
+    let sumW = 0,
+      sumWx = 0,
+      sumWy = 0,
+      sumWxx = 0,
+      sumWyy = 0,
+      sumWxy = 0;
+
     for (let dy = -centroidRadius; dy <= centroidRadius; dy++) {
       for (let dx = -centroidRadius; dx <= centroidRadius; dx++) {
         const ny = star.y + dy;
@@ -213,7 +304,16 @@ function findStars(cv, payload) {
     const elongation = l2 > 1e-6 ? Math.sqrt(l1 / l2) : Infinity;
     const fwhm = 2.3548 * Math.sqrt(Math.max(0, half));
 
-    return { cx, cy, brightness: star.effectiveRadius, fwhm, elongation };
+    const result = {
+      cx,
+      cy,
+      brightness: star.effectiveRadius,
+      fwhm,
+      elongation,
+    };
+    result.ringContrast = ringContrast(gray.data, cols, rows, result);
+
+    return result;
   });
 
   image.delete();

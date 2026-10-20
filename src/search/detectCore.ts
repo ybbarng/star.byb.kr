@@ -4,6 +4,7 @@ export interface DetectedStar {
   brightness: number; // 유효 반경 (밝은 별일수록 큼)
   elongation: number; // 1=원형, 클수록 길쭉 (물결 반사광/궤적은 큼)
   fwhm: number; // 밝기 분포 크기(px)
+  ringContrast?: number; // 별다움 (ringContrast, 회색조 영상을 줄 때만)
 }
 
 // 별 검출의 순수 JS 부분 (cv.worker.js findStars에서 포팅).
@@ -193,4 +194,98 @@ export const detectStarsFromDiff = (
       fwhm,
     };
   });
+};
+
+// 고리(반지름 r1~r2) 안 픽셀의 (dx, dy, 부채꼴 번호) 목록. 반지름 쌍마다 한 번만 만든다.
+// 고리가 큰 사진(지름 수십 px)에서는 한 칸 건너 표본을 뽑는다(평균만 쓰므로 충분하다).
+const ringOffsetCache = new Map<string, Int32Array>();
+
+const ringOffsets = (r1: number, r2: number, step: number): Int32Array => {
+  const key = `${r1}/${r2}/${step}`;
+  let offsets = ringOffsetCache.get(key);
+
+  if (!offsets) {
+    const list: number[] = [];
+    const reach = Math.ceil(r2);
+
+    for (let dy = -reach; dy <= reach; dy += step) {
+      for (let dx = -reach; dx <= reach; dx += step) {
+        const r = Math.hypot(dx, dy);
+
+        if (r < r1 || r > r2) {
+          continue;
+        }
+
+        const sector =
+          Math.floor(((Math.atan2(dy, dx) + Math.PI) / (2 * Math.PI)) * 8) % 8;
+        list.push(dx, dy, sector);
+      }
+    }
+
+    offsets = Int32Array.from(list);
+    ringOffsetCache.set(key, offsets);
+  }
+
+  return offsets;
+};
+
+// 검출 주변이 사방으로 고른 하늘인지 잰다 (작을수록 별답다).
+// 주변 고리(별 크기 바깥)를 8부채꼴로 나눠 회색조 평균의 (최대 - 최소)를 별의 대비(정점 - 배경)로
+// 나눈 값이다. 배경은 부채꼴 평균 8개의 중앙값이다. 진짜 별은 고른 하늘 위에 떠 있어 0.1 안팎이다.
+// 밝기 경계선(지붕·능선)은 한쪽만, 줄기·전선은 마주 보는 두 쪽이, 창문은 이웃 창문과 벽이 고리에
+// 걸려 커진다. unit은 사진 크기 단위(대각선/1400, 최소 1)라 큰 사진에서도 같은 비율의 고리를 본다.
+// public/js/cv.worker.js에 같은 계산을 옮겨 두었다 — 바꿀 때 둘을 같이 바꾼다.
+export const ringContrast = (
+  gray: Uint8Array | Uint8ClampedArray,
+  cols: number,
+  rows: number,
+  star: { cx: number; cy: number; brightness: number },
+  channels = 1,
+): number => {
+  const unit = Math.max(1, Math.hypot(cols, rows) / 1400);
+  // 반지름은 0.5px 단위로 맞춰 고리 목록을 재사용한다
+  const r1 = Math.round((3 * unit + star.brightness) * 2) / 2;
+  const r2 = Math.round((6 * unit + star.brightness * 1.5) * 2) / 2;
+  const offsets = ringOffsets(r1, r2, r2 > 12 ? 2 : 1);
+
+  const at = (x: number, y: number) => {
+    const cx = Math.min(cols - 1, Math.max(0, x));
+    const cy = Math.min(rows - 1, Math.max(0, y));
+
+    return gray[(cy * cols + cx) * channels];
+  };
+
+  const x0 = Math.round(star.cx);
+  const y0 = Math.round(star.cy);
+  const sums = [0, 0, 0, 0, 0, 0, 0, 0];
+  const counts = [0, 0, 0, 0, 0, 0, 0, 0];
+
+  for (let k = 0; k < offsets.length; k += 3) {
+    const sector = offsets[k + 2];
+    sums[sector] += at(x0 + offsets[k], y0 + offsets[k + 1]);
+    counts[sector]++;
+  }
+
+  // 별의 정점: 안쪽 원의 최댓값 (작은 별은 중심 픽셀이 정점에서 비껴 있을 수 있다)
+  let peak = 0;
+  const inner = Math.max(2, Math.ceil(r1 / 2));
+
+  for (let dy = -inner; dy <= inner; dy++) {
+    for (let dx = -inner; dx <= inner; dx++) {
+      peak = Math.max(peak, at(x0 + dx, y0 + dy));
+    }
+  }
+
+  const means = sums
+    .map((sum, i) => (counts[i] > 0 ? sum / counts[i] : NaN))
+    .filter((m) => !Number.isNaN(m))
+    .sort((a, b) => a - b);
+
+  if (means.length === 0) {
+    return 0;
+  }
+
+  const background = means[means.length >> 1];
+
+  return (means[means.length - 1] - means[0]) / Math.max(1, peak - background);
 };

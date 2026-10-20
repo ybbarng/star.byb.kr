@@ -19,7 +19,7 @@ import {
   triangleShape,
 } from "@/search/catalogGeometry";
 import { solveCandidate, type SolveResult } from "@/search/solveCore";
-import { selectTopByBrightness } from "@/search/utils/selectStars";
+import { selectTopByPriority } from "@/search/utils/selectStars";
 
 // 최선B — Triangle matching (star tracker의 고전 패러다임).
 // quad(4별) 대신 3별 삼각형의 스케일·회전 불변 형태로 카탈로그를 검색한다.
@@ -32,7 +32,7 @@ const KD_K = 8;
 const MAX_PRESENTED_CANDIDATES = 5;
 // blind FOV 후보. 사진 삼각형을 카탈로그와 같은 "삼각형 중심" 기준으로
 // 재투영하려면 픽셀→각 스케일(FOV)이 필요한데 모르므로 스캔한다.
-const FOV_CANDIDATES = [10, 14, 18, 23, 29, 37, 47];
+const FOV_CANDIDATES = [10, 14, 18, 23, 29, 37, 47, 60, 75];
 // 크기로 거르기 전 모양으로 가져오는 배수 (KD_K × 이 값)
 const SEARCH_DEPTH = 1;
 // FOV 후보 사이 간격(약 1.28배)과 렌즈 왜곡을 덮는 크기 허용 배율
@@ -75,7 +75,7 @@ export const triangleSolver: Solver = {
     const indexes = ctx.brightTriangleIndex
       ? [tri, ctx.brightTriangleIndex]
       : [tri];
-    const photoTop = selectTopByBrightness(stars, MATCH_STARS);
+    const photoTop = selectTopByPriority(stars, MATCH_STARS);
     const allStars: Point2D[] = stars.map((s) => [s.x, s.y]);
 
     const results: SolveResult[] = [];

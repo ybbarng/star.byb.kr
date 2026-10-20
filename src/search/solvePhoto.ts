@@ -10,6 +10,7 @@ import type {
 import { blindSolveFisheye } from "@/search/fisheyeSolve";
 import { improvedSolver, triangleSolver } from "@/search/solvers";
 import { dedupeBySky } from "@/search/solvers/candidates";
+import { byStarPriority } from "@/search/utils/selectStars";
 
 // 사진 한 장의 검출 별 목록을 받아 앱과 똑같은 흐름으로 푼다.
 // Worker(solverWorker)는 이 함수를 감싸기만 하고, Node 테스트도 이 함수를 그대로 쓴다.
@@ -100,7 +101,7 @@ const inputSizesFor = (starCount: number): number[] => {
   return sizes;
 };
 
-// stars는 검출 전체를 넣어도 된다. 영역마다 밝은 순으로 필요한 만큼만 쓴다.
+// stars는 검출 전체를 넣어도 된다. 영역마다 우선순위(별다움 → 밝기) 순으로 필요한 만큼만 쓴다.
 export const solvePhoto = (
   stars: InputStar[],
   size: ImageSize,
@@ -110,7 +111,7 @@ export const solvePhoto = (
 ): SolvePhotoResult => {
   const t0 = performance.now();
   const deadline = t0 + (options.timeBudgetMs ?? DEFAULT_TIME_BUDGET_MS);
-  const sorted = [...stars].sort((a, b) => b.brightness - a.brightness);
+  const sorted = [...stars].sort(byStarPriority);
   const regionInputs = SEARCH_REGIONS.map((region) => ({
     label: region.label,
     stars: sorted.filter((s) => s.y < size.height * region.keepTop),
@@ -120,23 +121,29 @@ export const solvePhoto = (
       // 앞 영역과 실제로 쓰는 별이 같으면(아래쪽에 별이 없던 사진) 되풀이하지 않는다
       (i === 0 || !sameTopStars(region.stars, all[i - 1].stars)),
   );
-  // 빠른 solver부터 쓴다. 한 solver 안에서는 입력 크기 순으로 영역을 번갈아 본다
-  // (15개: 전체 → 위쪽 75% → 위쪽 55%, 그다음 25개 …). 큰 입력은 비싸서, 사진 전체의 큰 입력에
-  // 시간을 다 쓰기 전에 위쪽 영역의 작은 입력을 먼저 보게 한다.
-  const steps = solvers.flatMap((solver) => {
-    const perRegion = regionInputs.map((region) =>
-      inputSizesFor(region.stars.length).map((inputSize) => ({
-        solver,
-        region,
-        inputSize,
-      })),
-    );
-    const rounds = Math.max(...perRegion.map((list) => list.length), 0);
+  // 1차: 사진 전체를 모든 solver로 (빠른 solver부터, 입력 크기 순). 별다움 순으로 고른 입력이면
+  // 지면이 섞여도 대부분 여기서 풀린다.
+  // 2차: 못 풀면 지면을 빼는 영역으로. 한 solver 안에서는 입력 크기 순으로 영역을 번갈아 본다
+  // (15개: 위쪽 75% → 55% → 45%, 그다음 25개 …). 큰 입력은 비싸서 작은 입력을 먼저 본다.
+  const stepsFor = (regions: typeof regionInputs) =>
+    solvers.flatMap((solver) => {
+      const perRegion = regions.map((region) =>
+        inputSizesFor(region.stars.length).map((inputSize) => ({
+          solver,
+          region,
+          inputSize,
+        })),
+      );
+      const rounds = Math.max(...perRegion.map((list) => list.length), 0);
 
-    return Array.from({ length: rounds }, (_, k) =>
-      perRegion.flatMap((list) => (k < list.length ? [list[k]] : [])),
-    ).flat();
-  });
+      return Array.from({ length: rounds }, (_, k) =>
+        perRegion.flatMap((list) => (k < list.length ? [list[k]] : [])),
+      ).flat();
+    });
+  const steps = [
+    ...stepsFor(regionInputs.slice(0, 1)),
+    ...stepsFor(regionInputs.slice(1)),
+  ];
 
   const allCandidates: SolveCandidateResult[] = [];
   let best: SolveOutcome | null = null;

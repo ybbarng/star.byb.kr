@@ -12,6 +12,8 @@ export interface InputStar {
   x: number;
   y: number;
   brightness: number;
+  // 주변 고리가 고른 정도(detectCore.ringContrast). 작을수록 별답다. 없으면(사람이 찍은 별 등) 별로 본다.
+  ringContrast?: number;
 }
 
 export interface ImageSize {

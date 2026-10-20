@@ -40,6 +40,7 @@ export default function PlateSolvingStep() {
         x: s.x,
         y: s.y,
         brightness: s.brightness,
+        ringContrast: s.ringContrast,
       })),
       image.width,
       image.height,

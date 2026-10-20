@@ -1,6 +1,10 @@
 import type { InputStar } from "@/search/solvers";
 import sharp from "sharp";
-import { detectStarsFromDiff, type DetectedStar } from "@/search/detectCore";
+import {
+  detectStarsFromDiff,
+  ringContrast,
+  type DetectedStar,
+} from "@/search/detectCore";
 import { mergeCloseStars, mergeDistancePx } from "@/search/utils/selectStars";
 
 // node에서 실제 사진(JPG/PNG)을 읽어 별을 검출한다.
@@ -43,19 +47,27 @@ export const detectStarsFromFile = async (
     diff[i] = v > 0 ? v : 0;
   }
 
-  const stars = detectStarsFromDiff(diff, width, height);
+  const stars = detectStarsFromDiff(diff, width, height).map((s) => ({
+    ...s,
+    ringContrast: ringContrast(g, width, height, s, channels),
+  }));
 
   return { stars, width, height };
 };
 
 // 앱의 검출 단계(DetectStarsStep)가 사람 손을 거치지 않고 풀이에 넘기는 별 목록을 만든다.
-// 가까운 중복을 합친 검출 전체(밝기순). 풀이가 영역마다 필요한 만큼 고른다.
+// 가까운 중복을 합친 검출 전체(별다움 값 포함). 풀이가 우선순위대로 필요한 만큼 고른다.
 export const detectLikeApp = async (
   path: string,
 ): Promise<{ stars: InputStar[]; width: number; height: number }> => {
   const { stars, width, height } = await detectStarsFromFile(path);
   const merged = mergeCloseStars(
-    stars.map((s) => ({ x: s.cx, y: s.cy, brightness: s.brightness })),
+    stars.map((s) => ({
+      x: s.cx,
+      y: s.cy,
+      brightness: s.brightness,
+      ringContrast: s.ringContrast,
+    })),
     mergeDistancePx(width, height),
   );
 
