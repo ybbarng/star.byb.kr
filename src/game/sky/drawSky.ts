@@ -379,18 +379,23 @@ export const drawSky = (
 
   // 6) 마을 불빛: 둥근 빛 덩어리로 그렸더니 해·달로 오해했다. 진짜 광해처럼 지평선을 따라 낮고 넓게
   //    퍼지는 빛 + 땅 위의 작은 불빛 점들(창문·가로등)로 그린다. 광해가 셀수록 마을이 많다.
-  const towns = Math.round(lp * 6);
+  //    마을은 땅의 방위에 고정한다 (둘러볼 때 하늘·땅과 함께 움직이게). 120°마다 광해 × 6곳꼴.
+  //    마을마다 따로 난수를 써서, 화면 밖으로 일부가 나가도 모양이 바뀌지 않는다.
+  const towns = Math.round(lp * 18);
 
   for (let i = 0; i < towns; i++) {
-    const az = o.azimuthDeg + (rng() - 0.5) * 120;
-    const base = project(fromAltAzJ2000(frame, ridge(az), az));
+    const trng = createRng(o.groundSeed * 31 + i * 7919 + 1);
+    const az = trng() * 360;
+    const spreadDeg = 6 + trng() * 10;
+    const offView = Math.abs(((az - o.azimuthDeg + 540) % 360) - 180) > 110;
+    const base = offView ? null : project(fromAltAzJ2000(frame, ridge(az), az));
 
     if (!base) {
       continue;
     }
 
     // 지평선 위로 낮게 깔리는 빛 (가로로 길쭉한 타원)
-    const spread = (6 + rng() * 10) * pxPerDeg;
+    const spread = spreadDeg * pxPerDeg;
     items.push({
       kind: "town",
       x: base[0],
@@ -410,24 +415,23 @@ export const drawSky = (
     ctx.restore();
 
     // 집들: 지붕 있는 실루엣 + 불 켜진 창문, 사이사이 가로등
-    const houses = 4 + Math.floor(rng() * 6);
-    const townWidthDeg = (spread / pxPerDeg) * 0.7;
+    const houses = 4 + Math.floor(trng() * 6);
+    const townWidthDeg = spreadDeg * 0.7;
 
     for (let k = 0; k < houses; k++) {
-      const haz = az + (rng() - 0.5) * townWidthDeg;
+      const haz = az + (trng() - 0.5) * townWidthDeg;
+      const w = (0.5 + trng() * 0.9) * pxPerDeg;
+      const h = w * (0.6 + trng() * 0.6);
+      const windowSeed = Math.floor(trng() * 1e9);
       const foot = project(fromAltAzJ2000(frame, ridge(haz) - 0.3, haz));
 
-      if (!foot) {
-        continue;
+      if (foot) {
+        drawHouse(ctx, foot, w, h, createRng(windowSeed));
       }
-
-      const w = (0.5 + rng() * 0.9) * pxPerDeg;
-      const h = w * (0.6 + rng() * 0.6);
-      drawHouse(ctx, foot, w, h, rng);
     }
 
     for (let k = 0; k < 3; k++) {
-      const laz = az + (rng() - 0.5) * townWidthDeg;
+      const laz = az + (trng() - 0.5) * townWidthDeg;
       const foot = project(fromAltAzJ2000(frame, ridge(laz) - 0.2, laz));
 
       if (foot) {
