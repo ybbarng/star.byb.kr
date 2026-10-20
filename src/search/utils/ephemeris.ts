@@ -140,3 +140,45 @@ export const altAzOf = (v: Point3D, jd: number, observer: Observer): AltAz => {
     azDeg: (Math.atan2(dot(east), dot(north)) / D + 360) % 360,
   };
 };
+
+export interface HorizontalFrame {
+  zenith: Point3D;
+  east: Point3D;
+  north: Point3D;
+}
+
+// 그 시각·장소의 수평 좌표계를 카탈로그와 같은 J2000 적도좌표로 (천정·동·북 단위 벡터)
+export const horizontalFrameJ2000 = (
+  jd: number,
+  observer: Observer,
+): HorizontalFrame => {
+  const z = ofDateToJ2000(zenithVector(jd, observer), jd);
+  const zn = Math.hypot(z[0], z[1], z[2]);
+  const zenith: Point3D = [z[0] / zn, z[1] / zn, z[2] / zn];
+  const en = Math.hypot(zenith[0], zenith[1]);
+  const east: Point3D = [-zenith[1] / en, zenith[0] / en, 0];
+  const north: Point3D = [
+    zenith[1] * east[2] - zenith[2] * east[1],
+    zenith[2] * east[0] - zenith[0] * east[2],
+    zenith[0] * east[1] - zenith[1] * east[0],
+  ];
+
+  return { zenith, east, north };
+};
+
+// 수평 좌표계에서 고도·방위(°)의 방향 (J2000)
+export const fromAltAzJ2000 = (
+  frame: HorizontalFrame,
+  altDeg: number,
+  azDeg: number,
+): Point3D => {
+  const alt = altDeg * D;
+  const az = azDeg * D;
+
+  return [0, 1, 2].map(
+    (i) =>
+      Math.cos(alt) *
+        (Math.cos(az) * frame.north[i] + Math.sin(az) * frame.east[i]) +
+      Math.sin(alt) * frame.zenith[i],
+  ) as Point3D;
+};
