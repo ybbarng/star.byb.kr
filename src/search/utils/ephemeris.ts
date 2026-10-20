@@ -40,6 +40,19 @@ const eclipticToEquatorial = (
   return [x, cosD(eps) * y - sinD(eps) * z, sinD(eps) * y + cosD(eps) * z];
 };
 
+// 해·달 공식은 그날의 춘분점 기준이다. 카탈로그(J2000)와 겹쳐 그리려면 세차(1년에 50″씩 춘분점이
+// 황도를 따라 도는 것)만큼 되돌린다. 황도 자체의 움직임(100년에 47″)은 무시한다.
+export const ofDateToJ2000 = (v: Point3D, jd: number): Point3D => {
+  const eps = obliquityDeg(jd);
+  const ex = v[0];
+  const ey = cosD(eps) * v[1] + sinD(eps) * v[2];
+  const ez = -sinD(eps) * v[1] + cosD(eps) * v[2];
+  const lambda = Math.atan2(ey, ex) / D - (1.396971 * (jd - J2000)) / 36525;
+  const beta = Math.asin(Math.max(-1, Math.min(1, ez))) / D;
+
+  return eclipticToEquatorial(lambda, beta, J2000);
+};
+
 // 해의 방향 (지구 중심)
 export const sunVector = (jd: number): Point3D => {
   const n = jd - J2000;
