@@ -4,10 +4,8 @@
 npx tsx src/scripts/database/reduceDatabase.ts
 # RA와 DEC 로 표기된 좌표를 3차원 벡터로 변경
 npx tsx src/scripts/database/toVector.ts
-# quad를 미리 계산한 데이터베이스 생성
+# quad 해시 DB(JSON, 발표용 해시 시각화 데모가 읽는다). 풀이는 받지 않고 카탈로그에서 직접 만든다 (search/quadDatabase.ts)
 npx tsx src/scripts/hash/createHashFromDatabase.ts
-# 브라우저가 받는 이진 형식으로 변환 (JSON 10.8MB → 약 2MB, 파싱 없음)
-npx tsx src/scripts/hash/encodeHashedDatabase.ts
 # 별자리 표시를 위해 별자리 데이터베이스 생성
 npx tsx src/scripts/database/buildConstellations.ts
 # 빛의 타임캡슐(게임)용 별 거리(연주 시차)

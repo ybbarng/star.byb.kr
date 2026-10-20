@@ -9,9 +9,10 @@ import type {
   CandidateOutput,
   Photo,
 } from "@/search/type";
-import * as kdtree from "kd-tree-javascript";
+import type { KdTree4 } from "@/search/utils/kdTree4";
 import * as hashLib from "@/scripts/hash/hash";
 import * as quadrilateral from "@/scripts/hash/quadrilateral";
+import { buildKdTree4, nearestK } from "@/search/utils/kdTree4";
 
 // 매칭(후보 검색) 순수 코어. Web Worker(fetch/postMessage)와 분리되어
 // node/vitest에서 직접 import해 테스트할 수 있다.
@@ -23,57 +24,20 @@ export interface HashedQuad {
 
 export interface CandidateIndex {
   hashes: HashedQuad[];
-  tree: InstanceType<typeof kdtree.kdTree>;
+  tree: KdTree4;
   nameOf: (hr: string) => string;
 }
 
-const calculateDistance = (v1: number[], v2: number[]): number => {
-  let sum = 0;
-
-  for (let i = 0; i < v1.length; i++) {
-    const d = v1[i] - v2[i];
-    sum += d * d;
-  }
-
-  return sum;
-};
-
-// 4D 해시 KD-Tree와 HR→이름 사전을 묶은 검색 인덱스를 만든다.
+// 4D 해시 KD-tree와 HR→이름 사전을 묶은 검색 인덱스를 만든다.
 export const buildCandidateIndex = (
   hashes: HashedQuad[],
   nameOf: (hr: string) => string = (hr) => `HR ${hr}`,
 ): CandidateIndex => {
-  const tree = new kdtree.kdTree(
-    hashes.map((hash, i) => ({
-      i,
-      x: hash.hash[0],
-      y: hash.hash[1],
-      z: hash.hash[2],
-      w: hash.hash[3],
-    })),
-    (p1, p2) =>
-      calculateDistance([p1.x, p1.y, p1.z, p1.w], [p2.x, p2.y, p2.z, p2.w]),
-    ["x", "y", "z", "w"],
-  );
+  const coords = new Float64Array(hashes.length * 4);
 
-  return { hashes, tree, nameOf };
-};
+  hashes.forEach((q, i) => coords.set(q.hash, i * 4));
 
-const findNearestQuads = (
-  tree: InstanceType<typeof kdtree.kdTree>,
-  quad: number[],
-  k: number,
-): { index: number; distance: number }[] => {
-  const nearest = tree.nearest(
-    { i: 0, x: quad[0], y: quad[1], z: quad[2], w: quad[3] },
-    k,
-  );
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return nearest.map((result: any) => ({
-    index: result[0].i as number,
-    distance: result[1] as number,
-  }));
+  return { hashes, tree: buildKdTree4(coords), nameOf };
 };
 
 export interface FindCandidatesOptions {
@@ -160,13 +124,7 @@ export const findCandidates = (
   quads.forEach((quad, i) => {
     options.onProgress?.(i, total);
 
-    const nearestResults = findNearestQuads(tree, quad.hash, k);
-
-    for (const result of nearestResults) {
-      if (result.index === -1) {
-        continue;
-      }
-
+    for (const result of nearestK(tree, quad.hash, k)) {
       const found = hashes[result.index].stars;
       const distance = result.distance * 1000;
       const dbKey = found.join(",");

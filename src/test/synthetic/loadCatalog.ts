@@ -3,7 +3,7 @@ import type { HashedQuad } from "@/search/findCandidatesCore";
 import type { ContextStar } from "@/search/solverContext";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { decodeHashedDatabase } from "@/search/hashedDatabaseFormat";
+import { generateQuadDatabase } from "@/search/quadDatabase";
 
 // 빌드 산출물(build/database/vectors-database.json)을 테스트용으로 로드한다.
 // 시스템 DB와 동일한 별 집합·좌표를 써야 합성 데이터가 의미를 갖는다.
@@ -37,26 +37,17 @@ export const loadCatalog = (): CatalogStar[] => {
   }));
 };
 
-// 미리 계산된 DB quad 해시 로더. 앱(Worker)과 같은 이진 파일(build/hash/hashed-database.bin)을
-// 같은 함수로 읽는다. 별 번호는 카탈로그(vectors-database.json) 순서를 따른다.
-export const hashesPath = resolve(
-  process.cwd(),
-  "build/hash/hashed-database.bin",
-);
+// quad 해시 DB. 앱(Worker)과 같은 함수(generateQuadDatabase)로 카탈로그에서 만든다 (한 번만 만들어 둔다).
+let hashesCache: HashedQuad[] | null = null;
 
-export const hashesExist = (): boolean => existsSync(hashesPath);
+export const hashesExist = (): boolean => catalogExists();
 
 export const loadHashes = (): HashedQuad[] => {
-  const file = readFileSync(hashesPath);
-  const buffer = file.buffer.slice(
-    file.byteOffset,
-    file.byteOffset + file.byteLength,
+  hashesCache ??= generateQuadDatabase(
+    loadCatalog().map((s) => ({ hr: s.hr, vector: s.vector })),
   );
 
-  return decodeHashedDatabase(
-    buffer,
-    loadCatalog().map((s) => s.hr),
-  );
+  return hashesCache;
 };
 
 // 풀이 컨텍스트(buildSolverContext)가 받는 형태로 바꾼다.
