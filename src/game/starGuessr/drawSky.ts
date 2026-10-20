@@ -241,23 +241,55 @@ export const drawSky = (
     ctx.fill();
   }
 
-  // 6) 마을 불빛: 지평선 위의 따뜻한 빛 무리 (광해가 셀수록 많다)
+  // 6) 마을 불빛: 둥근 빛 덩어리로 그렸더니 해·달로 오해했다. 진짜 광해처럼 지평선을 따라 낮고 넓게
+  //    퍼지는 빛 + 땅 위의 작은 불빛 점들(창문·가로등)로 그린다. 광해가 셀수록 마을이 많다.
   const towns = Math.round(lp * 6);
 
   for (let i = 0; i < towns; i++) {
     const az = o.azimuthDeg + (rng() - 0.5) * 120;
-    const p = project(fromAltAzJ2000(frame, ridge(az) * 0.3, az));
+    const base = project(fromAltAzJ2000(frame, ridge(az), az));
 
-    if (!p) {
+    if (!base) {
       continue;
     }
 
-    const r = 40 + rng() * 120;
-    const glow = ctx.createRadialGradient(p[0], p[1], 0, p[0], p[1], r);
-    glow.addColorStop(0, "rgba(255,170,90,0.35)");
-    glow.addColorStop(1, "rgba(255,170,90,0)");
+    // 지평선 위로 낮게 깔리는 빛 (가로로 길쭉한 타원)
+    const spread = (6 + rng() * 10) * pxPerDeg;
+    ctx.save();
+    ctx.translate(base[0], base[1]);
+    ctx.scale(1, 0.18);
+    const glow = ctx.createRadialGradient(0, 0, 0, 0, 0, spread);
+    glow.addColorStop(0, `rgba(255,175,100,${0.12 + 0.18 * lp})`);
+    glow.addColorStop(1, "rgba(255,175,100,0)");
     ctx.fillStyle = glow;
-    ctx.fillRect(p[0] - r, p[1] - r, 2 * r, 2 * r);
+    ctx.fillRect(-spread, -spread, 2 * spread, 2 * spread);
+    ctx.restore();
+
+    // 집들: 지붕 있는 실루엣 + 불 켜진 창문, 사이사이 가로등
+    const houses = 4 + Math.floor(rng() * 6);
+    const townWidthDeg = (spread / pxPerDeg) * 0.7;
+
+    for (let k = 0; k < houses; k++) {
+      const haz = az + (rng() - 0.5) * townWidthDeg;
+      const foot = project(fromAltAzJ2000(frame, ridge(haz) - 0.3, haz));
+
+      if (!foot) {
+        continue;
+      }
+
+      const w = (0.5 + rng() * 0.9) * pxPerDeg;
+      const h = w * (0.6 + rng() * 0.6);
+      drawHouse(ctx, foot, w, h, rng);
+    }
+
+    for (let k = 0; k < 3; k++) {
+      const laz = az + (rng() - 0.5) * townWidthDeg;
+      const foot = project(fromAltAzJ2000(frame, ridge(laz) - 0.2, laz));
+
+      if (foot) {
+        drawStreetLight(ctx, foot, 0.9 * pxPerDeg);
+      }
+    }
   }
 
   // 7) 동서남북 (쉬움)
@@ -281,6 +313,63 @@ export const drawSky = (
 
     ctx.textAlign = "start";
   }
+};
+
+// 집 한 채: 벽(직사각형) + 지붕(삼각형) 실루엣, 창문 몇 개에 불이 켜져 있다. foot은 바닥 가운데.
+const drawHouse = (
+  ctx: CanvasRenderingContext2D,
+  [x, y]: Point2D,
+  w: number,
+  h: number,
+  rng: () => number,
+) => {
+  const roof = h * 0.45;
+  ctx.fillStyle = "rgb(12,12,16)";
+  ctx.beginPath();
+  ctx.moveTo(x - w / 2, y);
+  ctx.lineTo(x - w / 2, y - h);
+  ctx.lineTo(x, y - h - roof);
+  ctx.lineTo(x + w / 2, y - h);
+  ctx.lineTo(x + w / 2, y);
+  ctx.closePath();
+  ctx.fill();
+
+  const win = Math.max(1.5, w * 0.14);
+  const cols = w > 25 ? 3 : 2;
+
+  for (let c = 0; c < cols; c++) {
+    for (let r = 0; r < 2; r++) {
+      if (rng() < 0.45) {
+        continue;
+      }
+
+      const wx = x - w / 2 + ((c + 0.5) * w) / cols - win / 2;
+      const wy = y - h + h * (0.25 + r * 0.4);
+      ctx.fillStyle = `rgba(255,${200 + Math.floor(rng() * 40)},120,0.9)`;
+      ctx.fillRect(wx, wy, win, win);
+    }
+  }
+};
+
+// 가로등: 가는 기둥 + 따뜻한 빛
+const drawStreetLight = (
+  ctx: CanvasRenderingContext2D,
+  [x, y]: Point2D,
+  h: number,
+) => {
+  ctx.strokeStyle = "rgb(18,18,22)";
+  ctx.lineWidth = Math.max(1, h * 0.05);
+  ctx.beginPath();
+  ctx.moveTo(x, y);
+  ctx.lineTo(x, y - h);
+  ctx.stroke();
+
+  const r = h * 0.35;
+  const glow = ctx.createRadialGradient(x, y - h, 0, x, y - h, r);
+  glow.addColorStop(0, "rgba(255,210,140,0.9)");
+  glow.addColorStop(1, "rgba(255,210,140,0)");
+  ctx.fillStyle = glow;
+  ctx.fillRect(x - r, y - h - r, 2 * r, 2 * r);
 };
 
 const normalize = (v: Point3D): Point3D => {
