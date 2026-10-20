@@ -122,11 +122,11 @@ export default function Page() {
             {" · "}
             <a
               className="link link-hover"
-              href="https://github.com/MarcvdSluys/ConstellationLines"
+              href="https://github.com/ofrohn/d3-celestial"
               target="_blank"
               rel="noopener noreferrer"
             >
-              별자리선(ConstellationLines, CC BY-SA 4.0)
+              별자리선·경계(IAU, d3-celestial, BSD)
             </a>
           </span>
         </footer>

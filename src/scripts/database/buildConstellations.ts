@@ -1,16 +1,27 @@
 import { convertTo3DCoordinates } from "@/app/database/utils/coordinates";
 import * as file from "@/scripts/file";
 
+// 별자리선과 별자리 경계를 앱용 파일로 만든다 (원본: data/database/d3-celestial, README 참고).
+// 별자리선: IAU 별자리 그림 바탕. 꼭짓점은 BSC 별 위치에 붙여(0.3° 안의 가장 가까운 별) 카탈로그와 어긋나지 않게 한다.
+// 경계: IAU 88개 구역의 꼭짓점(J2000 적경·적위). 브라우저가 꼭짓점 사이를 촘촘히 이어 그리고 구역을 판정한다.
+
+const SNAP_DEG = 0.3;
+
 const run = () => {
   const catalog = loadStars();
   console.log(
     `로드한 카탈로그에는 총 ${catalog.size} 개의 별 정보가 있습니다.`,
   );
-  const constellations = loadConstellationLines(catalog);
+  const constellations = loadConstellationLines([...catalog.values()]);
   file.save(
     "build/database",
     "vectors-constellations.json",
-    JSON.stringify(constellations, null, 2),
+    JSON.stringify(constellations),
+  );
+  file.save(
+    "build/database",
+    "constellation-bounds.json",
+    JSON.stringify(loadBoundaries()),
   );
 };
 
@@ -30,36 +41,66 @@ const loadStars = () => {
   return starCatalog;
 };
 
-const loadConstellationLines = (catalog: Map<number, Star>) => {
-  const constellationLines = file.load(
-    "data/database",
-    "ConstellationLines.dat",
-  );
+const D = Math.PI / 180;
 
-  const constellationLinesData = constellationLines.split("\n");
-  const constellations: ConstellationLineData[] = [];
-  constellationLinesData.forEach((row) => {
-    if (!row.startsWith("#") && row.length > 1) {
-      const rowData = row.split(/[ ,]+/);
-      const stars: [number, number, number][] = [];
+// d3-celestial 좌표(적경 -180~180°, 적위°) → 단위 벡터
+const toVector = ([lon, lat]: number[]): [number, number, number] => [
+  Math.cos(lat * D) * Math.cos(lon * D),
+  Math.cos(lat * D) * Math.sin(lon * D),
+  Math.sin(lat * D),
+];
 
-      for (let i = 0; i < rowData.length - 2; i++) {
-        const starId = parseInt(rowData[i + 2].trim());
-        const star = catalog.get(starId);
+interface GeoFeature {
+  id: string;
+  geometry: { type: string; coordinates: number[][][] };
+}
 
-        if (star) {
-          stars.push(star.v);
-        }
+const loadConstellationLines = (stars: Star[]) => {
+  const { features } = JSON.parse(
+    file.load("data/database/d3-celestial", "constellations.lines.json"),
+  ) as { features: GeoFeature[] };
+  const cosSnap = Math.cos(SNAP_DEG * D);
+
+  const snap = (v: [number, number, number]) => {
+    let best = v;
+    let bestDot = cosSnap;
+
+    for (const s of stars) {
+      const d = s.v[0] * v[0] + s.v[1] * v[1] + s.v[2] * v[2];
+
+      if (d > bestDot) {
+        bestDot = d;
+        best = s.v;
       }
-
-      constellations.push({
-        label: koreanName[rowData[0]],
-        stars,
-      });
     }
-  });
 
-  return constellations;
+    return best;
+  };
+
+  return features.flatMap((f) =>
+    f.geometry.coordinates.map(
+      (line): ConstellationLineData => ({
+        label: koreanName[f.id],
+        stars: line.map((p) => snap(toVector(p))),
+      }),
+    ),
+  );
+};
+
+// 경계: 구역마다 꼭짓점 [적경°(0~360), 적위°] 목록 (소수 넷째 자리)
+const loadBoundaries = () => {
+  const { features } = JSON.parse(
+    file.load("data/database/d3-celestial", "constellations.bounds.json"),
+  ) as { features: GeoFeature[] };
+  const round = (x: number) => Math.round(x * 1e4) / 1e4;
+
+  return features.map((f) => ({
+    label: koreanName[f.id],
+    ring: f.geometry.coordinates[0].map(([lon, lat]) => [
+      round((lon + 360) % 360),
+      round(lat),
+    ]),
+  }));
 };
 
 interface Star {

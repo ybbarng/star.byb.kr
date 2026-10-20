@@ -3,9 +3,13 @@ import type { SkyObject, SkyObjectKind } from "@/search/skyObjects";
 import type { FisheyeCamera } from "@/search/utils/fisheye";
 import type { Mat3 } from "@/search/utils/similarity";
 import { useCallback, useState } from "react";
+import {
+  boundaryEdges,
+  constellationAt,
+} from "@/search/utils/constellationBounds";
 import { projectFisheye } from "@/search/utils/fisheye";
 import { koreanStarName } from "@/search/utils/starNames";
-import { projectVecToPhoto } from "@/search/utils/wcs";
+import { photoToSky, projectVecToPhoto } from "@/search/utils/wcs";
 import constellationData from "@build/database/vectors-constellations.json";
 import catalogData from "@build/database/vectors-database.json";
 
@@ -22,6 +26,14 @@ export interface SkyConstellation {
   label: string;
   // 폴리라인 정점. 카메라 뒤쪽이거나 화면에서 너무 먼 정점은 null(그 선분은 안 그림).
   lines: (Point2D | null)[];
+}
+
+// 별자리 구역(IAU 경계). 사진의 얼마만큼을 차지하는지와, 사진 안에서 그 구역의 가운데(이름 쓸 자리)
+export interface SkyRegion {
+  label: string;
+  share: number; // 사진 넓이 중 이 구역의 몫 (0~1)
+  x: number;
+  y: number;
 }
 
 // 별이 아닌 천체(딥스카이·해·달·행성)의 사진 위치. radiusPx는 겉보기 크기(0이면 점).
@@ -61,7 +73,50 @@ interface Overlay {
   stars: SkyStar[];
   constellations: SkyConstellation[];
   objects: SkyObjectMark[];
+  boundaries: (Point2D | null)[][]; // 사진에 걸친 구역 경계 변 (뒤쪽·먼 점은 null)
+  regions: SkyRegion[]; // 사진에 담긴 구역, 넓은 순
 }
+
+const EMPTY: Overlay = {
+  stars: [],
+  constellations: [],
+  objects: [],
+  boundaries: [],
+  regions: [],
+};
+
+// 사진을 이 칸 수로 나눠 칸마다 어느 구역인지 본다
+const REGION_GRID = 12;
+
+const regionsOf = (
+  unproject: (p: Point2D) => Point3D,
+  width: number,
+  height: number,
+): SkyRegion[] => {
+  const acc = new Map<string, { n: number; x: number; y: number }>();
+
+  for (let i = 0; i < REGION_GRID; i++) {
+    for (let j = 0; j < REGION_GRID; j++) {
+      const x = ((i + 0.5) / REGION_GRID) * width;
+      const y = ((j + 0.5) / REGION_GRID) * height;
+      const label = constellationAt(unproject([x, y]));
+
+      if (!label) continue;
+
+      const a = acc.get(label) ?? { n: 0, x: 0, y: 0 };
+      acc.set(label, { n: a.n + 1, x: a.x + x, y: a.y + y });
+    }
+  }
+
+  return [...acc.entries()]
+    .map(([label, a]) => ({
+      label,
+      share: a.n / (REGION_GRID * REGION_GRID),
+      x: a.x / a.n,
+      y: a.y / a.n,
+    }))
+    .sort((a, b) => b.share - a.share);
+};
 
 // 방향 v에서 각거리 r(°)만큼 떨어진 방향 (겉보기 크기를 픽셀로 바꿀 때 쓴다)
 const offsetBy = (v: Point3D, rDeg: number): Point3D => {
@@ -117,6 +172,7 @@ const buildOverlay = (
   width: number,
   height: number,
   objects: SkyObject[],
+  unproject?: (p: Point2D) => Point3D, // 있으면 구역 몫을 잰다 (직선투영)
 ): Overlay => {
   const sk: SkyStar[] = [];
 
@@ -179,19 +235,43 @@ const buildOverlay = (
     }
   }
 
+  // 구역 경계: 사진에 한 점이라도 걸치는 변만
+  const boundaries: (Point2D | null)[][] = [];
+
+  for (const edge of boundaryEdges()) {
+    const pts = edge.map((v) => {
+      const p = project(v);
+
+      return p &&
+        p[0] > -marginX &&
+        p[0] < width + marginX &&
+        p[1] > -marginY &&
+        p[1] < height + marginY
+        ? p
+        : null;
+    });
+
+    if (
+      pts.some(
+        (p) =>
+          p !== null && p[0] >= 0 && p[0] < width && p[1] >= 0 && p[1] < height,
+      )
+    ) {
+      boundaries.push(pts);
+    }
+  }
+
   return {
     stars: sk,
     constellations: cons,
     objects: projectObjects(project, objects, width, height),
+    boundaries,
+    regions: unproject ? regionsOf(unproject, width, height) : [],
   };
 };
 
 export default function useSkyOverlay() {
-  const [overlay, setOverlay] = useState<Overlay>({
-    stars: [],
-    constellations: [],
-    objects: [],
-  });
+  const [overlay, setOverlay] = useState<Overlay>(EMPTY);
 
   // 직선투영(핀홀) 변환행렬로 그린다.
   const update = useCallback(
@@ -207,6 +287,7 @@ export default function useSkyOverlay() {
           width,
           height,
           objects,
+          (p) => photoToSky(transform, p),
         ),
       );
     },
@@ -229,7 +310,7 @@ export default function useSkyOverlay() {
   );
 
   const clear = useCallback(() => {
-    setOverlay({ stars: [], constellations: [], objects: [] });
+    setOverlay(EMPTY);
   }, []);
 
   return { ...overlay, update, updateFisheye, clear };

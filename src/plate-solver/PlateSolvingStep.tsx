@@ -38,6 +38,8 @@ export default function PlateSolvingStep() {
     stars: skyStars,
     constellations: skyConstellations,
     objects: skyObjects,
+    boundaries: skyBoundaries,
+    regions: skyRegions,
     update: updateSky,
     updateFisheye,
     clear: clearSky,
@@ -47,6 +49,8 @@ export default function PlateSolvingStep() {
   const [selected, setSelected] = useState(0);
   const [shot, setShot] = useState<ShotTime | null>(null);
   const [showDetected, setShowDetected] = useState(false);
+  // 별자리 구역(IAU 경계). 켜면 경계선과 구역 이름을, 끄면 별자리선 이름을 쓴다
+  const [showRegions, setShowRegions] = useState(true);
   // 시각·장소·지평선 풀이 결과 (확신했을 때만 result가 있다)
   const [horizonRun, setHorizonRun] = useState<{
     running: boolean;
@@ -324,16 +328,21 @@ export default function PlateSolvingStep() {
       skyStars,
       skyConstellations,
       skyObjects,
+      boundaries: showRegions ? skyBoundaries : [],
+      regions: showRegions ? skyRegions : [],
       horizon: horizonTP ? marks.horizon : [],
     });
   }, [
     image,
     photoStars,
     showDetected,
+    showRegions,
     detecting,
     skyStars,
     skyConstellations,
     skyObjects,
+    skyBoundaries,
+    skyRegions,
     horizonTP,
     marks,
   ]);
@@ -403,15 +412,26 @@ export default function PlateSolvingStep() {
             </div>
           )}
         </div>
-        <label className="flex cursor-pointer items-center gap-2 self-end text-xs opacity-70">
-          <input
-            type="checkbox"
-            className="toggle toggle-xs"
-            checked={showDetected}
-            onChange={(e) => setShowDetected(e.target.checked)}
-          />
-          컴퓨터가 찾은 별 표시 ({photoStars.length}개)
-        </label>
+        <div className="flex flex-wrap justify-end gap-x-4 gap-y-1 text-xs opacity-70">
+          <label className="flex cursor-pointer items-center gap-2">
+            <input
+              type="checkbox"
+              className="toggle toggle-xs"
+              checked={showRegions}
+              onChange={(e) => setShowRegions(e.target.checked)}
+            />
+            별자리 구역 경계
+          </label>
+          <label className="flex cursor-pointer items-center gap-2">
+            <input
+              type="checkbox"
+              className="toggle toggle-xs"
+              checked={showDetected}
+              onChange={(e) => setShowDetected(e.target.checked)}
+            />
+            컴퓨터가 찾은 별 표시 ({photoStars.length}개)
+          </label>
+        </div>
       </div>
 
       <aside className="flex w-full flex-col gap-3 lg:w-96 lg:shrink-0">
@@ -439,17 +459,41 @@ export default function PlateSolvingStep() {
               <div className="fx-pop text-success text-2xl font-black">
                 ✨ 찾았어요!
               </div>
-              {visibleConstellations.length > 0 && (
-                <div className="flex flex-wrap gap-1">
-                  {visibleConstellations.slice(0, 8).map((name) => (
-                    <span
-                      key={name}
-                      className="badge badge-outline border-yellow-300/50 text-yellow-200"
-                    >
-                      {name}
-                    </span>
-                  ))}
+              {skyRegions.length > 0 ? (
+                <div className="flex flex-col gap-1">
+                  <div className="text-xs opacity-60">
+                    사진에 담긴 별자리 구역
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {skyRegions
+                      .filter((r) => r.share >= 0.01)
+                      .slice(0, 8)
+                      .map((r) => (
+                        <span
+                          key={r.label}
+                          className="badge badge-outline border-yellow-300/50 text-yellow-200"
+                        >
+                          {r.label}{" "}
+                          <span className="opacity-60">
+                            {Math.round(r.share * 100)}%
+                          </span>
+                        </span>
+                      ))}
+                  </div>
                 </div>
+              ) : (
+                visibleConstellations.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {visibleConstellations.slice(0, 8).map((name) => (
+                      <span
+                        key={name}
+                        className="badge badge-outline border-yellow-300/50 text-yellow-200"
+                      >
+                        {name}
+                      </span>
+                    ))}
+                  </div>
+                )
               )}
               <div className="text-sm opacity-70">
                 {fisheyeCamera
@@ -653,6 +697,8 @@ const drawOverlay = (
     skyStars: Overlay["stars"];
     skyConstellations: Overlay["constellations"];
     skyObjects: Overlay["objects"];
+    boundaries: Overlay["boundaries"];
+    regions: Overlay["regions"];
     horizon: [number, number][];
   },
 ) => {
@@ -679,7 +725,43 @@ const drawOverlay = (
     context.stroke();
   });
 
-  layers.skyConstellations.forEach(({ label: name, lines }) => {
+  // 별자리 구역 경계 (점선)와 구역 이름
+  const REGION_COLOR = "oklch(0.8 0.09 230 / 0.55)";
+  context.setLineDash([6 * unit, 5 * unit]);
+  context.strokeStyle = REGION_COLOR;
+  context.lineWidth = 1.2 * unit;
+
+  for (const ring of layers.boundaries) {
+    context.beginPath();
+    let drawing = false;
+
+    for (const p of ring) {
+      if (!p) {
+        drawing = false;
+        continue;
+      }
+
+      if (drawing) context.lineTo(p[0], p[1]);
+      else context.moveTo(p[0], p[1]);
+
+      drawing = true;
+    }
+
+    context.stroke();
+  }
+
+  context.setLineDash([]);
+
+  // 구역 이름을 쓰면 별자리선 이름은 쓰지 않는다 (같은 이름이 두 번 나오지 않게)
+  const regionLabels = layers.regions.length > 0;
+
+  for (const r of layers.regions) {
+    if (r.share < 0.04) continue;
+
+    label(r.label, r.x, r.y, "oklch(0.85 0.08 230)");
+  }
+
+  layers.skyConstellations.forEach(({ lines }) => {
     context.strokeStyle = "oklch(0.905 0.182 98.111 / 0.85)";
     context.lineWidth = 1.5 * unit;
 
@@ -697,26 +779,32 @@ const drawOverlay = (
       context.lineTo(b[0], b[1]);
       context.stroke();
     }
+  });
 
-    const visible = lines.filter(
-      (l): l is [number, number] =>
-        l !== null &&
-        l[0] >= 0 &&
-        l[0] < image.width &&
-        l[1] >= 0 &&
-        l[1] < image.height,
-    );
+  // 별자리 이름: 선 묶음이 여럿인 별자리(처녀자리 등)도 이름은 한 번, 사진 안 꼭짓점들의 가운데에
+  if (!regionLabels) {
+    const byName = new Map<string, [number, number][]>();
 
-    if (visible.length === 0) {
-      return;
+    for (const { label: name, lines } of layers.skyConstellations) {
+      const visible = lines.filter(
+        (l): l is [number, number] =>
+          l !== null &&
+          l[0] >= 0 &&
+          l[0] < image.width &&
+          l[1] >= 0 &&
+          l[1] < image.height,
+      );
+      byName.set(name, [...(byName.get(name) ?? []), ...visible]);
     }
 
-    const center = visible
-      .reduce((sum, l) => [sum[0] + l[0], sum[1] + l[1]], [0, 0])
-      .map((v) => v / visible.length);
+    for (const [name, pts] of byName) {
+      if (pts.length === 0) continue;
 
-    label(name, center[0], center[1], "oklch(0.905 0.182 98.111)");
-  });
+      const cx = pts.reduce((sum, p) => sum + p[0], 0) / pts.length;
+      const cy = pts.reduce((sum, p) => sum + p[1], 0) / pts.length;
+      label(name, cx, cy, "oklch(0.905 0.182 98.111)");
+    }
+  }
 
   layers.skyStars.forEach(({ name, x, y }) => {
     context.beginPath();

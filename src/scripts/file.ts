@@ -5,6 +5,7 @@ type Path =
   | "build/hash"
   | "build/hash/sample"
   | "data/database"
+  | "data/database/d3-celestial"
   | "data/hash"
   | "data/hash/sample"
   | "data/search";

@@ -271,11 +271,21 @@ export default function Page() {
         </Callout>
       </LearnSection>
 
-      <LearnSection title="별자리선">
+      <LearnSection title="별자리선과 별자리 구역">
         <p>
-          별자리 그림은 국제천문연맹 88개 별자리를 BSC 별 번호로 이어 둔 공개
-          자료(ConstellationLines)를 써요. 풀이에는 쓰지 않고, 답을 찾은 뒤 사진
-          위에 그릴 때만 써요.
+          별자리 그림은 국제천문연맹(IAU) 별자리 그림(Sky &amp; Telescope의
+          Roger Sinnott·Rick Fienberg)을 바탕으로 한 공개 자료(d3-celestial)를
+          써요. 선을 어떻게 긋는지는 정해진 표준이 없어서, 별자리 책과 앱에서
+          흔히 보는 모양을 골랐어요. 풀이에는 쓰지 않고, 답을 찾은 뒤 사진 위에
+          그릴 때만 써요.
+        </p>
+        <p>
+          오늘날 천문학에서 별자리는 선 그림이 아니라{" "}
+          <b>하늘을 빈틈없이 나눈 88개 구역</b>이에요. 1930년 IAU가 경계를
+          정했고, 경계선은 그때 기준의 적경·적위가 일정한 선이에요. 그래서 선
+          그림 밖에 있는 별도 어느 별자리 &ldquo;구역&rdquo;에 속해요. 풀이
+          결과에는 이 경계를 점선으로 그리고, 사진에 어느 구역이 얼마나 담겼는지
+          알려 줘요.
         </p>
       </LearnSection>
     </LearnArticle>
