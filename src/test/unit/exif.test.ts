@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import sharp from "sharp";
 import { describe, expect, it } from "vitest";
 import { readExif } from "@/services/exif";
 
@@ -101,7 +102,60 @@ describe("readExif", () => {
     expect(south.lonDeg).toBeCloseTo(-151.2, 3);
   });
 
-  it("JPEG가 아니면 null", () => {
+  it("EXIF가 없는 PNG는 null", () => {
     expect(readExif(sample("20230904-nike-jeungseun-01.png"))).toBeNull();
+  });
+
+  // 다른 형식으로 바꿔도(EXIF를 남기면) 같은 촬영 시각을 읽는다. 사진 앱·변환기가 WebP·PNG로 내보내는 경우
+  it.each(["webp", "png"] as const)(
+    "캐논 원본을 %s로 바꿔도 촬영 시각을 읽는다",
+    async (format) => {
+      const out = await sharp(
+        readFileSync(resolve(process.cwd(), "public/samples/big-dipper.jpg")),
+      )
+        .keepExif()
+        [format]()
+        .toBuffer();
+      const exif = readExif(
+        out.buffer.slice(
+          out.byteOffset,
+          out.byteOffset + out.byteLength,
+        ) as ArrayBuffer,
+      )!;
+
+      expect(exif.localDateTime).toBe("2019-09-17T00:05:26");
+      expect(exif.offset).toBe("-05:00");
+    },
+  );
+
+  it('WebP의 EXIF 조각 앞에 "Exif\\0\\0"이 붙어 있어도 읽는다', () => {
+    const tiff = new Uint8Array(
+      jpegWithGps([37, 30, 32.4], "N", [127, 6, 0], "E"),
+    ).slice(12, -2);
+    const payload = [0x45, 0x78, 0x69, 0x66, 0, 0, ...tiff];
+    const chunk = [..."EXIF"].map((c) => c.charCodeAt(0));
+    const size = payload.length;
+    const body = [
+      ...[..."WEBP"].map((c) => c.charCodeAt(0)),
+      ...chunk,
+      size & 0xff,
+      (size >> 8) & 0xff,
+      (size >> 16) & 0xff,
+      size >>> 24,
+      ...payload,
+      ...(size & 1 ? [0] : []),
+    ];
+    const riff = [
+      ...[..."RIFF"].map((c) => c.charCodeAt(0)),
+      body.length & 0xff,
+      (body.length >> 8) & 0xff,
+      (body.length >> 16) & 0xff,
+      body.length >>> 24,
+      ...body,
+    ];
+    const exif = readExif(new Uint8Array(riff).buffer)!;
+
+    expect(exif.latDeg).toBeCloseTo(37.509, 3);
+    expect(exif.lonDeg).toBeCloseTo(127.1, 3);
   });
 });

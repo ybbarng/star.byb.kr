@@ -1,4 +1,4 @@
-// JPEG의 EXIF에서 촬영 시각과 GPS 위치만 읽는다. 해·달·행성 위치를 정하는 데 쓴다.
+// 사진(JPEG·WebP·PNG)의 EXIF에서 촬영 시각과 GPS 위치만 읽는다. 해·달·행성 위치를 정하는 데 쓴다.
 // 메신저·카페를 거친 사진은 EXIF가 지워져 있는 경우가 많아 없으면 null이다.
 
 export interface PhotoExif {
@@ -9,6 +9,8 @@ export interface PhotoExif {
   lonDeg: number | null;
 }
 
+// "Exif"
+const EXIF_MAGIC = 0x45786966;
 const TAG_EXIF_IFD = 0x8769;
 const TAG_GPS_IFD = 0x8825;
 const TAG_DATE_TIME_ORIGINAL = 0x9003;
@@ -96,34 +98,80 @@ const degrees = (view: DataView, r: Reader, e?: Entry) => {
   return deg;
 };
 
+// 파일 안에서 EXIF(TIFF) 데이터가 시작하는 위치. JPEG·WebP·PNG를 읽는다 (HEIC·AVIF·TIFF는 아직 null).
+const findTiff = (view: DataView): number | null => {
+  if (view.byteLength < 12) {
+    return null;
+  }
+
+  // JPEG: APP1 "Exif\0\0" 조각
+  if (view.getUint16(0) === 0xffd8) {
+    let p = 2;
+
+    while (p + 4 <= view.byteLength) {
+      const marker = view.getUint16(p);
+      const length = view.getUint16(p + 2);
+
+      if (marker === 0xffe1 && view.getUint32(p + 4) === EXIF_MAGIC) {
+        return p + 10;
+      }
+
+      if ((marker & 0xff00) !== 0xff00 || marker === 0xffda) {
+        return null; // 영상 데이터가 시작됐는데 EXIF가 없었다
+      }
+
+      p += 2 + length;
+    }
+
+    return null;
+  }
+
+  // WebP: "RIFF" 크기 "WEBP" 뒤로 조각(4글자 이름 + 크기 LE + 내용, 짝수로 맞춤)이 이어진다. "EXIF" 조각
+  if (view.getUint32(0) === 0x52494646 && view.getUint32(8) === 0x57454250) {
+    let p = 12;
+
+    while (p + 8 <= view.byteLength) {
+      const size = view.getUint32(p + 4, true);
+
+      if (view.getUint32(p) === 0x45584946) {
+        // 쓰는 프로그램에 따라 "Exif\0\0"이 앞에 붙기도 한다
+        return view.getUint32(p + 8) === EXIF_MAGIC ? p + 14 : p + 8;
+      }
+
+      p += 8 + size + (size & 1);
+    }
+
+    return null;
+  }
+
+  // PNG: 서명 8바이트 뒤로 조각(길이 BE + 4글자 이름 + 내용 + CRC)이 이어진다. "eXIf" 조각이 곧 TIFF
+  if (view.getUint32(0) === 0x89504e47 && view.getUint32(4) === 0x0d0a1a0a) {
+    let p = 8;
+
+    while (p + 8 <= view.byteLength) {
+      const length = view.getUint32(p);
+      const type = view.getUint32(p + 4);
+
+      if (type === 0x65584966) {
+        return p + 8;
+      }
+
+      if (type === 0x49444154 || type === 0x49454e44) {
+        return null; // 영상 데이터(IDAT)·끝(IEND)까지 EXIF가 없었다
+      }
+
+      p += 12 + length;
+    }
+  }
+
+  return null;
+};
+
 export const readExif = (buffer: ArrayBuffer): PhotoExif | null => {
   const view = new DataView(buffer);
+  const tiff = findTiff(view);
 
-  if (view.byteLength < 4 || view.getUint16(0) !== 0xffd8) {
-    return null; // JPEG가 아니다
-  }
-
-  // APP1 "Exif\0\0" 조각 찾기
-  let p = 2;
-
-  while (p + 4 <= view.byteLength) {
-    const marker = view.getUint16(p);
-    const length = view.getUint16(p + 2);
-
-    if (marker === 0xffe1 && view.getUint32(p + 4) === 0x45786966) {
-      break;
-    }
-
-    if ((marker & 0xff00) !== 0xff00 || marker === 0xffda) {
-      return null; // 영상 데이터가 시작됐는데 EXIF가 없었다
-    }
-
-    p += 2 + length;
-  }
-
-  const tiff = p + 10;
-
-  if (tiff + 8 > view.byteLength) {
+  if (tiff === null || tiff + 8 > view.byteLength) {
     return null;
   }
 
