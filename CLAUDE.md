@@ -123,7 +123,7 @@ HEALPix로 천구를 192개 셀(nside=4, 셀 중심에서 10°)로 나눔 → �
    - 지평선은 자동으로 제안한다 (`utils/horizonDetect.ts`: 열마다 밝기 계단 → RANSAC 직선). 틀리면 사람이 다시 찍는다.
      blind가 확신 못 하고 촬영 시각·장소가 있으면 시각·장소 풀이가 자동으로 돈다 (사이판 샘플은 클릭 없이 풀린다)
 
-점검 결과와 개선 계획: `docs/improvement-plan.md`, 시도·발견 기록: `docs/experiments-journey.md`
+점검 결과와 개선 계획: `docs/improvement-plan.md`, 시도·발견 기록: `docs/experiments-journey.md`, 다운로드 용량 최적화(발표용): `docs/download-optimization.md`
 
 ## 핵심 알고리즘: Geometric Hashing
 
@@ -171,7 +171,7 @@ HEALPix nside=4, 192셀, 600 arcmin 기준. 2025-02-08 측정.
 | 밝은 별 삼각형 인덱스 | 0.05초 | |
 
 처음 받는 양 (프로덕션, 압축): 플레이트 솔버 약 0.68MB(JS 0.31·글꼴 0.31·CSS 0.03), 게임 약 0.68MB.
-예전에는 플레이트 솔버만 약 8MB(OpenCV 3.9·패턴 DB 1.5·글꼴 2.0·mathjs 0.17 등)였다.
+예전에는 플레이트 솔버만 약 8MB(OpenCV 3.9·패턴 DB 1.5·글꼴 2.0·mathjs 0.19 등)였다. 정리: docs/download-optimization.md
 글꼴은 Pretendard 동적 부분 집합(92조각 중 쓰인 글자 조각만)을 쓴다.
 
 ### 결론
