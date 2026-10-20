@@ -114,6 +114,8 @@ public/
 4. **별자리 표시**: 선택한 해의 변환으로 카탈로그 별/별자리를 사진 좌표로 투영 (카메라 뒤쪽 별은 제외).
    유명한 딥스카이(`skyObjects.ts`)는 늘, 해·달·행성(`utils/ephemeris.ts`·`utils/planets.ts`)은 촬영 시각
    (샘플 기록 → EXIF → 사람이 입력)을 알 때만 그린다
+5. **촬영 시각 추정** (`shotTimeEstimate.ts`): 사람이 찍은 지평선 두 점 → 천정 → 위도·지방 항성시 →
+   날짜별로 같은 하늘이 되는 밤 시각. 달을 찍으면 달 위치가 맞는 날짜 순 (달 모양으로 27.3일 간격을 가른다)
 
 점검 결과와 개선 계획: `docs/improvement-plan.md`, 시도·발견 기록: `docs/experiments-journey.md`
 

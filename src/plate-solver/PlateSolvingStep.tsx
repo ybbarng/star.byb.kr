@@ -1,11 +1,16 @@
 import type { SampleAnswer } from "@/plate-solver/sampleAnswers";
 import type { ShotTime } from "@/plate-solver/shotTime";
+import type {
+  EstimateMarks,
+  PickTarget,
+} from "@/plate-solver/ShotTimeEstimator";
 import type { SolvePhase } from "@/search/solvePhoto";
 import type { SolveCandidateResult } from "@/search/solvers";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getSampleAnswer, matchesAnswer } from "@/plate-solver/sampleAnswers";
 import { getSampleShot, shotDate, shotFromExif } from "@/plate-solver/shotTime";
 import ShotTimeControl from "@/plate-solver/ShotTimeControl";
+import ShotTimeEstimator from "@/plate-solver/ShotTimeEstimator";
 import StepMover from "@/plate-solver/StepMover";
 import { useContextStore } from "@/plate-solver/store/context";
 import useSkyOverlay from "@/search/hooks/useSkyOverlay";
@@ -31,6 +36,44 @@ export default function PlateSolvingStep() {
   } = useSkyOverlay();
   const [selected, setSelected] = useState(0);
   const [shot, setShot] = useState<ShotTime | null>(null);
+  const [picking, setPicking] = useState<PickTarget>(null);
+  const [marks, setMarks] = useState<EstimateMarks>(NO_MARKS);
+
+  // 사진이 바뀌면 찍은 점도 지운다
+  useEffect(() => {
+    setMarks(NO_MARKS);
+    setPicking(null);
+  }, [image]);
+
+  // 촬영 시각 추정용으로 사진을 클릭해 지평선·달 위치를 찍는다
+  const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!picking || !image) {
+      return;
+    }
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const point: [number, number] = [
+      ((e.clientX - rect.left) / rect.width) * image.width,
+      ((e.clientY - rect.top) / rect.height) * image.height,
+    ];
+
+    if (picking === "moon") {
+      setMarks((m) => ({ ...m, moon: point }));
+      setPicking(null);
+
+      return;
+    }
+
+    setMarks((m) => {
+      const horizon = m.horizon.length >= 2 ? [point] : [...m.horizon, point];
+
+      if (horizon.length === 2) {
+        setPicking(null);
+      }
+
+      return { ...m, horizon };
+    });
+  };
 
   // 촬영 시각: 기록을 아는 샘플이면 그 기록, 아니면 사진의 EXIF. 둘 다 없으면 사람이 넣는다.
   useEffect(() => {
@@ -273,6 +316,33 @@ export default function PlateSolvingStep() {
       context.fillStyle = color;
       context.fillText(name, labelX, labelY);
     });
+
+    // 촬영 시각 추정용으로 찍은 점: 지평선은 초록 선, 달은 흰 십자
+    context.strokeStyle = "oklch(0.792 0.209 151.711)";
+    context.lineWidth = 3 * unit;
+    marks.horizon.forEach(([x, y]) => {
+      context.beginPath();
+      context.arc(x, y, 8 * unit, 0, 2 * Math.PI);
+      context.stroke();
+    });
+
+    if (marks.horizon.length === 2) {
+      context.beginPath();
+      context.moveTo(...marks.horizon[0]);
+      context.lineTo(...marks.horizon[1]);
+      context.stroke();
+    }
+
+    if (marks.moon) {
+      const [x, y] = marks.moon;
+      context.strokeStyle = "oklch(0.97 0 0)";
+      context.beginPath();
+      context.moveTo(x - 14 * unit, y);
+      context.lineTo(x + 14 * unit, y);
+      context.moveTo(x, y - 14 * unit);
+      context.lineTo(x, y + 14 * unit);
+      context.stroke();
+    }
   }, [
     canvasElement,
     image,
@@ -280,6 +350,7 @@ export default function PlateSolvingStep() {
     skyStars,
     skyConstellations,
     skyObjects,
+    marks,
   ]);
 
   if (!image || !image.width) {
@@ -295,6 +366,8 @@ export default function PlateSolvingStep() {
 
   const candidates = outcome?.candidates ?? [];
   const answer = getSampleAnswer(image.src);
+  const selectedTransform =
+    !fisheyeCamera && !solving ? candidates[selected]?.transform : undefined;
 
   return (
     <div className="flex size-full flex-col justify-stretch gap-4">
@@ -346,19 +419,39 @@ export default function PlateSolvingStep() {
         )}
         <div className="flex grow flex-col items-center gap-2">
           <ShotTimeControl shot={shot} onChange={setShot} />
-          <canvas
-            className="max-h-full"
-            ref={canvasElement}
-            width={image.width}
-            height={image.height}
-            style={{ aspectRatio: image.width / image.height }}
-          />
+          <div className="flex min-h-0 w-full flex-1 justify-center">
+            <canvas
+              className={cn(
+                "max-h-full max-w-full",
+                picking && "cursor-crosshair",
+              )}
+              ref={canvasElement}
+              width={image.width}
+              height={image.height}
+              style={{ aspectRatio: image.width / image.height }}
+              onClick={handleCanvasClick}
+            />
+          </div>
+          {selectedTransform && (
+            <ShotTimeEstimator
+              transform={selectedTransform}
+              width={image.width}
+              shot={shot}
+              marks={marks}
+              picking={picking}
+              onPick={setPicking}
+              onClear={() => setMarks(NO_MARKS)}
+              onApply={setShot}
+            />
+          )}
         </div>
       </div>
       <StepMover disableNext={true} />
     </div>
   );
 }
+
+const NO_MARKS: EstimateMarks = { horizon: [], moon: null };
 
 // 천체 종류별 표시 색 (별은 보라, 별자리선은 노랑)
 const OBJECT_COLORS = {
