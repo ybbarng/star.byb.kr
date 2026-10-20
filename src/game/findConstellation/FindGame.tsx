@@ -6,35 +6,168 @@ import type { Difficulty } from "@/game/sky/scene";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { isHit, makeFindScene } from "@/game/findConstellation/scene";
 import { FIND_TARGETS } from "@/game/findConstellation/targets";
-import { pickItem, STARS } from "@/game/sky/catalog";
+import {
+  ChoiceCards,
+  CountUp,
+  FxLayer,
+  GameIntro,
+  readBest,
+  ResultCard,
+  RoundBanner,
+  saveBest,
+  useFx,
+  useShake,
+} from "@/game/fx/Fx";
+import LineReveal from "@/game/fx/LineReveal";
+import { sfx } from "@/game/fx/sound";
+import { pickItem, projectLines, STARS } from "@/game/sky/catalog";
 import { drawSky } from "@/game/sky/drawSky";
 import ItemInfo, { canvasPoint } from "@/game/sky/ItemInfo";
 import { dailySeed } from "@/game/sky/scene";
 import { projectVecToPhoto } from "@/search/utils/wcs";
+import { cn } from "@/utils/cn";
 import { createRng } from "@/utils/rng";
 
 // 별자리 숨은그림찾기 (docs/game-plans.md): 밤하늘에서 제시한 별자리를 찾아 누른다.
-// 찾으면 별자리선이 그려지고 짧은 이야기가 나온다. 빨리 찾을수록 점수가 높다.
+// 찾으면 별자리선이 이어지며 그려지고 짧은 이야기가 나온다. 빨리 찾을수록, 연달아 한 번에 찾을수록 점수가 높다.
 
 const ROUNDS = 5;
 const MAX_MISSES = 3;
-const DIFFICULTY_LABEL: Record<Difficulty, string> = {
-  easy: "쉬움 (모양 카드 그대로)",
-  normal: "보통 (모양 카드가 돌아가 있음)",
-  hard: "어려움 (이름만)",
-};
+const BASE_POINTS = 1000;
+const POINTS_PER_SECOND = 25;
+const MISS_PENALTY = 150;
+const MIN_POINTS = 100;
+// 한 번에 연달아 찾으면 판마다 25%씩 더
+const COMBO_BONUS = 0.25;
+// 라운드 배너가 떠 있는 동안은 시간을 재지 않는다
+const BANNER_MS = 1200;
 
+const DIFFICULTIES: { value: Difficulty; title: string; note: string }[] = [
+  { value: "easy", title: "쉬움", note: "모양 카드 그대로" },
+  { value: "normal", title: "보통", note: "모양 카드가 돌아가 있어요" },
+  { value: "hard", title: "어려움", note: "이름만 보고 찾아요" },
+];
+
+type Phase = "intro" | "play" | "over";
 type Status = "playing" | "found" | "revealed";
+// 한 판의 결과: clean은 한 번도 안 틀리고 찾았는지 (콤보)
+interface RoundResult {
+  points: number;
+  found: boolean;
+  clean: boolean;
+}
+
+const pointsFor = (seconds: number, misses: number) =>
+  Math.max(
+    MIN_POINTS,
+    Math.round(
+      BASE_POINTS -
+        Math.max(0, seconds) * POINTS_PER_SECOND -
+        misses * MISS_PENALTY,
+    ),
+  );
 
 export default function FindGame() {
+  const [phase, setPhase] = useState<Phase>("intro");
   const [difficulty, setDifficulty] = useState<Difficulty>("easy");
-  // 첫 판은 날짜로 정한다 (서버에서 미리 그린 화면과 브라우저 화면이 같아야 한다)
+  // 첫 판은 날짜로 정한다 (오늘의 문제)
   const [gameSeed, setGameSeed] = useState(() => dailySeed());
+  const [results, setResults] = useState<RoundResult[]>([]);
+  const [newBest, setNewBest] = useState(false);
+  const total = results.reduce((a, r) => a + r.points, 0);
+
+  if (phase === "intro") {
+    return (
+      <GameIntro
+        title="별자리 숨은그림찾기"
+        tagline="밤하늘 어딘가에 숨은 별자리를 찾아라!"
+        howTo={[
+          `별자리 ${ROUNDS}개가 차례로 나와요. 사진에서 그 별자리가 있는 곳을 누르세요.`,
+          "빨리 찾을수록 점수가 높아요. 한 번에 연달아 찾으면 콤보 보너스!",
+          `한 문제에 틀릴 수 있는 기회는 ${MAX_MISSES}번이에요.`,
+        ]}
+        onStart={() => {
+          setResults([]);
+          setPhase("play");
+        }}
+      >
+        <ChoiceCards
+          options={DIFFICULTIES}
+          value={difficulty}
+          onChange={setDifficulty}
+        />
+      </GameIntro>
+    );
+  }
+
+  if (phase === "over") {
+    const best = readBest(`find-${difficulty}`);
+    const stars = total >= 3800 ? 3 : total >= 2500 ? 2 : total > 0 ? 1 : 0;
+
+    return (
+      <ResultCard
+        title={`별자리 ${ROUNDS}개 탐험 끝!`}
+        score={total}
+        stars={stars}
+        best={best}
+        newBest={newBest}
+        actions={
+          <>
+            <button
+              className="btn btn-primary"
+              onClick={() => {
+                setGameSeed(Math.floor(Math.random() * 1e9));
+                setResults([]);
+                setPhase("play");
+              }}
+            >
+              다시 하기
+            </button>
+            <button className="btn" onClick={() => setPhase("intro")}>
+              난이도 바꾸기
+            </button>
+          </>
+        }
+      >
+        <div className="text-sm opacity-80">
+          찾은 별자리 {results.filter((r) => r.found).length}/{ROUNDS}
+        </div>
+      </ResultCard>
+    );
+  }
+
+  return (
+    <FindPlay
+      difficulty={difficulty}
+      gameSeed={gameSeed}
+      results={results}
+      onResult={(r) => setResults((rs) => [...rs, r])}
+      onFinish={(finalTotal) => {
+        setNewBest(saveBest(`find-${difficulty}`, finalTotal));
+        setPhase("over");
+      }}
+    />
+  );
+}
+
+function FindPlay({
+  difficulty,
+  gameSeed,
+  results,
+  onResult,
+  onFinish,
+}: {
+  difficulty: Difficulty;
+  gameSeed: number;
+  results: RoundResult[];
+  onResult: (r: RoundResult) => void;
+  onFinish: (total: number) => void;
+}) {
   const [round, setRound] = useState(0);
   const [status, setStatus] = useState<Status>("playing");
   const [misses, setMisses] = useState<{ x: number; y: number }[]>([]);
-  const [points, setPoints] = useState<number[]>([]);
-  const [startedAt, setStartedAt] = useState(() => Date.now());
+  const [startedAt, setStartedAt] = useState(() => Date.now() + BANNER_MS);
+  const [now, setNow] = useState(() => Date.now());
   const [info, setInfo] = useState<{
     item: SkyItem | null;
     fx: number;
@@ -42,6 +175,8 @@ export default function FindGame() {
   } | null>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const items = useRef<SkyItem[]>([]);
+  const fx = useFx();
+  const shake = useShake();
 
   // 이번 판에 낼 별자리 순서
   const order = useMemo(() => {
@@ -57,7 +192,30 @@ export default function FindGame() {
     () => makeFindScene(target.label, gameSeed + round, difficulty),
     [target, gameSeed, round, difficulty],
   );
-  const finished = round >= ROUNDS;
+  const lines = useMemo(
+    () => (scene ? projectLines(scene.TP, scene.target) : []),
+    [scene],
+  );
+  const total = results.reduce((a, r) => a + r.points, 0);
+  // 지금까지 한 번에 연달아 찾은 판 수
+  let combo = 0;
+
+  for (let i = results.length - 1; i >= 0 && results[i].clean; i--) {
+    combo++;
+  }
+
+  // 남은 점수가 줄어드는 게 보이게 (0.1초마다)
+  useEffect(() => {
+    if (status !== "playing") {
+      return;
+    }
+
+    const t = setInterval(() => setNow(Date.now()), 100);
+
+    return () => clearInterval(t);
+  }, [status]);
+
+  const live = pointsFor((now - startedAt) / 1000, misses.length);
 
   useEffect(() => {
     const ctx = canvas.current?.getContext("2d");
@@ -77,7 +235,6 @@ export default function FindGame() {
       lightPollution: scene.lightPollution,
       groundSeed: scene.seed,
       stars: STARS,
-      constellations: status === "playing" ? undefined : scene.target,
       compass: true,
     });
 
@@ -93,24 +250,23 @@ export default function FindGame() {
       ctx.lineTo(m.x - 10, m.y + 10);
       ctx.stroke();
     }
-  }, [scene, status, misses]);
+  }, [scene, misses]);
 
   const next = () => {
+    sfx.tap();
+
+    if (round + 1 >= ROUNDS) {
+      onFinish(total);
+
+      return;
+    }
+
     setRound((r) => r + 1);
     setStatus("playing");
     setMisses([]);
     setInfo(null);
-    setStartedAt(Date.now());
-  };
-
-  const restart = () => {
-    setGameSeed(Math.floor(Math.random() * 1e9));
-    setRound(0);
-    setPoints([]);
-    setStatus("playing");
-    setMisses([]);
-    setInfo(null);
-    setStartedAt(Date.now());
+    setStartedAt(Date.now() + BANNER_MS);
+    setNow(Date.now());
   };
 
   const handleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -128,69 +284,105 @@ export default function FindGame() {
 
     if (isHit(scene, p.x, p.y)) {
       const seconds = (Date.now() - startedAt) / 1000;
-      setPoints((ps) => [
-        ...ps,
-        Math.max(100, Math.round(1000 - seconds * 25 - misses.length * 150)),
-      ]);
+      const clean = misses.length === 0;
+      const nextCombo = clean ? combo + 1 : 0;
+      const bonus = nextCombo >= 2 ? 1 + COMBO_BONUS * (nextCombo - 1) : 1;
+      const points = Math.round(pointsFor(seconds, misses.length) * bonus);
+      onResult({ points, found: true, clean });
       setStatus("found");
+      sfx.hit();
+      fx.burst(p.fx, p.fy, "#ffe27a", 22);
+      fx.ring(p.fx, p.fy, "#ffe27a");
+      fx.popup(p.fx, p.fy, `+${points}`);
+
+      if (nextCombo >= 2) {
+        setTimeout(
+          () =>
+            fx.popup(0.5, 0.35, `${nextCombo}연속! ×${bonus}`, "#ff9de2", 44),
+          250,
+        );
+      }
 
       return;
     }
 
     const nextMisses = [...misses, { x: p.x, y: p.y }];
     setMisses(nextMisses);
+    shake.shake();
+    fx.ring(p.fx, p.fy, "#ff6b6b");
 
     if (nextMisses.length >= MAX_MISSES) {
-      setPoints((ps) => [...ps, 0]);
+      onResult({ points: 0, found: false, clean: false });
       setStatus("revealed");
+      sfx.lose();
+      fx.popup(0.5, 0.4, "여기 있었어요!", "#ffb4b4", 36);
+    } else {
+      sfx.miss();
+      fx.popup(p.fx, p.fy, "✕", "#ff6b6b", 34);
     }
   };
 
-  const total = points.reduce((a, b) => a + b, 0);
-
-  if (finished) {
-    return (
-      <div className="bg-base-200 rounded-box flex w-full max-w-[1280px] flex-col items-center gap-4 p-8">
-        <h1 className="text-2xl font-bold">별자리 {ROUNDS}개를 다 봤어요!</h1>
-        <div className="text-4xl font-bold">{total}점</div>
-        <div className="text-sm opacity-70">
-          {points.map((p, i) => `${order[i].label} ${p}`).join(" · ")}
-        </div>
-        <button className="btn btn-primary" onClick={restart}>
-          다시 하기
-        </button>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex w-full max-w-[1280px] flex-col gap-4">
-      <div className="flex flex-wrap items-center gap-3">
-        <h1 className="text-2xl font-bold">별자리 숨은그림찾기</h1>
-        <span className="text-sm opacity-70">
-          {round + 1}/{ROUNDS} · {total}점
-        </span>
-        <div className="grow" />
-        <select
-          className="select select-sm w-auto"
-          value={difficulty}
-          onChange={(e) => {
-            setDifficulty(e.target.value as Difficulty);
-            restart();
-          }}
-        >
-          {(Object.keys(DIFFICULTY_LABEL) as Difficulty[]).map((d) => (
-            <option key={d} value={d}>
-              {DIFFICULTY_LABEL[d]}
-            </option>
+    <div className="flex w-full max-w-[1280px] flex-col gap-3">
+      {/* 상단 표시: 판 진행, 점수, 콤보, 남은 기회 */}
+      <div className="bg-base-200/80 rounded-box flex flex-wrap items-center gap-x-6 gap-y-2 px-4 py-2 backdrop-blur">
+        <div className="flex items-center gap-1.5">
+          {Array.from({ length: ROUNDS }, (_, i) => (
+            <span
+              key={i}
+              className={cn(
+                "h-3 w-3 rounded-full transition",
+                i < results.length
+                  ? results[i].points > 0
+                    ? "bg-amber-300 shadow-[0_0_8px_rgba(255,210,80,0.8)]"
+                    : "bg-red-400"
+                  : i === round
+                    ? "bg-white/80 ring-2 ring-white/40"
+                    : "bg-white/20",
+              )}
+            />
           ))}
-        </select>
+        </div>
+        <div className="text-2xl font-black text-amber-200 tabular-nums">
+          <CountUp value={total} duration={700} />
+          <span className="ml-1 text-sm font-normal opacity-70">점</span>
+        </div>
+        {combo >= 2 && (
+          <div key={combo} className="fx-pop badge badge-secondary font-bold">
+            {combo}연속!
+          </div>
+        )}
+        <div className="grow" />
+        <div className="flex gap-1 text-xl" aria-label="남은 기회">
+          {Array.from({ length: MAX_MISSES }, (_, i) => (
+            <span
+              key={i}
+              className={cn(
+                "transition",
+                i < MAX_MISSES - misses.length
+                  ? "text-red-400"
+                  : "scale-75 opacity-20",
+              )}
+            >
+              ♥
+            </span>
+          ))}
+        </div>
       </div>
 
-      <div className="flex flex-col gap-4 md:flex-row">
-        <div className="bg-base-200 rounded-box flex w-full shrink-0 flex-col gap-3 p-4 md:w-64">
-          <div className="text-sm opacity-70">찾아보세요</div>
-          <div className="text-2xl font-bold">{target.label}</div>
+      <div className="flex flex-col gap-3 md:flex-row">
+        <div
+          className={cn(
+            "bg-base-200/80 rounded-box flex w-full shrink-0 flex-col gap-3 p-4 backdrop-blur md:w-64 md:self-start",
+            status === "found" && "fx-glow",
+          )}
+        >
+          <div className="text-sm opacity-70">
+            {round + 1}번째 별자리를 찾아보세요
+          </div>
+          <div key={round} className="fx-pop text-2xl font-bold">
+            {target.label}
+          </div>
           {scene && difficulty !== "hard" && (
             <ShapeCard
               scene={scene}
@@ -199,20 +391,36 @@ export default function FindGame() {
               }
             />
           )}
-          <div className="text-xs opacity-60">
-            사진에서 이 별자리가 있는 곳을 누르세요. 틀린 기회{" "}
-            {MAX_MISSES - misses.length}번 남음.
-          </div>
-          {status !== "playing" && (
-            <div className="flex flex-col gap-2">
+          {status === "playing" ? (
+            <div className="flex flex-col gap-1">
+              <div className="flex justify-between text-xs opacity-70">
+                <span>지금 찾으면</span>
+                <span className="tabular-nums">{live}점</span>
+              </div>
+              <progress
+                className={cn(
+                  "progress",
+                  live > 600
+                    ? "progress-success"
+                    : live > 300
+                      ? "progress-warning"
+                      : "progress-error",
+                )}
+                value={live}
+                max={BASE_POINTS}
+              />
+            </div>
+          ) : (
+            <div className="fx-rise flex flex-col gap-2">
               <div
-                className={
-                  status === "found" ? "text-success font-bold" : "font-bold"
-                }
+                className={cn(
+                  "text-lg font-bold",
+                  status === "found" ? "text-success" : "text-red-300",
+                )}
               >
                 {status === "found"
-                  ? `찾았어요! +${points[points.length - 1]}점`
-                  : "여기 있었어요"}
+                  ? `찾았어요! +${results[results.length - 1]?.points ?? 0}점`
+                  : "아쉬워요, 여기 있었어요"}
               </div>
               <div className="text-sm">
                 <b>{target.season}</b> · {target.story}
@@ -220,21 +428,40 @@ export default function FindGame() {
               <div className="text-xs opacity-60">
                 이제 별을 누르면 이름을 알려 줘요.
               </div>
-              <button className="btn btn-primary btn-sm" onClick={next}>
-                {round + 1 < ROUNDS ? "다음 별자리" : "결과 보기"}
+              <button className="btn btn-primary" onClick={next}>
+                {round + 1 < ROUNDS ? "다음 별자리 →" : "결과 보기 ★"}
               </button>
             </div>
           )}
         </div>
-        <div className="relative grow">
+        <div ref={shake.ref} className="relative grow">
           {scene ? (
-            <canvas
-              ref={canvas}
-              width={scene.width}
-              height={scene.height}
-              className="rounded-box w-full cursor-crosshair bg-black"
-              onClick={handleClick}
-            />
+            <>
+              <canvas
+                ref={canvas}
+                width={scene.width}
+                height={scene.height}
+                className="rounded-box block w-full cursor-crosshair bg-black"
+                onClick={handleClick}
+              />
+              {status !== "playing" && (
+                <LineReveal
+                  width={scene.width}
+                  height={scene.height}
+                  lines={lines}
+                  color={
+                    status === "found"
+                      ? "rgba(250,210,80,0.95)"
+                      : "rgba(255,170,170,0.95)"
+                  }
+                />
+              )}
+              <RoundBanner
+                key={round}
+                text={`${round + 1} / ${ROUNDS}`}
+                sub={target.label}
+              />
+            </>
           ) : (
             <div className="rounded-box bg-base-200 p-8">
               이 별자리가 잘 보이는 하늘을 만들지 못했어요.{" "}
@@ -243,6 +470,7 @@ export default function FindGame() {
               </button>
             </div>
           )}
+          <FxLayer fx={fx} />
           {info && (
             <ItemInfo
               item={info.item}
