@@ -220,3 +220,6 @@ public/data/
 
 # external libraries (copied from node_modules)
 public/libs/
+
+# 외부(카페 등)에서 받은 시험용 사진. 저작권이 있어 저장소에 올리지 않는다.
+/public/samples-external/
