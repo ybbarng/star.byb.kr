@@ -82,3 +82,10 @@ export const GAMES: GameEntry[] = [
     accent: "from-slate-400/30 to-slate-600/10",
   },
 ];
+
+// 게임 페이지의 제목·설명 (공유 미리보기·브라우저 탭)
+export const gameMetadata = (href: string) => {
+  const game = GAMES.find((g) => g.href === href);
+
+  return game ? { title: game.title, description: game.summary } : {};
+};

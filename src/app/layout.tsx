@@ -5,8 +5,18 @@ import "pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "star.byb.kr",
-  description: "Find stars from Photo.",
+  metadataBase: new URL("https://star.byb.kr"),
+  title: {
+    default: "star.byb.kr · 사진 속 별자리 찾기",
+    template: "%s · star.byb.kr",
+  },
+  description:
+    "밤하늘 사진을 올리면 어떤 별자리인지 찾아 줘요. 별자리 게임도 있어요. 사진은 내 기기 밖으로 나가지 않아요.",
+  openGraph: {
+    siteName: "star.byb.kr",
+    locale: "ko_KR",
+    type: "website",
+  },
 };
 
 export default function RootLayout({
@@ -15,7 +25,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="ko">
       <body className="h-screen antialiased">{children}</body>
     </html>
   );
