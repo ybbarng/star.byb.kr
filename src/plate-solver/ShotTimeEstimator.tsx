@@ -13,6 +13,7 @@ import { cn } from "@/utils/cn";
 
 // 사진에서 촬영 시각을 거꾸로 찾는다 (발표 "이과생의 별 헤는 밤"을 계산으로).
 // 사람이 지평선 두 점(과 있으면 달)을 찍으면, 같은 하늘이 되는 밤 시각을 날짜별로 보여 준다.
+// 거꾸로, 촬영 시각·장소를 알면 같은 지평선으로 별이 적은 사진을 풀 수 있다 (사이판, horizonSolve).
 
 export type PickTarget = "horizon" | "moon" | null;
 
@@ -32,8 +33,9 @@ export default function ShotTimeEstimator({
   onPick,
   onClear,
   onApply,
+  horizonSolve,
 }: {
-  transform: Mat3;
+  transform?: Mat3; // 풀린 변환 (없으면 시각 추정은 못 하고 시각·장소 풀이만 할 수 있다)
   width: number;
   shot: ShotTime | null;
   marks: EstimateMarks;
@@ -41,6 +43,12 @@ export default function ShotTimeEstimator({
   onPick: (target: PickTarget) => void;
   onClear: () => void;
   onApply: (shot: ShotTime) => void;
+  horizonSolve: {
+    ready: boolean; // 촬영 시각·장소와 지평선 두 점이 다 있다
+    running: boolean;
+    message: string | null;
+    onRun: () => void;
+  };
 }) {
   // 시간대로 경도를 어림한다 (UTC+9 → 135°). 촬영지를 알면 그 경도를 쓴다.
   const defaultLon =
@@ -54,7 +62,7 @@ export default function ShotTimeEstimator({
   );
 
   const result = useMemo(() => {
-    if (marks.horizon.length < 2) {
+    if (!transform || marks.horizon.length < 2) {
       return null;
     }
 
@@ -104,7 +112,7 @@ export default function ShotTimeEstimator({
   return (
     <div className="bg-base-200 rounded-box flex w-full max-w-3xl flex-col gap-2 p-3 text-sm">
       <div className="flex flex-wrap items-center gap-2">
-        <span className="font-bold">촬영 시각 추정</span>
+        <span className="font-bold">지평선으로</span>
         <button
           className={cn("btn btn-xs", picking === "horizon" && "btn-primary")}
           onClick={() => onPick(picking === "horizon" ? null : "horizon")}
@@ -119,6 +127,14 @@ export default function ShotTimeEstimator({
         </button>
         <button className="btn btn-xs btn-ghost" onClick={onClear}>
           지우기
+        </button>
+        <button
+          className="btn btn-xs btn-primary"
+          disabled={!horizonSolve.ready || horizonSolve.running}
+          title="촬영 시각·장소와 지평선으로 풉니다. 별이 적어 자동으로 못 푸는 사진용입니다."
+          onClick={horizonSolve.onRun}
+        >
+          {horizonSolve.running ? "푸는 중…" : "시각·장소로 풀기"}
         </button>
         <label className="flex items-center gap-1">
           경도
@@ -139,6 +155,15 @@ export default function ShotTimeEstimator({
           />
         </label>
       </div>
+      {horizonSolve.message && (
+        <div className="text-xs">{horizonSolve.message}</div>
+      )}
+      {!horizonSolve.ready && !transform && (
+        <div className="text-xs opacity-60">
+          별이 적어 자동으로 못 풀었다면: 위에 촬영 시각·장소를 넣고 지평선 두
+          점을 찍은 뒤 &quot;시각·장소로 풀기&quot;를 누르세요.
+        </div>
+      )}
       {picking && (
         <div className="text-info text-xs">
           {picking === "horizon"

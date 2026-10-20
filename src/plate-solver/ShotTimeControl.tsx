@@ -12,10 +12,14 @@ export default function ShotTimeControl({
 }) {
   const [local, setLocal] = useState(shot?.local ?? "");
   const [offset, setOffset] = useState(shot?.offset ?? browserOffset());
+  const [lat, setLat] = useState(shot?.observer?.latDeg.toString() ?? "");
+  const [lon, setLon] = useState(shot?.observer?.lonDeg.toString() ?? "");
 
   useEffect(() => {
     setLocal(shot?.local ?? "");
     setOffset(shot?.offset ?? browserOffset());
+    setLat(shot?.observer?.latDeg.toString() ?? "");
+    setLon(shot?.observer?.lonDeg.toString() ?? "");
   }, [shot]);
 
   const apply = () => {
@@ -25,11 +29,17 @@ export default function ShotTimeControl({
       return;
     }
 
-    // 사람이 고친 시각이면 장소는 그대로 두고 출처만 바꾼다
+    // 장소는 위도·경도를 둘 다 넣었을 때만 쓴다
+    const latDeg = parseFloat(lat);
+    const lonDeg = parseFloat(lon);
+
     onChange({
       local,
       offset,
-      observer: shot?.observer,
+      observer:
+        Number.isFinite(latDeg) && Number.isFinite(lonDeg)
+          ? { latDeg, lonDeg }
+          : undefined,
       source: "manual",
     });
   };
@@ -57,6 +67,19 @@ export default function ShotTimeControl({
           </option>
         ))}
       </select>
+      <span className="opacity-70">장소</span>
+      <input
+        className="input input-sm w-20"
+        placeholder="위도"
+        value={lat}
+        onChange={(e) => setLat(e.target.value)}
+      />
+      <input
+        className="input input-sm w-20"
+        placeholder="경도"
+        value={lon}
+        onChange={(e) => setLon(e.target.value)}
+      />
       <button className="btn btn-sm" onClick={apply}>
         적용
       </button>

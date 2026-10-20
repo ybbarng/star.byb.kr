@@ -1,12 +1,15 @@
+import type { Point2D } from "@/scripts/hash/types";
+import type { HorizonSolveResult } from "@/search/horizonSolve";
 import type { SolvePhase, SolvePhotoResult } from "@/search/solvePhoto";
 import type { InputStar } from "@/search/solvers";
+import type { Observer } from "@/search/utils/ephemeris";
 
 // 풀이 Worker를 앱 전체에서 하나만 두고 공유한다.
 // DB 로딩과 인덱스 구축은 무거우므로 페이지를 열 때 한 번 시작해(preloadSolver),
 // 단계를 오가도 다시 하지 않는다. 화면 컴포넌트는 useSolve로 이 모듈을 쓴다.
 
 interface PendingSolve {
-  resolve: (result: SolvePhotoResult) => void;
+  resolve: (result: unknown) => void;
   reject: (error: Error) => void;
   onPhase?: (phase: SolvePhase) => void;
 }
@@ -37,7 +40,7 @@ const getWorker = (): Worker => {
       request.onPhase?.(payload as SolvePhase);
     } else if (fn === "onDone") {
       pending.delete(id);
-      request.resolve(payload as SolvePhotoResult);
+      request.resolve(payload);
     } else if (fn === "onError") {
       pending.delete(id);
       request.reject(new Error(payload as string));
@@ -85,3 +88,24 @@ export const solveInWorker = (
     { fn: "solve", payload: { stars, width, height } },
     { onPhase },
   );
+
+// 촬영 시각·장소와 사진 속 지평선으로 푼다 (별이 적어 blind 풀이가 확신하지 못하는 사진용)
+export const horizonSolveInWorker = (
+  stars: InputStar[],
+  width: number,
+  height: number,
+  horizon: [Point2D, Point2D],
+  date: Date,
+  observer: Observer,
+): Promise<HorizonSolveResult | null> =>
+  request<HorizonSolveResult | null>({
+    fn: "horizonSolve",
+    payload: {
+      stars,
+      width,
+      height,
+      horizon,
+      dateMs: date.getTime(),
+      observer,
+    },
+  });

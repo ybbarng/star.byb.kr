@@ -4,6 +4,7 @@ import type {
   EstimateMarks,
   PickTarget,
 } from "@/plate-solver/ShotTimeEstimator";
+import type { HorizonSolveResult } from "@/search/horizonSolve";
 import type { SolvePhase } from "@/search/solvePhoto";
 import type { SolveCandidateResult } from "@/search/solvers";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -15,7 +16,9 @@ import StepMover from "@/plate-solver/StepMover";
 import { useContextStore } from "@/plate-solver/store/context";
 import useSkyOverlay from "@/search/hooks/useSkyOverlay";
 import useSolve from "@/search/hooks/useSolve";
+import { HORIZON_ACCEPT_LOG_ODDS } from "@/search/horizonSolve";
 import { DEEP_SKY_OBJECTS, solarSystemObjects } from "@/search/skyObjects";
+import { horizonSolveInWorker } from "@/search/solverClient";
 import { ACCEPT } from "@/search/solvers/candidates";
 import { readExif } from "@/services/exif";
 import { cn } from "@/utils/cn";
@@ -38,11 +41,19 @@ export default function PlateSolvingStep() {
   const [shot, setShot] = useState<ShotTime | null>(null);
   const [picking, setPicking] = useState<PickTarget>(null);
   const [marks, setMarks] = useState<EstimateMarks>(NO_MARKS);
+  // 시각·장소·지평선 풀이 결과 (확신했을 때만 result가 있다)
+  const [horizonRun, setHorizonRun] = useState<{
+    running: boolean;
+    result: HorizonSolveResult | null;
+    message: string | null;
+  }>(NO_HORIZON_RUN);
+  const horizonTP = horizonRun.result?.TP;
 
   // 사진이 바뀌면 찍은 점도 지운다
   useEffect(() => {
     setMarks(NO_MARKS);
     setPicking(null);
+    setHorizonRun(NO_HORIZON_RUN);
   }, [image]);
 
   // 촬영 시각 추정용으로 사진을 클릭해 지평선·달 위치를 찍는다
@@ -157,6 +168,12 @@ export default function PlateSolvingStep() {
       return;
     }
 
+    if (horizonTP) {
+      updateSky(horizonTP, image.width, image.height, objects);
+
+      return;
+    }
+
     if (!outcome || outcome.candidates.length === 0) {
       clearSky();
 
@@ -174,6 +191,7 @@ export default function PlateSolvingStep() {
     image,
     objects,
     fisheyeCamera,
+    horizonTP,
     outcome,
     selected,
     updateSky,
@@ -367,7 +385,61 @@ export default function PlateSolvingStep() {
   const candidates = outcome?.candidates ?? [];
   const answer = getSampleAnswer(image.src);
   const selectedTransform =
-    !fisheyeCamera && !solving ? candidates[selected]?.transform : undefined;
+    !fisheyeCamera && !solving
+      ? (horizonTP ?? candidates[selected]?.transform)
+      : undefined;
+
+  // 촬영 시각·장소와 지평선 두 점으로 푼다 (별이 적어 자동으로 못 푸는 사진)
+  const runHorizonSolve = () => {
+    const observer = shot?.observer;
+
+    if (!observer || marks.horizon.length < 2) {
+      return;
+    }
+
+    const offsetHours = parseInt(shot.offset, 10);
+    setHorizonRun({ running: true, result: null, message: null });
+    horizonSolveInWorker(
+      [...photoStars, ...hiddenStars].map((s) => ({
+        x: s.x,
+        y: s.y,
+        brightness: s.brightness,
+        ringContrast: s.ringContrast,
+      })),
+      image.width,
+      image.height,
+      [marks.horizon[0], marks.horizon[1]],
+      shotDate(shot),
+      observer,
+    )
+      .then((r) => {
+        if (!r) {
+          setHorizonRun({
+            running: false,
+            result: null,
+            message: "지평선 위에 별이 너무 적어 풀 수 없습니다.",
+          });
+
+          return;
+        }
+
+        const accepted = r.logOdds >= HORIZON_ACCEPT_LOG_ODDS;
+        const local = new Date(r.date.getTime() + offsetHours * 3600000)
+          .toISOString()
+          .slice(0, 16)
+          .replace("T", " ");
+        setHorizonRun({
+          running: false,
+          result: accepted ? r : null,
+          message: accepted
+            ? `시각·장소로 찾았습니다 · 맞는 별 ${r.inlierCount}/${r.photoCount}개 · 신뢰도 ${r.logOdds.toFixed(1)} · 하늘이 맞는 촬영 시각 ${local}`
+            : `확신하지 못했습니다 (맞는 별 ${r.inlierCount}/${r.photoCount}개, 신뢰도 ${r.logOdds.toFixed(1)}). 시각·장소·지평선을 확인해 보세요.`,
+        });
+      })
+      .catch((e: Error) =>
+        setHorizonRun({ running: false, result: null, message: e.message }),
+      );
+  };
 
   return (
     <div className="flex size-full flex-col justify-stretch gap-4">
@@ -432,7 +504,7 @@ export default function PlateSolvingStep() {
               onClick={handleCanvasClick}
             />
           </div>
-          {selectedTransform && (
+          {!fisheyeCamera && !solving && ready && (
             <ShotTimeEstimator
               transform={selectedTransform}
               width={image.width}
@@ -442,6 +514,12 @@ export default function PlateSolvingStep() {
               onPick={setPicking}
               onClear={() => setMarks(NO_MARKS)}
               onApply={setShot}
+              horizonSolve={{
+                ready: Boolean(shot?.observer) && marks.horizon.length === 2,
+                running: horizonRun.running,
+                message: horizonRun.message,
+                onRun: runHorizonSolve,
+              }}
             />
           )}
         </div>
@@ -452,6 +530,7 @@ export default function PlateSolvingStep() {
 }
 
 const NO_MARKS: EstimateMarks = { horizon: [], moon: null };
+const NO_HORIZON_RUN = { running: false, result: null, message: null };
 
 // 천체 종류별 표시 색 (별은 보라, 별자리선은 노랑)
 const OBJECT_COLORS = {

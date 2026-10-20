@@ -39,6 +39,15 @@ const SAMPLE_SHOTS: Record<string, ShotTime> = {
     source: "record",
     note: "본인 기억 (10월 3일 4~5시, 서울 근처)",
   },
+  // 2019 사이판 워크숍. 슬랙에 올라온 시각(사이판 시간 기준이라고 봄). 실제 촬영은 이와 다를 수
+  // 있어 시각·장소 풀이가 앞 3시간~뒤 1시간 30분을 함께 찾는다 (journey 25장).
+  "20190617-jarrod-saipan.jpg": {
+    local: "2019-06-17T21:36",
+    offset: "+10:00",
+    observer: { latDeg: 15.18, lonDeg: 145.75 },
+    source: "record",
+    note: "슬랙에 올린 시각 (사이판)",
+  },
 };
 
 export const getSampleShot = (src?: string): ShotTime | null => {
