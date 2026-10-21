@@ -74,7 +74,9 @@ export default function QuadHashDemo() {
   return (
     <div className="grid items-start gap-4 md:grid-cols-[1.15fr_1fr_0.75fr]">
       <div className="flex flex-col gap-1">
-        <div className="text-sm opacity-70">① 사진 속 별 넷 (끌어 보세요)</div>
+        <div className="text-sm opacity-70">
+          ① 사진 속 별 4개 (움직여 보세요)
+        </div>
         <svg
           ref={svg}
           viewBox="0 0 320 260"
@@ -230,7 +232,7 @@ export default function QuadHashDemo() {
         </svg>
       </div>
       <div className="flex flex-col gap-2">
-        <div className="text-sm opacity-70">③ quad 값 = C·D의 좌표</div>
+        <div className="text-sm opacity-70">③ quad 값 = C·D의 좌표 = 지문</div>
         <div className="bg-base-300/60 rounded-box flex flex-col gap-2 p-3 font-mono">
           <div>
             <span className="text-indigo-300">C</span>{" "}
@@ -245,8 +247,11 @@ export default function QuadHashDemo() {
           </div>
         </div>
         <div className="text-sm opacity-70">
-          이 네 숫자가 별 4개의 지문이다. 회전하고 크기를 바꿔도 그대로라, 별
-          지도 quad 8만 5천 개 중 가장 가까운 것을 찾으면 된다.
+          별 지도에서 미리 계산한 8만 5천 개의 quad 중 가장 가까운 것을 찾으면
+          된다.
+        </div>
+        <div className="text-sm opacity-50">
+          Astrometry.net 논문에서 제시한 방식
         </div>
       </div>
     </div>
