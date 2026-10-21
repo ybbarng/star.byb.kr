@@ -125,12 +125,12 @@ export default function RingInspector({
       />
       <div className="flex flex-1 flex-col gap-2 text-sm">
         <div className="font-bold">
-          별다움 {value.toFixed(2)} ·{" "}
+          들쭉날쭉함 {value.toFixed(2)} ·{" "}
           <span className={isStar ? "text-success" : "text-warning"}>
             {isStar ? "별다워요" : "별답지 않아요"}
           </span>{" "}
           <span className="text-xs font-normal opacity-60">
-            ({starlike} 미만이면 별로 봐요)
+            (작을수록 별다워요, {starlike} 미만이면 별)
           </span>
         </div>
         <div className="flex h-20 items-end gap-1">
@@ -146,9 +146,9 @@ export default function RingInspector({
         </div>
         <p className="text-xs opacity-70">
           노란 두 원 사이 고리를 여덟 조각으로 나눠 조각마다 평균 밝기를 쟀어요.
-          가장 밝은 조각과 가장 어두운 조각의 차이를 별의 밝기로 나눈 값이
-          별다움이에요. 진짜 별은 사방이 고른 하늘이라 막대가 고르고, 지붕
-          경계·창문·나뭇가지는 한쪽이 밝아 들쭉날쭉해요.
+          가장 밝은 조각과 가장 어두운 조각의 차이를 별의 밝기로 나눈
+          값(들쭉날쭉함)이 작을수록 별다워요. 진짜 별은 사방이 고른 하늘이라
+          막대가 고르고, 지붕 경계·창문·나뭇가지는 한쪽이 밝아 들쭉날쭉해요.
         </p>
       </div>
     </div>
