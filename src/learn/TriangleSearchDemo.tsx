@@ -14,6 +14,7 @@ const K = 8;
 const nameOf = (i: number) => STARS[i].name ?? `HR ${STARS[i].hr}`;
 
 const PLOT = 320;
+const ZOOM_PLOT = 560;
 
 export default function TriangleSearchDemo() {
   const [triangles, setTriangles] = useState<CatalogTriangle[] | null>(null);
@@ -23,6 +24,8 @@ export default function TriangleSearchDemo() {
     [250, 170],
   ]);
   const [selected, setSelected] = useState(0);
+  // 모양 값 그래프를 누르면 크게: 내 삼각형 둘레만 확대해 점 하나하나와 가까운 순서를 보인다
+  const [zoom, setZoom] = useState(false);
   const dragging = useRef<number | null>(null);
   const svg = useRef<SVGSVGElement>(null);
   const plot = useRef<HTMLCanvasElement>(null);
@@ -55,59 +58,140 @@ export default function TriangleSearchDemo() {
 
     if (!context || !triangles) return;
 
+    const size = zoom ? ZOOM_PLOT : PLOT;
     const dpr = Math.min(2, window.devicePixelRatio || 1);
-    plot.current!.width = PLOT * dpr;
-    plot.current!.height = PLOT * dpr;
+    plot.current!.width = size * dpr;
+    plot.current!.height = size * dpr;
     context.setTransform(dpr, 0, 0, dpr, 0, 0);
     context.fillStyle = "#0b0f22";
-    context.fillRect(0, 0, PLOT, PLOT);
-    // x = 짧은÷긴 (0~1), y = 중간÷긴 (0.5~1)
+    context.fillRect(0, 0, size, size);
+    // 보이는 범위: 전체는 x = 짧은÷긴 (0~1), y = 중간÷긴 (0.5~1). 확대하면 내 삼각형 둘레
+    const reach = nearest.length ? nearest[nearest.length - 1].d : 0.02;
+    const half = Math.max(0.01, reach * 2.2);
+    const [x0, x1, y0, y1] = zoom
+      ? [shape[0] - half, shape[0] + half, shape[1] - half, shape[1] + half]
+      : [0, 1, 0.5, 1];
+    const left = zoom ? 56 : 20;
+    const bottom = zoom ? 40 : 20;
+    const inner = size - left - 10;
     const px = (s: [number, number]) => ({
-      x: 20 + s[0] * (PLOT - 30),
-      y: PLOT - 20 - ((s[1] - 0.5) / 0.5) * (PLOT - 30),
+      x: left + ((s[0] - x0) / (x1 - x0)) * inner,
+      y: size - bottom - ((s[1] - y0) / (y1 - y0)) * (size - bottom - 10),
     });
 
-    context.fillStyle = "rgba(165,180,252,0.28)";
+    if (zoom) {
+      // 눈금
+      context.strokeStyle = "rgba(255,255,255,0.12)";
+      context.fillStyle = "rgba(255,255,255,0.6)";
+      context.font = "12px sans-serif";
+      const step = half / 2;
+
+      for (let k = -2; k <= 2; k++) {
+        const gx = px([shape[0] + k * step, y0]).x;
+        const gy = px([x0, shape[1] + k * step]).y;
+        context.beginPath();
+        context.moveTo(gx, 10);
+        context.lineTo(gx, size - bottom);
+        context.moveTo(left, gy);
+        context.lineTo(size - 10, gy);
+        context.stroke();
+        context.fillText(
+          (shape[0] + k * step).toFixed(3),
+          gx - 16,
+          size - bottom + 16,
+        );
+        context.fillText((shape[1] + k * step).toFixed(3), 4, gy + 4);
+      }
+    }
+
+    context.fillStyle = zoom
+      ? "rgba(165,180,252,0.55)"
+      : "rgba(165,180,252,0.28)";
 
     for (const t of triangles) {
+      if (
+        zoom &&
+        (t.shape[0] < x0 ||
+          t.shape[0] > x1 ||
+          t.shape[1] < y0 ||
+          t.shape[1] > y1)
+      )
+        continue;
+
       const p = px(t.shape);
-      context.fillRect(p.x, p.y, 1.2, 1.2);
+
+      if (zoom) {
+        context.beginPath();
+        context.arc(p.x, p.y, 2.5, 0, 2 * Math.PI);
+        context.fill();
+      } else {
+        context.fillRect(p.x, p.y, 1.2, 1.2);
+      }
     }
 
     context.strokeStyle = "rgba(255,255,255,0.3)";
-    context.strokeRect(20, 10, PLOT - 30, PLOT - 30);
+
+    if (!zoom) context.strokeRect(20, 10, PLOT - 30, PLOT - 30);
+
     context.fillStyle = "rgba(255,255,255,0.6)";
-    context.font = "10px sans-serif";
-    context.fillText("짧은 변 ÷ 긴 변 →", PLOT - 110, PLOT - 6);
+    context.font = zoom ? "13px sans-serif" : "10px sans-serif";
+    context.fillText("짧은 변 ÷ 긴 변 →", size - (zoom ? 140 : 110), size - 6);
     context.save();
-    context.translate(11, 120);
+    context.translate(zoom ? 14 : 11, zoom ? size / 2 + 60 : 120);
     context.rotate(-Math.PI / 2);
     context.fillText("중간 변 ÷ 긴 변 →", 0, 0);
     context.restore();
+
+    const me = px(shape);
+
+    if (zoom) {
+      // 가장 가까운 8개가 드는 원
+      const r = px([shape[0] + reach, shape[1]]).x - me.x;
+      context.strokeStyle = "rgba(253,186,116,0.6)";
+      context.setLineDash([5, 4]);
+      context.beginPath();
+      context.arc(me.x, me.y, r, 0, 2 * Math.PI);
+      context.stroke();
+      context.setLineDash([]);
+    }
 
     nearest.forEach(({ t }, i) => {
       const p = px(t.shape);
       context.fillStyle = i === selected ? "#fde68a" : "#fdba74";
       context.beginPath();
-      context.arc(p.x, p.y, i === selected ? 4 : 2.5, 0, 2 * Math.PI);
+      context.arc(
+        p.x,
+        p.y,
+        zoom ? (i === selected ? 7 : 5) : i === selected ? 4 : 2.5,
+        0,
+        2 * Math.PI,
+      );
       context.fill();
+
+      if (zoom) {
+        context.fillStyle = "#0b0f22";
+        context.font = "bold 10px sans-serif";
+        context.textAlign = "center";
+        context.fillText(String(i + 1), p.x, p.y + 3.5);
+        context.textAlign = "start";
+      }
     });
 
-    const me = px(shape);
     // 내 삼각형도 이 평면의 점 하나다: 눈에 띄게 십자로
+    const arm = zoom ? 14 : 9;
     context.strokeStyle = "#86efac";
     context.lineWidth = 2;
     context.beginPath();
-    context.moveTo(me.x - 9, me.y);
-    context.lineTo(me.x + 9, me.y);
-    context.moveTo(me.x, me.y - 9);
-    context.lineTo(me.x, me.y + 9);
+    context.moveTo(me.x - arm, me.y);
+    context.lineTo(me.x + arm, me.y);
+    context.moveTo(me.x, me.y - arm);
+    context.lineTo(me.x, me.y + arm);
     context.stroke();
     context.fillStyle = "#86efac";
     context.beginPath();
     context.arc(me.x, me.y, 3, 0, 2 * Math.PI);
     context.fill();
-  }, [triangles, nearest, shape, selected]);
+  }, [triangles, nearest, shape, selected, zoom]);
 
   const toSvg = (e: React.PointerEvent): [number, number] => {
     const rect = svg.current!.getBoundingClientRect();
@@ -140,7 +224,7 @@ export default function TriangleSearchDemo() {
   }, [match]);
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="relative flex flex-col gap-4">
       <div className="grid gap-4 md:grid-cols-2">
         <div className="flex flex-col gap-1">
           <div className="text-xs opacity-70">
@@ -193,14 +277,37 @@ export default function TriangleSearchDemo() {
             {triangles ? triangles.length.toLocaleString("ko-KR") : "…"}개의
             모양 값
           </div>
-          <canvas
-            ref={plot}
-            className="rounded-box w-full"
-            style={{ aspectRatio: "1" }}
-          />
+          <div
+            className={
+              zoom
+                ? "bg-base-100/95 absolute inset-0 z-10 flex cursor-zoom-out items-center justify-center gap-6 p-2"
+                : "cursor-zoom-in"
+            }
+            onClick={() => setZoom((z) => !z)}
+          >
+            <canvas
+              ref={plot}
+              className="rounded-box"
+              style={
+                zoom
+                  ? { width: "auto", height: "100%", aspectRatio: "1" }
+                  : { width: "100%", aspectRatio: "1" }
+              }
+            />
+            {zoom && (
+              <div className="flex max-w-xs flex-col gap-2 text-sm">
+                <div className="text-base font-bold">내 삼각형 둘레를 확대</div>
+                <div>
+                  점 하나하나가 하늘의 삼각형이에요. 번호는 모양 값이 가까운
+                  순서, 점선 원 안이 풀이가 확인하는 {K}개예요.
+                </div>
+                <div className="opacity-60">누르면 돌아가요</div>
+              </div>
+            )}
+          </div>
           <div className="text-xs opacity-60">
             점 하나가 삼각형 하나의 모양 값이에요. 초록 십자가 내 삼각형, 주황
-            점이 모양 값이 가장 가까운 {K}개예요.
+            점이 모양 값이 가장 가까운 {K}개예요. 누르면 크게 볼 수 있어요.
           </div>
         </div>
       </div>
