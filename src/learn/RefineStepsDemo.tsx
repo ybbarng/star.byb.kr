@@ -3,7 +3,11 @@
 import type { Point2D, Point3D } from "@/scripts/hash/types";
 import type { Mat3 } from "@/search/utils/similarity";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { projectVecToPhoto } from "@/search/utils/wcs";
+import {
+  projectionMatrix,
+  projectVecToPhoto,
+  recoverCenter,
+} from "@/search/utils/wcs";
 
 // 오차 보정 데모: 은하수 사진에서 겹친 별 30개가 답의 변환으로 어디에 놓이는지 단계별로 본다.
 //   ① 짝지은 별 3개로만 맞추기 (V2): 짝 근처는 맞지만 멀어질수록 어긋난다
@@ -94,6 +98,44 @@ export default function RefineStepsDemo() {
     context.fillStyle = "rgba(5,8,20,0.5)";
     context.fillRect(0, 0, W, H);
 
+    // 하늘의 같은 간격 격자를 이 단계의 변환으로 사진에 그린다: 닮음 변환이면 반듯하고, 원근 변환이면 사다리꼴
+    {
+      const TP = data.stages[stage];
+      const P = projectionMatrix(
+        recoverCenter(data.stages.perspective, data.W, data.H),
+      );
+
+      const toSky = (x: number, y: number): Point3D => {
+        const v = [0, 1, 2].map((k) => P[0][k] * x + P[1][k] * y + P[2][k]);
+        const n = Math.hypot(v[0], v[1], v[2]);
+
+        return [v[0] / n, v[1] / n, v[2] / n];
+      };
+
+      context.strokeStyle = "rgba(147,197,253,0.35)";
+      context.lineWidth = 1;
+
+      for (let g = -6; g <= 6; g++) {
+        for (const vertical of [true, false]) {
+          context.beginPath();
+
+          for (let t = -6; t <= 6; t += 0.25) {
+            const [x, y] = vertical
+              ? [g * 0.08, t * 0.08]
+              : [t * 0.08, g * 0.08];
+            const p = projectVecToPhoto(TP, toSky(x, y));
+
+            if (!p) continue;
+
+            if (t === -6) context.moveTo(p[0] * k, p[1] * k);
+            else context.lineTo(p[0] * k, p[1] * k);
+          }
+
+          context.stroke();
+        }
+      }
+    }
+
     if (stage === "seed") {
       context.strokeStyle = "#60a5fa";
       context.lineWidth = 3;
@@ -170,6 +212,10 @@ export default function RefineStepsDemo() {
         <ul className="flex flex-col gap-1 text-sm">
           <li>
             <span className="opacity-80">○</span> 사진의 별
+          </li>
+          <li>
+            <span className="text-blue-300">▦</span> 하늘의 같은 간격 격자
+            (반듯하면 닮음, 사다리꼴이면 원근)
           </li>
           <li>
             <span className="text-green-400">●</span> 변환이 놓은 자리 (6px 안)
