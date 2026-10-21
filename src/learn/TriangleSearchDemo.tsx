@@ -1,73 +1,15 @@
 "use client";
 
-import type { Point3D } from "@/scripts/hash/types";
+import type { CatalogTriangle } from "@/learn/brightTriangles";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { STARS } from "@/game/sky/catalog";
-import { projectTriangle } from "@/search/catalogGeometry";
+import { buildBrightTriangles, shapeOf } from "@/learn/brightTriangles";
 
 // 삼각형 색인 데모: 밝은 별(3.5등급까지)로 만든 삼각형을 모양 값 평면에 모두 찍고,
 // 사람이 끌어 만든 삼각형과 모양이 가장 가까운 8개를 찾는다. 풀이의 밝은 별 삼각형 색인
 // (search/solverContext.ts: 3.5등급, 30°)과 같은 규칙이다.
 
-const MAX_MAG = 3.5;
-const MAX_ANGLE_DEG = 30;
 const K = 8;
-
-interface CatalogTriangle {
-  stars: [number, number, number]; // STARS 번호
-  shape: [number, number]; // (짧은÷긴, 중간÷긴)
-  points: [number, number][]; // 접선 평면 위 모양 (그리기용)
-}
-
-const shapeOf = (pts: [number, number][]): [number, number] => {
-  const d = [
-    Math.hypot(pts[1][0] - pts[2][0], pts[1][1] - pts[2][1]),
-    Math.hypot(pts[0][0] - pts[2][0], pts[0][1] - pts[2][1]),
-    Math.hypot(pts[0][0] - pts[1][0], pts[0][1] - pts[1][1]),
-  ].sort((a, b) => a - b);
-
-  return [d[0] / d[2], d[1] / d[2]];
-};
-
-// 한 별과, 그 별에서 30° 안의 두 별로 만든 삼각형 (같은 삼각형은 한 번만)
-const buildTriangles = (): CatalogTriangle[] => {
-  const bright = STARS.map((s, i) => ({ s, i })).filter(
-    ({ s }) => s.mag <= MAX_MAG,
-  );
-  const cos = Math.cos((MAX_ANGLE_DEG * Math.PI) / 180);
-  const dot = (a: Point3D, b: Point3D) =>
-    a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
-  const seen = new Set<number>();
-  const out: CatalogTriangle[] = [];
-
-  for (const center of bright) {
-    const near = bright.filter(
-      (o) => o.i !== center.i && dot(o.s.vector, center.s.vector) >= cos,
-    );
-
-    for (let a = 0; a < near.length; a++) {
-      for (let b = a + 1; b < near.length; b++) {
-        const ids = [center.i, near[a].i, near[b].i].sort((x, y) => x - y);
-        const key = ids[0] * 4e6 + ids[1] * 2e3 + ids[2];
-
-        if (seen.has(key)) continue;
-
-        seen.add(key);
-        const points = projectTriangle(ids.map((id) => STARS[id].vector)) as [
-          number,
-          number,
-        ][];
-        out.push({
-          stars: ids as [number, number, number],
-          shape: shapeOf(points),
-          points,
-        });
-      }
-    }
-  }
-
-  return out;
-};
 
 const nameOf = (i: number) => STARS[i].name ?? `HR ${STARS[i].hr}`;
 
@@ -87,7 +29,10 @@ export default function TriangleSearchDemo() {
 
   // 색인 만들기는 화면을 그린 뒤에
   useEffect(() => {
-    const id = window.setTimeout(() => setTriangles(buildTriangles()), 50);
+    const id = window.setTimeout(
+      () => setTriangles(buildBrightTriangles()),
+      50,
+    );
 
     return () => window.clearTimeout(id);
   }, []);

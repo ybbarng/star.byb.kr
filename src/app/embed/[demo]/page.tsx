@@ -14,6 +14,7 @@ import SameSkyOrbitDemo from "@/learn/SameSkyOrbitDemo";
 import ShapeDemo from "@/learn/ShapeDemo";
 import SkySphere from "@/learn/SkySphere";
 import TriangleSearchDemo from "@/learn/TriangleSearchDemo";
+import TriangleSizeDemo from "@/learn/TriangleSizeDemo";
 import VerifyOverlayDemo from "@/learn/VerifyOverlayDemo";
 
 // 찾는 원리(/learn)의 데모를 발표 화면에 하나씩 띄운다: /embed/<이름>
@@ -23,6 +24,7 @@ const DEMOS = {
   "find-stars": FindStarsDemo,
   shape: ShapeDemo,
   "triangle-search": TriangleSearchDemo,
+  "triangle-size": TriangleSizeDemo,
   "quad-hash": QuadHashDemo,
   "verify-overlay": VerifyOverlayDemo,
   "answer-check": AnswerCheckDemo,

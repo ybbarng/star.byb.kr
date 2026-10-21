@@ -13,6 +13,7 @@ import { umeyamaSimilarity2D } from "@/search/utils/similarity";
 import {
   mat3Mul,
   mat3MulVec,
+  photoToSky,
   projectionMatrix,
   projectVecToPhoto,
   recoverCenter,
@@ -28,6 +29,7 @@ import {
 //   candidates-seoul.json  서울 누각 사진에서 검증한 후보 전부 (겹친 수·짝 수·기대치·정답 여부)
 //                          + 옛 점수(몇 배) 1등 가짜와 진짜 답의 겹침 그림
 //   refine-milky.json      은하수 사진에서 짝 3개로만 / 겹친 별 전부로 닮음 변환 / 원근 변환까지 맞춘 변환
+//   triangle-dipper.json   북두칠성 사진에서 일곱 별의 자리와 실제 화각 (삼각형 크기 거르기 데모)
 //
 //   npx tsx src/scripts/learn/buildDemoData.ts
 
@@ -264,10 +266,49 @@ const buildMilky = async () => {
   );
 };
 
+// 북두칠성 일곱 별 (HR)
+const DIPPER = [
+  ["두베", "4301"],
+  ["메라크", "4295"],
+  ["페크다", "4554"],
+  ["메그레즈", "4660"],
+  ["알리오트", "4905"],
+  ["미자르", "5054"],
+  ["알카이드", "5191"],
+];
+
+const buildDipper = async () => {
+  const { W, H, out } = await solveCollecting("big-dipper.jpg");
+
+  if (!out.found || !out.transform) throw new Error("북두칠성을 풀지 못했다");
+
+  const TP = out.transform;
+  const stars = DIPPER.map(([name, hr]) => {
+    const s = ctx.catalog.find((c) => c.hr === hr);
+
+    if (!s) throw new Error(`카탈로그에 없다: ${hr}`);
+
+    const xy = projectVecToPhoto(TP, s.vector)!;
+
+    return { name, hr, x: round(xy[0]), y: round(xy[1]) };
+  });
+  // 짧은 변 기준 시야각 (풀이의 FOV 후보와 같은 기준)
+  const minDim = Math.min(W, H);
+  const a = photoToSky(TP, [W / 2, H / 2 - minDim / 2]);
+  const b = photoToSky(TP, [W / 2, H / 2 + minDim / 2]);
+
+  writeFileSync(
+    resolve(OUT, "triangle-dipper.json"),
+    JSON.stringify({ W, H, fovDeg: round(angleDeg(a, b)), stars }),
+  );
+  console.log(`북두칠성: 짧은 변 시야 ${angleDeg(a, b).toFixed(1)}°`);
+};
+
 const run = async () => {
   mkdirSync(OUT, { recursive: true });
   await buildSeoul();
   await buildMilky();
+  await buildDipper();
 };
 
 run();
