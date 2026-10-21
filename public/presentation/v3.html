@@ -162,6 +162,14 @@
         color: #fde68a;
       }
 
+      /* 발표 이력 */
+      .timeline { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5em; text-align: left; }
+      .timeline .card { padding: 0.7em 0.8em; }
+      .timeline .card.hot { outline: 3px solid #fde68a; }
+      .timeline .when { font-size: 0.6em; color: oklch(.708 0 0); }
+      .timeline .what { font-size: 0.95em; font-weight: 800; color: #c7d2fe; margin: 0.2em 0 0.4em; }
+      .reveal .timeline ul { font-size: 0.7em; margin: 0 0 0 1em; }
+
       /* 단계 흐름 */
       .flow { display: flex; align-items: stretch; gap: 0.4em; font-size: 1em; }
       .flow .step {
@@ -228,6 +236,60 @@
           <h1>지난 이야기</h1>
           <aside class="notes">
             처음 오신 분들을 위해 지난 이야기를 짧게 하고 가겠습니다.
+          </aside>
+        </section>
+
+        <section class="title-body-slide">
+          <h1>그동안의 이야기</h1>
+          <div class="body center">
+            <div class="timeline">
+              <div class="card">
+                <div class="when">2022-06 · Dev Seminar</div>
+                <div class="what">Introduction to Plate Solving</div>
+                <ul>
+                  <li>동료 사진을 사람이 풀어 보기</li>
+                  <li>Astrometry.net의 quad + KD-tree</li>
+                  <li>목표: 내 Plate Solver 만들기</li>
+                </ul>
+              </div>
+              <div class="card fragment">
+                <div class="when">2023-04 · 전사 미팅, 드림 챌린지</div>
+                <div class="what">개발자의 별 헤는 밤</div>
+                <ul>
+                  <li>삼각형 284만 개 → 실패 선언</li>
+                  <li>발표 직전에 "성…공..?"</li>
+                  <li>북두칠성 <span class="red">5시간</span> → 3분 24초</li>
+                </ul>
+              </div>
+              <div class="card fragment">
+                <div class="when">2025-03 · Dev Seminar</div>
+                <div class="what">Plate Solver 만들기 V2</div>
+                <ul>
+                  <li>quad + HEALPix + KD-tree</li>
+                  <li>사람이 별을 고쳐 주면 풀린다</li>
+                  <li>남은 일 세 가지</li>
+                </ul>
+              </div>
+              <div class="card fragment hot">
+                <div class="when">2026 · Dev Seminar</div>
+                <div class="what">Plate Solver 만들기 V3</div>
+                <ul>
+                  <li>남은 일 세 가지를 하다 보니…</li>
+                  <li>오늘</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          <aside class="notes">
+            이 주제로 하는 발표가 이번이 네 번째입니다.
+            <br>
+            2022년 데브 세미나에서 Plate Solving을 처음 소개했습니다. 동료들이 찍은 사이판, 석촌호수 사진을 사람이 풀어 보고, Astrometry.net이 quad와 KD-tree로 푸는 방법을 소개하면서 "내 Plate Solver를 만들어 보겠다"로 끝냈습니다.
+            <br>
+            (넘기면) 2023년에는 드림 챌린지로 직접 만들어 봤습니다. 삼각형으로 했는데 별 9천 개로 삼각형이 284만 개나 나와서 실패 선언을 했다가, 발표 직전에 북두칠성을 5시간 만에 풀었고, 다음 날 3분 24초까지 줄였습니다.
+            <br>
+            (넘기면) 2025년 V2에서는 quad와 HEALPix, KD-tree로 다시 만들어서, 사람이 별을 고쳐 주면 풀리는 데까지 왔습니다. 그리고 남은 일 세 가지를 말씀드렸습니다.
+            <br>
+            (넘기면) 오늘은 그 세 번째 이야기입니다.
           </aside>
         </section>
 
@@ -437,6 +499,8 @@
             별 4개의 모양만 봤지, 나머지 별이 맞는지는 확인하지 않았습니다.
             <br>
             그래서 북두칠성 사진을 오리온자리라고 해도 프로그램은 틀린 줄 몰랐습니다.
+            <br>
+            2023년 드림 챌린지 때도 같았습니다. 정확도 1.0인 후보가 여러 개 나왔는데, 어느 게 답인지 프로그램은 몰랐습니다.
           </aside>
         </section>
 
@@ -708,7 +772,8 @@
         <section class="title-body-slide">
           <h1>quad만으로는 북두칠성을 못 찾습니다</h1>
           <div class="body">
-            <div class="demo-frame tall" style="height: 95%;">
+            <p class="subtitle">2023년엔 삼각형 모양만으로 찾다가 같은 모양이 너무 많아 실패 → 이번엔 크기(별 사이 각도)까지 함께 본다</p>
+            <div class="demo-frame tall" style="height: 88%;">
               <iframe src="/embed/triangle-search"></iframe>
             </div>
           </div>
@@ -720,6 +785,10 @@
             삼각형을 끌어서 만들어 보시면, 하늘에서 모양이 닮은 삼각형 8개를 별 이름과 함께 찾아 줍니다.
             <br>
             어느 쪽이 더 좋은가보다 어디서 실패하는가를 비교하니까 둘을 같이 쓰는 이득이 보였습니다.
+            <br>
+            사실 삼각형은 2023년 드림 챌린지 때 실패했던 방법입니다. 그때는 별 9천 개로 삼각형 284만 개를 만들었고, 각도가 같은 삼각형이 3천 개 가까이 나와서 가를 수가 없었습니다.
+            <br>
+            이번에는 화각을 짐작하면 사진 속 삼각형이 하늘에서 몇 도 크기인지도 알 수 있다는 걸 썼습니다. 모양 두 숫자에 크기까지 더해 3차원으로 찾습니다.
           </aside>
         </section>
 
@@ -1018,6 +1087,24 @@
           </aside>
         </section>
 
+        <section class="title-body-slide">
+          <h1>2022년에 세운 목표</h1>
+          <div class="body center">
+            <p class="subtitle">Introduction to Plate Solving (2022-06) 마지막 장: Implement my own Plate Solver</p>
+            <ul class="checklist" style="font-size: 1.1em;">
+              <li class="fragment done" data-fragment-index="1">PoC</li>
+              <li class="fragment done" data-fragment-index="1">밝은 별만으로</li>
+              <li class="fragment done" data-fragment-index="1">땅이나 구름이 찍힌 사진에서도</li>
+              <li class="fragment done" data-fragment-index="1">안 되면 사진 두 장만이라도 → <span class="green">샘플 16장 중 15장</span></li>
+            </ul>
+          </div>
+          <aside class="notes">
+            사실 처음 세운 목표는 더 소박했습니다. 2022년 첫 발표 마지막 장에 이렇게 적었습니다. PoC, 밝은 별만으로, 땅이나 구름이 찍힌 사진에서도, 안 되면 사진 두 장만이라도.
+            <br>
+            (넘기면) 4년 걸려서 다 지웠습니다. 사진 두 장이 아니라 샘플 16장 중 15장이 풀립니다. 사이판은 촬영 시각과 장소를 쓰면 풀립니다.
+          </aside>
+        </section>
+
         <!-- ===================== 덤 ===================== -->
         <section class="section-header-slide">
           <h1>덤: 별 놀이터</h1>
@@ -1062,6 +1149,8 @@
             모르겠으면 모르겠다고 하기, 짝에 쓰지 않은 별까지 맞는지 보기, 감 대신 재 보기, 실제와 같은 조건으로 재기.
             <br>
             그리고 똑똑한 방법보다 사람이 실제로 하는 단순한 일을 흉내 내는 게 강했습니다.
+            <br>
+            2023년 드림 챌린지 때 배운 점에 "컴퓨터를 가르치는 일은 어렵습니다"라고 적었는데, 이번에는 사람이 하는 일을 하나씩 흉내 내게 하니 가르칠 수 있었습니다.
           </aside>
         </section>
 
