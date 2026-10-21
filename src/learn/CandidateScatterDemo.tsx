@@ -222,7 +222,7 @@ export default function CandidateScatterDemo() {
     context.restore();
 
     // 판정 경계 (하늘색): 몇 배 기준은 세로 = 5 × 기대치, 확률 기준은 우연일 확률이 10⁻⁹이 되는 겹친 수
-    context.beginPath();
+    const boundary = new Path2D();
 
     for (let lx = X_MIN; lx <= X_MAX; lx += 0.01) {
       const e = 10 ** lx;
@@ -241,18 +241,46 @@ export default function CandidateScatterDemo() {
 
       const y = toY(Math.min(Y_MAX, k));
 
-      if (lx === X_MIN) context.moveTo(toX(e), y);
-      else context.lineTo(toX(e), y);
+      if (lx === X_MIN) boundary.moveTo(toX(e), y);
+      else boundary.lineTo(toX(e), y);
     }
 
-    context.lineTo(PLOT_W - PAD.right, PAD.top);
-    context.lineTo(PAD.left, PAD.top);
-    context.closePath();
+    boundary.lineTo(PLOT_W - PAD.right, PAD.top);
+    boundary.lineTo(PAD.left, PAD.top);
+    boundary.closePath();
     context.fillStyle = "rgba(103,232,249,0.06)";
-    context.fill();
+    context.fill(boundary);
+
+    // ①②: 필연 안에서 배수가 높을수록 하늘색을 진하게 (10·20·50·100배 곡선 위를 한 겹씩 덧칠)
+    if (step !== "chance") {
+      context.save();
+      context.clip(boundary);
+
+      for (const r of RATIO_CONTOURS.filter(
+        (c) => c > ACCEPT.minSignificance,
+      )) {
+        context.beginPath();
+
+        for (let lx = X_MIN; lx <= X_MAX; lx += 0.01) {
+          const y = toY(Math.min(Y_MAX, r * 10 ** lx));
+
+          if (lx === X_MIN) context.moveTo(toX(10 ** lx), y);
+          else context.lineTo(toX(10 ** lx), y);
+        }
+
+        context.lineTo(PLOT_W - PAD.right, PAD.top);
+        context.lineTo(PAD.left, PAD.top);
+        context.closePath();
+        context.fillStyle = "rgba(103,232,249,0.07)";
+        context.fill();
+      }
+
+      context.restore();
+    }
+
     context.strokeStyle = "#67e8f9";
     context.lineWidth = 2;
-    context.stroke();
+    context.stroke(boundary);
     context.fillStyle = "#67e8f9";
     context.fillText(
       step === "chance" ? '이 위면 "찾았다" (10억 분의 1)' : '이 위면 "필연"',
