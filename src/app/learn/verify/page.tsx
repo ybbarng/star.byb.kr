@@ -1,7 +1,8 @@
-import ChanceDemo from "@/learn/ChanceDemo";
+import AnswerCheckDemo from "@/learn/AnswerCheckDemo";
+import CandidateScatterDemo from "@/learn/CandidateScatterDemo";
 import LearnArticle, { Figure, LearnSection } from "@/learn/LearnArticle";
-import LuckyFakeDemo from "@/learn/LuckyFakeDemo";
 import { Callout, DataTable } from "@/learn/parts";
+import RefineStepsDemo from "@/learn/RefineStepsDemo";
 import { learnMetadata } from "@/learn/steps";
 import VerifyOverlayDemo from "@/learn/VerifyOverlayDemo";
 
@@ -19,6 +20,15 @@ export default function Page() {
           점으로 바꾸는 변환이 정해져요. 이 변환으로 별 지도의 별 1,625개를 사진
           위에 투영하면, 정답일 때는 <b>짝에 쓰지 않은</b> 사진 속 다른 별들
           위에도 지도 별이 척척 겹쳐요.
+        </p>
+        <Figure caption="서울 근처 누각 사진에서 풀이가 실제로 확인한 후보 둘이에요. 파랑은 짝지은 별(답을 만들 때 쓴 별이라 당연히 겹쳐요), 초록은 그 밖에 더 겹친 별이에요. '아무렇게나 놓기'로 우연히 겹치는 수도 세어 보세요.">
+          <AnswerCheckDemo />
+        </Figure>
+        <p>
+          가짜 답은 짝지은 별 4개 말고는 2개만 더 겹치고, 진짜 답은 26개가 더
+          겹쳐요. 한편 별 지도를 아무렇게나 놓아도 우연히 겹치는 별이 가끔
+          있어요. 여러 번 놓아 본 평균이 <b>우연히 겹칠 기대치</b>예요. 이 둘을
+          비교하는 게 4장의 이야기예요.
         </p>
         <Figure caption="북두칠성 샘플을 이 기기에서 실제로 풀고, 찾은 답대로 별 지도를 겹친 모습이에요. 슬라이더로 답을 조금만 틀어 보세요.">
           <VerifyOverlayDemo />
@@ -41,6 +51,15 @@ export default function Page() {
           되풀이해요(RANSAC). 가짜 별이 섞여 있어도 진짜 별들끼리는 서로 같은
           변환을 가리키니까 이겨요. 그다음 사진 중심(광축)이 하늘의 어디를
           가리키는지 다시 잡아 한 번 더 맞춰요.
+        </p>
+        <Figure caption="석촌호수 은하수 사진에서 겹친 별 30개를 세 가지 변환으로 놓아 봐요. 선이 어긋남이고, 파란 격자는 하늘의 같은 간격 선을 그 변환으로 그린 거예요.">
+          <RefineStepsDemo />
+        </Figure>
+        <p>
+          짝지은 별로만 맞추면 평균 35px, 가장 크게 288px 어긋나요. 겹친 별
+          전부로 다시 맞추면 21px, 원근 변환까지 쓰면 2px이에요. ②의 격자는
+          반듯한 바둑판인데 ③에서는 사다리꼴로 기울어져요. 다음 장의 원근 변환이
+          이거예요.
         </p>
         <p>
           후보는 사진 한 장에 수만 개라 이 확인이 가장 비싸요. 대부분의 오답
@@ -116,17 +135,46 @@ export default function Page() {
           보다 작을 때만 &ldquo;찾았어요!&rdquo;라고 말해요. Astrometry.net도
           같은 생각으로 같은 크기의 기준을 써요.
         </p>
-        <Figure caption="숫자를 바꿔 보세요. 사진에 별이 많을수록 우연히 겹치는 개수도 늘어서, 더 많이 맞아야 확신해요.">
-          <ChanceDemo />
+        <p>
+          우연히 겹칠 기대치 λ는{" "}
+          <b>
+            사진 별 수 × 사진 안에 들어온 지도 별 수 × 허용 원 넓이 ÷ 사진 넓이
+          </b>
+          예요. 기대치가 λ일 때 k개 넘게 겹칠 확률은 푸아송 분포로 계산해요.
+          짝지은 별은 당연히 겹치니 빼고 세요.
+        </p>
+        <p>
+          처음에는 &ldquo;기대치의 몇 배 맞았나&rdquo;를 기준으로 썼어요(5배
+          이상이면 찾았다). 그런데 샘플 16장을 돌리자 16장 모두
+          &ldquo;찾았다&rdquo;가 나왔고 그중 13장이 틀린 답이었어요. 정답을 아는
+          사이판·은하수 사진은 60~136° 빗나간 답을 확신했어요.
+        </p>
+        <Figure caption="누각 사진 한 장을 풀며 실제로 확인한 후보 1만 1천여 개예요. 가로는 우연 기대치(10배마다 한 칸), 세로는 겹친 별 수, 노랑은 정답 자리를 가리키는 후보예요. ①→②→③ 차례로 눌러 '찾았다'의 경계가 어떻게 바뀌는지 보세요. 점을 누르면 그 후보의 숫자가 나와요.">
+          <CandidateScatterDemo />
         </Figure>
         <p>
-          처음에는 &ldquo;우연 기대치의 몇 배 맞았나&rdquo;를 기준으로 썼어요.
-          그런데 샘플 16장을 돌리자 거의 모든 사진에서 &ldquo;찾았다&rdquo;가
-          나왔고, 정답을 아는 세 장은 60~136° 빗나간 답을 확신했어요.
+          옛 기준의 1등은 가짜였어요. 6개가 겹쳤는데 기대치가 0.08개라 74배.
+          진짜 답은 29개가 겹쳤지만 기대치가 2.4개라 12배, 38등이었어요. 함정이
+          둘 있었어요.
         </p>
-        <Figure caption="풀이는 사진 한 장에 후보를 1만 개 넘게 확인해요. 그중 가장 운 좋은 가짜는 기대치의 몇 배를 맞춰요.">
-          <LuckyFakeDemo />
-        </Figure>
+        <ul className="list-disc pl-5">
+          <li>
+            <b>짝지은 별까지 셌다.</b> 후보를 만든 별 3~4개는 원래 겹쳐요.
+            가짜가 실제로 더 맞힌 건 2개뿐이었어요.
+          </li>
+          <li>
+            <b>기대치가 0에 가까운 후보.</b> 좁게 찍힌 후보는 사진 안에 지도
+            별이 적어서 기대치가 아주 작아요. 거의 0으로 나누는 셈이라 몇 개만
+            맞아도 배수가 치솟아요. 짝을 빼도 2 ÷ 0.08 = 25배로 여전히
+            1등이에요.
+          </li>
+        </ul>
+        <p>
+          확률로 보면 가짜는 10<sup>-2.5</sup>(300번에 한 번), 진짜는 10
+          <sup>-16.8</sup>이에요. 후보를 1만 개 보면 300번에 한 번 있는 가짜는
+          반드시 나오니, 기준은 사진 수천 장을 풀어도 가짜가 한 번 나올까 말까
+          한 10<sup>-9</sup>로 잡았어요.
+        </p>
         <DataTable
           head={["", "우연일 확률"]}
           rows={[
@@ -142,8 +190,9 @@ export default function Page() {
         </p>
         <Callout kind="lesson">
           <p>
-            통계 지표는 몇 번 시도했는지까지 셈에 넣어야 해요. &ldquo;가장 좋은
-            것&rdquo;을 고르는 과정 자체가 우연을 끌어올려요.
+            비율 지표는 분모가 작을 때 폭주해요. 당연히 맞는 것(짝지은 별)은
+            근거로 세면 안 되고, 몇 번 시도했는지까지 셈에 넣어야 해요.
+            &ldquo;가장 좋은 것&rdquo;을 고르는 과정 자체가 우연을 끌어올려요.
           </p>
         </Callout>
       </LearnSection>
@@ -152,9 +201,10 @@ export default function Page() {
         <p>
           확신한 순간 바로 멈추면, 그때 쓴 별 수에 따라 점수가 출렁여요(서울
           사진은 9.1과 11.8 사이). 그래서 확신한 변환에서 출발해 그 영역의 별
-          60개로 대응을 다시 모으고, 허용 반경을 넓혔다 좁히며 다듬어요. 실제
-          사진 14장의 가장 낮은 점수가 10<sup>-9.1</sup>
-          에서 10<sup>-19.7</sup>로 올라, 모두 기준에서 넉넉히 떨어졌어요.
+          60개로 대응을 다시 모으고, 허용 반경을 넓혔다 좁히며 다듬어요. 풀리는
+          사진 14장 중 가장 아슬아슬하던 사진의 우연일 확률이 10<sup>-9.1</sup>
+          (기준 바로 위)에서 10<sup>-19.7</sup>로 내려가, 모두 기준에서 넉넉히
+          떨어졌어요.
         </p>
       </LearnSection>
 

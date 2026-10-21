@@ -1,10 +1,12 @@
 import Link from "next/link";
 import LearnArticle, { Figure, LearnSection, Stat } from "@/learn/LearnArticle";
+import MoonDateDemo from "@/learn/MoonDateDemo";
 import { Callout, DataTable } from "@/learn/parts";
 import PoleHeightDemo from "@/learn/PoleHeightDemo";
 import ProjectionDemo from "@/learn/ProjectionDemo";
-import SameSkyDemo from "@/learn/SameSkyDemo";
+import SameSkyOrbitDemo from "@/learn/SameSkyOrbitDemo";
 import { learnMetadata } from "@/learn/steps";
+import ZenithClockDemo from "@/learn/ZenithClockDemo";
 
 export const metadata = learnMetadata("hard-photos");
 
@@ -122,24 +124,33 @@ export default function Page() {
           구하면, 천정의 적위가 곧 위도, 적경이 곧 그 순간의 &ldquo;하늘
           시계&rdquo;(지방 항성시)예요.
         </p>
-        <Figure caption="하늘 시계를 바꿔 보세요. 같은 하늘이 서울에서 날짜마다 몇 시에 오는지 보여 줘요.">
-          <SameSkyDemo />
+        <Figure caption="서울 근처 누각 사진으로 ①~④를 차례로 눌러 보세요. 먼 능선 두 점 → 하늘 방향 → 천정(적위 = 위도, 적경 = 하늘 시계) → 날짜마다 같은 하늘이 오는 시각이에요.">
+          <ZenithClockDemo />
         </Figure>
         <p>
-          지구가 해를 돌아서, 같은 하늘은 하루에 4분씩 일찍 돌아와요. 그래서
-          하늘만으로는 날짜마다 후보 시각이 하나씩 나오고, 해가 떠 있는 시각은
-          지워요. 사진에 <b>달</b>이 있으면 달은 날마다 13°씩 자리를 옮기니
-          날짜까지 좁힐 수 있어요. 다만 달은 27.3일마다 같은 자리로 돌아와서,
-          후보마다 달 모양(초승·반달·보름)을 함께 보여 주고 사람이 고르게 해요.
+          하늘 시계가 같은 값이 되는 순간은 날마다 한 번씩 와요. 그래서
+          하늘만으로는 날짜를 정할 수 없고, 날짜마다 후보 시각이 하나씩 나와요.
+          해가 떠 있는 시각은 지워요.
         </p>
+        <Figure caption="한 달씩 넘겨 보세요. 별은 아주 멀어서 어느 달이든 같은 방향(노란 화살표)을 봐야 같은 하늘이에요. 지구가 한 달에 30°쯤 공전하니, 해를 기준으로 가는 시계로는 2시간씩 일찍 그 방향을 봐요.">
+          <SameSkyOrbitDemo />
+        </Figure>
+        <p>
+          사진에 <b>달</b>이 있으면 달은 날마다 13°씩 자리를 옮기니 날짜까지
+          좁힐 수 있어요. 다만 달은 27.3일마다 같은 자리로 돌아와요. 그때마다
+          달이 떠 있었는지, 해가 졌는지, 달 모양이 사진과 같은지로 가려요.
+        </p>
+        <Figure caption="처음 보는 화악산 사진 세 장(저작권 때문에 싣지 않아요)을 따로 풀어 얻은 달 위치와, 2026년 하반기 달의 길이에요. 연도와 장소는 사진을 올린 글에서 가져왔어요.">
+          <MoonDateDemo />
+        </Figure>
         <div className="grid grid-cols-3 gap-3">
           <Stat
-            value="04:53"
-            label="서울 근처 산 사진, 지평선 두 점만으로 찾은 시각 (본인 답: 4~5시)"
+            value="04:54"
+            label="누각 사진, 10월 3일이라면 지평선 두 점만으로 찾은 시각 (찍은 분 답: 4~5시)"
           />
           <Stat
             value="22:04~22:11"
-            label="사이판 사진의 촬영 시각 (올린 시각 +30분 남짓)"
+            label="사이판 사진의 촬영 시각 (사이판 시각, 메신저 시각이 한국 시각이었다면 25분쯤 뒤에 올림)"
           />
           <Stat
             value="16°"

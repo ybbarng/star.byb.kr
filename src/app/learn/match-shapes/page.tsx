@@ -1,9 +1,11 @@
 import LearnArticle, { Figure, LearnSection } from "@/learn/LearnArticle";
 import { Callout, DataTable } from "@/learn/parts";
 import QuadHashDemo from "@/learn/QuadHashDemo";
+import QuadReachDemo from "@/learn/QuadReachDemo";
 import ShapeDemo from "@/learn/ShapeDemo";
 import { learnMetadata } from "@/learn/steps";
 import TriangleSearchDemo from "@/learn/TriangleSearchDemo";
+import TriangleSizeDemo from "@/learn/TriangleSizeDemo";
 
 export const metadata = learnMetadata("match-shapes");
 
@@ -82,10 +84,25 @@ export default function Page() {
           ]}
         />
         <p>
+          북두칠성을 사각형으로 못 찾는 이유는 색인을 만드는 규칙에 있어요.
+          사각형 수는 별 수의 네제곱으로 늘어나서, 색인에는 네 별이 서로 10°
+          안에 모인 조합만 담았어요(그래야 55만 개가 8만 개로 줄어요). 그런데
+          북두칠성 일곱 별은 서로 4~26° 떨어져 있어요.
+        </p>
+        <Figure caption="북두칠성 근처 하늘에서 별 넷을 눌러 골라 보세요. 여섯 쌍의 거리가 10°를 넘으면 빨강이에요. 'HEALPix 칸 보기'를 켜면 색인을 만드는 칸과, 칸 중심에서 10° 원이 보여요.">
+          <QuadReachDemo />
+        </Figure>
+        <p>
+          국자 네 별도 가장 먼 두 별이 10.4°라 아깝게 빠지고, 일곱 별로 만드는
+          4별 조합 35개 중 10° 안에 드는 건 하나도 없어요. 사진에서는 밝은
+          별부터 사각형을 만드는데 북두칠성 사진의 밝은 별이 바로 이 일곱이라,
+          색인에 맞는 사각형이 없어요.
+        </p>
+        <p>
           사각형은 빠르고 가짜 별에 강하지만, 별이 적고 밝은 사진(북두칠성)은
-          사각형을 만들 별이 모자라요. 삼각형은 그 반대예요. 그래서 사각형으로
-          먼저 보고, 확신하지 못하면 삼각형으로 봐요. 둘을 합치자 자동으로
-          풀리는 샘플이 3장에서 6장이 됐어요.
+          색인에 들어갈 만큼 모인 사각형을 만들 별이 모자라요. 삼각형은 그
+          반대예요. 그래서 사각형으로 먼저 보고, 확신하지 못하면 삼각형으로
+          봐요. 둘을 합치자 자동으로 풀리는 샘플이 3장에서 6장이 됐어요.
         </p>
         <Callout kind="lesson">
           <p>
@@ -114,6 +131,15 @@ export default function Page() {
           돼요. 모양은 같아도 크기가 두 배 넘게 다른 하늘 삼각형은 그 화각에서
           정답일 수 없으니 확인하지 않고 버려요. 이 거르기 하나로 은하수 사진의
           풀이 시간이 22초에서 5.6초로 줄었어요.
+        </p>
+        <Figure caption="북두칠성 사진에서 별 셋을 골라 보세요. 오른쪽은 모양이 닮은 하늘 삼각형을 모양 차이(가로)와 하늘에서의 크기(세로)로 찍은 거예요. 화각을 하나 고르면 사진 삼각형의 크기가 정해지고, 그 절반~두 배(초록 띠) 밖은 버려요. 주황은 풀이가 확인하는 가까운 8개예요.">
+          <TriangleSizeDemo />
+        </Figure>
+        <p>
+          메라크·페크다·메그레즈는 모양만으로는 닮은 385개 중 11등이라 가까운
+          8개에 못 들어요. 실제 화각에 가까운 37°를 가정하면 58개만 남고 정답이
+          4등으로 올라와요. 화각을 틀리게 가정하면 띠가 엉뚱한 곳에 있어 정답이
+          빠지지만, 아홉 가지 중 하나는 맞으니 괜찮아요.
         </p>
         <DataTable
           head={["고친 것", "은하수 풀이 시간"]}

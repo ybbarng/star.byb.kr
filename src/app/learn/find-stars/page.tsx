@@ -17,7 +17,7 @@ export default function Page() {
           단계를 하나씩 눌러 보세요. 실제 검출과 같은 흐림 함수로, 이 기기에서
           바로 계산한 그림이에요.
         </p>
-        <Figure caption="북두칠성 샘플. ⑤에서 문턱을 낮추면 잡음까지, 높이면 밝은 별만 남아요. 실제 검출은 평균 + 3σ를 써요.">
+        <Figure caption="북두칠성과 누각 사진을 바꿔 가며 보세요. ⑤에서 문턱을 낮추면 잡음까지, 높이면 밝은 별만 남아요. 누각 사진에서는 지붕 경계와 창문 줄도 별처럼 솟아요. 실제 검출은 평균 + 3σ를 써요.">
           <DetectPipelineDemo />
         </Figure>
         <ol className="list-decimal space-y-2 pl-5">
