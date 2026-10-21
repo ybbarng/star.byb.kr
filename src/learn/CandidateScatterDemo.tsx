@@ -30,6 +30,8 @@ const STEPS: { key: Step; label: string }[] = [
 ];
 const ROUNDS = [15, 25, 40, 60];
 const ROUND_MS = 1100;
+// 배수 등고선 (5배는 판정 경계로 따로 그린다)
+const RATIO_CONTOURS = [2, 10, 20, 50, 100];
 // 배수 순위대로 노란 원의 진하기 (1위가 가장 진하다)
 const RANK_ALPHA = [1, 0.7, 0.45, 0.28];
 
@@ -257,6 +259,39 @@ export default function CandidateScatterDemo() {
       PAD.left + 8,
       PAD.top + 16,
     );
+
+    // 배수 등고선 (①②): 배수가 같은 점은 "겹친 별 = 배수 × 기대치" 곡선 위에 있다. 위·왼쪽일수록 배수가 높다
+    if (step !== "chance") {
+      context.setLineDash([4, 5]);
+      context.lineWidth = 1;
+      context.font = "11px sans-serif";
+
+      for (const r of RATIO_CONTOURS) {
+        context.strokeStyle = "rgba(255,255,255,0.28)";
+        context.beginPath();
+
+        for (let lx = X_MIN; lx <= X_MAX; lx += 0.01) {
+          const y = toY(Math.min(Y_MAX, r * 10 ** lx));
+
+          if (lx === X_MIN) context.moveTo(toX(10 ** lx), y);
+          else context.lineTo(toX(10 ** lx), y);
+        }
+
+        context.stroke();
+
+        // 라벨: 곡선이 위 끝에 닿는 곳, 닿지 않으면 오른쪽 끝
+        const top = Y_MAX / r;
+        const [lx, ly] =
+          top <= 10 ** X_MAX
+            ? [toX(top) + 3, PAD.top + 12]
+            : [PLOT_W - PAD.right - 30, toY(r * 10 ** X_MAX) - 4];
+        context.fillStyle = "rgba(255,255,255,0.55)";
+        context.fillText(`${r}배`, lx, ly);
+      }
+
+      context.setLineDash([]);
+      context.font = "12px sans-serif";
+    }
 
     // 후보들: 진행한 라운드의 것만 (라운드 없이 보면 전부). 가짜 먼저, 진짜(녹색)는 위에
     const visible = (i: number) =>
