@@ -173,38 +173,53 @@ export default function AnswerCheckDemo() {
     context.fillStyle = "rgba(5,8,20,0.45)";
     context.fillRect(0, 0, W, H);
 
-    // 별 지도 (노랑, 밝을수록 크게)
-    for (const { p, mag } of view.map) {
-      context.fillStyle = "rgba(253,230,138,0.95)";
+    // 발표 화면에서도 또렷하게: 사진 별은 노란 점, 답대로 놓은 별 지도는 파란 원, 식별에 쓴 별은 빨간 원.
+    // 노란 점이 파란 원 안에 들면 겹친 것이다. 사진 별은 어느 답이든 같다 (가짜 답의 15개는 60개의 앞쪽).
+    context.lineWidth = 3;
+    context.strokeStyle = "#60a5fa";
+
+    for (const { p } of view.map) {
       context.beginPath();
-      context.arc(p[0] * k, p[1] * k, Math.max(2.2, 6 - mag), 0, 2 * Math.PI);
+      context.arc(p[0] * k, p[1] * k, 11, 0, 2 * Math.PI);
+      context.stroke();
+    }
+
+    context.fillStyle = "#fde047";
+
+    for (const [x, y] of data.real.photo) {
+      context.beginPath();
+      context.arc(x * k, y * k, 4.5, 0, 2 * Math.PI);
       context.fill();
     }
 
-    // 사진에서 찾은 별 (흰 테). 어느 답이든 같은 별이다 — 가짜 답의 15개는 진짜 답 60개의 앞쪽과 같다.
-    // 그 답을 확인할 때 쓰지 않은 별은 흐린 점선으로
-    context.lineWidth = 1.5;
+    // 식별에 쓴 별을 잇는 다각형 외곽선 (얇은 빨간 점선). 무게중심 둘레 각도 순으로 이어 선이 엇갈리지 않게
+    const corners = view.seeds.map((i) => view.photo[i]);
 
-    data.real.photo.forEach(([x, y], i) => {
-      const used = i < view.photo.length;
-      context.strokeStyle = used
-        ? "rgba(255,255,255,0.75)"
-        : "rgba(255,255,255,0.3)";
-      context.setLineDash(used ? [] : [3, 3]);
+    if (corners.length >= 3) {
+      const cx = corners.reduce((sum, p) => sum + p[0], 0) / corners.length;
+      const cy = corners.reduce((sum, p) => sum + p[1], 0) / corners.length;
+      corners.sort(
+        (p, q) =>
+          Math.atan2(p[1] - cy, p[0] - cx) - Math.atan2(q[1] - cy, q[0] - cx),
+      );
+      context.lineWidth = 1.5;
+      context.strokeStyle = "#ef4444";
+      context.setLineDash([5, 5]);
       context.beginPath();
-      context.arc(x * k, y * k, 7, 0, 2 * Math.PI);
+      corners.forEach(([x, y], n) =>
+        n ? context.lineTo(x * k, y * k) : context.moveTo(x * k, y * k),
+      );
+      context.closePath();
       context.stroke();
-    });
-    context.setLineDash([]);
+      context.setLineDash([]);
+    }
 
-    // 겹친 별: 짝지은 별은 파랑, 더 겹친 별은 초록
     context.lineWidth = 4;
 
-    for (const i of view.matched) {
+    for (const i of view.seeds) {
       const [x, y] = view.photo[i];
-      context.strokeStyle = view.seeds.includes(i) ? "#60a5fa" : "#4ade80";
       context.beginPath();
-      context.arc(x * k, y * k, 16, 0, 2 * Math.PI);
+      context.arc(x * k, y * k, 19, 0, 2 * Math.PI);
       context.stroke();
     }
   }, [data, image, view]);
@@ -248,23 +263,13 @@ export default function AnswerCheckDemo() {
         </div>
         <ul className="flex flex-col gap-1 text-sm">
           <li>
-            <span className="text-amber-200">●</span> 그 답대로 놓은 별 지도
+            <span className="text-yellow-300">●</span> 사진에서 찾은 별
           </li>
           <li>
-            <span className="opacity-60">○</span> 사진에서 찾은 별 (어느 답이든
-            같은 {data.real.photo.length}개)
+            <span className="text-blue-400">◯</span> 답대로 놓은 별 지도
           </li>
           <li>
-            <span className="opacity-30">◌</span> 이 답을 확인할 때 쓰지 않은 별
-            (풀이는 앞쪽 15개로 먼저 본다)
-          </li>
-          <li>
-            <span className="text-blue-400">◯</span> 짝지은 별 (답을 만들 때 쓴
-            별)
-          </li>
-          <li>
-            <span className="text-green-400">◯</span> 그 밖에 지도 별과 겹친
-            사진 별
+            <span className="text-red-500">◯</span> 식별에 쓴 별
           </li>
         </ul>
         {a && (
@@ -273,9 +278,8 @@ export default function AnswerCheckDemo() {
               겹친 별 <b className="text-lg">{a.count}개</b>
             </div>
             <div className="text-sm opacity-80">
-              = 짝지은 별 <span className="text-blue-400">{seedsHit}</span> + 더
-              겹친 별{" "}
-              <span className="text-green-400">{a.count - seedsHit}</span>
+              = 식별에 쓴 별 <span className="text-red-400">{seedsHit}</span> +
+              그 밖에 <b>{a.count - seedsHit}</b>
             </div>
             <div className="border-base-content/10 mt-1 border-t pt-2 text-sm opacity-80">
               이 답이 말하는 화각{" "}
