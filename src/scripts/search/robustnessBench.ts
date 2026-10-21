@@ -21,7 +21,8 @@ import {
 // 검출 결과는 build/robustness/에 캐시한다 (풀이만 바꿀 때 빠르게 다시 돈다).
 //
 //   npx tsx src/scripts/search/robustnessBench.ts            # 전체 112건
-//   npx tsx src/scripts/search/robustnessBench.ts milky      # 이름에 milky가 든 사진만
+//   npx tsx src/scripts/search/robustnessBench.ts Milky      # 이름에 Milky가 든 사진만
+//   BUDGET_MS=60000 npx tsx src/scripts/search/robustnessBench.ts   # 시간 상한을 늘려 논리만 비교
 
 const FILES = [
   "big-dipper.jpg",
@@ -114,8 +115,9 @@ const run = async () => {
       const { stars, width, height } = await detectVariant(file, variant);
       const t0 = performance.now();
       const out = solvePhoto(stars, { width, height }, ctx, DEFAULT_SOLVERS, {
-        // 앱과 같은 시간 상한 (넘으면 앱에서는 못 푼 것과 같다)
-        timeBudgetMs: DEFAULT_TIME_BUDGET_MS,
+        // 앱과 같은 시간 상한 (넘으면 앱에서는 못 푼 것과 같다). BUDGET_MS로 늘리면 기계 부하와 상관없이
+        // 풀이 논리만 비교할 수 있다
+        timeBudgetMs: Number(process.env.BUDGET_MS) || DEFAULT_TIME_BUDGET_MS,
       });
       const ms = performance.now() - t0;
       const ok =
