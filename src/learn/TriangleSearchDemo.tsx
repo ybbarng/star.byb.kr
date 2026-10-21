@@ -94,11 +94,19 @@ export default function TriangleSearchDemo() {
     });
 
     const me = px(shape);
+    // 내 삼각형도 이 평면의 점 하나다: 눈에 띄게 십자로
     context.strokeStyle = "#86efac";
     context.lineWidth = 2;
     context.beginPath();
-    context.arc(me.x, me.y, 7, 0, 2 * Math.PI);
+    context.moveTo(me.x - 9, me.y);
+    context.lineTo(me.x + 9, me.y);
+    context.moveTo(me.x, me.y - 9);
+    context.lineTo(me.x, me.y + 9);
     context.stroke();
+    context.fillStyle = "#86efac";
+    context.beginPath();
+    context.arc(me.x, me.y, 3, 0, 2 * Math.PI);
+    context.fill();
   }, [triangles, nearest, shape, selected]);
 
   const toSvg = (e: React.PointerEvent): [number, number] => {
@@ -191,7 +199,8 @@ export default function TriangleSearchDemo() {
             style={{ aspectRatio: "1" }}
           />
           <div className="text-xs opacity-60">
-            초록 원이 내 삼각형, 주황 점이 가장 가까운 {K}개예요.
+            점 하나가 삼각형 하나의 모양 값이에요. 초록 십자가 내 삼각형, 주황
+            점이 모양 값이 가장 가까운 {K}개예요.
           </div>
         </div>
       </div>
