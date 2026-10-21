@@ -8,6 +8,7 @@ import LuckyFakeDemo from "@/learn/LuckyFakeDemo";
 import PoleHeightDemo from "@/learn/PoleHeightDemo";
 import ProjectionDemo from "@/learn/ProjectionDemo";
 import QuadHashDemo from "@/learn/QuadHashDemo";
+import QuadReachDemo from "@/learn/QuadReachDemo";
 import RefineStepsDemo from "@/learn/RefineStepsDemo";
 import SameSkyDemo from "@/learn/SameSkyDemo";
 import SameSkyOrbitDemo from "@/learn/SameSkyOrbitDemo";
@@ -26,6 +27,7 @@ const DEMOS = {
   "triangle-search": TriangleSearchDemo,
   "triangle-size": TriangleSizeDemo,
   "quad-hash": QuadHashDemo,
+  "quad-reach": QuadReachDemo,
   "verify-overlay": VerifyOverlayDemo,
   "answer-check": AnswerCheckDemo,
   "candidate-scatter": CandidateScatterDemo,

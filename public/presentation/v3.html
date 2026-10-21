@@ -770,14 +770,34 @@
         </section>
 
         <section class="title-body-slide">
-          <h1>quad에 더해 삼각형도: 모양이 닮은 별 셋 찾기</h1>
+          <h1>quad만으로는 북두칠성을 못 찾는다</h1>
+          <div class="body">
+            <div class="demo-frame wide" style="height: 98%;">
+              <iframe src="/embed/quad-reach"></iframe>
+            </div>
+          </div>
+          <aside class="notes">
+            V2의 quad를 그대로 자동 풀이에 넣어 보니, 하필 가장 쉬워 보이는 북두칠성 사진이 안 풀렸습니다.
+            <br>
+            quad DB에는 네 별이 서로 10도 안에 모인 조합만 담았습니다. 조합 수가 별 수의 네제곱으로 늘어서, 5등급 별로 칸마다 다 만들면 55만 개, 네 별이 10도 안인 것만 남기면 8만 5천 개입니다.
+            <br>
+            (국자 네 별) 그런데 북두칠성 국자 네 별은 가장 먼 두 별이 10.4도라 아깝게 빠집니다. (다른 별을 골라 보며) 일곱 별로 만들 수 있는 4별 조합 35개 중 10도 안에 드는 건 하나도 없습니다.
+            <br>
+            사진에서는 밝은 별부터 quad를 만드는데, 북두칠성 사진의 밝은 별은 바로 이 일곱 개입니다. 그래서 DB에 맞는 quad가 없습니다.
+            <br>
+            넓히면 조합이 폭발하니, 별 셋짜리 삼각형을 더했습니다. 셋은 조합이 세제곱으로 늘어서 밝은 별(3.5등급)만으로는 30도까지 넓혀도 감당이 됩니다.
+          </aside>
+        </section>
+
+        <section class="title-body-slide">
+          <h1>그래서 삼각형도: 모양이 닮은 별 셋 찾기</h1>
           <div class="body">
             <div class="demo-frame wide" style="height: 98%;">
               <iframe src="/embed/triangle-search"></iframe>
             </div>
           </div>
           <aside class="notes">
-            V2에서 만든 quad는 빠르고 가짜에 강한데, 별이 적고 밝은 북두칠성은 못 찾았습니다. 그래서 별 셋, 삼각형도 같이 씁니다.
+            그래서 별 셋, 삼각형도 같이 씁니다. quad는 빠르고 가짜에 강해서 버리지 않고 둘 다 돌립니다.
             <br>
             모양 값은 짧은 변 나누기 긴 변, 중간 변 나누기 긴 변 두 숫자입니다. 삼각형을 끌어서 만들어 보시면, 하늘에서 모양이 닮은 삼각형 8개를 별 이름과 함께 찾아 줍니다.
             <br>
