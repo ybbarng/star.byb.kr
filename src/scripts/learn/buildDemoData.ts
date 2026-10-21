@@ -41,6 +41,8 @@ import {
 
 const OUT = resolve(process.cwd(), "public/learn");
 const SEOUL = "20220607-berry-seoul.jpg";
+// 옛 판정 규칙 ①: 겹친 별 ÷ 우연 기대치가 이 배수 이상이면 필연 (지금 풀이는 쓰지 않는다)
+const OLD_MIN_RATIO = 5;
 const D = 180 / Math.PI;
 
 const round = (x: number) => +x.toPrecision(6);
@@ -163,7 +165,7 @@ const buildSeoul = async () => {
     .filter(
       ({ result: r }) =>
         r.inlierCount >= ACCEPT.minInlier &&
-        r.significance >= ACCEPT.minSignificance &&
+        r.significance >= OLD_MIN_RATIO &&
         r.fovDeg <= ACCEPT.maxFovDeg,
     )
     .sort((a, b) => b.result.significance - a.result.significance)[0];

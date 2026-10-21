@@ -29,6 +29,8 @@ const STEPS: { key: Step; label: string }[] = [
   { key: "chance", label: "③ 우연일 확률로 (10억 분의 1)" },
 ];
 const ROUNDS = [15, 25, 40, 60];
+// 옛 판정 규칙 ①: 겹친 별 ÷ 우연 기대치가 이 배수 이상이면 필연 (지금 풀이는 쓰지 않는다)
+const OLD_MIN_RATIO = 5;
 const ROUND_MS = 1100;
 // 배수 등고선 (5배는 판정 경계로 따로 그린다)
 const RATIO_CONTOURS = [2, 10, 20, 50, 100];
@@ -99,7 +101,7 @@ export default function CandidateScatterDemo() {
     const pass = data.points.map(([n, , e, logOdds], i) =>
       step === "chance"
         ? logOdds >= ACCEPT.minLogOdds
-        : n >= ACCEPT.minInlier && counted[i] / e >= ACCEPT.minSignificance,
+        : n >= ACCEPT.minInlier && counted[i] / e >= OLD_MIN_RATIO,
     );
     const ratioOf = (i: number) => counted[i] / data.points[i][2];
 
@@ -232,7 +234,7 @@ export default function CandidateScatterDemo() {
         while (poissonTailNegLog10(k, e) < ACCEPT.minLogOdds && k < 60) k++;
       } else {
         k = Math.max(
-          ACCEPT.minSignificance * e,
+          OLD_MIN_RATIO * e,
           step === "ratio" ? ACCEPT.minInlier : 0,
         );
       }
@@ -254,9 +256,7 @@ export default function CandidateScatterDemo() {
       context.save();
       context.clip(boundary);
 
-      for (const r of RATIO_CONTOURS.filter(
-        (c) => c > ACCEPT.minSignificance,
-      )) {
+      for (const r of RATIO_CONTOURS.filter((c) => c > OLD_MIN_RATIO)) {
         context.beginPath();
 
         for (let lx = X_MIN; lx <= X_MAX; lx += 0.01) {

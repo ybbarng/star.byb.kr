@@ -5,7 +5,9 @@ import type { SolveResult } from "@/search/solveCore";
 // 사람에게 보여줄 후보 목록이 모두 이 기준을 쓴다(단일 소스).
 export const ACCEPT = {
   minInlier: 6, // 매칭된 별이 이보다 적으면 우연/빈약
-  minSignificance: 5, // 우연매칭 기대 대비 배수. 1이면 우연 수준
+  // 사람에게 후보로 보여 줄 최소 기준: 시드 밖 inlier가 우연히 맞을 확률이 1/10 이하.
+  // 예전에는 배수(유의도 ≥ 5)를 썼지만, 기대치가 작은 가짜일수록 배수가 치솟아 같은 잣대(확률)로 바꿨다
+  minCandidateLogOdds: 1,
   // 일반 사진의 대각 시야는 이 정도를 넘지 않는다. 더 넓게 나오는 해는
   // 변환이 느슨/붕괴해 넓은 하늘이 우연히 맞은 비현실적 결과다.
   maxFovDeg: 80,
@@ -15,15 +17,12 @@ export const ACCEPT = {
   minLogOdds: 9,
 };
 
-type Judged = Pick<
-  SolveResult,
-  "inlierCount" | "significance" | "fovDeg" | "logOdds"
->;
+type Judged = Pick<SolveResult, "inlierCount" | "fovDeg" | "logOdds">;
 
-// 사람에게 후보로 보여줄 만한가. 거대 FOV(하늘 전체)·빈약 inlier·우연 수준 유의도를 거른다.
+// 사람에게 후보로 보여줄 만한가. 거대 FOV(하늘 전체)·빈약 inlier·우연 수준인 해를 거른다.
 export const isPlausible = (r: Judged, accept = ACCEPT): boolean =>
   r.inlierCount >= accept.minInlier &&
-  r.significance >= accept.minSignificance &&
+  r.logOdds >= accept.minCandidateLogOdds &&
   Number.isFinite(r.fovDeg) &&
   r.fovDeg > 0 &&
   r.fovDeg <= accept.maxFovDeg;
