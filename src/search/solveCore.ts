@@ -246,19 +246,40 @@ type SolveStart =
   | { kind: "seeds"; photoQuad: Point2D[]; databaseQuad: Point3D[] }
   | { kind: "pose"; TP: Mat3 };
 
+type VerifyListener = (
+  result: SolveResult,
+  photoQuad: Point2D[],
+  databaseQuad: Point3D[],
+  photoStars: Point2D[],
+) => void;
+
+let verifyListener: VerifyListener | null = null;
+
+// 검증한 후보를 하나씩 받아 본다. 발표·원리 데모 자료를 만들 때만 쓴다 (scripts/learn)
+export const setVerifyListener = (listener: VerifyListener | null) => {
+  verifyListener = listener;
+};
+
 export const solveCandidate = (
   photoQuad: Point2D[],
   databaseQuad: Point3D[],
   photoStars: Point2D[],
   catalog: SolveStar[],
   options: SolveOptions,
-): SolveResult | null =>
-  solveFrom(
+): SolveResult | null => {
+  const result = solveFrom(
     { kind: "seeds", photoQuad, databaseQuad },
     photoStars,
     catalog,
     options,
   );
+
+  if (result && verifyListener) {
+    verifyListener(result, photoQuad, databaseQuad, photoStars);
+  }
+
+  return result;
+};
 
 // 이미 확신한 변환에서 출발해, 더 많은 사진 별로 대응을 다시 모으고 정밀화한다.
 // 처음 확신한 순간 멈추면 적은 별로 잰 점수(log-odds)가 기준 근처에서 출렁인다.

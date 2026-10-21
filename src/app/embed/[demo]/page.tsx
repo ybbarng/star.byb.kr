@@ -1,4 +1,6 @@
 import { notFound } from "next/navigation";
+import AnswerCheckDemo from "@/learn/AnswerCheckDemo";
+import CandidateScatterDemo from "@/learn/CandidateScatterDemo";
 import ChanceDemo from "@/learn/ChanceDemo";
 import DetectPipelineDemo from "@/learn/DetectPipelineDemo";
 import FindStarsDemo from "@/learn/FindStarsDemo";
@@ -6,6 +8,7 @@ import LuckyFakeDemo from "@/learn/LuckyFakeDemo";
 import PoleHeightDemo from "@/learn/PoleHeightDemo";
 import ProjectionDemo from "@/learn/ProjectionDemo";
 import QuadHashDemo from "@/learn/QuadHashDemo";
+import RefineStepsDemo from "@/learn/RefineStepsDemo";
 import SameSkyDemo from "@/learn/SameSkyDemo";
 import ShapeDemo from "@/learn/ShapeDemo";
 import SkySphere from "@/learn/SkySphere";
@@ -21,6 +24,9 @@ const DEMOS = {
   "triangle-search": TriangleSearchDemo,
   "quad-hash": QuadHashDemo,
   "verify-overlay": VerifyOverlayDemo,
+  "answer-check": AnswerCheckDemo,
+  "candidate-scatter": CandidateScatterDemo,
+  "refine-steps": RefineStepsDemo,
   chance: ChanceDemo,
   "lucky-fake": LuckyFakeDemo,
   projection: ProjectionDemo,
