@@ -161,19 +161,13 @@ export default function AnswerCheckDemo() {
     for (const { p, mag } of view.map) {
       context.fillStyle = "rgba(253,230,138,0.95)";
       context.beginPath();
-      context.arc(
-        p[0] * k,
-        p[1] * k,
-        Math.max(1.5, 4.5 - mag * 0.6),
-        0,
-        2 * Math.PI,
-      );
+      context.arc(p[0] * k, p[1] * k, Math.max(2.2, 6 - mag), 0, 2 * Math.PI);
       context.fill();
     }
 
     // 사진에서 찾은 별 (흰 테)
-    context.lineWidth = 1;
-    context.strokeStyle = "rgba(255,255,255,0.55)";
+    context.lineWidth = 1.5;
+    context.strokeStyle = "rgba(255,255,255,0.7)";
 
     for (const [x, y] of view.photo) {
       context.beginPath();
@@ -182,13 +176,13 @@ export default function AnswerCheckDemo() {
     }
 
     // 겹친 별: 짝지은 별은 파랑, 더 겹친 별은 초록
-    context.lineWidth = 3;
+    context.lineWidth = 4;
 
     for (const i of view.matched) {
       const [x, y] = view.photo[i];
       context.strokeStyle = view.seeds.includes(i) ? "#60a5fa" : "#4ade80";
       context.beginPath();
-      context.arc(x * k, y * k, 13, 0, 2 * Math.PI);
+      context.arc(x * k, y * k, 16, 0, 2 * Math.PI);
       context.stroke();
     }
   }, [data, image, view]);
@@ -214,8 +208,12 @@ export default function AnswerCheckDemo() {
 
   return (
     <div className="grid gap-4 md:grid-cols-[1fr_17rem]">
-      <canvas ref={canvas} className="rounded-box h-auto w-full" />
-      <div className="flex flex-col gap-3 text-sm">
+      <canvas
+        ref={canvas}
+        style={{ maxHeight: "80vh" }}
+        className="rounded-box h-auto w-full"
+      />
+      <div className="flex flex-col gap-3 text-base">
         <div className="flex flex-wrap gap-2">
           {button("fake", "가짜 답")}
           {button("real", "진짜 답")}
@@ -226,7 +224,7 @@ export default function AnswerCheckDemo() {
             아무렇게나 놓기
           </button>
         </div>
-        <ul className="flex flex-col gap-1 text-xs">
+        <ul className="flex flex-col gap-1 text-sm">
           <li>
             <span className="text-amber-200">●</span> 그 답대로 놓은 별 지도
           </li>
@@ -246,7 +244,7 @@ export default function AnswerCheckDemo() {
             <div>
               겹친 별 <b className="text-lg">{a.count}개</b>
             </div>
-            <div className="text-xs opacity-80">
+            <div className="text-sm opacity-80">
               = 짝지은 별 <span className="text-blue-400">{seedsHit}</span> + 더
               겹친 별{" "}
               <span className="text-green-400">{a.count - seedsHit}</span>
@@ -261,14 +259,14 @@ export default function AnswerCheckDemo() {
                 {throws[throws.length - 1]?.hits ?? 0}개
               </b>
             </div>
-            <div className="text-xs opacity-80">
+            <div className="text-sm opacity-80">
               {throws.length}번 놓아 본 평균{" "}
               <b>{average?.toFixed(2) ?? "-"}개</b>
             </div>
             <button className="btn btn-xs" onClick={() => throwOnce(100)}>
               100번 더 놓기
             </button>
-            <div className="text-xs opacity-60">
+            <div className="text-sm opacity-60">
               풀이가 계산한 우연 기대치: 가짜 답 {data.fake.expected.toFixed(2)}
               개, 진짜 답 {data.real.expected.toFixed(2)}개
             </div>

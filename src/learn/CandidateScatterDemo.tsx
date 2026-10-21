@@ -247,9 +247,10 @@ export default function CandidateScatterDemo() {
       <canvas
         ref={canvas}
         className="rounded-box h-auto w-full cursor-crosshair"
+        style={{ maxHeight: "80vh" }}
         onClick={pick}
       />
-      <div className="flex flex-col gap-3 text-sm">
+      <div className="flex flex-col gap-3 text-base">
         <div className="flex flex-col gap-2">
           {STEPS.map((s) => (
             <button
@@ -264,7 +265,7 @@ export default function CandidateScatterDemo() {
             </button>
           ))}
         </div>
-        <div className="text-xs opacity-70">
+        <div className="text-sm opacity-70">
           사진 한 장에서 확인한 후보{" "}
           <b>{data.points.length.toLocaleString("ko-KR")}개</b>
           <br />
@@ -276,15 +277,15 @@ export default function CandidateScatterDemo() {
           {passedReal}개
           <br />
           {view.firstReal >= 0 ? (
-            <span className="text-xs opacity-80">
+            <span className="text-sm opacity-80">
               진짜 답의 순위: <b>{view.firstReal + 1}등</b>
             </span>
           ) : (
-            <span className="text-xs opacity-80">진짜 답이 들지 못했다</span>
+            <span className="text-sm opacity-80">진짜 답이 들지 못했다</span>
           )}
         </div>
         {info && (
-          <div className="bg-base-300/60 rounded-box flex flex-col gap-1 p-3 text-xs">
+          <div className="bg-base-300/60 rounded-box flex flex-col gap-1 p-3 text-sm">
             <div className="text-sm font-bold">
               {picked === null ? "1등 후보" : "고른 후보"} —{" "}
               {info[4] ? (

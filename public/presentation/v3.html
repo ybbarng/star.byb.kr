@@ -67,6 +67,12 @@
         height: 720px;
         transform: translateX(-50%) scale(1.12);
       }
+      /* 사진·그래프와 옆 칸이 함께 있는 데모: 넓게 */
+      .demo-frame.wide iframe {
+        width: 1200px;
+        height: 560px;
+        transform: translateX(-50%) scale(1.4);
+      }
       .demo-frame.narrow iframe {
         width: 680px;
         height: 610px;
@@ -135,6 +141,40 @@
       .checklist li { margin: 0.5em 0; }
       .checklist li::before { content: "☐ "; color: oklch(.708 0 0); }
       .checklist li.done::before { content: "☑ "; color: #4ade80; }
+
+      /* 땅 가리기: 사진 위에 아래쪽을 덮는 띠 */
+      .sky-crop { position: relative; }
+      .sky-crop img { width: 100%; display: block; border-radius: 12px; }
+      .sky-crop .band {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: #0a0a0acc;
+        border-top: 3px dashed #fde68a;
+        border-radius: 0 0 12px 12px;
+      }
+      .sky-crop .band span {
+        position: absolute;
+        right: 0.4em;
+        top: -1.4em;
+        font-size: 0.6em;
+        color: #fde68a;
+      }
+
+      /* 단계 흐름 */
+      .flow { display: flex; align-items: stretch; gap: 0.4em; font-size: 1em; }
+      .flow .step {
+        flex: 1;
+        background: #161616;
+        border-radius: 12px;
+        padding: 0.6em 0.5em;
+        text-align: center;
+      }
+      .flow .step.hot { outline: 3px solid #fde68a; }
+      .flow .no { font-size: 1.4em; font-weight: 900; color: #c7d2fe; }
+      .flow .desc { font-size: 0.7em; color: oklch(.708 0 0); margin-top: 0.4em; }
+      .flow .arrow { align-self: center; color: oklch(.708 0 0); }
 
       .two-col {
         display: grid;
@@ -212,6 +252,72 @@
             (넘기면) Plate Solving은 사진에 찍힌 별들과 별 목록을 맞춰서, 사진의 각 점이 하늘의 어느 방향인지 알아내는 일입니다.
             <br>
             사람은 별자리 모양을 보고 "아, 전갈자리!" 하는데, 이걸 컴퓨터가 하게 만드는 게 목표였습니다.
+          </aside>
+        </section>
+
+        <!-- ===================== V2 알고리즘 ===================== -->
+        <section class="title-body-slide">
+          <h1>V2는 이렇게 풀었습니다</h1>
+          <div class="body center">
+            <div class="flow">
+              <div class="step"><div class="no">1</div><div>사진 고르기</div></div>
+              <div class="arrow fragment" data-fragment-index="1">→</div>
+              <div class="step fragment" data-fragment-index="1"><div class="no">2</div><div>별 찾기</div><div class="desc">OpenCV로 밝은 점<br>+ 사람이 고친다</div></div>
+              <div class="arrow fragment" data-fragment-index="2">→</div>
+              <div class="step fragment hot" data-fragment-index="2"><div class="no">3</div><div>별 4개의 모양으로<br>별 지도에서 찾기</div><div class="desc">quad · 가장 가까운 것 = 답</div></div>
+              <div class="arrow fragment" data-fragment-index="3">→</div>
+              <div class="step fragment" data-fragment-index="3"><div class="no">4</div><div>주변 별 표시</div><div class="desc">짝지은 4개로 변환을 구해<br>별 지도를 사진에 겹친다</div></div>
+            </div>
+          </div>
+          <aside class="notes">
+            지난 발표를 못 들으신 분들을 위해 V2가 어떻게 풀었는지 짧게 보겠습니다.
+            <br>
+            사진을 고르면, OpenCV로 밝은 점을 찾고 사람이 마커를 고칩니다.
+            <br>
+            핵심은 3번입니다. 별 4개가 만드는 모양을 숫자로 바꿔서, 미리 만들어 둔 별 지도의 모양 목록에서 가장 가까운 걸 찾습니다.
+            <br>
+            찾으면 그 4개 짝으로 별 좌표를 사진 좌표로 바꾸는 변환을 구해서, 주변 별을 사진 위에 그립니다.
+          </aside>
+        </section>
+
+        <section class="fullscreen-slide">
+          <div class="r-stack">
+            <img src="resources/detect-star-05.svg"/>
+          </div>
+          <aside class="notes">
+            V2는 OpenCV로 사진을 흑백으로 바꾸고 흐리게 한 다음 밝은 점을 찾았습니다.
+            <br>
+            그런데 건물 불빛도 밝은 점입니다. 빨간 표시가 다 찾은 점인데, 대부분 건물입니다.
+            <br>
+            그래서 V2에서는 사람이 가짜를 지우고, 빠진 별을 찍어 줬습니다.
+          </aside>
+        </section>
+
+        <section class="title-body-slide">
+          <h1>3. 별 4개의 모양을 숫자 네 개로</h1>
+          <div class="body">
+            <p class="subtitle">가장 먼 두 별을 (0,0)·(1,1)에 놓으면 나머지 두 별의 좌표가 지문이 된다 — 돌려도, 키워도, 옮겨도 같다</p>
+            <div class="demo-frame" style="height: 82%;">
+              <iframe src="/embed/quad-hash"></iframe>
+            </div>
+          </div>
+          <aside class="notes">
+            별 4개를 quad라고 부릅니다. 가장 먼 두 별 A, B를 (0,0)과 (1,1)에 오도록 옮기고 돌리고 키우면, 나머지 두 별 C, D의 좌표 네 숫자가 남습니다.
+            <br>
+            (별을 끌어 보면서) 사진을 돌리거나 확대해도 이 네 숫자는 그대로입니다. 그래서 어디서 찍었든 같은 별 4개는 같은 지문을 갖습니다.
+            <br>
+            별 지도에서는 가까운 별 4개 조합으로 quad를 8만 개쯤 미리 만들어 두고, 사진 quad의 지문과 가장 가까운 걸 KD-tree로 찾습니다. 그게 답입니다.
+          </aside>
+        </section>
+
+        <section class="fullscreen-slide">
+          <div class="r-stack">
+            <img src="resources/show-nearest-stars-04.svg"/>
+          </div>
+          <aside class="notes">
+            답을 찾으면 짝지은 별 4개로 별 좌표를 사진 좌표로 바꾸는 변환을 구하고, 그 변환으로 주변 별과 별자리를 사진 위에 그립니다.
+            <br>
+            V2는 여기까지였습니다.
           </aside>
         </section>
 
@@ -314,7 +420,48 @@
         </section>
 
         <section class="title-body-slide">
-          <h1>V2 방식으로 샘플 16장</h1>
+          <h1>V2: 가장 가까운 quad가 곧 답</h1>
+          <div class="body center">
+            <div class="two-col" style="grid-template-columns: 1.4fr 1fr;">
+              <img src="resources/v3-v2-wrong-orion.jpg" style="border-radius: 12px;">
+              <div>
+                <p>지문이 가장 가까운 quad를 찾으면 끝</p>
+                <p class="fragment">나머지 별은 확인하지 않는다</p>
+                <p class="fragment">→ 북두칠성을 <span class="red">오리온자리</span>라고 해도 모른다</p>
+              </div>
+            </div>
+          </div>
+          <aside class="notes">
+            V2는 지문이 가장 가까운 quad를 찾으면 그걸 답으로 냈습니다.
+            <br>
+            별 4개의 모양만 봤지, 나머지 별이 맞는지는 확인하지 않았습니다.
+            <br>
+            그래서 북두칠성 사진을 오리온자리라고 해도 프로그램은 틀린 줄 몰랐습니다.
+          </aside>
+        </section>
+
+        <section class="title-body-slide">
+          <h1>답대로 별 지도를 겹쳐 보면</h1>
+          <div class="body">
+            <div class="demo-frame wide" style="height: 96%;">
+              <iframe src="/embed/answer-check"></iframe>
+            </div>
+          </div>
+          <aside class="notes">
+            사람은 답이 맞는지 어떻게 확인할까요? 답대로 별 지도를 사진에 겹쳐 보고, 다른 별들도 맞는지 봅니다.
+            <br>
+            서울 근처 누각 사진입니다. 풀이가 실제로 만든 가짜 답입니다. 파란 원이 짝지은 별 4개입니다. 이 4개로 답을 만들었으니 당연히 맞습니다. 그 밖에 더 맞은 별은 초록 2개뿐입니다.
+            <br>
+            (진짜 답) 진짜 답은 짝지은 별 3개 말고도 26개가 더 겹칩니다.
+            <br>
+            (아무렇게나 놓기) 그런데 별 지도를 아무렇게나 놓아도 우연히 겹치는 별이 있습니다. 여러 번 놓아 보면 평균이 나오는데, 이게 "우연히 겹칠 기대치"입니다.
+            <br>
+            그래서 처음 만든 기준은 "겹친 별 수 ÷ 우연 기대치"가 5배를 넘으면 찾았다고 하는 것이었습니다.
+          </aside>
+        </section>
+
+        <section class="title-body-slide">
+          <h1>첫 기준(기대치의 몇 배)으로 샘플 16장</h1>
           <div class="body center">
             <div class="thumbs">
               <div class="cell"><img src="/samples/thumbs/big-dipper.webp"><span class="stamp">성공</span></div>
@@ -335,96 +482,44 @@
               <div class="cell fail"><img src="/samples/thumbs/google-unknown.webp"><span class="stamp fail">실패</span></div>
             </div>
             <p class="fragment" style="text-align: left;">
-              16장 모두 답을 냈는데, 그중 <span class="red big">13장</span>은 틀린 답
-            </p>
-            <p class="fragment" style="text-align: left;">
-              틀린 줄 모르고 "찾았다"고 한다
+              16장 모두 "찾았다"고 했는데, 그중 <span class="red big">13장</span>은 틀린 답
             </p>
           </div>
           <aside class="notes">
-            V2에서 남은 일이 올바른 결정하기였습니다. 그래서 V2 방식, 가장 잘 맞는 후보를 답으로 고르는 방식으로 샘플 16장을 사람 손 없이 돌려 봤습니다.
+            이 기준으로 샘플 16장을 사람 손 없이 돌려 봤습니다.
             <br>
-            맞은 건 북두칠성, 오리온, 남반구 사진 하나, 세 장뿐입니다. 나머지 13장은 틀린 답이었습니다.
+            16장 모두 찾았다고 했는데, 맞은 건 북두칠성, 오리온, 남반구 사진 하나, 세 장뿐이었습니다.
             <br>
-            예를 들어 사이판, 은하수 사진은 정답을 알고 있는데, 정답에서 60도에서 136도나 빗나간 곳을 답으로 냈습니다.
+            나머지 13장은 틀린 답을 찾았다고 했습니다. 사이판이나 은하수처럼 정답을 아는 사진은 60도에서 136도나 빗나간 곳을 답으로 냈습니다.
             <br>
-            문제는 틀렸다는 것보다, 틀린 답과 맞는 답을 똑같이 "찾았다"고 말한다는 점입니다. 프로그램이 스스로 틀린 줄 모릅니다.
+            확인을 넣었는데도 틀린 답을 확신합니다. 왜 그럴까요?
           </aside>
         </section>
 
         <section class="title-body-slide">
-          <h1>여러 번 뒤지면 우연이 쌓인다</h1>
+          <h1>후보 1만 개를 한 그래프에</h1>
           <div class="body">
-            <p class="subtitle">예전 기준: 맞은 별 수 ÷ 우연히 맞을 기대치 = "몇 배나 잘 맞았나"</p>
-            <div class="demo-frame zoom" style="height: 85%;">
-              <iframe src="/embed/lucky-fake"></iframe>
+            <div class="demo-frame wide" style="height: 96%;">
+              <iframe src="/embed/candidate-scatter"></iframe>
             </div>
           </div>
           <aside class="notes">
-            원인은 이렇습니다. 예전 기준은 "우연히 맞을 기대치의 몇 배를 맞췄나"였습니다.
+            아까 그 누각 사진 한 장을 풀면서 풀이가 확인한 후보가 1만 1천 개쯤 됩니다. 점 하나가 후보 하나입니다. 가로는 우연히 겹칠 기대치, 세로는 겹친 별 수, 노란 점이 진짜 답입니다.
             <br>
-            후보 하나만 보면 괜찮은 기준인데, 풀이는 사진 한 장에 후보를 1만 개 넘게 확인하고 그중 제일 좋은 걸 고릅니다.
+            (① 몇 배) 초록 선 위가 "기대치의 5배 이상"입니다. 1등은 왼쪽에 있는 가짜입니다. 6개 겹쳤는데 기대치가 0.08개라서 74배입니다. 진짜 답은 29개가 겹쳤지만 기대치가 2.4개라서 12배, 38등입니다.
             <br>
-            후보 수를 늘려 보시면, 가장 운 좋은 가짜는 기대치의 몇 배를 맞춥니다. 그래서 가짜가 진짜처럼 보였습니다.
+            함정이 두 개 있었습니다. 하나, 짝지은 별 4개는 원래 겹치는데 그것까지 셌습니다. 둘, 좁게 찍힌 후보는 기대치가 0에 가까워서, 몇 개만 맞아도 배수가 치솟습니다. 거의 0으로 나누는 셈입니다.
+            <br>
+            (② 짝 빼기) 짝지은 별을 빼면 나아지지만, 가짜는 여전히 1등입니다. 2개 ÷ 0.08개도 25배입니다.
+            <br>
+            (③ 우연일 확률) 그래서 배수 대신 확률을 물었습니다. "틀린 답인데도 우연히 이만큼 겹칠 확률". 기대치 0.08개에서 2개 겹치는 건 300번에 한 번쯤 있는 일입니다. 후보를 1만 개 보니 이런 가짜는 반드시 나옵니다.
+            <br>
+            그래서 기준을 10억 분의 1로 엄격하게 잡았습니다. 이제 선 위에는 진짜 답 하나만 남습니다. V2에서 말씀드린 논문의 베이즈 요인과 같은 생각이고, Astrometry.net도 같은 크기의 기준을 씁니다.
           </aside>
         </section>
 
         <section class="title-body-slide">
-          <h1>우연일 확률이 10억 분의 1보다 작을 때만</h1>
-          <div class="body">
-            <div class="demo-frame zoom" style="height: 92%;">
-              <iframe src="/embed/chance"></iframe>
-            </div>
-          </div>
-          <aside class="notes">
-            그래서 기준을 바꿨습니다. "몇 배"가 아니라 "틀린 답이어도 이만큼 맞을 확률"을 계산합니다.
-            <br>
-            이 확률이 10억 분의 1보다 작을 때만 찾았다고 합니다.
-            <br>
-            V2에서 논문은 베이즈 요인으로 결정한다고 말씀드렸는데, 같은 생각입니다. Astrometry.net도 같은 크기의 기준을 씁니다.
-          </aside>
-        </section>
-
-        <section class="title-body-slide">
-          <h1>짝에 쓰지 않은 별까지 맞는가</h1>
-          <div class="body">
-            <div class="demo-frame tall" style="height: 95%;">
-              <iframe src="/embed/verify-overlay"></iframe>
-            </div>
-          </div>
-          <aside class="notes">
-            실제로 북두칠성을 이 자리에서 풀고, 찾은 답대로 별 지도를 겹친 모습입니다.
-            <br>
-            답을 1도만 돌려 보면 겹치는 별이 사라지고 확률이 무너집니다.
-            <br>
-            "짝에 쓰지 않은 별까지 설명하는가"가 사람에게도 컴퓨터에게도 가장 강한 확인이었습니다.
-          </aside>
-        </section>
-
-        <section class="title-body-slide">
-          <h1>진짜와 가짜가 깔끔하게 갈린다</h1>
-          <div class="body center">
-            <div class="two-col">
-              <div class="bars">
-                <div class="row"><span class="label">진짜 답</span><span class="track"><span class="fill hot" style="width: 100%; display: block;"></span></span><span class="value">10⁻¹⁴~³⁷</span></div>
-                <div class="row"><span class="label">가짜 답</span><span class="track"><span class="fill" style="width: 11%; display: block;"></span></span><span class="value">10⁻³·⁹ 이하</span></div>
-                <div class="row"><span class="label">기준</span><span class="track"><span class="fill" style="width: 24%; display: block; background: #f87171;"></span></span><span class="value">10⁻⁹</span></div>
-              </div>
-              <div>
-                <p class="fragment">덤: 확신하면 바로 멈춘다</p>
-                <p class="fragment small">북두칠성 0.9초 → <span class="green">0.18초</span><br>못 푸는 사진 70초 → <span class="green">9.4초</span></p>
-              </div>
-            </div>
-          </div>
-          <aside class="notes">
-            16장에서 나온 답들의 우연일 확률입니다. 진짜 답은 10의 마이너스 14승에서 37승, 가짜 답은 많아야 마이너스 3.9승이라 기준 10억 분의 1로 깔끔하게 갈립니다.
-            <br>
-            덤으로 확신의 기준이 생기니 "확신하면 바로 멈추기"가 가능해져서 훨씬 빨라졌습니다.
-          </aside>
-        </section>
-
-        <section class="title-body-slide">
-          <h1>V3 기준으로 샘플 16장</h1>
+          <h1>V3: 샘플 16장</h1>
           <div class="body center">
             <div class="thumbs">
               <div class="cell"><img src="/samples/thumbs/big-dipper.webp"><span class="stamp">성공</span></div>
@@ -446,38 +541,66 @@
             </div>
             <p class="fragment" style="text-align: left;">
               틀린 답 <span class="red">13장</span> → <span class="green big">0장</span>
+              <span class="small">대신 13장은 "모르겠다"</span>
             </p>
-            <p class="fragment" style="text-align: left;">
-              대신 13장은 "모르겠다" — 틀린 답보다는 낫다
+            <p class="fragment small" style="text-align: left;">
+              덤: 확신하면 바로 멈춘다 — 북두칠성 0.9초 → <span class="green">0.18초</span>, 못 푸는 사진 70초 → <span class="green">9.4초</span>
             </p>
           </div>
           <aside class="notes">
             같은 16장을 새 기준으로 다시 돌렸습니다.
             <br>
-            맞던 세 장은 그대로 맞고, 틀린 답은 13장에서 0장이 됐습니다.
+            맞던 세 장은 그대로 맞고, 틀린 답은 13장에서 0장이 됐습니다. 대신 나머지 13장은 "모르겠다"고 합니다. 틀린 답을 자신 있게 말하는 것보다는 모른다고 하는 게 낫습니다.
             <br>
-            대신 나머지 13장은 "모르겠다"고 합니다. 틀린 답을 자신 있게 말하는 것보다는 모른다고 하는 게 낫습니다.
+            덤으로 확신의 기준이 생기니 "확신하면 바로 멈추기"가 가능해져서 훨씬 빨라졌습니다.
             <br>
-            이제 이 13장을 푸는 게 다음 일이 됩니다.
+            이 13장을 푸는 이야기는 두 번째 장에서 하겠습니다.
+          </aside>
+        </section>
+
+        <section class="fullscreen-slide">
+          <div class="r-stack">
+            <img src="resources/wip-03.svg"/>
+          </div>
+          <aside class="notes">
+            두 번째 남은 일이었던 오차입니다. V2에서는 별 지도를 겹치면 가장자리로 갈수록 노란 선만큼 어긋났습니다.
           </aside>
         </section>
 
         <section class="title-body-slide">
-          <h1>남은 일 - 오차 보정</h1>
-          <div class="body center">
-            <ul>
-              <li>여러 쌍으로 다시 맞추기 (RANSAC)</li>
-              <li class="fragment">비스듬한 사진은 원근 변환으로</li>
-              <li class="fragment">확신한 뒤 별 60개로 한 번 더 다듬기</li>
-            </ul>
-            <p class="fragment" style="text-align: left;">실제 사진 14장의 가장 낮은 점수 10⁻⁹·¹ → <span class="green">10⁻¹⁹·⁷</span></p>
+          <h1>짝 몇 개로만 맞추면 멀어질수록 어긋난다</h1>
+          <div class="body">
+            <div class="demo-frame wide" style="height: 96%;">
+              <iframe src="/embed/refine-steps"></iframe>
+            </div>
           </div>
           <aside class="notes">
-            두 번째 남은 일이었던 오차 보정입니다.
+            석촌호수 은하수 사진에서 겹친 별 30개를 놓고 보겠습니다. 흰 원이 사진의 별, 색 점이 변환이 놓은 자리, 선이 어긋남입니다.
             <br>
-            처음 고른 별 몇 개로만 변환을 만들면 사진 끝으로 갈수록 어긋납니다. 겹친 별 중 몇 쌍을 무작위로 골라 다시 맞추는 걸 여러 번 해서 가장 많이 겹치는 걸 남깁니다.
+            (①) V2처럼 짝지은 별 몇 개로만 변환을 구하면, 짝 근처는 맞는데 멀어질수록 크게 어긋납니다. 평균 35픽셀, 가장 크게 288픽셀입니다.
             <br>
-            비스듬히 찍은 사진은 원근 변환으로 한 번 더, 확신한 뒤에는 별 60개로 한 번 더 다듬습니다.
+            (②) 겹친 별 전부로 다시 맞추면 평균 21픽셀로 나아지지만, 가장자리가 여전히 어긋납니다. 돌리기, 키우기, 옮기기만으로는 안 맞는다는 뜻입니다.
+            <br>
+            (③) 이 사진은 건물이 똑바로 서도록 원근 보정을 한 사진이라, 원근 변환까지 쓰면 평균 2픽셀이 됩니다.
+            <br>
+            실제 풀이는 겹친 별 중 몇 쌍을 무작위로 골라 맞춰 보기를 여러 번 해서 가장 많이 겹치는 걸 고르고(RANSAC), 확신한 뒤에는 별 60개로 한 번 더 다듬습니다.
+          </aside>
+        </section>
+
+        <section class="title-body-slide">
+          <h1>V3: 오차 보정</h1>
+          <div class="body center">
+            <ul>
+              <li>겹친 별 여러 쌍으로 다시 맞추기 (RANSAC)</li>
+              <li>비스듬한 사진은 원근 변환으로</li>
+              <li>확신한 뒤 별 60개로 한 번 더 다듬기</li>
+            </ul>
+            <p class="fragment" style="text-align: left;">실제 사진 14장 중 가장 낮은 우연일 확률 10⁻⁹·¹ → <span class="green">10⁻¹⁹·⁷</span></p>
+          </div>
+          <aside class="notes">
+            정리하면 이 세 가지입니다.
+            <br>
+            많이 맞을수록 우연일 확률이 낮아지니까, 정밀하게 맞추는 것이 곧 확신을 높이는 일이기도 합니다. 풀리는 사진 14장 중 가장 아슬아슬하던 사진도 10의 마이너스 9.1승에서 19.7승이 됐습니다.
           </aside>
         </section>
 
@@ -491,7 +614,7 @@
             </ul>
           </div>
           <aside class="notes">
-            두 개 했습니다. 그런데 기준을 엄격하게 하니 이번엔 못 푸는 사진이 많아졌습니다.
+            두 개 했습니다. 그런데 기준을 엄격하게 하니 이번엔 "모르겠다"는 사진이 13장이나 됐습니다.
           </aside>
         </section>
 
@@ -499,50 +622,41 @@
         <section class="section-header-slide">
           <h1>2. 사람이 하던 일을 컴퓨터로</h1>
           <aside class="notes">
-            그래서 두 번째 이야기는, 사람이 하던 일을 컴퓨터가 하게 만든 이야기입니다.
+            두 번째 이야기는, V2에서 사람이 하던 일을 컴퓨터가 하게 만든 이야기입니다. "모르겠다"는 13장을 푸는 이야기이기도 합니다.
           </aside>
         </section>
 
         <section class="title-body-slide">
-          <h1>가짜 별이 너무 많다</h1>
+          <h1>별 찾기는 "주변보다 밝은 점" 찾기</h1>
           <div class="body">
-            <div class="demo-frame tall" style="height: 95%;">
+            <div class="demo-frame wide" style="height: 96%;">
+              <iframe src="/embed/detect-pipeline"></iframe>
+            </div>
+          </div>
+          <aside class="notes">
+            V2에서 사람이 하던 첫 번째 일은 가짜 별을 지우는 것이었습니다. 왜 가짜가 섞이는지부터 보겠습니다.
+            <br>
+            (단계를 넘기며) 흑백으로 바꾸고, 크게 흐린 배경을 만들어 빼면 주변보다 밝은 점만 남습니다. 거기서 솟은 점을 고릅니다.
+            <br>
+            그런데 건물 창문, 가로등, 지붕 경계도 주변보다 밝습니다. 이 방법으로는 별과 불빛을 가를 수 없습니다.
+          </aside>
+        </section>
+
+        <section class="title-body-slide">
+          <h1>밝은 순으로 고르면 불빛이 다 차지한다</h1>
+          <div class="body">
+            <div class="demo-frame wide" style="height: 96%;">
               <iframe src="/embed/find-stars"></iframe>
             </div>
           </div>
           <aside class="notes">
-            사진에는 별보다 밝은 가짜가 많습니다. 창문, 가로등, 지붕 경계, 나무 사이 빛.
+            (밝은 순 30개) 풀이에는 앞쪽 별 십몇 개만 들어가는데, 밝은 순으로 고르면 누각 불빛이 다 차지합니다. 은하수 사진은 밝은 순 60개 중 진짜 별이 2개였습니다.
             <br>
-            밝은 순으로 30개를 고르면 누각 불빛이 다 차지합니다. 은하수 사진은 밝은 순 60개 중 진짜 별이 2개였습니다.
+            가짜들을 사진에 겹쳐 보니 공통점이 있었습니다. 진짜 별은 사방이 고른 하늘 위에 떠 있고, 지붕 경계나 창문은 한쪽만 밝습니다.
             <br>
-            V2에서는 이걸 사람이 지웠습니다.
-          </aside>
-        </section>
-
-        <section class="title-body-slide">
-          <h1>별다움: 주변이 고른 하늘인가</h1>
-          <div class="body center">
-            <div class="two-col">
-              <div>
-                <p>점 주변 고리를 8조각으로 나눠</p>
-                <p>(가장 밝은 조각 − 가장 어두운 조각) ÷ 별 밝기</p>
-                <p class="fragment subtitle">진짜 별은 사방이 고르고, 지붕 경계·창문은 한쪽만 밝다</p>
-              </div>
-              <div class="fragment bars">
-                <p style="margin: 0;">앞쪽 25개 안의 진짜 별 (14장 합계)</p>
-                <div class="row"><span class="label">밝은 순</span><span class="track"><span class="fill" style="width: 44%; display: block;"></span></span><span class="value">124</span></div>
-                <div class="row"><span class="label">별다운 순</span><span class="track"><span class="fill hot" style="width: 100%; display: block;"></span></span><span class="value">280</span></div>
-              </div>
-            </div>
-          </div>
-          <aside class="notes">
-            가짜들을 사진에 겹쳐 보니 공통점이 있었습니다. 진짜 별은 사방이 고른 하늘 위에 떠 있습니다.
+            (동그라미를 눌러서) 점 주변 고리를 8조각으로 나눠 조각마다 밝기를 잽니다. 진짜 별은 여덟 막대가 고르고, 불빛은 들쭉날쭉합니다. 이걸 "별다움"이라고 불렀습니다.
             <br>
-            그래서 점 주변 고리를 8조각으로 나눠 조각마다 밝기를 재고, 들쭉날쭉하면 뒤로 미룹니다.
-            <br>
-            이 숫자 하나로 앞쪽 25개 안의 진짜 별이 두 배 넘게 늘었습니다.
-            <br>
-            (앞 데모에서 동그라미를 누르면 그 점의 고리를 볼 수 있습니다.)
+            (별다운 순 30개) 별다운 것부터 고르면 진짜 별이 앞으로 옵니다. 풀리는 사진 14장에서 앞쪽 25개 안의 진짜 별이 124개에서 280개로 늘었습니다.
           </aside>
         </section>
 
@@ -568,26 +682,26 @@
         <section class="title-body-slide">
           <h1>똑똑한 필터 대신 땅을 가리자</h1>
           <div class="body center">
-            <div class="two-col">
+            <div class="two-col" style="grid-template-columns: 1.3fr 1fr;">
+              <div class="sky-crop">
+                <img src="/samples/thumbs/20220607-berry-seoul.webp">
+                <div class="band fragment" data-fragment-index="1" style="top: 75%;"><span>위쪽 75%</span></div>
+                <div class="band fragment" data-fragment-index="2" style="top: 55%;"><span>55%</span></div>
+                <div class="band fragment" data-fragment-index="3" style="top: 45%;"><span>45%</span></div>
+              </div>
               <div>
                 <p>사람은 땅을 가리고 하늘만 본다</p>
-                <p class="subtitle">사진 전체 → 위쪽 75% → 55% → 45%</p>
-              </div>
-              <div class="bars">
-                <p style="margin: 0;">자동으로 풀리는 샘플 (16장 중)</p>
-                <div class="row"><span class="label">삼각형만</span><span class="track"><span class="fill" style="width: 21%; display: block;"></span></span><span class="value">3장</span></div>
-                <div class="row"><span class="label">+ 사각형</span><span class="track"><span class="fill" style="width: 43%; display: block;"></span></span><span class="value">6장</span></div>
-                <div class="row"><span class="label">+ 땅 가리기</span><span class="track"><span class="fill" style="width: 93%; display: block;"></span></span><span class="value">13장</span></div>
-                <div class="row"><span class="label">+ 원근 변환</span><span class="track"><span class="fill hot" style="width: 100%; display: block;"></span></span><span class="value">14장</span></div>
+                <p class="subtitle">사진 전체로 못 풀면 → 위쪽 75% → 55% → 45%</p>
+                <p class="fragment small" data-fragment-index="3">이 누각 사진은 위쪽 45%에서<br>카시오페이아·북극성으로 풀린다</p>
               </div>
             </div>
           </div>
           <aside class="notes">
-            칸을 나눠 고르게 뽑기, 투표로 고르기 같은 똑똑한 필터를 두 번 시도했는데 둘 다 실패했습니다.
+            별다움 전에, 칸을 나눠 고르게 뽑기, 투표로 고르기 같은 똑똑한 필터를 두 번 시도했는데 둘 다 실패했습니다.
             <br>
-            그래서 사람이 실제로 하는 단순한 일을 흉내 냈습니다. 땅을 가리고 하늘만 보기. 이걸로 6장이 13장이 됐습니다.
+            그래서 사람이 실제로 하는 단순한 일을 흉내 냈습니다. 땅을 가리고 하늘만 보기.
             <br>
-            사각형과 삼각형을 같이 쓴 이야기는 다음 장에서 하겠습니다.
+            사진 전체로 풀어 보고, 못 풀면 위쪽 75%, 55%, 45%만 봅니다. 이 누각 사진은 45%에서 카시오페이아와 북극성으로 풀립니다.
           </aside>
         </section>
 
@@ -629,9 +743,46 @@
           <aside class="notes">
             석촌호수 은하수 사진은 가장자리가 눌린 게 어안 렌즈 같아서, 오랫동안 어안 사진으로 다뤘습니다. 손으로 별 8개를 찍어 어안이라고 결론까지 냈습니다.
             <br>
-            그런데 건물이 똑바로 서 있는 게 단서였습니다. 원근 보정을 한 사진이었고, 원근 변환이 훨씬 잘 맞았습니다.
+            그런데 건물이 똑바로 서 있는 게 단서였습니다. 원근 보정을 한 사진이었고, 앞에서 본 것처럼 원근 변환이 훨씬 잘 맞았습니다.
             <br>
             결정적인 건 라벨에 쓰지 않은 별 26개를 맞춘 거였고, 나중에 받은 촬영 기록도 24mm였습니다.
+          </aside>
+        </section>
+
+        <section class="title-body-slide">
+          <h1>V3: 사람 손 없이 샘플 16장</h1>
+          <div class="body center">
+            <div class="thumbs">
+              <div class="cell"><img src="/samples/thumbs/big-dipper.webp"><span class="stamp">성공</span></div>
+              <div class="cell"><img src="/samples/thumbs/20220607-berry-seoul.webp"><span class="stamp">성공</span></div>
+              <div class="cell"><img src="/samples/thumbs/20220328-brice-Milky Way over Buzzvil.webp"><span class="stamp">성공</span></div>
+              <div class="cell"><img src="/samples/thumbs/20190617-jarrod-saipan.webp"><span class="stamp unsure">모름</span></div>
+              <div class="cell"><img src="/samples/thumbs/20231012-nike-aust-01.webp"><span class="stamp">성공</span></div>
+              <div class="cell"><img src="/samples/thumbs/20231012-nike-aust-02.webp"><span class="stamp">성공</span></div>
+              <div class="cell"><img src="/samples/thumbs/20230904-nike-jeungseun-01.webp"><span class="stamp">성공</span></div>
+              <div class="cell"><img src="/samples/thumbs/20230904-nike-jeungseun-02.webp"><span class="stamp">성공</span></div>
+              <div class="cell"><img src="/samples/thumbs/20230904-nike-jeungseun-03.webp"><span class="stamp">성공</span></div>
+              <div class="cell"><img src="/samples/thumbs/20230904-nike-jeungseun-04.webp"><span class="stamp">성공</span></div>
+              <div class="cell"><img src="/samples/thumbs/20250117-carl-aurora-01.webp"><span class="stamp">성공</span></div>
+              <div class="cell"><img src="/samples/thumbs/20250117-carl-aurora-02.webp"><span class="stamp">성공</span></div>
+              <div class="cell"><img src="/samples/thumbs/20250117-carl-aurora-03.webp"><span class="stamp">성공</span></div>
+              <div class="cell"><img src="/samples/thumbs/20250117-carl-aurora-04.webp"><span class="stamp">성공</span></div>
+              <div class="cell"><img src="/samples/thumbs/cafe-orion.webp"><span class="stamp">성공</span></div>
+              <div class="cell"><img src="/samples/thumbs/google-unknown.webp"><span class="stamp unsure">모름</span></div>
+            </div>
+            <div class="fragment bars" style="margin-top: 0.6em;">
+              <div class="row"><span class="label">삼각형만</span><span class="track"><span class="fill" style="width: 21%; display: block;"></span></span><span class="value">3장</span></div>
+              <div class="row"><span class="label">+ quad</span><span class="track"><span class="fill" style="width: 43%; display: block;"></span></span><span class="value">6장</span></div>
+              <div class="row"><span class="label">+ 땅 가리기</span><span class="track"><span class="fill" style="width: 93%; display: block;"></span></span><span class="value">13장</span></div>
+              <div class="row"><span class="label">+ 원근 변환</span><span class="track"><span class="fill hot" style="width: 100%; display: block;"></span></span><span class="value">14장</span></div>
+            </div>
+          </div>
+          <aside class="notes">
+            그래서 지금은 16장 중 14장이 사람 손 없이 풀립니다. 틀린 답은 여전히 0장입니다.
+            <br>
+            (막대) 삼각형만으로 3장, quad를 같이 써서 6장, 땅 가리기로 13장, 원근 변환으로 은하수까지 14장입니다.
+            <br>
+            남은 둘 중 구글에서 찾은 사진은 진짜 사진이 아닐 수도 있어서, 오히려 "모르겠다"가 맞는 답일 수 있습니다. 사이판은 다음 장에서 풉니다.
           </aside>
         </section>
 
@@ -643,17 +794,39 @@
           </aside>
         </section>
 
+        <section class="fullscreen-slide">
+          <div class="r-stack">
+            <img src="resources/plate-solving-berry-19.svg"/>
+            <img class="fragment" src="resources/plate-solving-berry-20.svg"/>
+            <img class="fragment" src="resources/plate-solving-berry-22.svg"/>
+            <img class="fragment" src="resources/plate-solving-berry-23.svg"/>
+          </div>
+          <aside class="notes">
+            V2 첫머리에서 베리 사진이 언제 찍혔는지 맞혔던 이야기입니다.
+            <br>
+            그때는 사람이 했습니다. Stellarium에 날짜와 시각을 하나씩 넣어 가며 같은 하늘이 오는 때를 찾고, 해가 떠 있는 칸을 지워서 표를 만들었습니다.
+            <br>
+            (표) 그 표에서 10월 3일 새벽 4~5시를 골랐고, 사진 찍은 분 답과 맞았습니다. V3는 이걸 컴퓨터가 합니다.
+          </aside>
+        </section>
+
         <section class="title-body-slide">
           <h1>Q. 1월 1일 23시 밤하늘과 같은 하늘은 2월 1일 n시에 볼 수 있다.</h1>
           <div class="body">
-            <div class="demo-frame zoom" style="height: 95%;">
-              <iframe src="/embed/same-sky"></iframe>
+            <div class="demo-frame wide" style="height: 96%;">
+              <iframe src="/embed/same-sky-orbit"></iframe>
             </div>
           </div>
           <aside class="notes">
-            V2에서 이 문제를 냈었습니다. 답은 21시, 한 달에 2시간씩 일찍 옵니다.
+            원리부터 보겠습니다. V2에서 낸 문제입니다. 위에서 내려다본 지구의 공전입니다.
             <br>
-            그때는 Stellarium을 돌려 가며 손으로 표를 만들었는데, 이제는 계산합니다. 하늘 시계를 바꾸면 같은 하늘이 날짜마다 몇 시에 오는지 나옵니다.
+            별은 아주 멀어서, 어느 달이든 같은 하늘을 보려면 노란 화살표처럼 같은 방향을 봐야 합니다.
+            <br>
+            (한 달 뒤) 한 달이면 지구가 30도쯤 공전합니다. 시계는 해를 기준으로 가니까, 같은 방향을 보는 순간이 2시간 일찍 옵니다. 답은 21시입니다. 오른쪽 하늘은 그 순간의 서울 남쪽 하늘인데, 달이 바뀌어도 똑같습니다.
+            <br>
+            (몇 달 더) 계속 넘기면 그 방향이 해 쪽으로 돌아가서, 같은 하늘인데 낮이라 안 보이는 때가 옵니다. V2 표에서 지운 칸들이 이겁니다.
+            <br>
+            그러니 사진에서 "그 순간 머리 위 하늘"을 알면, 날짜마다 몇 시였는지가 나옵니다.
           </aside>
         </section>
 
@@ -675,6 +848,20 @@
             사진이 풀리고 지평선이 보이면, 머리 꼭대기가 하늘 어디를 가리키는지 압니다. 그게 곧 위도와 그 순간의 하늘 시계입니다.
             <br>
             V2에서 손으로 추정했던 사진에 지평선 두 점만 찍었더니 10월 3일 4시 53분이 나왔습니다. 사진 찍은 분 답이 4시에서 5시였습니다.
+          </aside>
+        </section>
+
+        <section class="fullscreen-slide">
+          <div class="r-stack">
+            <img src="resources/plate-solving-saipan-02.svg"/>
+            <img class="fragment" src="resources/plate-solving-saipan-04.svg"/>
+            <img class="fragment" src="resources/plate-solving-saipan-06.svg"/>
+            <img class="fragment" src="resources/plate-solving-saipan-07.svg"/>
+          </div>
+          <aside class="notes">
+            V2의 사이판 사진입니다. 그때는 사람이 풀었습니다.
+            <br>
+            (넘기며) 별을 찍고, 바다 수평선을 긋고, 메신저에 올라온 시각과 사이판이라는 장소를 넣어서 Stellarium과 맞췄습니다.
           </aside>
         </section>
 
@@ -728,6 +915,17 @@
           <h1>4. 아무나 해 볼 수 있게</h1>
           <aside class="notes">
             마지막 남은 일, 웹사이트 배포입니다.
+          </aside>
+        </section>
+
+        <section class="fullscreen-slide">
+          <div class="r-stack">
+            <img src="resources/wip-04.svg"/>
+          </div>
+          <aside class="notes">
+            V2 때 드림 챌린지 목표 중 하나가 "아무나 Plate Solving을 시도해 볼 수 있는 웹사이트"였는데, 이건 하지 못했습니다.
+            <br>
+            그때는 무거운 계산을 서버에서 돌리려고 작업자와 메시지 큐를 두는 구조를 그렸습니다.
           </aside>
         </section>
 

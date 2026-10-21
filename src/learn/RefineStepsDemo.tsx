@@ -141,8 +141,12 @@ export default function RefineStepsDemo() {
 
   return (
     <div className="grid gap-4 md:grid-cols-[1fr_17rem]">
-      <canvas ref={canvas} className="rounded-box h-auto w-full" />
-      <div className="flex flex-col gap-3 text-sm">
+      <canvas
+        ref={canvas}
+        style={{ maxHeight: "80vh" }}
+        className="rounded-box h-auto w-full"
+      />
+      <div className="flex flex-col gap-3 text-base">
         <div className="flex flex-col gap-2">
           {STAGES.map((s) => (
             <button
@@ -154,16 +158,16 @@ export default function RefineStepsDemo() {
             </button>
           ))}
         </div>
-        <div className="text-xs opacity-80">{current.note}</div>
+        <div className="text-sm opacity-80">{current.note}</div>
         <div className="bg-base-300/60 rounded-box flex flex-col gap-1 p-3">
           <div>
             평균 어긋남 <b className="text-lg">{mean.toFixed(1)}px</b>
           </div>
-          <div className="text-xs opacity-80">
+          <div className="text-sm opacity-80">
             가장 크게 {max.toFixed(0)}px · 겹친 별 {data.pairs.length}개 기준
           </div>
         </div>
-        <ul className="flex flex-col gap-1 text-xs">
+        <ul className="flex flex-col gap-1 text-sm">
           <li>
             <span className="opacity-80">○</span> 사진의 별
           </li>

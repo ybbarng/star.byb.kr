@@ -271,14 +271,18 @@ export default function SameSkyOrbitDemo() {
           </span>
         </div>
         <div className="relative">
-          <canvas ref={sky} className="rounded-box h-auto w-full" />
+          <canvas
+            ref={sky}
+            style={{ maxHeight: "80vh" }}
+            className="rounded-box h-auto w-full"
+          />
           {!night && (
             <div className="absolute inset-0 flex items-center justify-center text-lg font-bold text-amber-200">
               이 시각엔 해가 떠 있어 별이 안 보여요
             </div>
           )}
         </div>
-        <div className="text-xs opacity-70">
+        <div className="text-sm opacity-70">
           서울에서 본 남쪽 하늘. 화살표(지금 보는 방향)는 어느 달이든 같은 별을
           가리키고, 지구가 공전한 만큼 시계는 일찍 그 자리에 온다.
         </div>
