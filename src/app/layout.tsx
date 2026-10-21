@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 // 받는다 (unicode-range). 글꼴 이름은 globals.css의 body에서 쓴다.
 import "pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css";
 import "./globals.css";
+import DeckKeyBridge from "@/ui/DeckKeyBridge";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://star.byb.kr"),
@@ -26,7 +27,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko">
-      <body className="h-screen antialiased">{children}</body>
+      <body className="h-screen antialiased">
+        {children}
+        <DeckKeyBridge />
+      </body>
     </html>
   );
 }

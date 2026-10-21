@@ -16,7 +16,7 @@ export default function EmbedLayout({
     <div className="embed flex min-h-screen w-full items-start justify-center bg-[#0a0a0a] p-4">
       {/* 사진 데모가 화면 높이를 넘지 않게 해서, 아래 조작판까지 한 화면에 들어오게 한다 */}
       <style>{`.embed canvas.h-auto { max-height: 62vh; width: auto !important; max-width: 100%; margin: 0 auto; }`}</style>
-      <div className="w-full max-w-5xl">{children}</div>
+      <div className="w-full max-w-6xl">{children}</div>
     </div>
   );
 }
