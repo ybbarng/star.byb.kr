@@ -306,8 +306,9 @@ export default function TriangleSearchDemo() {
             )}
           </div>
           <div className="text-xs opacity-60">
-            점 하나가 삼각형 하나의 모양 값이에요. 초록 십자가 내 삼각형, 주황
-            점이 모양 값이 가장 가까운 {K}개예요. 누르면 크게 볼 수 있어요.
+            점 하나 = 삼각형 하나. <span className="text-green-300">+</span> 내
+            삼각형, <span className="text-orange-300">●</span> 가장 닮은 {K}개
+            (누르면 확대)
           </div>
         </div>
       </div>
