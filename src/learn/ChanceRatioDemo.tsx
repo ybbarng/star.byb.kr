@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { STARS } from "@/game/sky/catalog";
 import { projectVecToPhoto } from "@/search/utils/wcs";
 
-// 판정 규칙 ① 데모: "겹친 별 수 ÷ 우연 기대치 ≥ 5배면 찾았다".
+// 판정 규칙 ① 데모: "겹친 별 수 ÷ 우연 기대치 ≥ 5배면 우연이 아니다(찾았다)".
 // 서울 누각 사진의 진짜 답으로, 답대로 놓은 지도 별이 사진 별과 몇 개 겹치는지 보이고,
 // 같은 수의 지도 별을 사진 위에 아무 데나 뿌려 우연히 몇 개 겹치는지 센다. 그 평균이 우연 기대치다.
 // 기대치 = 사진 별 수 × 화면 안 지도 별 수 × (허용 반경 원 넓이 ÷ 사진 넓이) — solveCore와 같은 식.
@@ -175,7 +175,11 @@ export default function ChanceRatioDemo() {
   const { real, tol, W, H } = data;
   const average =
     hits.length > 0 ? hits.reduce((a, b) => a + b, 0) / hits.length : null;
-  const ratio = real.count / real.expected;
+  // 지금 그린 배치(답대로 또는 이번에 뿌린 것)를 같은 규칙으로 판정한다
+  const shown = mode === "answer" ? real.count : (hits.at(-1) ?? 0);
+  const ratio = shown / real.expected;
+  const meant = ratio >= RATIO;
+  const how = mode === "answer" ? "답대로 놓으니" : "아무 데나 뿌리니";
 
   return (
     <div className="grid gap-4 md:grid-cols-[1fr_19rem]">
@@ -199,24 +203,27 @@ export default function ChanceRatioDemo() {
             <span className="text-green-400">◯</span> 겹친 별
           </li>
         </ul>
-        <div className="flex flex-wrap gap-2">
+        {/* 세 버튼이 칸 폭을 글자 길이대로 나눠 가져 줄이 맞는다. "100번 더"는 뿌린 뒤에만 누를 수 있다 */}
+        <div className="flex gap-2">
           <button
-            className={`btn btn-sm ${mode === "answer" ? "btn-primary" : ""}`}
+            className={`btn btn-sm flex-auto px-2 whitespace-nowrap ${mode === "answer" ? "btn-primary" : ""}`}
             onClick={() => setMode("answer")}
           >
             답대로 놓기
           </button>
           <button
-            className={`btn btn-sm ${mode === "random" ? "btn-primary" : ""}`}
+            className={`btn btn-sm flex-auto px-2 whitespace-nowrap ${mode === "random" ? "btn-primary" : ""}`}
             onClick={() => throwStars(1)}
           >
             아무 데나 뿌리기
           </button>
-          {mode === "random" && (
-            <button className="btn btn-sm" onClick={() => throwStars(100)}>
-              100번 더
-            </button>
-          )}
+          <button
+            className="btn btn-sm flex-auto px-2 whitespace-nowrap"
+            disabled={mode !== "random"}
+            onClick={() => throwStars(100)}
+          >
+            100번 더
+          </button>
         </div>
 
         {mode === "answer" ? (
@@ -254,13 +261,24 @@ export default function ChanceRatioDemo() {
         </div>
 
         <div className="bg-base-300/60 rounded-box flex flex-col gap-1 p-3">
-          <div className="text-sm opacity-70">판정 규칙 ①</div>
-          <div>
-            {real.count} ÷ {real.expected.toFixed(1)} ={" "}
-            <b className="text-lg">{ratio.toFixed(0)}배</b>{" "}
-            {ratio >= RATIO ? "≥" : "<"} {RATIO}배
+          <div className="text-sm opacity-70">
+            판정 규칙 ①: 겹친 별 ÷ 우연 기대치
           </div>
-          <div className="font-bold text-green-400">→ 찾았다</div>
+          <div>
+            <span className="text-green-400">{shown}개</span> ÷{" "}
+            {real.expected.toFixed(1)}개 ={" "}
+            <b className="text-lg">{ratio.toFixed(ratio < 10 ? 1 : 0)}배</b>{" "}
+            {meant ? "≥" : "<"} {RATIO}배
+          </div>
+          <div className="text-xs opacity-60">
+            우연이라면 {real.expected.toFixed(1)}개쯤 겹칠 텐데, {how} {shown}
+            개가 겹쳤다
+          </div>
+          <div
+            className={`text-lg font-bold ${meant ? "text-green-400" : "opacity-70"}`}
+          >
+            {meant ? "→ 필연!" : "→ 우연"}
+          </div>
         </div>
       </div>
     </div>
