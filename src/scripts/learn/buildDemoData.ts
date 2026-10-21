@@ -141,7 +141,23 @@ const solveCollecting = async (file: string) => {
 
 const buildSeoul = async () => {
   const { stars, W, H, verified, answer } = await solveCollecting(SEOUL);
-  const isReal = (v: Verified) => angleDeg(v.result.centerVector, answer) < 6;
+  // 진짜 답: 식별이 맞은 후보. 식별에 쓴 지도 별들을 정답 자세로 사진에 내렸을 때 각각 짝지은 사진 별의
+  // 허용 반경 안에 오면 맞게 식별한 것이다 (중심 방향만 보면 회전·화각이 엉뚱한 오답이 섞인다)
+  const truth = loadSolvedPoses()[SEOUL].TP;
+  const tolPx = Math.max(5, Math.hypot(W, H) * 0.006);
+  const identified = (photoPts: Point2D[], vectors: Point3D[]) =>
+    vectors.every((v, k) => {
+      const xy = projectVecToPhoto(truth, v);
+
+      return (
+        xy !== null &&
+        Math.hypot(xy[0] - photoPts[k][0], xy[1] - photoPts[k][1]) <= tolPx * 2
+      );
+    });
+  const isReal = (v: Verified) => identified(v.photoQuad, v.databaseQuad);
+  const nearCenter = verified.filter(
+    (v) => angleDeg(v.result.centerVector, answer) < 6,
+  ).length;
   // 옛 기준: 겹친 별 6개 이상, 기대치의 5배 이상, 시야 80° 이하면 "찾았다". 그중 배수 1등을 골랐다
   const oldPick = verified
     .filter(
@@ -195,6 +211,12 @@ const buildSeoul = async () => {
   };
 
   // findCandidates의 distance는 지문 거리의 제곱 × 1000이다. 데모에는 지문 네 숫자 사이의 실제 거리로 싣는다
+  const quadIdentified = (q: (typeof quads)[number]) =>
+    identified(
+      q.input.map((i) => clean15[i]),
+      q.output.map(({ hr }) => vectorOf(hr)),
+    );
+
   const quadOverlay = (rank: number) => {
     const q = quads[rank - 1];
     const TP = seedTP(q);
@@ -208,14 +230,11 @@ const buildSeoul = async () => {
       count: matches.length,
       distance: round(Math.sqrt(q.distance / 1000)),
       stars: q.output.map((o) => o.label),
-      real: angleDeg(recoverCenter(TP, W, H), answer) < 6,
+      real: quadIdentified(q),
     };
   };
 
-  const rightRank =
-    quads.findIndex(
-      (q) => angleDeg(recoverCenter(seedTP(q), W, H), answer) < 6,
-    ) + 1;
+  const rightRank = quads.findIndex(quadIdentified) + 1;
 
   const overlay = (v: Verified) => {
     const r = v.result;
@@ -270,6 +289,9 @@ const buildSeoul = async () => {
   };
 
   writeFileSync(resolve(OUT, "candidates-seoul.json"), JSON.stringify(data));
+  console.log(
+    `서울 누각: 중심이 6° 안인 후보 ${nearCenter}개, 식별이 맞은 후보 ${verified.filter(isReal).length}개`,
+  );
   console.log(
     `서울 누각: 후보 ${verified.length}개, 옛 1등 ${oldPick.result.inlierCount}개 겹침(짝 ${oldPick.photoQuad.length}) ${oldPick.result.significance.toFixed(1)}배 정답 ${isReal(oldPick)}`,
   );

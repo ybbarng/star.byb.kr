@@ -5,7 +5,7 @@ import { ACCEPT } from "@/search/solvers/candidates";
 import { poissonTailNegLog10 } from "@/search/utils/stats";
 
 // 후보 전부를 한 그래프에: 서울 누각 사진 한 장을 풀며 실제로 검증한 후보 1만여 개를
-// 가로 = 우연히 겹칠 기대치(로그 눈금), 세로 = 겹친 별 수로 찍는다. 노랑이 진짜 답, 나머지가 가짜다.
+// 가로 = 우연히 겹칠 기대치(로그 눈금), 세로 = 겹친 별 수로 찍는다. 노랑이 별을 맞게 식별한 진짜 답, 나머지가 가짜다.
 //   ① 규칙 ①(필연): 겹친 수 ÷ 기대치 ≥ 5. 필연이 수백 개인데 진짜는 몇 개뿐이다. 옛 풀이는 사진 별 15개
 //      단계에서 필연이 나오면 그중 겹친 별이 가장 많은 것을 답으로 내고 멈췄다 — 그 단계의 필연은 모두 가짜다
 //   ② 식별에 쓴 별 빼기: 답을 만들 때 쓴 별은 당연히 겹치니 세지 않는다
@@ -313,8 +313,8 @@ export default function CandidateScatterDemo() {
           {firstOnly ? `사진 별 ${FIRST_STAGE}개 단계에서` : "사진 한 장에서"}{" "}
           확인한 후보 <b>{shownCount.toLocaleString("ko-KR")}개</b>
           <br />
-          <span className="text-amber-200">●</span> 정답 자리 후보 {realCount}개
-          · <span className="text-red-400">●</span> {verdict}에 든 가짜
+          <span className="text-amber-200">●</span> 맞게 식별한 후보 {realCount}
+          개 · <span className="text-red-400">●</span> {verdict}에 든 가짜
         </div>
         <button
           className={`btn btn-sm ${firstOnly ? "btn-secondary" : ""}`}
