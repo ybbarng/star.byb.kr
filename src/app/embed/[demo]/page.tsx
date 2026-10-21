@@ -10,6 +10,7 @@ import ProjectionDemo from "@/learn/ProjectionDemo";
 import QuadHashDemo from "@/learn/QuadHashDemo";
 import RefineStepsDemo from "@/learn/RefineStepsDemo";
 import SameSkyDemo from "@/learn/SameSkyDemo";
+import SameSkyOrbitDemo from "@/learn/SameSkyOrbitDemo";
 import ShapeDemo from "@/learn/ShapeDemo";
 import SkySphere from "@/learn/SkySphere";
 import TriangleSearchDemo from "@/learn/TriangleSearchDemo";
@@ -32,6 +33,7 @@ const DEMOS = {
   projection: ProjectionDemo,
   "pole-height": PoleHeightDemo,
   "same-sky": SameSkyDemo,
+  "same-sky-orbit": SameSkyOrbitDemo,
 };
 
 export const dynamicParams = false;
