@@ -119,19 +119,16 @@
         position: absolute;
         right: 6px;
         bottom: 6px;
-        font-size: 0.45em;
+        font-size: 0.6em;
         font-weight: bold;
         color: #052e16;
         background: #4ade80;
         border-radius: 4px;
         padding: 0 6px;
       }
-      .thumbs .wrong {
-        position: absolute;
-        inset: 0;
-        border: 6px solid #f87171;
-        border-radius: 6px;
-      }
+      .thumbs .stamp.fail { color: #450a0a; background: #f87171; }
+      .thumbs .stamp.unsure { color: #e5e5e5; background: #525252; }
+      .thumbs .cell.fail img { outline: 4px solid #f87171; outline-offset: -4px; }
 
       /* 할 일 목록 */
       .reveal ul.checklist { list-style: none; text-align: left; margin: 0; padding: 0; }
@@ -317,39 +314,41 @@
         </section>
 
         <section class="title-body-slide">
-          <h1>샘플 16장을 돌려 봤습니다</h1>
+          <h1>V2 방식으로 샘플 16장</h1>
           <div class="body center">
             <div class="thumbs">
-              <div class="cell"><img src="/samples/thumbs/big-dipper.webp"><span class="stamp">찾았다!</span></div>
-              <div class="cell"><img src="/samples/thumbs/20220607-berry-seoul.webp"><span class="stamp">찾았다!</span></div>
-              <div class="cell"><img src="/samples/thumbs/20220328-brice-Milky Way over Buzzvil.webp"><span class="stamp">찾았다!</span><span class="wrong fragment" data-fragment-index="1"></span></div>
-              <div class="cell"><img src="/samples/thumbs/20190617-jarrod-saipan.webp"><span class="stamp">찾았다!</span><span class="wrong fragment" data-fragment-index="1"></span></div>
-              <div class="cell"><img src="/samples/thumbs/20231012-nike-aust-01.webp"><span class="stamp">찾았다!</span></div>
-              <div class="cell"><img src="/samples/thumbs/20231012-nike-aust-02.webp"><span class="stamp">찾았다!</span></div>
-              <div class="cell"><img src="/samples/thumbs/20230904-nike-jeungseun-01.webp"><span class="stamp">찾았다!</span></div>
-              <div class="cell"><img src="/samples/thumbs/20230904-nike-jeungseun-02.webp"><span class="stamp">찾았다!</span><span class="wrong fragment" data-fragment-index="1"></span></div>
-              <div class="cell"><img src="/samples/thumbs/20230904-nike-jeungseun-03.webp"><span class="stamp">찾았다!</span></div>
-              <div class="cell"><img src="/samples/thumbs/20230904-nike-jeungseun-04.webp"><span class="stamp">찾았다!</span></div>
-              <div class="cell"><img src="/samples/thumbs/20250117-carl-aurora-01.webp"><span class="stamp">찾았다!</span></div>
-              <div class="cell"><img src="/samples/thumbs/20250117-carl-aurora-02.webp"><span class="stamp">찾았다!</span></div>
-              <div class="cell"><img src="/samples/thumbs/20250117-carl-aurora-03.webp"><span class="stamp">찾았다!</span></div>
-              <div class="cell"><img src="/samples/thumbs/20250117-carl-aurora-04.webp"><span class="stamp">찾았다!</span></div>
-              <div class="cell"><img src="/samples/thumbs/cafe-orion.webp"><span class="stamp">찾았다!</span></div>
-              <div class="cell"><img src="/samples/thumbs/google-unknown.webp"><span class="stamp">찾았다!</span></div>
+              <div class="cell"><img src="/samples/thumbs/big-dipper.webp"><span class="stamp">성공</span></div>
+              <div class="cell fail"><img src="/samples/thumbs/20220607-berry-seoul.webp"><span class="stamp fail">실패</span></div>
+              <div class="cell fail"><img src="/samples/thumbs/20220328-brice-Milky Way over Buzzvil.webp"><span class="stamp fail">실패</span></div>
+              <div class="cell fail"><img src="/samples/thumbs/20190617-jarrod-saipan.webp"><span class="stamp fail">실패</span></div>
+              <div class="cell"><img src="/samples/thumbs/20231012-nike-aust-01.webp"><span class="stamp">성공</span></div>
+              <div class="cell fail"><img src="/samples/thumbs/20231012-nike-aust-02.webp"><span class="stamp fail">실패</span></div>
+              <div class="cell fail"><img src="/samples/thumbs/20230904-nike-jeungseun-01.webp"><span class="stamp fail">실패</span></div>
+              <div class="cell fail"><img src="/samples/thumbs/20230904-nike-jeungseun-02.webp"><span class="stamp fail">실패</span></div>
+              <div class="cell fail"><img src="/samples/thumbs/20230904-nike-jeungseun-03.webp"><span class="stamp fail">실패</span></div>
+              <div class="cell fail"><img src="/samples/thumbs/20230904-nike-jeungseun-04.webp"><span class="stamp fail">실패</span></div>
+              <div class="cell fail"><img src="/samples/thumbs/20250117-carl-aurora-01.webp"><span class="stamp fail">실패</span></div>
+              <div class="cell fail"><img src="/samples/thumbs/20250117-carl-aurora-02.webp"><span class="stamp fail">실패</span></div>
+              <div class="cell fail"><img src="/samples/thumbs/20250117-carl-aurora-03.webp"><span class="stamp fail">실패</span></div>
+              <div class="cell fail"><img src="/samples/thumbs/20250117-carl-aurora-04.webp"><span class="stamp fail">실패</span></div>
+              <div class="cell"><img src="/samples/thumbs/cafe-orion.webp"><span class="stamp">성공</span></div>
+              <div class="cell fail"><img src="/samples/thumbs/google-unknown.webp"><span class="stamp fail">실패</span></div>
             </div>
-            <p class="fragment" data-fragment-index="1" style="text-align: left;">
-              정답을 아는 3장: <span class="red">60° ~ 136° 빗나간 답</span>을 확신
+            <p class="fragment" style="text-align: left;">
+              16장 모두 답을 냈는데, 그중 <span class="red big">13장</span>은 틀린 답
             </p>
             <p class="fragment" style="text-align: left;">
-              틀린 답을 확신한 사진 <span class="red big">13장</span>
+              틀린 줄 모르고 "찾았다"고 한다
             </p>
           </div>
           <aside class="notes">
-            앱과 같은 흐름으로 샘플 16장을 돌려 봤더니, 거의 모든 사진에서 "찾았다"고 합니다.
+            V2에서 남은 일이 올바른 결정하기였습니다. 그래서 V2 방식, 가장 잘 맞는 후보를 답으로 고르는 방식으로 샘플 16장을 사람 손 없이 돌려 봤습니다.
             <br>
-            기분이 좋았는데, 정답을 아는 사이판, 은하수, 여름 여행 사진은 60도에서 136도 빗나간 답을 확신하고 있었습니다.
+            맞은 건 북두칠성, 오리온, 남반구 사진 하나, 세 장뿐입니다. 나머지 13장은 틀린 답이었습니다.
             <br>
-            틀린 답을 확신한 사진이 13장이었습니다.
+            예를 들어 사이판, 은하수 사진은 정답을 알고 있는데, 정답에서 60도에서 136도나 빗나간 곳을 답으로 냈습니다.
+            <br>
+            문제는 틀렸다는 것보다, 틀린 답과 맞는 답을 똑같이 "찾았다"고 말한다는 점입니다. 프로그램이 스스로 틀린 줄 모릅니다.
           </aside>
         </section>
 
@@ -387,31 +386,6 @@
         </section>
 
         <section class="title-body-slide">
-          <h1>결과</h1>
-          <div class="body center">
-            <div class="two-col">
-              <div class="bars">
-                <div class="row"><span class="label">진짜 답</span><span class="track"><span class="fill hot" style="width: 100%; display: block;"></span></span><span class="value">10⁻¹⁴~³⁷</span></div>
-                <div class="row"><span class="label">가짜 답</span><span class="track"><span class="fill" style="width: 11%; display: block;"></span></span><span class="value">10⁻³·⁹ 이하</span></div>
-                <div class="row"><span class="label">기준</span><span class="track"><span class="fill" style="width: 24%; display: block; background: #f87171;"></span></span><span class="value">10⁻⁹</span></div>
-              </div>
-              <div>
-                <p>틀린 확신 <span class="red">13장</span> → <span class="green big">0장</span></p>
-                <p class="fragment">덤: 확신하면 바로 멈춘다</p>
-                <p class="fragment small">북두칠성 0.9초 → <span class="green">0.18초</span><br>못 푸는 사진 70초 → <span class="green">9.4초</span></p>
-              </div>
-            </div>
-          </div>
-          <aside class="notes">
-            진짜 답은 10의 마이너스 14승에서 37승, 가짜 답은 많아야 마이너스 3.9승이라 기준 9로 깔끔하게 갈립니다.
-            <br>
-            틀린 확신이 13장에서 0장이 됐고, 풀리던 사진은 그대로 풀렸습니다.
-            <br>
-            덤으로 확신의 기준이 생기니 "확신하면 바로 멈추기"가 가능해져서 훨씬 빨라졌습니다.
-          </aside>
-        </section>
-
-        <section class="title-body-slide">
           <h1>짝에 쓰지 않은 별까지 맞는가</h1>
           <div class="body">
             <div class="demo-frame tall" style="height: 95%;">
@@ -424,6 +398,67 @@
             답을 1도만 돌려 보면 겹치는 별이 사라지고 확률이 무너집니다.
             <br>
             "짝에 쓰지 않은 별까지 설명하는가"가 사람에게도 컴퓨터에게도 가장 강한 확인이었습니다.
+          </aside>
+        </section>
+
+        <section class="title-body-slide">
+          <h1>진짜와 가짜가 깔끔하게 갈린다</h1>
+          <div class="body center">
+            <div class="two-col">
+              <div class="bars">
+                <div class="row"><span class="label">진짜 답</span><span class="track"><span class="fill hot" style="width: 100%; display: block;"></span></span><span class="value">10⁻¹⁴~³⁷</span></div>
+                <div class="row"><span class="label">가짜 답</span><span class="track"><span class="fill" style="width: 11%; display: block;"></span></span><span class="value">10⁻³·⁹ 이하</span></div>
+                <div class="row"><span class="label">기준</span><span class="track"><span class="fill" style="width: 24%; display: block; background: #f87171;"></span></span><span class="value">10⁻⁹</span></div>
+              </div>
+              <div>
+                <p class="fragment">덤: 확신하면 바로 멈춘다</p>
+                <p class="fragment small">북두칠성 0.9초 → <span class="green">0.18초</span><br>못 푸는 사진 70초 → <span class="green">9.4초</span></p>
+              </div>
+            </div>
+          </div>
+          <aside class="notes">
+            16장에서 나온 답들의 우연일 확률입니다. 진짜 답은 10의 마이너스 14승에서 37승, 가짜 답은 많아야 마이너스 3.9승이라 기준 10억 분의 1로 깔끔하게 갈립니다.
+            <br>
+            덤으로 확신의 기준이 생기니 "확신하면 바로 멈추기"가 가능해져서 훨씬 빨라졌습니다.
+          </aside>
+        </section>
+
+        <section class="title-body-slide">
+          <h1>V3 기준으로 샘플 16장</h1>
+          <div class="body center">
+            <div class="thumbs">
+              <div class="cell"><img src="/samples/thumbs/big-dipper.webp"><span class="stamp">성공</span></div>
+              <div class="cell"><img src="/samples/thumbs/20220607-berry-seoul.webp"><span class="stamp unsure">모름</span></div>
+              <div class="cell"><img src="/samples/thumbs/20220328-brice-Milky Way over Buzzvil.webp"><span class="stamp unsure">모름</span></div>
+              <div class="cell"><img src="/samples/thumbs/20190617-jarrod-saipan.webp"><span class="stamp unsure">모름</span></div>
+              <div class="cell"><img src="/samples/thumbs/20231012-nike-aust-01.webp"><span class="stamp">성공</span></div>
+              <div class="cell"><img src="/samples/thumbs/20231012-nike-aust-02.webp"><span class="stamp unsure">모름</span></div>
+              <div class="cell"><img src="/samples/thumbs/20230904-nike-jeungseun-01.webp"><span class="stamp unsure">모름</span></div>
+              <div class="cell"><img src="/samples/thumbs/20230904-nike-jeungseun-02.webp"><span class="stamp unsure">모름</span></div>
+              <div class="cell"><img src="/samples/thumbs/20230904-nike-jeungseun-03.webp"><span class="stamp unsure">모름</span></div>
+              <div class="cell"><img src="/samples/thumbs/20230904-nike-jeungseun-04.webp"><span class="stamp unsure">모름</span></div>
+              <div class="cell"><img src="/samples/thumbs/20250117-carl-aurora-01.webp"><span class="stamp unsure">모름</span></div>
+              <div class="cell"><img src="/samples/thumbs/20250117-carl-aurora-02.webp"><span class="stamp unsure">모름</span></div>
+              <div class="cell"><img src="/samples/thumbs/20250117-carl-aurora-03.webp"><span class="stamp unsure">모름</span></div>
+              <div class="cell"><img src="/samples/thumbs/20250117-carl-aurora-04.webp"><span class="stamp unsure">모름</span></div>
+              <div class="cell"><img src="/samples/thumbs/cafe-orion.webp"><span class="stamp">성공</span></div>
+              <div class="cell"><img src="/samples/thumbs/google-unknown.webp"><span class="stamp unsure">모름</span></div>
+            </div>
+            <p class="fragment" style="text-align: left;">
+              틀린 답 <span class="red">13장</span> → <span class="green big">0장</span>
+            </p>
+            <p class="fragment" style="text-align: left;">
+              대신 13장은 "모르겠다" — 틀린 답보다는 낫다
+            </p>
+          </div>
+          <aside class="notes">
+            같은 16장을 새 기준으로 다시 돌렸습니다.
+            <br>
+            맞던 세 장은 그대로 맞고, 틀린 답은 13장에서 0장이 됐습니다.
+            <br>
+            대신 나머지 13장은 "모르겠다"고 합니다. 틀린 답을 자신 있게 말하는 것보다는 모른다고 하는 게 낫습니다.
+            <br>
+            이제 이 13장을 푸는 게 다음 일이 됩니다.
           </aside>
         </section>
 
