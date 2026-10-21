@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
+  <!-- V2 당시 AI: 작고 마른 몸, 큰 안경, 책을 든 똑똑한 로봇 -->
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#fde68a" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#fde68a" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1920" height="1080" fill="#0a0a0a"/>
+
+  <g stroke="#0a0a0a" stroke-width="3" stroke-linejoin="round">
+    <!-- 안테나와 전구 -->
+    <circle cx="620" cy="400" r="34" fill="url(#glow)" stroke="none"/>
+    <line x1="620" y1="440" x2="620" y2="412" stroke="#cbd5e1" stroke-width="5"/>
+    <circle cx="620" cy="400" r="12" fill="#fde68a"/>
+
+    <!-- 다리 -->
+    <line x1="608" y1="648" x2="602" y2="738" stroke="#94a3b8" stroke-width="9" stroke-linecap="round"/>
+    <line x1="632" y1="648" x2="638" y2="738" stroke="#94a3b8" stroke-width="9" stroke-linecap="round"/>
+    <ellipse cx="596" cy="742" rx="16" ry="7" fill="#64748b"/>
+    <ellipse cx="644" cy="742" rx="16" ry="7" fill="#64748b"/>
+
+    <!-- 팔 (왼팔은 늘어뜨리고, 오른팔은 책을 든다) -->
+    <line x1="594" y1="572" x2="562" y2="632" stroke="#94a3b8" stroke-width="8" stroke-linecap="round"/>
+    <line x1="646" y1="572" x2="682" y2="606" stroke="#94a3b8" stroke-width="8" stroke-linecap="round"/>
+    <g transform="rotate(-12 690 618)">
+      <rect x="672" y="592" width="38" height="50" rx="4" fill="#60a5fa"/>
+      <line x1="678" y1="604" x2="704" y2="604" stroke="#dbeafe" stroke-width="3"/>
+      <line x1="678" y1="614" x2="700" y2="614" stroke="#dbeafe" stroke-width="3"/>
+    </g>
+
+    <!-- 몸통 -->
+    <rect x="608" y="538" width="24" height="16" fill="#94a3b8"/>
+    <rect x="592" y="552" width="56" height="100" rx="14" fill="#94a3b8"/>
+    <circle cx="620" cy="586" r="9" fill="#1e293b"/>
+
+    <!-- 머리: 몸보다 크다 -->
+    <rect x="556" y="440" width="128" height="104" rx="26" fill="#cbd5e1"/>
+    <rect x="572" y="458" width="96" height="66" rx="14" fill="#0f172a"/>
+    <circle cx="600" cy="488" r="14" fill="none" stroke="#fde68a" stroke-width="4"/>
+    <circle cx="640" cy="488" r="14" fill="none" stroke="#fde68a" stroke-width="4"/>
+    <line x1="614" y1="488" x2="626" y2="488" stroke="#fde68a" stroke-width="4"/>
+    <circle cx="600" cy="489" r="4" fill="#67e8f9" stroke="none"/>
+    <circle cx="640" cy="489" r="4" fill="#67e8f9" stroke="none"/>
+    <path d="M 608 510 Q 620 518 632 510" fill="none" stroke="#67e8f9" stroke-width="3"/>
+  </g>
+
+  <text x="620" y="812" text-anchor="middle" font-family="Pretendard, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif" font-size="40" fill="#e5e5e5">V2 당시 AI</text>
+
+  <!-- 화살표: 오른쪽 아래(발표자)로 -->
+  <polygon points="1288.1,708.5 1675.7,958.8 1655.0,990.7 1780,1000 1720.2,889.9 1699.5,921.8 1311.9,671.5" fill="#b3b3b3"/>
+  <rect x="760" y="600" width="640" height="90" fill="#b3b3b3"/>
+  <text x="1080" y="658" text-anchor="middle" font-family="Pretendard, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif" font-size="36" font-weight="700" fill="#111">AI가 하라는대로만 하고 발표하는 사람</text>
+</svg>

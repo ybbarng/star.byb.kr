@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
+  <!-- V3 현재 AI: 어깨가 넓고 두 팔을 들어 알통을 보이는, 안경 쓴 똑똑한 로봇 -->
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#fde68a" stop-opacity="1"/>
+      <stop offset="100%" stop-color="#fde68a" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1920" height="1080" fill="#0a0a0a"/>
+
+  <g stroke="#0a0a0a" stroke-width="4" stroke-linejoin="round">
+    <!-- 안테나와 밝은 전구 -->
+    <circle cx="600" cy="214" r="70" fill="url(#glow)" stroke="none"/>
+    <line x1="600" y1="272" x2="600" y2="232" stroke="#cbd5e1" stroke-width="8"/>
+    <circle cx="600" cy="214" r="20" fill="#fde68a"/>
+    <g stroke="#fde68a" stroke-width="5" stroke-linecap="round">
+      <line x1="540" y1="190" x2="520" y2="176"/>
+      <line x1="660" y1="190" x2="680" y2="176"/>
+      <line x1="600" y1="160" x2="600" y2="138"/>
+    </g>
+
+    <!-- 다리 -->
+    <rect x="515" y="664" width="72" height="170" rx="18" fill="#94a3b8"/>
+    <rect x="613" y="664" width="72" height="170" rx="18" fill="#94a3b8"/>
+    <rect x="490" y="826" width="108" height="34" rx="12" fill="#64748b"/>
+    <rect x="602" y="826" width="108" height="34" rx="12" fill="#64748b"/>
+
+    <!-- 팔: 들어 올려 알통 -->
+    <path d="M 450 455 L 340 525 L 330 400" fill="none" stroke="#94a3b8" stroke-width="64" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M 750 455 L 860 525 L 870 400" fill="none" stroke="#94a3b8" stroke-width="64" stroke-linecap="round" stroke-linejoin="round"/>
+    <ellipse cx="392" cy="472" rx="62" ry="44" transform="rotate(-30 392 472)" fill="#a8b5c8"/>
+    <ellipse cx="808" cy="472" rx="62" ry="44" transform="rotate(30 808 472)" fill="#a8b5c8"/>
+    <circle cx="330" cy="378" r="40" fill="#cbd5e1"/>
+    <circle cx="870" cy="378" r="40" fill="#cbd5e1"/>
+
+    <!-- 몸통: 넓은 어깨에서 좁아진다 -->
+    <rect x="566" y="396" width="68" height="30" fill="#94a3b8"/>
+    <path d="M 430 430 Q 600 404 770 430 L 702 646 Q 600 672 498 646 Z" fill="#94a3b8"/>
+    <path d="M 600 440 L 600 540" fill="none" stroke="#64748b" stroke-width="4"/>
+    <path d="M 500 520 Q 548 548 596 520" fill="none" stroke="#64748b" stroke-width="4"/>
+    <path d="M 604 520 Q 652 548 700 520" fill="none" stroke="#64748b" stroke-width="4"/>
+    <g fill="#a8b5c8" stroke="#64748b" stroke-width="3">
+      <rect x="560" y="560" width="36" height="24" rx="8"/>
+      <rect x="604" y="560" width="36" height="24" rx="8"/>
+      <rect x="560" y="592" width="36" height="24" rx="8"/>
+      <rect x="604" y="592" width="36" height="24" rx="8"/>
+    </g>
+    <circle cx="600" cy="478" r="34" fill="#1e293b"/>
+    <rect x="500" y="636" width="200" height="34" rx="6" fill="#475569"/>
+    <rect x="584" y="640" width="32" height="26" rx="4" fill="#fde68a"/>
+
+    <!-- 머리 -->
+    <rect x="518" y="270" width="164" height="132" rx="32" fill="#e2e8f0"/>
+    <rect x="534" y="292" width="132" height="84" rx="16" fill="#0f172a"/>
+    <path d="M 552 306 L 590 314" stroke="#67e8f9" stroke-width="5" stroke-linecap="round"/>
+    <path d="M 648 306 L 610 314" stroke="#67e8f9" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="575" cy="334" r="17" fill="none" stroke="#fde68a" stroke-width="5"/>
+    <circle cx="625" cy="334" r="17" fill="none" stroke="#fde68a" stroke-width="5"/>
+    <line x1="592" y1="334" x2="608" y2="334" stroke="#fde68a" stroke-width="5"/>
+    <circle cx="575" cy="335" r="5" fill="#67e8f9" stroke="none"/>
+    <circle cx="625" cy="335" r="5" fill="#67e8f9" stroke="none"/>
+    <path d="M 580 358 Q 604 368 624 354" fill="none" stroke="#67e8f9" stroke-width="4"/>
+  </g>
+  <text x="600" y="490" text-anchor="middle" font-family="Pretendard, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif" font-size="28" font-weight="800" fill="#fde68a">AI</text>
+
+  <text x="600" y="920" text-anchor="middle" font-family="Pretendard, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif" font-size="40" fill="#e5e5e5">V3 현재 AI</text>
+
+  <!-- 화살표: 오른쪽 아래(발표자)로 -->
+  <polygon points="1385.1,666.2 1684.2,941.7 1658.4,969.6 1780,1000 1739.7,881.4 1714.0,909.3 1414.9,633.8" fill="#b3b3b3"/>
+  <rect x="960" y="560" width="620" height="90" fill="#b3b3b3"/>
+  <text x="1270" y="618" text-anchor="middle" font-family="Pretendard, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif" font-size="36" font-weight="700" fill="#111">AI가 다 만든거 발표만 하는 사람</text>
+</svg>
