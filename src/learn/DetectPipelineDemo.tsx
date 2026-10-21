@@ -156,13 +156,15 @@ export default function DetectPipelineDemo() {
 
     context.putImageData(out, 0, 0);
 
+    // 발표 화면에서도 보이게 원 크기를 사진 크기에 맞춘다
     if (stage === "peaks") {
-      context.lineWidth = 1;
-      context.strokeStyle = "rgba(120,240,170,0.85)";
+      const unit = Math.hypot(width, height) / 1000;
+      context.lineWidth = 1.5 * unit;
+      context.strokeStyle = "rgba(120,240,170,0.9)";
 
       for (const p of passed) {
         context.beginPath();
-        context.arc(p.x, p.y, 3, 0, 2 * Math.PI);
+        context.arc(p.x, p.y, 5 * unit, 0, 2 * Math.PI);
         context.stroke();
       }
     }
@@ -183,7 +185,7 @@ export default function DetectPipelineDemo() {
         {PHOTOS.map((p) => (
           <button
             key={p.key}
-            className={cn("btn btn-xs", photo.key === p.key && "btn-secondary")}
+            className={cn("btn btn-sm", photo.key === p.key && "btn-secondary")}
             onClick={() => setPhoto(p)}
           >
             {p.label}
@@ -193,7 +195,7 @@ export default function DetectPipelineDemo() {
         {STAGES.map((s) => (
           <button
             key={s.key}
-            className={cn("btn btn-xs", stage === s.key && "btn-primary")}
+            className={cn("btn btn-sm", stage === s.key && "btn-primary")}
             onClick={() => setStage(s.key)}
           >
             {s.label}

@@ -7,7 +7,8 @@ import { STARS } from "@/game/sky/catalog";
 import { projectVecToPhoto } from "@/search/utils/wcs";
 
 // 답 확인 데모: 서울 누각 사진의 진짜 별만 남기고(V2에서 사람이 별을 고친 것처럼) V2 방식으로 quad를 찾는다.
-// 오른쪽 그래프는 지문 거리 순 앞쪽 후보 20개: 가운데가 사진 quad의 지문, 점까지의 거리가 지도 quad와의 지문 거리다.
+// 오른쪽 그래프는 지문 거리 순 앞쪽 후보 20개: 점 하나가 사진 quad 하나와 그 짝 지도 quad이고, 가운데(+)에서의 거리가
+// 두 지문의 차이다 (가운데 = 지문이 똑같음).
 // 점을 누르면 그 후보대로 별 지도를 사진에 겹친다. 식별에 쓴 별(빨강)은 당연히 겹치고, 그 밖에 겹친 별(초록)이
 // 답이 맞는지 알려 준다 — 지문이 가장 가까운 1등(주황)보다 15등인 정답(보라)이 훨씬 많이 겹친다.
 // 자료: public/learn/candidates-seoul.json (scripts/learn/buildDemoData.ts)
@@ -213,9 +214,9 @@ export default function AnswerCheckDemo() {
               <text
                 x={CENTER + 3}
                 y={CENTER - (d / maxDistance) * RADIUS - 3}
-                fontSize="8"
+                fontSize="11"
                 fill="white"
-                opacity="0.45"
+                opacity="0.6"
               >
                 {d.toFixed(3)}
               </text>
@@ -262,8 +263,8 @@ export default function AnswerCheckDemo() {
             );
           })}
         </svg>
-        <div className="text-xs opacity-60">
-          + 사진 quad의 지문 · 점까지 거리 = 지도 quad와의 지문 거리
+        <div className="text-sm opacity-70">
+          점 하나 = 사진 quad와 그 짝 지도 quad · + 에서 멀수록 지문이 다르다
           <br />
           <span className="text-orange-400">●</span> 가장 가까운 후보{" "}
           <span className="text-purple-400">●</span> 정답 (방향은 의미 없음)
