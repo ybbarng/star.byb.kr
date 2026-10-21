@@ -194,20 +194,20 @@ const buildSeoul = async () => {
     );
   };
 
+  // findCandidates의 distance는 지문 거리의 제곱 × 1000이다. 데모에는 지문 네 숫자 사이의 실제 거리로 싣는다
   const quadOverlay = (rank: number) => {
     const q = quads[rank - 1];
     const TP = seedTP(q);
     const matches = matchesOf(TP, clean, W, H, tol);
 
     return {
+      rank,
       TP: roundMat(TP),
-      photo: clean.map((p) => [round(p[0]), round(p[1])]),
       seeds: [...q.input],
       matched: matches.map((m) => m.photo),
       count: matches.length,
-      distance: round(q.distance),
-      rank,
-      quads: quads.length,
+      distance: round(Math.sqrt(q.distance / 1000)),
+      stars: q.output.map((o) => o.label),
       real: angleDeg(recoverCenter(TP, W, H), answer) < 6,
     };
   };
@@ -256,8 +256,15 @@ const buildSeoul = async () => {
       isReal(v) ? 1 : 0,
       v.photoStars.length,
     ]),
-    v2: quadOverlay(1),
-    v2Right: quadOverlay(rightRank),
+    // V2 방식으로 고른 후보 quad: 지문 거리 순 앞쪽 20개 (정답 quad가 그 안에 있다)
+    v2: {
+      photo: clean.map((p) => [round(p[0]), round(p[1])]),
+      quads: quads.length,
+      right: rightRank,
+      list: Array.from({ length: Math.max(20, rightRank) }, (_, i) =>
+        quadOverlay(i + 1),
+      ),
+    },
     fake: overlay(oldPick),
     real: overlay(realPick),
   };
