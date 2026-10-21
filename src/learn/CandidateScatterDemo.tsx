@@ -6,8 +6,9 @@ import { poissonTailNegLog10 } from "@/search/utils/stats";
 
 // 후보 전부를 한 그래프에: 서울 누각 사진 한 장을 풀며 실제로 검증한 후보 1만여 개를
 // 가로 = 우연히 겹칠 기대치(로그 눈금), 세로 = 겹친 별 수로 찍는다. 노랑이 진짜 답, 나머지가 가짜다.
-//   ① 몇 배로 고르기: 겹친 수 ÷ 기대치 ≥ 5 (옛 기준). 기대치가 아주 작은 가짜가 위로 솟는다
-//   ② 짝지은 별 빼기: 답을 만들 때 쓴 별은 당연히 겹치니 세지 않는다
+//   ① 규칙 ①(필연): 겹친 수 ÷ 기대치 ≥ 5. 필연이 수백 개인데 진짜는 몇 개뿐이다. 옛 풀이는 사진 별 15개
+//      단계에서 필연이 나오면 그중 겹친 별이 가장 많은 것을 답으로 내고 멈췄다 — 그 단계의 필연은 모두 가짜다
+//   ② 식별에 쓴 별 빼기: 답을 만들 때 쓴 별은 당연히 겹치니 세지 않는다
 //   ③ 우연일 확률로: 기대치가 λ일 때 우연히 k개 넘게 겹칠 확률이 10억 분의 1보다 작아야 한다
 // 자료: public/learn/candidates-seoul.json (scripts/learn/buildDemoData.ts)
 
@@ -21,10 +22,11 @@ interface Data {
 type Step = "ratio" | "noSeeds" | "chance";
 
 const STEPS: { key: Step; label: string }[] = [
-  { key: "ratio", label: "① 몇 배로 고르기" },
-  { key: "noSeeds", label: "② 짝지은 별 빼기" },
-  { key: "chance", label: "③ 우연일 확률로" },
+  { key: "ratio", label: "① 규칙 ①: 5배 넘으면 필연" },
+  { key: "noSeeds", label: "② 식별에 쓴 별 빼기" },
+  { key: "chance", label: "③ 우연일 확률로 (10억 분의 1)" },
 ];
+const FIRST_STAGE = 15; // 옛 풀이가 처음 보는 사진 별 수
 
 const PLOT_W = 760;
 const PLOT_H = 480;
@@ -49,6 +51,8 @@ export default function CandidateScatterDemo() {
   const [picked, setPicked] = useState<number | null>(null);
   // 후보 1만 개가 어디서 왔는지 (풀이 방식 × 넣은 사진 별 수)
   const [origin, setOrigin] = useState(false);
+  // 사진 별 15개 단계의 후보만 보기 (옛 풀이는 여기서 필연이 나오면 멈췄다)
+  const [firstOnly, setFirstOnly] = useState(false);
   const canvas = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -63,28 +67,34 @@ export default function CandidateScatterDemo() {
     };
   }, []);
 
-  // 단계마다 세로값(센 별 수)과 "찾았다" 판정, 그리고 1등
+  // 단계마다 세로값(센 별 수)과 판정. 고른 답: ①②는 옛 풀이처럼 겹친 별이 가장 많은 필연(같으면 배수),
+  // ③은 우연일 확률이 가장 낮은 것
   const view = useMemo(() => {
     if (!data) return null;
 
+    const shown = data.points.map((p) => !firstOnly || p[5] === FIRST_STAGE);
     const counted = data.points.map(([n, seeds]) =>
       step === "ratio" ? n : n - seeds,
     );
-    const pass = data.points.map(([n, , e, logOdds], i) =>
-      step === "chance"
-        ? logOdds >= ACCEPT.minLogOdds
-        : n >= ACCEPT.minInlier && counted[i] / e >= ACCEPT.minSignificance,
+    const pass = data.points.map(
+      ([n, , e, logOdds], i) =>
+        shown[i] &&
+        (step === "chance"
+          ? logOdds >= ACCEPT.minLogOdds
+          : n >= ACCEPT.minInlier && counted[i] / e >= ACCEPT.minSignificance),
     );
-    const rank = (i: number) =>
-      step === "chance" ? data.points[i][3] : counted[i] / data.points[i][2];
     const order = data.points
       .map((_, i) => i)
       .filter((i) => pass[i])
-      .sort((a, b) => rank(b) - rank(a));
-    const firstReal = order.findIndex((i) => data.points[i][4] === 1);
+      .sort((a, b) =>
+        step === "chance"
+          ? data.points[b][3] - data.points[a][3]
+          : counted[b] - counted[a] ||
+            counted[b] / data.points[b][2] - counted[a] / data.points[a][2],
+      );
 
-    return { counted, pass, order, firstReal, rank };
-  }, [data, step]);
+    return { shown, counted, pass, order };
+  }, [data, step, firstOnly]);
 
   useEffect(() => {
     const el = canvas.current;
@@ -169,12 +179,16 @@ export default function CandidateScatterDemo() {
     context.lineWidth = 2;
     context.stroke();
     context.fillStyle = "#4ade80";
-    context.fillText('이 위면 "찾았다"', PAD.left + 8, PAD.top + 16);
+    context.fillText(
+      step === "chance" ? '이 위면 "찾았다" (10억 분의 1)' : '이 위면 "필연"',
+      PAD.left + 8,
+      PAD.top + 16,
+    );
 
     // 후보들: 가짜 먼저, 진짜는 위에
     for (const real of [0, 1]) {
       data.points.forEach((p, i) => {
-        if (p[4] !== real) return;
+        if (p[4] !== real || !view.shown[i]) return;
 
         const x = toX(p[2]);
         const y = toY(view.counted[i] + jitter(i));
@@ -207,7 +221,12 @@ export default function CandidateScatterDemo() {
 
     if (view.order.length > 0) {
       const top = view.order[0];
-      mark(top, "#ffffff", data.points[top][4] ? "1등 (진짜)" : "1등 (가짜)");
+      const who = data.points[top][4] ? "진짜" : "가짜";
+      mark(
+        top,
+        "#ffffff",
+        step === "chance" ? `찾았다 (${who})` : `고른 답 (${who})`,
+      );
     }
 
     if (picked !== null && picked !== view.order[0]) {
@@ -219,7 +238,11 @@ export default function CandidateScatterDemo() {
     return <div className="text-sm opacity-60">자료를 불러오는 중…</div>;
   }
 
-  const realCount = data.points.filter((p) => p[4] === 1).length;
+  const realCount = data.points.filter(
+    (p, i) => p[4] === 1 && view.shown[i],
+  ).length;
+  const shownCount = view.shown.filter(Boolean).length;
+  const verdict = step === "chance" ? "찾았다" : "필연";
   const passed = view.order.length;
   const passedReal = view.order.filter((i) => data.points[i][4] === 1).length;
   const show = picked ?? view.order[0];
@@ -250,6 +273,8 @@ export default function CandidateScatterDemo() {
     let bestD = 12;
 
     data.points.forEach((p, i) => {
+      if (!view.shown[i]) return;
+
       const d = Math.hypot(toX(p[2]) - x, toY(view.counted[i] + jitter(i)) - y);
 
       if (d < bestD || (d === bestD && p[4] === 1)) {
@@ -285,23 +310,35 @@ export default function CandidateScatterDemo() {
           ))}
         </div>
         <div className="text-sm opacity-70">
-          사진 한 장에서 확인한 후보{" "}
-          <b>{data.points.length.toLocaleString("ko-KR")}개</b>
+          {firstOnly ? `사진 별 ${FIRST_STAGE}개 단계에서` : "사진 한 장에서"}{" "}
+          확인한 후보 <b>{shownCount.toLocaleString("ko-KR")}개</b>
           <br />
           <span className="text-amber-200">●</span> 정답 자리 후보 {realCount}개
-          · <span className="text-red-400">●</span> &ldquo;찾았다&rdquo;에 든
-          가짜
+          · <span className="text-red-400">●</span> {verdict}에 든 가짜
         </div>
+        <button
+          className={`btn btn-sm ${firstOnly ? "btn-secondary" : ""}`}
+          onClick={() => {
+            setFirstOnly((f) => !f);
+            setPicked(null);
+          }}
+        >
+          {firstOnly ? "전체 보기" : `처음 단계(별 ${FIRST_STAGE}개)만 보기`}
+        </button>
         <div className="bg-base-300/60 rounded-box p-3">
-          &ldquo;찾았다&rdquo; <b>{passed.toLocaleString("ko-KR")}개</b> 중 진짜{" "}
-          {passedReal}개
-          <br />
-          {view.firstReal >= 0 ? (
-            <span className="text-sm opacity-80">
-              진짜 답의 순위: <b>{view.firstReal + 1}등</b>
-            </span>
-          ) : (
-            <span className="text-sm opacity-80">진짜 답이 들지 못했다</span>
+          {verdict} <b>{passed.toLocaleString("ko-KR")}개</b> 중 진짜{" "}
+          <b className={passedReal ? "text-amber-200" : "text-red-400"}>
+            {passedReal}개
+          </b>
+          {step !== "chance" && passed > 0 && (
+            <div className="text-sm opacity-80">
+              필연 중 겹친 별이 가장 많은 답:{" "}
+              {data.points[view.order[0]][4] ? (
+                <span className="text-amber-200">진짜</span>
+              ) : (
+                <span className="text-red-400">가짜</span>
+              )}
+            </div>
           )}
         </div>
         <button
@@ -340,7 +377,12 @@ export default function CandidateScatterDemo() {
         {info && !origin && (
           <div className="bg-base-300/60 rounded-box flex flex-col gap-1 p-3 text-sm">
             <div className="text-sm font-bold">
-              {picked === null ? "1등 후보" : "고른 후보"} —{" "}
+              {picked === null
+                ? step === "chance"
+                  ? "찾은 답"
+                  : "필연 중 겹친 별이 가장 많은 답"
+                : "누른 후보"}{" "}
+              —{" "}
               {info[4] ? (
                 <span className="text-amber-200">진짜</span>
               ) : (
@@ -348,7 +390,7 @@ export default function CandidateScatterDemo() {
               )}
             </div>
             <div>
-              겹친 별 {info[0]}개 = 짝지은 별 {info[1]} + 더 겹친 별{" "}
+              겹친 별 {info[0]}개 = 식별에 쓴 별 {info[1]} + 그 밖에{" "}
               {info[0] - info[1]}
             </div>
             <div>
@@ -358,7 +400,7 @@ export default function CandidateScatterDemo() {
             <div>
               몇 배: {(info[0] / info[2]).toFixed(0)}배
               {step !== "ratio" &&
-                ` → 짝 빼면 ${((info[0] - info[1]) / info[2]).toFixed(0)}배`}
+                ` → 식별에 쓴 별 빼면 ${((info[0] - info[1]) / info[2]).toFixed(0)}배`}
             </div>
             <div>
               우연일 확률: 10<sup>-{info[3].toFixed(1)}</sup>
