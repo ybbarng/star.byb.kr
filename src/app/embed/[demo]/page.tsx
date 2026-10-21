@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import AnswerCheckDemo from "@/learn/AnswerCheckDemo";
 import CandidateScatterDemo from "@/learn/CandidateScatterDemo";
+import ChanceRatioDemo from "@/learn/ChanceRatioDemo";
 import DetectPipelineDemo from "@/learn/DetectPipelineDemo";
 import FindStarsDemo from "@/learn/FindStarsDemo";
 import MoonDateDemo from "@/learn/MoonDateDemo";
@@ -32,6 +33,7 @@ const DEMOS = {
   "quad-reach": QuadReachDemo,
   "verify-overlay": VerifyOverlayDemo,
   "answer-check": AnswerCheckDemo,
+  "chance-ratio": ChanceRatioDemo,
   "candidate-scatter": CandidateScatterDemo,
   "refine-steps": RefineStepsDemo,
   projection: ProjectionDemo,
