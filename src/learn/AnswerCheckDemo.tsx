@@ -4,41 +4,36 @@ import type { Point2D, Point3D } from "@/scripts/hash/types";
 import type { Mat3 } from "@/search/utils/similarity";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { STARS } from "@/game/sky/catalog";
-import {
-  mat3Mul,
-  projectVecToPhoto,
-  recoverCenter,
-  recoverFov,
-} from "@/search/utils/wcs";
+import { mat3Mul, projectVecToPhoto, recoverCenter } from "@/search/utils/wcs";
 
-// 답 확인 데모: 서울 누각 사진에서 풀이가 실제로 검증한 후보 둘(옛 점수 1등 가짜, 진짜 답)을 골라
-// 그 답대로 별 지도를 사진에 겹친다. 짝지은 별(파랑)은 답을 만들 때 쓴 별이라 당연히 겹치고,
-// 그 밖에 더 겹친 별(초록)이 답이 맞는지 알려 준다. "아무렇게나 놓기"는 같은 자리 근처에서 하늘을
+// 답 확인 데모: 서울 누각 사진의 진짜 별만 남기고(V2에서 사람이 별을 고친 것처럼) V2 방식으로 quad를 찾아,
+// 지문이 가장 가까운 quad(V2가 고른 답)와 지문 순위에서 처음 나오는 정답 quad를 각각 겹친다. 식별에 쓴 별(빨강)은 답을 만들 때 쓴 별이라 당연히 겹치고,
+// 그 밖에 겹친 별(초록)이 답이 맞는지 알려 준다 — 지문이 가장 가까워도 정답은 아니다. "아무렇게나 놓기"는 같은 자리 근처에서 하늘을
 // 무작위로 돌려 우연히 몇 개나 겹치는지 보여 준다 — 그 평균이 우연 기대치와 비슷하다.
 // 자료: public/learn/candidates-seoul.json (scripts/learn/buildDemoData.ts)
 
 const SRC = "/samples/20220607-berry-seoul.jpg";
 
-interface Answer {
+interface QuadAnswer {
   TP: Mat3;
   photo: Point2D[];
   seeds: number[];
   matched: number[];
   count: number;
-  expected: number;
-  score: number;
-  logOdds: number;
+  distance: number; // 지문 거리 (풀이 단위)
+  rank: number; // 지문 거리 순위
+  quads: number; // 사진 별 15개로 만든 quad 수
 }
 
 interface Data {
   W: number;
   H: number;
   tol: number;
-  fake: Answer;
-  real: Answer;
+  v2: QuadAnswer;
+  v2Right: QuadAnswer;
 }
 
-type Mode = "fake" | "real" | "random";
+type Mode = "v2" | "v2Right" | "random";
 
 // 축 u(단위 벡터) 둘레로 t만큼 돌리는 행렬
 const rotation = (u: Point3D, t: number): Mat3 => {
@@ -89,7 +84,7 @@ const overlapsOf = (photo: Point2D[], map: Point2D[], tol: number) =>
 export default function AnswerCheckDemo() {
   const [data, setData] = useState<Data | null>(null);
   const [image, setImage] = useState<HTMLImageElement | null>(null);
-  const [mode, setMode] = useState<Mode>("fake");
+  const [mode, setMode] = useState<Mode>("v2");
   const [throws, setThrows] = useState<{ R: Mat3; hits: number }[]>([]);
   const canvas = useRef<HTMLCanvasElement>(null);
 
@@ -108,11 +103,11 @@ export default function AnswerCheckDemo() {
     };
   }, []);
 
-  // 가짜 답의 사진 별로 하늘을 아무렇게나 돌려 놓아 본다
+  // V2가 고른 답의 사진 별로 하늘을 아무렇게나 돌려 놓아 본다
   const throwOnce = (n: number) => {
     if (!data) return;
 
-    const base = data.fake;
+    const base = data.v2;
     const next = Array.from({ length: n }, () => {
       const R = randomNearby(recoverCenter(base.TP, data.W, data.H));
       const map = mapStarsOf(mat3Mul(base.TP, R), data.W, data.H).map(
@@ -131,15 +126,15 @@ export default function AnswerCheckDemo() {
 
     if (mode === "random") {
       const last = throws[throws.length - 1];
-      const TP = last ? mat3Mul(data.fake.TP, last.R) : data.fake.TP;
+      const TP = last ? mat3Mul(data.v2.TP, last.R) : data.v2.TP;
       const map = mapStarsOf(TP, data.W, data.H);
 
       return {
-        photo: data.fake.photo,
+        photo: data.v2.photo,
         map,
         seeds: [] as number[],
         matched: overlapsOf(
-          data.fake.photo,
+          data.v2.photo,
           map.map((m) => m.p),
           data.tol,
         ),
@@ -186,7 +181,7 @@ export default function AnswerCheckDemo() {
 
     context.fillStyle = "#fde047";
 
-    for (const [x, y] of data.real.photo) {
+    for (const [x, y] of view.photo) {
       context.beginPath();
       context.arc(x * k, y * k, 4.5, 0, 2 * Math.PI);
       context.fill();
@@ -265,8 +260,8 @@ export default function AnswerCheckDemo() {
       />
       <div className="flex flex-col gap-3 text-base">
         <div className="flex flex-wrap gap-2">
-          {button("fake", "가짜 답")}
-          {button("real", "진짜 답")}
+          {button("v2", "V2가 고른 답")}
+          {button("v2Right", "정답 quad")}
           <button
             className={`btn btn-sm ${mode === "random" ? "btn-primary" : ""}`}
             onClick={() => throwOnce(1)}
@@ -298,17 +293,10 @@ export default function AnswerCheckDemo() {
               그 밖에 <b className="text-green-400">{a.count - seedsHit}</b>
             </div>
             <div className="border-base-content/10 mt-1 border-t pt-2 text-sm opacity-80">
-              이 답이 말하는 화각{" "}
+              지문 거리 <b>{a.distance.toFixed(3)}</b> ·{" "}
               <b>
-                {Math.round((recoverFov(a.TP, data.W, data.H) * 180) / Math.PI)}
-                °
-              </b>{" "}
-              · 확인한 사진 별 <b>{a.photo.length}개</b>
-              <br />→ 우연히 겹칠 기대치 <b>{a.expected.toFixed(2)}개</b>
-            </div>
-            <div className="text-xs opacity-60">
-              좁게 찍혔다는 답일수록 사진에 들어오는 지도 별이 적어, 기대치가
-              작다
+                {a.quads.toLocaleString()}개 중 {a.rank}등
+              </b>
             </div>
           </div>
         )}
@@ -327,10 +315,6 @@ export default function AnswerCheckDemo() {
             <button className="btn btn-xs" onClick={() => throwOnce(100)}>
               100번 더 놓기
             </button>
-            <div className="text-sm opacity-60">
-              풀이가 계산한 우연 기대치: 가짜 답 {data.fake.expected.toFixed(2)}
-              개, 진짜 답 {data.real.expected.toFixed(2)}개
-            </div>
           </div>
         )}
       </div>

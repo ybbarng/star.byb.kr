@@ -4,6 +4,10 @@ import type { Mat3 } from "@/search/utils/similarity";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { answerVector, getSampleAnswer } from "@/plate-solver/sampleAnswers";
+import {
+  buildCandidateIndex,
+  findCandidates,
+} from "@/search/findCandidatesCore";
 import { setVerifyListener } from "@/search/solveCore";
 import { DEFAULT_SOLVERS, solvePhoto } from "@/search/solvePhoto";
 import { buildSolverContext } from "@/search/solverContext";
@@ -19,7 +23,7 @@ import {
   recoverCenter,
 } from "@/search/utils/wcs";
 import { detectLikeApp } from "@/test/real/detectImage";
-import { loadSolvedPoses } from "@/test/real/detectionLabels";
+import { labelDetections, loadSolvedPoses } from "@/test/real/detectionLabels";
 import {
   contextStars,
   loadCatalog,
@@ -28,7 +32,7 @@ import {
 
 // 발표·원리 데모 자료 (public/learn/): 실제 풀이를 돌려 검증한 후보를 모은다.
 //   candidates-seoul.json  서울 누각 사진에서 검증한 후보 전부 (겹친 수·짝 수·기대치·정답 여부)
-//                          + 옛 점수(몇 배) 1등 가짜와 진짜 답의 겹침 그림
+//                          + V2가 고른 답(지문 거리 1등), 옛 점수(몇 배) 1등 가짜, 진짜 답의 겹침 그림
 //   refine-milky.json      은하수 사진에서 짝 3개로만 / 겹친 별 전부로 닮음 변환 / 원근 변환까지 맞춘 변환
 //   triangle-dipper.json   북두칠성 사진에서 일곱 별의 자리와 실제 화각 (삼각형 크기 거르기 데모)
 //   zenith-seoul.json      누각 사진의 정답 자세와 먼 능선 두 점 (지평선 → 천정 → 하늘 시계 데모)
@@ -36,6 +40,7 @@ import {
 //   npx tsx src/scripts/learn/buildDemoData.ts
 
 const OUT = resolve(process.cwd(), "public/learn");
+const SEOUL = "20220607-berry-seoul.jpg";
 const D = 180 / Math.PI;
 
 const round = (x: number) => +x.toPrecision(6);
@@ -135,9 +140,7 @@ const solveCollecting = async (file: string) => {
 };
 
 const buildSeoul = async () => {
-  const { W, H, verified, answer } = await solveCollecting(
-    "20220607-berry-seoul.jpg",
-  );
+  const { stars, W, H, verified, answer } = await solveCollecting(SEOUL);
   const isReal = (v: Verified) => angleDeg(v.result.centerVector, answer) < 6;
   // 옛 기준: 겹친 별 6개 이상, 기대치의 5배 이상, 시야 80° 이하면 "찾았다". 그중 배수 1등을 골랐다
   const oldPick = verified
@@ -151,6 +154,68 @@ const buildSeoul = async () => {
   const realPick = verified
     .filter(isReal)
     .sort((a, b) => b.result.logOdds - a.result.logOdds)[0];
+
+  // V2 방식: 사람이 별을 고친 것처럼 진짜 별만 남기고(정답 자세로 확인), 앞쪽 15개로 quad를 만들어
+  // 지문이 가장 가까운 quad를 답으로 낸다. 그 넷으로만 닮음 변환을 구해 별 지도를 겹친다.
+  // 비교용으로 지문 순위에서 처음 나오는 정답 quad도 같은 방법으로 겹친다.
+  const tol = Math.max(5, Math.hypot(W, H) * 0.006);
+  const top200 = selectTopByPriority(stars, 200);
+  const labels = labelDetections(top200, loadSolvedPoses()[SEOUL], ctx.catalog);
+  const clean = top200.filter((_, i) => labels[i] !== null).slice(0, 60);
+  const clean15 = clean.slice(0, 15);
+  const quads = findCandidates(
+    { stars: clean15 } as Parameters<typeof findCandidates>[0],
+    buildCandidateIndex(loadHashes()),
+    { k: 1 },
+  );
+  const vectorOf = (hr: string) => ctx.catalog.find((c) => c.hr === hr)!.vector;
+
+  const seedTP = (q: (typeof quads)[number]) => {
+    const vectors = q.output.map(({ hr }) => vectorOf(hr));
+    const sum = vectors.reduce(
+      (acc, v) => [acc[0] + v[0], acc[1] + v[1], acc[2] + v[2]],
+      [0, 0, 0],
+    );
+    const len = Math.hypot(sum[0], sum[1], sum[2]);
+    const P0 = projectionMatrix([sum[0] / len, sum[1] / len, sum[2] / len]);
+
+    const toPlane = (v: Point3D): Point2D => {
+      const m = mat3MulVec(P0, v);
+
+      return [m[0] / m[2], m[1] / m[2]];
+    };
+
+    return mat3Mul(
+      umeyamaSimilarity2D(
+        vectors.map(toPlane),
+        q.input.map((i) => clean15[i]),
+      ).matrix,
+      P0,
+    );
+  };
+
+  const quadOverlay = (rank: number) => {
+    const q = quads[rank - 1];
+    const TP = seedTP(q);
+    const matches = matchesOf(TP, clean, W, H, tol);
+
+    return {
+      TP: roundMat(TP),
+      photo: clean.map((p) => [round(p[0]), round(p[1])]),
+      seeds: [...q.input],
+      matched: matches.map((m) => m.photo),
+      count: matches.length,
+      distance: round(q.distance),
+      rank,
+      quads: quads.length,
+      real: angleDeg(recoverCenter(TP, W, H), answer) < 6,
+    };
+  };
+
+  const rightRank =
+    quads.findIndex(
+      (q) => angleDeg(recoverCenter(seedTP(q), W, H), answer) < 6,
+    ) + 1;
 
   const overlay = (v: Verified) => {
     const r = v.result;
@@ -191,6 +256,8 @@ const buildSeoul = async () => {
       isReal(v) ? 1 : 0,
       v.photoStars.length,
     ]),
+    v2: quadOverlay(1),
+    v2Right: quadOverlay(rightRank),
     fake: overlay(oldPick),
     real: overlay(realPick),
   };
