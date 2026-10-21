@@ -64,8 +64,6 @@ export default function CandidateScatterDemo() {
   const [data, setData] = useState<Data | null>(null);
   const [step, setStep] = useState<Step>("ratio");
   const [picked, setPicked] = useState<number | null>(null);
-  // 후보 1만 개가 어디서 왔는지 (풀이 방식 × 넣은 사진 별 수)
-  const [origin, setOrigin] = useState(false);
   // 진행한 라운드 (-1이면 라운드 없이 전체를 본다)
   const [round, setRound] = useState(-1);
   const timer = useRef<number | null>(null);
@@ -412,22 +410,6 @@ export default function CandidateScatterDemo() {
     (p, i) => view.pass[i] && p[4] === 1,
   ).length;
   const verdict = step === "chance" ? "찾았다" : "필연";
-  const groups = (["삼각형", "quad"] as const).map((method) => {
-    const seeds = method === "삼각형" ? 3 : 4;
-    const sizes = [
-      ...new Set(data.points.filter((p) => p[1] === seeds).map((p) => p[5])),
-    ].sort((a, b) => a - b);
-
-    return {
-      method,
-      rows: sizes.map((size) => ({
-        size,
-        count: data.points.filter((p) => p[1] === seeds && p[5] === size)
-          .length,
-      })),
-    };
-  });
-  const most = Math.max(...groups.flatMap((g) => g.rows.map((r) => r.count)));
   const info = picked !== null ? data.points[picked] : null;
   const kind = (i: number) =>
     data.points[i][4] ? (
@@ -555,40 +537,7 @@ export default function CandidateScatterDemo() {
           </div>
         )}
 
-        <button
-          className={`btn btn-sm ${origin ? "btn-secondary" : ""}`}
-          onClick={() => setOrigin((o) => !o)}
-        >
-          후보는 어디서 왔나?
-        </button>
-        {origin && (
-          <div className="bg-base-300/60 rounded-box flex flex-col gap-2 p-3 text-sm">
-            <div>
-              사진 별 앞쪽 n개로 묶음을 만들고, 묶음마다 화각 9가지 × 모양이
-              가까운 8개를 확인한다
-            </div>
-            {groups.map((g) => (
-              <div key={g.method} className="flex flex-col gap-1">
-                <div className="font-bold">{g.method}</div>
-                {g.rows.map((r) => (
-                  <div key={r.size} className="flex items-center gap-2">
-                    <span className="w-14 shrink-0">별 {r.size}개</span>
-                    <span className="h-3 flex-1 rounded bg-black/40">
-                      <span
-                        className="block h-3 rounded bg-indigo-300"
-                        style={{ width: `${(r.count / most) * 100}%` }}
-                      />
-                    </span>
-                    <span className="w-12 text-right font-mono">
-                      {r.count.toLocaleString("ko-KR")}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            ))}
-          </div>
-        )}
-        {info && !origin && picked !== null && (
+        {info && picked !== null && (
           <div className="bg-base-300/60 rounded-box flex flex-col gap-1 p-3 text-sm">
             <div className="text-sm font-bold">누른 후보 — {kind(picked)}</div>
             <div>
