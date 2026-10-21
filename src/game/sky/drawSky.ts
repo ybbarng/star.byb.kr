@@ -270,11 +270,13 @@ export const drawSky = (
     ctx.lineWidth = 1.5;
     ctx.font = "bold 16px Arial";
 
+    // 선이 여러 갈래인 별자리(오리온·처녀자리 등)도 이름은 한 번만: 갈래들의 보이는 별을 모아 가운데에
+    const labels = new Map<string, { shown: number; sx: number; sy: number }>();
+
     for (const c of o.constellations) {
       const pts = c.stars.map((v) => (altOf(v) > 0 ? project(v) : null));
-      let shown = 0;
-      let sx = 0;
-      let sy = 0;
+      const label = labels.get(c.label) ?? { shown: 0, sx: 0, sy: 0 };
+      labels.set(c.label, label);
 
       for (let i = 0; i < pts.length - 1; i++) {
         const a = pts[i];
@@ -292,14 +294,16 @@ export const drawSky = (
 
       for (const p of pts) {
         if (p && p[0] >= 0 && p[0] < W && p[1] >= 0 && p[1] < H) {
-          shown++;
-          sx += p[0];
-          sy += p[1];
+          label.shown++;
+          label.sx += p[0];
+          label.sy += p[1];
         }
       }
+    }
 
+    for (const [text, { shown, sx, sy }] of labels) {
       if (shown > 0) {
-        ctx.fillText(c.label, sx / shown, sy / shown);
+        ctx.fillText(text, sx / shown, sy / shown);
       }
     }
   }
