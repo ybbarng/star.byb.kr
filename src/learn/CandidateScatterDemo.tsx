@@ -517,8 +517,17 @@ export default function CandidateScatterDemo() {
                 ) : (
                   <>
                     {" "}
-                    → 답 {view.counted[r.pick]}개·{r.ratio.toFixed(0)}배 (
-                    {kind(r.pick)})
+                    → 답 {view.counted[r.pick]}개·
+                    {/* 결과가 나오면 최종 답으로 뽑힌 라운드의 배수와 진짜·가짜를 굵게 */}
+                    {done && r.pick === view.final ? (
+                      <b>
+                        {r.ratio.toFixed(0)}배 ({kind(r.pick)})
+                      </b>
+                    ) : (
+                      <>
+                        {r.ratio.toFixed(0)}배 ({kind(r.pick)})
+                      </>
+                    )}
                   </>
                 )}
               </div>
