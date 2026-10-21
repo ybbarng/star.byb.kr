@@ -17,6 +17,7 @@ import SkySphere from "@/learn/SkySphere";
 import TriangleSearchDemo from "@/learn/TriangleSearchDemo";
 import TriangleSizeDemo from "@/learn/TriangleSizeDemo";
 import VerifyOverlayDemo from "@/learn/VerifyOverlayDemo";
+import ZenithClockDemo from "@/learn/ZenithClockDemo";
 
 // 찾는 원리(/learn)의 데모를 발표 화면에 하나씩 띄운다: /embed/<이름>
 const DEMOS = {
@@ -38,6 +39,7 @@ const DEMOS = {
   "pole-height": PoleHeightDemo,
   "same-sky": SameSkyDemo,
   "same-sky-orbit": SameSkyOrbitDemo,
+  "zenith-clock": ZenithClockDemo,
 };
 
 export const dynamicParams = false;

@@ -4,12 +4,12 @@ import type { Point2D, Point3D } from "@/scripts/hash/types";
 import type { Mat3 } from "@/search/utils/similarity";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { STARS } from "@/game/sky/catalog";
-import { mat3Mul, projectVecToPhoto } from "@/search/utils/wcs";
+import { mat3Mul, projectVecToPhoto, recoverCenter } from "@/search/utils/wcs";
 
 // 답 확인 데모: 서울 누각 사진에서 풀이가 실제로 검증한 후보 둘(옛 점수 1등 가짜, 진짜 답)을 골라
 // 그 답대로 별 지도를 사진에 겹친다. 짝지은 별(파랑)은 답을 만들 때 쓴 별이라 당연히 겹치고,
-// 그 밖에 더 겹친 별(초록)이 답이 맞는지 알려 준다. "아무렇게나 놓기"는 하늘을 무작위로 돌려
-// 우연히 몇 개나 겹치는지 보여 준다 — 그 평균이 우연 기대치다.
+// 그 밖에 더 겹친 별(초록)이 답이 맞는지 알려 준다. "아무렇게나 놓기"는 같은 자리 근처에서 하늘을
+// 무작위로 돌려 우연히 몇 개나 겹치는지 보여 준다 — 그 평균이 우연 기대치와 비슷하다.
 // 자료: public/learn/candidates-seoul.json (scripts/learn/buildDemoData.ts)
 
 const SRC = "/samples/20220607-berry-seoul.jpg";
@@ -35,23 +35,34 @@ interface Data {
 
 type Mode = "fake" | "real" | "random";
 
-// 무작위 회전 (균일한 사원수)
-const randomRotation = (): Mat3 => {
-  const [u1, u2, u3] = [Math.random(), Math.random(), Math.random()];
-  const a = Math.sqrt(1 - u1);
-  const b = Math.sqrt(u1);
-  const [x, y, z, w] = [
-    a * Math.sin(2 * Math.PI * u2),
-    a * Math.cos(2 * Math.PI * u2),
-    b * Math.sin(2 * Math.PI * u3),
-    b * Math.cos(2 * Math.PI * u3),
-  ];
+// 축 u(단위 벡터) 둘레로 t만큼 돌리는 행렬
+const rotation = (u: Point3D, t: number): Mat3 => {
+  const [x, y, z] = u;
+  const c = Math.cos(t);
+  const s = Math.sin(t);
+  const C = 1 - c;
 
   return [
-    [1 - 2 * (y * y + z * z), 2 * (x * y - z * w), 2 * (x * z + y * w)],
-    [2 * (x * y + z * w), 1 - 2 * (x * x + z * z), 2 * (y * z - x * w)],
-    [2 * (x * z - y * w), 2 * (y * z + x * w), 1 - 2 * (x * x + y * y)],
+    [c + x * x * C, x * y * C - z * s, x * z * C + y * s],
+    [y * x * C + z * s, c + y * y * C, y * z * C - x * s],
+    [z * x * C - y * s, z * y * C + x * s, c + z * z * C],
   ];
+};
+
+// 같은 자리 근처에서 아무렇게나: 광축 둘레로 아무 각도 + 옆으로 8° 안. 하늘 전체에서 놓으면
+// 별이 드문 곳이 섞여 평균이 기대치보다 작게 나온다 (기대치는 그 자리의 별 밀도로 계산한다).
+const randomNearby = (center: Point3D): Mat3 => {
+  const spin = rotation(center, Math.random() * 2 * Math.PI);
+  const r = [Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5];
+  const along = r[0] * center[0] + r[1] * center[1] + r[2] * center[2];
+  const side = r.map((v, i) => v - along * center[i]);
+  const n = Math.hypot(side[0], side[1], side[2]);
+  const tilt = rotation(
+    [side[0] / n, side[1] / n, side[2] / n],
+    (Math.random() * 8 * Math.PI) / 180,
+  );
+
+  return mat3Mul(tilt, spin);
 };
 
 const mapStarsOf = (TP: Mat3, W: number, H: number) =>
@@ -98,7 +109,7 @@ export default function AnswerCheckDemo() {
 
     const base = data.fake;
     const next = Array.from({ length: n }, () => {
-      const R = randomRotation();
+      const R = randomNearby(recoverCenter(base.TP, data.W, data.H));
       const map = mapStarsOf(mat3Mul(base.TP, R), data.W, data.H).map(
         (m) => m.p,
       );

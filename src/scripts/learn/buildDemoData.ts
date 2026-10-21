@@ -19,6 +19,7 @@ import {
   recoverCenter,
 } from "@/search/utils/wcs";
 import { detectLikeApp } from "@/test/real/detectImage";
+import { loadSolvedPoses } from "@/test/real/detectionLabels";
 import {
   contextStars,
   loadCatalog,
@@ -30,6 +31,7 @@ import {
 //                          + 옛 점수(몇 배) 1등 가짜와 진짜 답의 겹침 그림
 //   refine-milky.json      은하수 사진에서 짝 3개로만 / 겹친 별 전부로 닮음 변환 / 원근 변환까지 맞춘 변환
 //   triangle-dipper.json   북두칠성 사진에서 일곱 별의 자리와 실제 화각 (삼각형 크기 거르기 데모)
+//   zenith-seoul.json      누각 사진의 정답 자세와 먼 능선 두 점 (지평선 → 천정 → 하늘 시계 데모)
 //
 //   npx tsx src/scripts/learn/buildDemoData.ts
 
@@ -304,8 +306,27 @@ const buildDipper = async () => {
   console.log(`북두칠성: 짧은 변 시야 ${angleDeg(a, b).toFixed(1)}°`);
 };
 
+// 누각 사진의 정답 자세와 먼 능선 두 점 (지평선 → 천정 → 하늘 시계 데모). test/real/shotTimeSamples.test.ts와 같은 점
+const buildZenith = () => {
+  const pose = loadSolvedPoses()["20220607-berry-seoul.jpg"];
+
+  writeFileSync(
+    resolve(OUT, "zenith-seoul.json"),
+    JSON.stringify({
+      W: pose.width,
+      H: pose.height,
+      TP: pose.TP, // 반올림하면 계산한 시각이 1분 달라진다
+      horizon: [
+        [10, 843],
+        [330, 850],
+      ],
+    }),
+  );
+};
+
 const run = async () => {
   mkdirSync(OUT, { recursive: true });
+  buildZenith();
   await buildSeoul();
   await buildMilky();
   await buildDipper();
