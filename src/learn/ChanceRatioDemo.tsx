@@ -13,6 +13,9 @@ import { projectVecToPhoto } from "@/search/utils/wcs";
 // 기대치 = 사진 별 수 × 화면 안 지도 별 수 × (허용 반경 원 넓이 ÷ 사진 넓이) — solveCore와 같은 식.
 // 판정: 식별에 쓴 별(답을 만들 때 쓴 별, 당연히 겹친다)을 뺀 겹친 별이 우연으로 나올 확률(푸아송 꼬리)이
 // 기준(10억 분의 1)보다 작으면 필연이다 — solveCore·candidates.ts와 같은 판정.
+// 풀이(solveCore)는 원근 변환으로 다듬은 답이면 변환을 정하는 대응 4쌍만큼 빼서(식별에 쓴 별이 3개여도 4개)
+// 이 답을 10⁻¹⁶·⁸로 기록한다. 데모는 화면에 보이는 "식별에 쓴 별 3 + 그 밖에 26"과 맞춰 3개를 빼고 10⁻¹⁷·⁸로 보인다.
+// 어느 쪽이든 기준 10⁻⁹보다 한참 작아 판정은 같다.
 // 자료: public/learn/candidates-seoul.json (scripts/learn/buildDemoData.ts)
 
 const SRC = "/samples/20220607-berry-seoul.jpg";
