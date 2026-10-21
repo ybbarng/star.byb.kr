@@ -27,7 +27,7 @@ interface Data {
 const STAGES: { key: Stage; label: string; note: string }[] = [
   {
     key: "seed",
-    label: "① 짝지은 별로만 (V2 방식)",
+    label: "① 짝지은 별로만",
     note: "짝 근처만 맞고, 멀어질수록 크게 어긋난다",
   },
   {
