@@ -1,6 +1,7 @@
 "use client";
 
 import type { Point3D } from "@/scripts/hash/types";
+import * as healpix from "@hscmap/healpix";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { STARS } from "@/game/sky/catalog";
 import { angleDeg } from "@/learn/brightTriangles";
@@ -59,6 +60,67 @@ const nearby = STARS.map((s, i) => ({ s, i }))
     (p) => p.x > -10 && p.x < SIZE_W + 10 && p.y > -10 && p.y < SIZE_H + 10,
   );
 
+// HEALPix 칸 (quad DB와 같은 nside=4, 192칸): 화면 근처 칸의 경계와, 칸 중심에서 10° 원
+const NSIDE = 4;
+const CELL_RADIUS_DEG = 10;
+
+const unit = (v: number[]): Point3D => {
+  const n = Math.hypot(v[0], v[1], v[2]);
+
+  return [v[0] / n, v[1] / n, v[2] / n];
+};
+
+const cellPaths = Array.from(
+  { length: healpix.nside2npix(NSIDE) },
+  (_, ipix) => ipix,
+)
+  .filter(
+    (ipix) =>
+      angleDeg(healpix.pix2vec_nest(NSIDE, ipix) as Point3D, center) < 45,
+  )
+  .map((ipix) => {
+    const corners = healpix.corners_nest(NSIDE, ipix) as Point3D[];
+    const path: Point3D[] = [];
+
+    for (let i = 0; i < 4; i++) {
+      const a = corners[i];
+      const b = corners[(i + 1) % 4];
+
+      for (let t = 0; t <= 8; t++) {
+        path.push(unit([0, 1, 2].map((k) => a[k] + ((b[k] - a[k]) * t) / 8)));
+      }
+    }
+
+    return path;
+  });
+
+const circleAround = (c: Point3D, deg: number): Point3D[] => {
+  const helper: Point3D = Math.abs(c[2]) < 0.9 ? [0, 0, 1] : [1, 0, 0];
+  const u = unit([
+    c[1] * helper[2] - c[2] * helper[1],
+    c[2] * helper[0] - c[0] * helper[2],
+    c[0] * helper[1] - c[1] * helper[0],
+  ]);
+  const w: Point3D = [
+    c[1] * u[2] - c[2] * u[1],
+    c[2] * u[0] - c[0] * u[2],
+    c[0] * u[1] - c[1] * u[0],
+  ];
+  const r = (deg * Math.PI) / 180;
+
+  return Array.from({ length: 73 }, (_, i) => {
+    const t = (i / 72) * 2 * Math.PI;
+
+    return unit(
+      [0, 1, 2].map(
+        (k) =>
+          Math.cos(r) * c[k] +
+          Math.sin(r) * (Math.cos(t) * u[k] + Math.sin(t) * w[k]),
+      ),
+    );
+  });
+};
+
 const nameOf = (i: number) => {
   const d = dipperIndex.indexOf(i);
 
@@ -67,6 +129,7 @@ const nameOf = (i: number) => {
 
 export default function QuadReachDemo() {
   const [picked, setPicked] = useState<number[]>(dipperIndex.slice(0, 4));
+  const [cells, setCells] = useState(false);
   const canvas = useRef<HTMLCanvasElement>(null);
 
   const pairs = useMemo(() => {
@@ -110,6 +173,50 @@ export default function QuadReachDemo() {
         : "rgba(226,232,240,0.75)";
       ctx.beginPath();
       ctx.arc(p.x, p.y, Math.max(1.2, 5 - p.mag), 0, 2 * Math.PI);
+      ctx.fill();
+    }
+
+    // HEALPix 칸과, 고른 별들의 가운데가 든 칸의 중심 10° 원
+    if (cells) {
+      ctx.strokeStyle = "rgba(147,197,253,0.35)";
+      ctx.lineWidth = 1;
+
+      for (const path of cellPaths) {
+        ctx.beginPath();
+        path.forEach((v, i) => {
+          const p = toScreen(v);
+
+          if (i) ctx.lineTo(p.x, p.y);
+          else ctx.moveTo(p.x, p.y);
+        });
+        ctx.stroke();
+      }
+
+      const mid = unit(
+        [0, 1, 2].map((k) =>
+          picked.reduce((s, i) => s + STARS[i].vector[k], 0),
+        ),
+      );
+      const cell = healpix.pix2vec_nest(
+        NSIDE,
+        healpix.vec2pix_nest(NSIDE, mid),
+      ) as Point3D;
+      const c = toScreen(cell);
+      ctx.strokeStyle = "#fde68a";
+      ctx.lineWidth = 2;
+      ctx.setLineDash([6, 5]);
+      ctx.beginPath();
+      circleAround(cell, CELL_RADIUS_DEG).forEach((v, i) => {
+        const p = toScreen(v);
+
+        if (i) ctx.lineTo(p.x, p.y);
+        else ctx.moveTo(p.x, p.y);
+      });
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = "#fde68a";
+      ctx.beginPath();
+      ctx.arc(c.x, c.y, 4, 0, 2 * Math.PI);
       ctx.fill();
     }
 
@@ -158,7 +265,7 @@ export default function QuadReachDemo() {
     ctx.stroke();
     ctx.fillStyle = "#fde68a";
     ctx.fillText("10°", x0 + 60, y0 - 8);
-  }, [picked, pairs]);
+  }, [picked, pairs, cells]);
 
   // 누른 곳에서 가장 가까운 별을 고른다 (넷까지, 오래된 것부터 바뀐다)
   const pick = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -210,6 +317,18 @@ export default function QuadReachDemo() {
         >
           국자 네 별로
         </button>
+        <button
+          className={`btn btn-sm ${cells ? "btn-secondary" : ""}`}
+          onClick={() => setCells((c) => !c)}
+        >
+          HEALPix 칸 보기
+        </button>
+        {cells && (
+          <div className="text-sm opacity-80">
+            하늘을 같은 넓이 192칸으로 나누고, 칸마다 중심에서 10° 안(노란 원)의
+            별로 4별 조합을 만들어요.
+          </div>
+        )}
       </div>
     </div>
   );
