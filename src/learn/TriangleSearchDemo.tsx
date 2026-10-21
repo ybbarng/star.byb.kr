@@ -228,7 +228,9 @@ export default function TriangleSearchDemo() {
                 <circle key={i} cx={x} cy={y} r={3} fill="white" />
               ))}
             </svg>
-            <span className="text-xs opacity-60">하늘의 그 삼각형</span>
+            <span className="text-xs opacity-60">
+              {selected + 1}번 후보를 하늘에서 본 모양
+            </span>
           </div>
         )}
       </div>
