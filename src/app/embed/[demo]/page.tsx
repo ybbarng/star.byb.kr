@@ -5,6 +5,7 @@ import ChanceDemo from "@/learn/ChanceDemo";
 import DetectPipelineDemo from "@/learn/DetectPipelineDemo";
 import FindStarsDemo from "@/learn/FindStarsDemo";
 import LuckyFakeDemo from "@/learn/LuckyFakeDemo";
+import MoonDateDemo from "@/learn/MoonDateDemo";
 import PoleHeightDemo from "@/learn/PoleHeightDemo";
 import ProjectionDemo from "@/learn/ProjectionDemo";
 import QuadHashDemo from "@/learn/QuadHashDemo";
@@ -40,6 +41,7 @@ const DEMOS = {
   "same-sky": SameSkyDemo,
   "same-sky-orbit": SameSkyOrbitDemo,
   "zenith-clock": ZenithClockDemo,
+  "moon-date": MoonDateDemo,
 };
 
 export const dynamicParams = false;
