@@ -3,14 +3,17 @@
 import { useRef, useState } from "react";
 import { calculateHash } from "@/scripts/hash/hash";
 
-// 기하 해싱 데모: 별 넷을 끌면, 가장 먼 두 별 A·B를 (0,0)·(1,1)에 놓도록 옮기고·돌리고·늘린 모습과
-// 나머지 두 별의 좌표(지문 네 숫자)를 보여 준다. 숫자는 풀이가 쓰는 calculateHash 그대로다.
-// 돌리기·키우기 막대는 넷을 한꺼번에 바꿔, 사진을 돌리거나 당겨 찍어도 지문이 그대로인 걸 보여 준다.
+// 기하 해싱 데모: ① 별 넷을 끌면, ② 가장 먼 두 별 A·B를 (0,0)·(1,1)에 놓도록 옮기고·돌리고·늘린 모습과
+// ③ 나머지 두 별 C·D의 좌표(quad 값 네 숫자)를 차례로 보여 준다. 숫자는 풀이가 쓰는 calculateHash 그대로다.
+// 회전·크기 막대는 넷을 한꺼번에 바꿔, 사진을 돌리거나 당겨 찍어도 지문이 그대로인 걸 보여 준다.
 
 type P = [number, number];
 
 const LABELS = ["가", "나", "다", "라"];
 const CENTER: P = [160, 130];
+// ② 그림에서 C·D가 올 수 있는 렌즈의 두 끝 ((0.5∓√0.75, 0.5±√0.75)를 그림 좌표로)과 반지름 (√2)
+const LENS = ["26.1 26.1", "233.9 233.9"];
+const LENS_R = 169.7;
 
 // 화면 가운데를 중심으로 돌리고 키운다 (inverse면 거꾸로)
 const transform = (
@@ -63,13 +66,15 @@ export default function QuadHashDemo() {
     [hash[0], hash[1]],
     [hash[2], hash[3]],
   ];
-  // 정규화 평면을 오른쪽 그림 좌표로 (0~1 → 40~200)
-  const toBox = ([x, y]: P): P => [40 + x * 160, 210 - y * 160];
+  // 정규화 평면을 가운데 그림 좌표로 (0~1 → 70~190, 상자 밖 -0.58~1.58까지 보인다)
+  const toBox = ([x, y]: P): P => [70 + x * 120, 190 - y * 120];
+  const [C, D] = [normalized[2], normalized[3]];
+  const coord = ([x, y]: P) => `(${x.toFixed(2)}, ${y.toFixed(2)})`;
 
   return (
-    <div className="grid gap-4 md:grid-cols-2">
+    <div className="grid items-start gap-4 md:grid-cols-[1.15fr_1fr_0.75fr]">
       <div className="flex flex-col gap-1">
-        <div className="text-xs opacity-70">사진 속 별 넷 (끌어 보세요)</div>
+        <div className="text-sm opacity-70">① 사진 속 별 넷 (끌어 보세요)</div>
         <svg
           ref={svg}
           viewBox="0 0 320 260"
@@ -120,7 +125,7 @@ export default function QuadHashDemo() {
           })}
         </svg>
         <label className="flex items-center gap-2 text-sm">
-          <span className="w-16 shrink-0">돌리기</span>
+          <span className="w-16 shrink-0">회전</span>
           <input
             type="range"
             className="range range-xs"
@@ -132,7 +137,7 @@ export default function QuadHashDemo() {
           <span className="w-12 text-right font-mono">{angle}°</span>
         </label>
         <label className="flex items-center gap-2 text-sm">
-          <span className="w-16 shrink-0">키우기</span>
+          <span className="w-16 shrink-0">크기</span>
           <input
             type="range"
             className="range range-xs"
@@ -145,27 +150,60 @@ export default function QuadHashDemo() {
         </label>
       </div>
       <div className="flex flex-col gap-1">
-        <div className="text-xs opacity-70">
-          가장 먼 A·B를 (0,0)·(1,1)에 놓으면
+        <div className="text-sm opacity-70">
+          ② 가장 먼 A·B를 (0,0)·(1,1)에 놓으면
         </div>
-        <svg viewBox="0 0 240 240" className="rounded-box w-full bg-[#0b0f22]">
+        <svg viewBox="0 0 260 260" className="rounded-box w-full bg-[#0b0f22]">
+          {/* C·D가 올 수 있는 곳: A·B가 가장 먼 쌍이니 A에서도 B에서도 √2 안 (두 원이 겹친 렌즈, -0.41~1.41) */}
+          <path
+            d={`M ${LENS[0]} A ${LENS_R} ${LENS_R} 0 0 1 ${LENS[1]} A ${LENS_R} ${LENS_R} 0 0 1 ${LENS[0]} Z`}
+            fill="rgba(165,180,252,0.08)"
+            stroke="rgba(165,180,252,0.3)"
+          />
+          <path
+            d="M 8 190 L 252 190 M 70 252 L 70 8"
+            stroke="rgba(255,255,255,0.35)"
+          />
           <rect
-            x="40"
-            y="50"
-            width="160"
-            height="160"
+            x="70"
+            y="70"
+            width="120"
+            height="120"
             fill="none"
-            stroke="rgba(160,180,255,0.25)"
+            stroke="rgba(160,180,255,0.2)"
             strokeDasharray="4 4"
           />
+          <text x="240" y="203" fontSize="10" fill="white" opacity="0.6">
+            x
+          </text>
+          <text x="58" y="16" fontSize="10" fill="white" opacity="0.6">
+            y
+          </text>
+          <text x="118" y="222" fontSize="9" fill="#a5b4fc" opacity="0.8">
+            C·D가 올 수 있는 곳
+          </text>
           <line
-            x1="40"
-            y1="210"
-            x2="200"
-            y2="50"
+            x1="70"
+            y1="190"
+            x2="190"
+            y2="70"
             stroke="#fde68a"
             strokeDasharray="4 3"
           />
+          {/* C·D의 좌표를 읽는 보조선 */}
+          {[C, D].map((p, i) => {
+            const [x, y] = toBox(p);
+
+            return (
+              <path
+                key={i}
+                d={`M ${x} ${y} L ${x} 190 M ${x} ${y} L 70 ${y}`}
+                stroke="rgba(165,180,252,0.45)"
+                strokeDasharray="2 3"
+                fill="none"
+              />
+            );
+          })}
           {normalized.map((p, i) => {
             const [x, y] = toBox(p);
 
@@ -183,15 +221,32 @@ export default function QuadHashDemo() {
               </g>
             );
           })}
-          <text x="28" y="226" fontSize="10" fill="white" opacity="0.6">
+          <text x="56" y="206" fontSize="10" fill="white" opacity="0.6">
             (0,0)
           </text>
-          <text x="186" y="44" fontSize="10" fill="white" opacity="0.6">
+          <text x="176" y="62" fontSize="10" fill="white" opacity="0.6">
             (1,1)
           </text>
         </svg>
-        <div className="font-mono text-sm text-indigo-200">
-          지문 ({hash.map((v) => v.toFixed(3)).join(", ")})
+      </div>
+      <div className="flex flex-col gap-2">
+        <div className="text-sm opacity-70">③ quad 값 = C·D의 좌표</div>
+        <div className="bg-base-300/60 rounded-box flex flex-col gap-2 p-3 font-mono">
+          <div>
+            <span className="text-indigo-300">C</span>{" "}
+            <span className="text-lg">{coord(C)}</span>
+          </div>
+          <div>
+            <span className="text-indigo-300">D</span>{" "}
+            <span className="text-lg">{coord(D)}</span>
+          </div>
+          <div className="border-base-content/10 border-t pt-2 text-sm text-indigo-200">
+            ({hash.map((v) => v.toFixed(2)).join(", ")})
+          </div>
+        </div>
+        <div className="text-sm opacity-70">
+          이 네 숫자가 별 4개의 지문이다. 회전하고 크기를 바꿔도 그대로라, 별
+          지도 quad 8만 5천 개 중 가장 가까운 것을 찾으면 된다.
         </div>
       </div>
     </div>
