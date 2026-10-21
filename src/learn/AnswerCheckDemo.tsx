@@ -181,15 +181,21 @@ export default function AnswerCheckDemo() {
       context.fill();
     }
 
-    // 사진에서 찾은 별 (흰 테)
+    // 사진에서 찾은 별 (흰 테). 어느 답이든 같은 별이다 — 가짜 답의 15개는 진짜 답 60개의 앞쪽과 같다.
+    // 그 답을 확인할 때 쓰지 않은 별은 흐린 점선으로
     context.lineWidth = 1.5;
-    context.strokeStyle = "rgba(255,255,255,0.7)";
 
-    for (const [x, y] of view.photo) {
+    data.real.photo.forEach(([x, y], i) => {
+      const used = i < view.photo.length;
+      context.strokeStyle = used
+        ? "rgba(255,255,255,0.75)"
+        : "rgba(255,255,255,0.3)";
+      context.setLineDash(used ? [] : [3, 3]);
       context.beginPath();
       context.arc(x * k, y * k, 7, 0, 2 * Math.PI);
       context.stroke();
-    }
+    });
+    context.setLineDash([]);
 
     // 겹친 별: 짝지은 별은 파랑, 더 겹친 별은 초록
     context.lineWidth = 4;
@@ -245,14 +251,20 @@ export default function AnswerCheckDemo() {
             <span className="text-amber-200">●</span> 그 답대로 놓은 별 지도
           </li>
           <li>
-            <span className="opacity-60">○</span> 사진에서 찾은 별
+            <span className="opacity-60">○</span> 사진에서 찾은 별 (어느 답이든
+            같은 {data.real.photo.length}개)
+          </li>
+          <li>
+            <span className="opacity-30">◌</span> 이 답을 확인할 때 쓰지 않은 별
+            (풀이는 앞쪽 15개로 먼저 본다)
           </li>
           <li>
             <span className="text-blue-400">◯</span> 짝지은 별 (답을 만들 때 쓴
             별)
           </li>
           <li>
-            <span className="text-green-400">◯</span> 그 밖에 더 겹친 별
+            <span className="text-green-400">◯</span> 그 밖에 지도 별과 겹친
+            사진 별
           </li>
         </ul>
         {a && (
