@@ -18,6 +18,9 @@ import VerifyOverlayDemo from "@/learn/VerifyOverlayDemo";
 import ZenithClockDemo from "@/learn/ZenithClockDemo";
 
 // 찾는 원리(/learn)의 데모를 발표 화면에 하나씩 띄운다: /embed/<이름>
+
+// 발표에서는 발표자가 직접 움직여 보이니 "움직여 보세요" 안내를 끈다
+const QuadHashForDeck = () => <QuadHashDemo hint={false} />;
 const DEMOS = {
   "sky-sphere": SkySphere,
   "detect-pipeline": DetectPipelineDemo,
@@ -25,7 +28,7 @@ const DEMOS = {
   shape: ShapeDemo,
   "triangle-search": TriangleSearchDemo,
   "triangle-size": TriangleSizeDemo,
-  "quad-hash": QuadHashDemo,
+  "quad-hash": QuadHashForDeck,
   "quad-reach": QuadReachDemo,
   "verify-overlay": VerifyOverlayDemo,
   "answer-check": AnswerCheckDemo,

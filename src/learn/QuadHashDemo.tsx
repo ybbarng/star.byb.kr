@@ -33,7 +33,8 @@ const transform = (
   ];
 };
 
-export default function QuadHashDemo() {
+// hint: 끌 수 있다는 안내. 발표에서는 발표자가 직접 움직여 보이려고 끈다 (embed)
+export default function QuadHashDemo({ hint = true }: { hint?: boolean }) {
   const [base, setBase] = useState<P[]>([
     [60, 180],
     [130, 70],
@@ -74,7 +75,9 @@ export default function QuadHashDemo() {
   return (
     <div className="grid items-start gap-4 md:grid-cols-[1.15fr_1fr_0.75fr]">
       <div className="flex flex-col gap-1">
-        <div className="text-sm opacity-70">① 사진 속 별 4개</div>
+        <div className="text-sm opacity-70">
+          ① 사진 속 별 4개{hint && " (움직여 보세요)"}
+        </div>
         <svg
           ref={svg}
           viewBox="0 0 320 260"
@@ -245,7 +248,7 @@ export default function QuadHashDemo() {
           </div>
         </div>
         <div className="text-sm opacity-70">
-          별 지도에서 미리 계산한 8만 5천 개의 quad 중 가장 가까운 것을 찾으면
+          별 지도에서 미리 계산한 8만 3천 개의 quad 중 가장 가까운 것을 찾으면
           된다.
         </div>
         <div className="text-sm opacity-50">
