@@ -4,7 +4,12 @@ import type { Point2D, Point3D } from "@/scripts/hash/types";
 import type { Mat3 } from "@/search/utils/similarity";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { STARS } from "@/game/sky/catalog";
-import { mat3Mul, projectVecToPhoto, recoverCenter } from "@/search/utils/wcs";
+import {
+  mat3Mul,
+  projectVecToPhoto,
+  recoverCenter,
+  recoverFov,
+} from "@/search/utils/wcs";
 
 // 답 확인 데모: 서울 누각 사진에서 풀이가 실제로 검증한 후보 둘(옛 점수 1등 가짜, 진짜 답)을 골라
 // 그 답대로 별 지도를 사진에 겹친다. 짝지은 별(파랑)은 답을 만들 때 쓴 별이라 당연히 겹치고,
@@ -259,6 +264,19 @@ export default function AnswerCheckDemo() {
               = 짝지은 별 <span className="text-blue-400">{seedsHit}</span> + 더
               겹친 별{" "}
               <span className="text-green-400">{a.count - seedsHit}</span>
+            </div>
+            <div className="border-base-content/10 mt-1 border-t pt-2 text-sm opacity-80">
+              이 답이 말하는 화각{" "}
+              <b>
+                {Math.round((recoverFov(a.TP, data.W, data.H) * 180) / Math.PI)}
+                °
+              </b>{" "}
+              · 확인한 사진 별 <b>{a.photo.length}개</b>
+              <br />→ 우연히 겹칠 기대치 <b>{a.expected.toFixed(2)}개</b>
+            </div>
+            <div className="text-xs opacity-60">
+              좁게 찍혔다는 답일수록 사진에 들어오는 지도 별이 적어, 기대치가
+              작다
             </div>
           </div>
         )}
