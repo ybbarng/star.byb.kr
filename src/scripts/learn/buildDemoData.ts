@@ -12,6 +12,7 @@ import { setVerifyListener } from "@/search/solveCore";
 import { DEFAULT_SOLVERS, solvePhoto } from "@/search/solvePhoto";
 import { buildSolverContext } from "@/search/solverContext";
 import { ACCEPT } from "@/search/solvers/candidates";
+import { fitHomography2D } from "@/search/utils/homography";
 import { selectTopByPriority } from "@/search/utils/selectStars";
 import { umeyamaSimilarity2D } from "@/search/utils/similarity";
 import {
@@ -33,7 +34,7 @@ import {
 // 발표·원리 데모 자료 (public/learn/): 실제 풀이를 돌려 검증한 후보를 모은다.
 //   candidates-seoul.json  서울 누각 사진에서 검증한 후보 전부 (겹친 수·짝 수·기대치·정답 여부)
 //                          + V2가 고른 답(지문 거리 1등), 옛 점수(몇 배) 1등 가짜, 진짜 답의 겹침 그림
-//   refine-milky.json      은하수 사진에서 짝 3개로만 / 겹친 별 전부로 닮음 변환 / 원근 변환까지 맞춘 변환
+//   refine-milky.json      은하수 사진에서 짝 3개로만 / 겹친 별 전부로 닮음 변환 / 같은 짝으로 원근 변환까지 맞춘 변환
 //   triangle-dipper.json   북두칠성 사진에서 일곱 별의 자리와 실제 화각 (삼각형 크기 거르기 데모)
 //   zenith-seoul.json      누각 사진의 정답 자세와 먼 능선 두 점 (지평선 → 천정 → 하늘 시계 데모)
 //
@@ -336,13 +337,19 @@ const buildMilky = async () => {
   );
   // 2) 겹친 별 전부로 맞춘 닮음 변환 (돌리기·키우기·옮기기만)
   const P1 = projectionMatrix(recoverCenter(final, W, H));
+  const skyPlane = matches.map((m) => plane(P1, ctx.catalog[m.star].vector));
+  const photoPlane = matches.map((m) => photo[m.photo]);
   const similarityTP = mat3Mul(
-    umeyamaSimilarity2D(
-      matches.map((m) => plane(P1, ctx.catalog[m.star].vector)),
-      matches.map((m) => photo[m.photo]),
-    ).matrix,
+    umeyamaSimilarity2D(skyPlane, photoPlane).matrix,
     P1,
   );
+  // 3) 같은 짝으로 원근 변환만 바꿔 맞춘다 — ②와 짝은 같고 모델만 다르다.
+  //    풀이의 최종 변환(final)은 별 60개로 다듬기까지 거친 것이라, 짝을 고르는 데만 쓴다.
+  const homography = fitHomography2D(skyPlane, photoPlane);
+
+  if (!homography) throw new Error("원근 변환을 맞추지 못했다");
+
+  const perspectiveTP = mat3Mul(homography, P1);
 
   const data = {
     W,
@@ -352,7 +359,7 @@ const buildMilky = async () => {
     stages: {
       seed: roundMat(seedTP),
       similarity: roundMat(similarityTP),
-      perspective: roundMat(final),
+      perspective: roundMat(perspectiveTP),
     },
     // 겹친 별: 사진 위치와 그 별의 방향
     pairs: matches.map((m) => ({
