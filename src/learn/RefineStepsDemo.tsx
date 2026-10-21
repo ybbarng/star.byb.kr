@@ -13,7 +13,7 @@ import {
 //   ① 짝지은 별 3개로만 맞추기 (V2): 짝 근처는 맞지만 멀어질수록 어긋난다
 //   ② 겹친 별 전부로 맞추기 (닮음 변환: 돌리기·키우기·옮기기): 고르게 나아지지만 가장자리가 남는다
 //   ③ 원근 변환까지: 비스듬히 보정된 사진의 키스톤까지 맞춘다 (V3)
-// 흰 점이 사진의 별, 분홍 점이 변환으로 배치한 지도 별, 선이 어긋남(거리에 따라 초록·노랑·빨강)이다.
+// 흰 점이 사진의 별, 노란 점이 변환으로 배치한 지도 별, 빨간 선이 어긋남, 초록 테두리가 매칭한 별(짝)이다.
 // 자료: public/learn/refine-milky.json (scripts/learn/buildDemoData.ts)
 
 const SRC = "/samples/20220328-brice-Milky Way over Buzzvil.jpg";
@@ -31,17 +31,17 @@ interface Data {
 const STAGES: { key: Stage; label: string; note: string }[] = [
   {
     key: "seed",
-    label: "① 짝지은 별로만",
+    label: "① 짝지은 별로만: V2",
     note: "짝 근처만 맞고, 멀어질수록 크게 어긋난다",
   },
   {
     key: "similarity",
-    label: "② 겹친 별 전부로",
+    label: "② 겹치는 별 전부로 평균내기",
     note: "돌리기·키우기·옮기기만으로는 가장자리가 남는다",
   },
   {
     key: "perspective",
-    label: "③ 원근 변환까지 (V3)",
+    label: "③ ② + 원근 변환까지: V3",
     note: "비스듬히 보정된 사진의 기울어짐까지 맞춘다",
   },
 ];
@@ -137,7 +137,7 @@ export default function RefineStepsDemo() {
     }
 
     if (stage === "seed") {
-      context.strokeStyle = "#60a5fa";
+      context.strokeStyle = "#4ade80";
       context.lineWidth = 3;
 
       for (const [x, y] of data.seeds) {
@@ -147,14 +147,15 @@ export default function RefineStepsDemo() {
       }
     }
 
-    // 색은 하나에 한 뜻만: 연결선 색이 어긋남의 크기, 점은 위치만 (흰 점 = 사진 별, 분홍 점 = 배치한 별).
-    // 선 → 사진 별 → 배치한 별 순으로 그려, 잘 맞으면 분홍 점이 흰 점 위에 겹쳐 보인다.
+    // 흰 점 = 사진 별, 노란 점 = 배치한 별(같은 크기), 빨간 선 = 어긋남.
+    // 선을 길이로 색칠하면 짧은 선이 안 보여서 한 색으로 두고, 길이 자체로 어긋남을 읽는다.
+    // 선 → 사진 별 → 배치한 별 순으로 그려, 잘 맞으면 노란 점이 흰 점을 덮는다.
     context.lineWidth = 3;
+    context.strokeStyle = "#f87171";
 
-    for (const { photo, at, d } of errors) {
+    for (const { photo, at } of errors) {
       if (!at) continue;
 
-      context.strokeStyle = d > 20 ? "#f87171" : d > 6 ? "#fde68a" : "#4ade80";
       context.beginPath();
       context.moveTo(photo[0] * k, photo[1] * k);
       context.lineTo(at[0] * k, at[1] * k);
@@ -172,14 +173,15 @@ export default function RefineStepsDemo() {
       context.stroke();
     }
 
-    context.fillStyle = "#f472b6";
+    context.fillStyle = "#fde047";
 
     for (const { at } of errors) {
       if (!at) continue;
 
       context.beginPath();
-      context.arc(at[0] * k, at[1] * k, 4, 0, 2 * Math.PI);
+      context.arc(at[0] * k, at[1] * k, 6, 0, 2 * Math.PI);
       context.fill();
+      context.stroke();
     }
   }, [data, image, stage, errors]);
 
@@ -229,16 +231,14 @@ export default function RefineStepsDemo() {
             (반듯하면 닮음, 사다리꼴이면 원근)
           </li>
           <li>
-            <span className="text-pink-400">●</span> 변환으로 배치한 지도 별
+            <span className="text-yellow-300">●</span> 변환으로 배치한 지도 별
           </li>
           <li>
-            연결선: <span className="text-green-400">━</span> 6px 안 ·{" "}
-            <span className="text-amber-200">━</span> 6~20px ·{" "}
-            <span className="text-red-400">━</span> 20px 넘게
+            <span className="text-red-400">━</span> 어긋남 (길수록 크게 어긋남)
           </li>
           {stage === "seed" && (
             <li>
-              <span className="text-blue-400">◯</span> 매칭한 별 (짝)
+              <span className="text-green-400">◯</span> 매칭한 별 (짝)
             </li>
           )}
         </ul>
