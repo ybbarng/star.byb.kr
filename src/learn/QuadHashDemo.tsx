@@ -74,9 +74,7 @@ export default function QuadHashDemo() {
   return (
     <div className="grid items-start gap-4 md:grid-cols-[1.15fr_1fr_0.75fr]">
       <div className="flex flex-col gap-1">
-        <div className="text-sm opacity-70">
-          ① 사진 속 별 4개 (움직여 보세요)
-        </div>
+        <div className="text-sm opacity-70">① 사진 속 별 4개</div>
         <svg
           ref={svg}
           viewBox="0 0 320 260"
