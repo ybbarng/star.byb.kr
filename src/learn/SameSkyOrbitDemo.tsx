@@ -59,7 +59,7 @@ const CX = 200;
 const CY = 215;
 
 export default function SameSkyOrbitDemo() {
-  const [month, setMonth] = useState(1);
+  const [month, setMonth] = useState(0);
   const sky = useRef<HTMLCanvasElement>(null);
 
   // 기준: 1월 1일 23시 서울의 하늘
