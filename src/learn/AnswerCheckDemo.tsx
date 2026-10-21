@@ -214,7 +214,20 @@ export default function AnswerCheckDemo() {
       context.setLineDash([]);
     }
 
+    // 겹친 별: 초록 원 (식별에 쓴 별은 빨간 원). 노란 점·파란 원·초록 원이 과녁처럼 보인다
     context.lineWidth = 4;
+    context.strokeStyle = "#4ade80";
+
+    for (const i of view.matched) {
+      if (view.seeds.includes(i)) continue;
+
+      const [x, y] = view.photo[i];
+      context.beginPath();
+      context.arc(x * k, y * k, 19, 0, 2 * Math.PI);
+      context.stroke();
+    }
+
+    context.strokeStyle = "#ef4444";
 
     for (const i of view.seeds) {
       const [x, y] = view.photo[i];
@@ -271,6 +284,9 @@ export default function AnswerCheckDemo() {
           <li>
             <span className="text-red-500">◯</span> 식별에 쓴 별
           </li>
+          <li>
+            <span className="text-green-400">◯</span> 그 밖에 겹친 별
+          </li>
         </ul>
         {a && (
           <div className="bg-base-300/60 rounded-box flex flex-col gap-1 p-3">
@@ -279,7 +295,7 @@ export default function AnswerCheckDemo() {
             </div>
             <div className="text-sm opacity-80">
               = 식별에 쓴 별 <span className="text-red-400">{seedsHit}</span> +
-              그 밖에 <b>{a.count - seedsHit}</b>
+              그 밖에 <b className="text-green-400">{a.count - seedsHit}</b>
             </div>
             <div className="border-base-content/10 mt-1 border-t pt-2 text-sm opacity-80">
               이 답이 말하는 화각{" "}
