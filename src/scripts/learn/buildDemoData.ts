@@ -182,13 +182,14 @@ const buildSeoul = async () => {
     W,
     H,
     tol: round(Math.max(5, Math.hypot(W, H) * 0.006)),
-    // 후보마다 [겹친 수, 짝지은 별 수, 우연 기대치, 우연일 확률(-log10), 정답이면 1]
+    // 후보마다 [겹친 수, 짝지은 별 수(3 삼각형, 4 quad), 우연 기대치, 우연일 확률(-log10), 정답이면 1, 넣은 사진 별 수]
     points: verified.map((v) => [
       v.result.inlierCount,
       v.photoQuad.length,
       +v.result.expectedRandom.toPrecision(3),
       +v.result.logOdds.toFixed(2),
       isReal(v) ? 1 : 0,
+      v.photoStars.length,
     ]),
     fake: overlay(oldPick),
     real: overlay(realPick),

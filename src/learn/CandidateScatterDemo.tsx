@@ -11,7 +11,8 @@ import { poissonTailNegLog10 } from "@/search/utils/stats";
 //   ③ 우연일 확률로: 기대치가 λ일 때 우연히 k개 넘게 겹칠 확률이 10억 분의 1보다 작아야 한다
 // 자료: public/learn/candidates-seoul.json (scripts/learn/buildDemoData.ts)
 
-type Point = [number, number, number, number, number]; // 겹친 수, 짝 수, 기대치, 우연일 확률(-log10), 진짜
+// 겹친 수, 짝 수(3 삼각형, 4 quad), 기대치, 우연일 확률(-log10), 진짜, 넣은 사진 별 수
+type Point = [number, number, number, number, number, number];
 
 interface Data {
   points: Point[];
@@ -46,6 +47,8 @@ export default function CandidateScatterDemo() {
   const [data, setData] = useState<Data | null>(null);
   const [step, setStep] = useState<Step>("ratio");
   const [picked, setPicked] = useState<number | null>(null);
+  // 후보 1만 개가 어디서 왔는지 (풀이 방식 × 넣은 사진 별 수)
+  const [origin, setOrigin] = useState(false);
   const canvas = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -220,6 +223,22 @@ export default function CandidateScatterDemo() {
   const passed = view.order.length;
   const passedReal = view.order.filter((i) => data.points[i][4] === 1).length;
   const show = picked ?? view.order[0];
+  const groups = (["삼각형", "quad"] as const).map((method) => {
+    const seeds = method === "삼각형" ? 3 : 4;
+    const sizes = [
+      ...new Set(data.points.filter((p) => p[1] === seeds).map((p) => p[5])),
+    ].sort((a, b) => a - b);
+
+    return {
+      method,
+      rows: sizes.map((size) => ({
+        size,
+        count: data.points.filter((p) => p[1] === seeds && p[5] === size)
+          .length,
+      })),
+    };
+  });
+  const most = Math.max(...groups.flatMap((g) => g.rows.map((r) => r.count)));
   const info = show !== undefined ? data.points[show] : null;
 
   // 그래프를 누르면 가장 가까운 후보를 고른다
@@ -269,8 +288,9 @@ export default function CandidateScatterDemo() {
           사진 한 장에서 확인한 후보{" "}
           <b>{data.points.length.toLocaleString("ko-KR")}개</b>
           <br />
-          <span className="text-amber-200">●</span> 진짜 답 {realCount}개 ·{" "}
-          <span className="text-red-400">●</span> &ldquo;찾았다&rdquo;에 든 가짜
+          <span className="text-amber-200">●</span> 정답 자리 후보 {realCount}개
+          · <span className="text-red-400">●</span> &ldquo;찾았다&rdquo;에 든
+          가짜
         </div>
         <div className="bg-base-300/60 rounded-box p-3">
           &ldquo;찾았다&rdquo; <b>{passed.toLocaleString("ko-KR")}개</b> 중 진짜{" "}
@@ -284,7 +304,40 @@ export default function CandidateScatterDemo() {
             <span className="text-sm opacity-80">진짜 답이 들지 못했다</span>
           )}
         </div>
-        {info && (
+        <button
+          className={`btn btn-sm ${origin ? "btn-secondary" : ""}`}
+          onClick={() => setOrigin((o) => !o)}
+        >
+          후보는 어디서 왔나?
+        </button>
+        {origin && (
+          <div className="bg-base-300/60 rounded-box flex flex-col gap-2 p-3 text-sm">
+            <div>
+              사진 별 앞쪽 n개로 묶음을 만들고, 묶음마다 화각 9가지 × 모양이
+              가까운 8개를 확인한다
+            </div>
+            {groups.map((g) => (
+              <div key={g.method} className="flex flex-col gap-1">
+                <div className="font-bold">{g.method}</div>
+                {g.rows.map((r) => (
+                  <div key={r.size} className="flex items-center gap-2">
+                    <span className="w-14 shrink-0">별 {r.size}개</span>
+                    <span className="h-3 flex-1 rounded bg-black/40">
+                      <span
+                        className="block h-3 rounded bg-indigo-300"
+                        style={{ width: `${(r.count / most) * 100}%` }}
+                      />
+                    </span>
+                    <span className="w-12 text-right font-mono">
+                      {r.count.toLocaleString("ko-KR")}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        )}
+        {info && !origin && (
           <div className="bg-base-300/60 rounded-box flex flex-col gap-1 p-3 text-sm">
             <div className="text-sm font-bold">
               {picked === null ? "1등 후보" : "고른 후보"} —{" "}
@@ -297,6 +350,9 @@ export default function CandidateScatterDemo() {
             <div>
               겹친 별 {info[0]}개 = 짝지은 별 {info[1]} + 더 겹친 별{" "}
               {info[0] - info[1]}
+            </div>
+            <div>
+              {info[1] === 3 ? "삼각형" : "quad"}, 사진 별 {info[5]}개 묶음에서
             </div>
             <div>우연히 겹칠 기대치 {info[2]}개</div>
             <div>
