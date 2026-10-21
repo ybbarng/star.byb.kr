@@ -7,7 +7,15 @@ import { cn } from "@/utils/cn";
 // 별 찾기 단계별 데모: 사진을 줄여 흑백 → 배경(크게 흐림) → 빼기 → 솟은 점 + 문턱을 차례로 보여 준다.
 // 실제 검출(search/detectImage.ts)과 같은 흐림 함수를 쓰되, 화면용으로 줄인 사진이라 흐림 폭도 같은 비율로 줄인다.
 
-const SRC = "/samples/big-dipper.jpg";
+// 고를 수 있는 사진: 나무 사이 북두칠성, 불빛 많은 누각
+const PHOTOS = [
+  { key: "dipper", label: "북두칠성 (나무)", src: "/samples/big-dipper.jpg" },
+  {
+    key: "seoul",
+    label: "누각 (불빛)",
+    src: "/samples/20220607-berry-seoul.jpg",
+  },
+] as const;
 const WORK_WIDTH = 720;
 const FULL_SIGMA = 8; // 원본 크기에서의 흐림 폭 (detectImage.ts의 BLUR_SIGMA)
 const PEAK_RADIUS = 1; // 3×3 안에서 가장 밝으면 꼭대기 (detectCore.ts와 같다)
@@ -95,13 +103,19 @@ export default function DetectPipelineDemo() {
   const [work, setWork] = useState<Work | null>(null);
   const [stage, setStage] = useState<Stage>("photo");
   const [k, setK] = useState(3);
+  const [photo, setPhoto] = useState<(typeof PHOTOS)[number]>(PHOTOS[0]);
   const canvas = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
+    let alive = true;
     const image = new Image();
-    image.onload = () => setWork(prepare(image));
-    image.src = SRC;
-  }, []);
+    image.onload = () => alive && setWork(prepare(image));
+    image.src = photo.src;
+
+    return () => {
+      alive = false;
+    };
+  }, [photo]);
 
   const passed = useMemo(
     () =>
@@ -155,7 +169,7 @@ export default function DetectPipelineDemo() {
   }, [work, stage, passed]);
 
   const NOTES: Record<Stage, string> = {
-    photo: "북두칠성 샘플을 화면용으로 줄인 사진이에요.",
+    photo: `${photo.label} 샘플을 화면용으로 줄인 사진이에요.`,
     gray: "밝기만 남겨요 (빨강 0.299 + 초록 0.587 + 파랑 0.114). 별 찾기에는 색이 필요 없어요.",
     background:
       "크게 흐린 사진이에요. 별처럼 작은 점은 사라지고, 하늘이 밝은 정도(광해·노을)만 남아요.",
@@ -166,6 +180,16 @@ export default function DetectPipelineDemo() {
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap gap-1">
+        {PHOTOS.map((p) => (
+          <button
+            key={p.key}
+            className={cn("btn btn-xs", photo.key === p.key && "btn-secondary")}
+            onClick={() => setPhoto(p)}
+          >
+            {p.label}
+          </button>
+        ))}
+        <span className="mx-1 opacity-30">|</span>
         {STAGES.map((s) => (
           <button
             key={s.key}
