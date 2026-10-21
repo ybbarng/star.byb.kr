@@ -659,8 +659,10 @@
                 <line x1="615" y1="280" x2="615" y2="370"/>
                 <line x1="720" y1="420" x2="790" y2="420"/>
                 <path d="M 1250 420 H 1510 V 108"/>
+                <path d="M 1020 380 V 325 H 790 V 286"/>
               </g>
               <line x1="840" y1="60" x2="1330" y2="60" stroke="#aaa" stroke-width="3" marker-end="url(#flow-arrow)"/>
+              <text x="905" y="315" fill="#aaa" font-size="26" text-anchor="middle">다시 판정</text>
               <text x="1528" y="330" fill="#aaa" font-size="28">끝까지</text>
               <text x="1528" y="366" fill="#aaa" font-size="28">모르면</text>
 
@@ -687,7 +689,7 @@
               <rect x="510" y="380" width="210" height="80" rx="12" fill="#422006" stroke="#fde68a"/>
               <text x="615" y="432" fill="#fde68a" text-anchor="middle">모름</text>
               <rect x="790" y="380" width="460" height="80" rx="12" fill="#262626" stroke="#555"/>
-              <text x="1020" y="432" fill="#e5e5e5" text-anchor="middle">다음 방법으로 다시 찾기</text>
+              <text x="1020" y="432" fill="#e5e5e5" text-anchor="middle">다음 방법으로 시도</text>
             </svg>
             <ul style="font-size: 0.8em; margin-top: 0.6em;">
               <li class="fragment">V2는 틀린 답도 자신 있게 냈다 → 사람이 매번 눈으로 확인해야 했다</li>
@@ -702,7 +704,7 @@
             <br>
             V3는 후보마다 우연일 확률을 재서, 10억 분의 1보다 작은 후보가 나오면 찾았다고 하고 바로 멈춥니다. 없으면 "모름"입니다. 틀린 답을 내지 않습니다.
             <br>
-            모름이면 다음 방법으로 다시 찾습니다. 별을 더 쓰거나, 하늘 부분만 보거나, 다른 모양으로 찾거나, 촬영 시각과 장소를 씁니다. 그래도 모르면 그때 그럴듯한 후보를 보여 주고 사람이 확인합니다. 오른쪽 위 "사람이 확인"은 V2와 같은 자리입니다. V2는 늘 거기로 가고, V3는 끝까지 모를 때만 갑니다.
+            모름이면 다음 방법으로 시도합니다. 별을 더 쓰거나, 하늘 부분만 보거나, 다른 모양으로 찾거나, 촬영 시각과 장소를 씁니다. 거기서 나온 후보도 같은 기준으로 다시 판정해서, 필연이면 정답으로 표시합니다. 그래도 모르면 그때 그럴듯한 후보를 보여 주고 사람이 확인합니다. 오른쪽 위 "사람이 확인"은 V2와 같은 자리입니다. V2는 늘 거기로 가고, V3는 끝까지 모를 때만 갑니다.
             <br>
             (넘기면) 이게 중요한 이유입니다. V2는 틀린 답도 자신 있게 내서, 사람이 매번 확인해야 했습니다.
             <br>
@@ -763,7 +765,7 @@
               <div class="cell"><img src="/samples/thumbs/google-unknown.webp"><span class="stamp unsure">모름</span></div>
             </div>
             <p class="fragment" style="text-align: left; font-size: 0.9em; margin-top: 0.8em;">
-              모름 15장 → 다음 방법으로 다시 찾는다 <span class="small">(두 번째 이야기: 사람이 하던 일을 컴퓨터로)</span>
+              모름 15장 → 다음 방법으로 시도 <span class="small">(두 번째 이야기: 사람이 하던 일을 컴퓨터로)</span>
             </p>
           </div>
           <aside class="notes">
