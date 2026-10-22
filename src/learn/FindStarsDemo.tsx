@@ -27,7 +27,8 @@ const pickTop = (stars: DetectedStar[], order: Order) =>
     ? stars.slice(0, TOP)
     : [...stars].sort((a, b) => b.brightness - a.brightness).slice(0, TOP);
 
-export default function FindStarsDemo() {
+// score: 발표 화면은 별다움을 클수록 별다운 점수로 보여 준다 (RingInspector)
+export default function FindStarsDemo({ score = false }: { score?: boolean }) {
   const [photo, setPhoto] = useState(DEMO_PHOTOS[0]);
   const [order, setOrder] = useState<Order>("brightness");
   const [image, setImage] = useState<HTMLImageElement | null>(null);
@@ -194,6 +195,7 @@ export default function FindStarsDemo() {
             image={image}
             star={inspect}
             starlike={STARLIKE_RING_CONTRAST}
+            score={score}
           />
         </div>
       </div>

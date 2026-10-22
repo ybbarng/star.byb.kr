@@ -22,10 +22,12 @@ import ZenithClockDemo from "@/learn/ZenithClockDemo";
 
 // 발표에서는 발표자가 직접 움직여 보이니 "움직여 보세요" 안내를 끈다
 const QuadHashForDeck = () => <QuadHashDemo hint={false} />;
+// 발표에서는 별다움을 클수록 별다운 점수(88점 이상이면 별)로 설명한다
+const FindStarsForDeck = () => <FindStarsDemo score />;
 const DEMOS = {
   "sky-sphere": SkySphere,
   "detect-pipeline": DetectPipelineDemo,
-  "find-stars": FindStarsDemo,
+  "find-stars": FindStarsForDeck,
   shape: ShapeDemo,
   "triangle-search": TriangleSearchDemo,
   "triangle-size": TriangleSizeDemo,
