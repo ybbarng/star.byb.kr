@@ -34,28 +34,28 @@ interface Data {
 const MODELS: { key: Model; label: string; note: string }[] = [
   {
     key: "seed",
-    label: "① 짝지은 별로만: V2",
-    note: "짝 근처만 맞고, 멀어질수록 크게 어긋난다",
+    label: "① 짝 3~4개로만 닮음 변환: V2",
+    note: "짝지은 별 3~4개로만 돌리기·키우기·옮기기를 맞춘다. 짝 근처만 맞고 멀어질수록 크게 어긋난다",
   },
   {
     key: "similarity",
     label: "② 겹친 별 전부로 닮음 변환",
-    note: "돌리기·키우기·옮기기만. 고르게 나아지지만 가장자리가 남는다",
+    note: "같은 돌리기·키우기·옮기기를 겹친 별 전부로 맞춘다. 고르게 나아지지만 가장자리가 남는다",
   },
   {
     key: "radial",
     label: "③ ② + 렌즈 왜곡",
-    note: "가장자리로 갈수록 늘거나 줄어드는 렌즈 왜곡 하나를 더한다",
+    note: "②에 가장자리로 갈수록 늘거나 줄어드는 렌즈 왜곡 하나를 더해 맞춘다",
   },
   {
     key: "fisheye",
-    label: "④ 어안 렌즈",
-    note: "광축에서의 각도에 비례해 펼치는 어안 렌즈로 본다",
+    label: "④ 어안 렌즈 (따로)",
+    note: "②와 별개로, 광축에서의 각도에 비례해 펼치는 어안 렌즈 모델(중심·초점·왜곡)을 맞춘다",
   },
   {
     key: "perspective",
-    label: "⑤ 원근 변환: V3",
-    note: "비스듬히 찍거나 보정한 사진의 기울어짐까지 맞춘다",
+    label: "⑤ ② + 원근 변환: V3",
+    note: "②를 넓혀 비스듬한 기울어짐(사다리꼴)까지 맞춘다. 렌즈 왜곡·어안은 넣지 않는다",
   },
 ];
 
@@ -223,6 +223,9 @@ export default function RefineStepsDemo() {
           className="rounded-box aspect-[4/3] h-auto w-full bg-black"
         />
         <div className="flex flex-col gap-3 text-base">
+          <div className="text-xs opacity-60">
+            모든 모델은 같은 짝(겹친 별)으로 각각 따로 맞춘다
+          </div>
           <div className="flex flex-col gap-2">
             {MODELS.map((m) => (
               <button
@@ -237,7 +240,7 @@ export default function RefineStepsDemo() {
               </button>
             ))}
           </div>
-          <div className="min-h-[2lh] text-sm opacity-80">{current.note}</div>
+          <div className="min-h-[3lh] text-sm opacity-80">{current.note}</div>
           <div className="bg-base-300/60 rounded-box flex flex-col gap-1 p-3">
             <div>
               평균 어긋남 <b className="text-lg">{mean.toFixed(1)}px</b>
