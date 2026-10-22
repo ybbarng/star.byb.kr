@@ -307,9 +307,7 @@ export default function ZenithClockDemo() {
       </div>
       <div className="grid gap-3 md:grid-cols-2">
         <div className="flex flex-col gap-1">
-          <div className="text-sm opacity-70">
-            누각 사진 (해결된 변환으로 별자리선)
-          </div>
+          <div className="text-sm opacity-70">누각 사진</div>
           <canvas
             ref={photo}
             className="rounded-box h-auto w-full"
