@@ -149,39 +149,45 @@ export default function FindStarsDemo() {
           </button>
         </div>
       </div>
-      <div className="rounded-box relative overflow-hidden bg-black">
-        <canvas
-          ref={canvas}
-          width={image?.width ?? 4}
-          height={image?.height ?? 3}
-          className="block h-auto w-full cursor-pointer"
-          onClick={handleClick}
-        />
-        {running && (
-          <div className="absolute inset-0 grid place-items-center bg-black/40 text-sm">
-            <span className="flex items-center gap-2">
-              <span className="loading loading-spinner loading-sm" />이 기기에서
-              별을 찾는 중…
-            </span>
+      <div className="grid items-start gap-3 md:grid-cols-[1fr_auto]">
+        <div className="flex flex-col gap-2">
+          <div className="rounded-box relative overflow-hidden bg-black">
+            <canvas
+              ref={canvas}
+              width={image?.width ?? 4}
+              height={image?.height ?? 3}
+              className="block h-auto w-full cursor-pointer"
+              onClick={handleClick}
+            />
+            {running && (
+              <div className="absolute inset-0 grid place-items-center bg-black/40 text-sm">
+                <span className="flex items-center gap-2">
+                  <span className="loading loading-spinner loading-sm" />이
+                  기기에서 별을 찾는 중…
+                </span>
+              </div>
+            )}
           </div>
-        )}
+          {stars && (
+            <p className="text-xs opacity-70">
+              찾은 점 {stars.length}개 중 상위 {TOP}개.{" "}
+              {order === "brightness"
+                ? "밝기만 보면 건물·나무 사이 불빛이 앞자리를 차지해요."
+                : "주변이 고른 하늘인 점을 먼저 고르면 진짜 별이 앞으로 와요."}
+            </p>
+          )}
+        </div>
+        {/* 점을 고르기 전에도 자리를 잡아 둬서, 눌러도 배치가 움직이지 않는다 */}
+        <div className="md:w-[17rem]">
+          {image && (
+            <RingInspector
+              image={image}
+              star={inspect}
+              starlike={STARLIKE_RING_CONTRAST}
+            />
+          )}
+        </div>
       </div>
-      {stars && (
-        <p className="text-xs opacity-70">
-          찾은 점 {stars.length}개 중 상위 {TOP}개.{" "}
-          {order === "brightness"
-            ? "밝기만 보면 건물·나무 사이 불빛이 앞자리를 차지해요."
-            : "주변이 고른 하늘인 점을 먼저 고르면 진짜 별이 앞으로 와요."}{" "}
-          동그라미를 누르면 그 점을 크게 들여다봐요.
-        </p>
-      )}
-      {image && inspect && (
-        <RingInspector
-          image={image}
-          star={inspect}
-          starlike={STARLIKE_RING_CONTRAST}
-        />
-      )}
     </div>
   );
 }
