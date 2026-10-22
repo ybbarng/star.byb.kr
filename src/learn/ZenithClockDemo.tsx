@@ -13,7 +13,7 @@ import { photoToSky, projectVecToPhoto } from "@/search/utils/wcs";
 import { cn } from "@/utils/cn";
 
 // 지평선 두 점 → 천정 → 위도·하늘 시계 → 날짜마다 시각. 누각 사진(정답 자세)으로 단계별로 보인다.
-//   ① 풀린 사진: 사진의 점마다 하늘 방향을 안다
+//   ① 해결된 사진: 사진의 점마다 하늘 방향을 안다
 //   ② 지평선 두 점: 먼 능선 두 점을 하늘 방향으로 바꾼다 (고도 0°인 두 방향)
 //   ③ 천정: 두 방향 모두에 수직인 방향. 적위가 위도, 적경이 그 순간의 하늘 시계(지방 항성시)
 //   ④ 날짜마다 시각: 하늘 시계가 그 값이 되는 순간은 날마다 한 번. 해가 떠 있으면 버린다
@@ -30,7 +30,7 @@ const KST = 9;
 type Step = 1 | 2 | 3 | 4;
 
 const STEPS: { step: Step; label: string }[] = [
-  { step: 1, label: "① 풀린 사진" },
+  { step: 1, label: "① 해결된 사진" },
   { step: 2, label: "② 지평선 두 점" },
   { step: 3, label: "③ 천정 찾기" },
   { step: 4, label: "④ 날짜마다 시각" },
@@ -308,7 +308,7 @@ export default function ZenithClockDemo() {
       <div className="grid gap-3 md:grid-cols-2">
         <div className="flex flex-col gap-1">
           <div className="text-sm opacity-70">
-            누각 사진 (풀린 변환으로 별자리선)
+            누각 사진 (해결된 변환으로 별자리선)
           </div>
           <canvas
             ref={photo}
@@ -330,7 +330,7 @@ export default function ZenithClockDemo() {
       {/* 단계 설명은 모두 같은 칸에 겹쳐 두고 지금 단계만 보인다: 가장 긴 ④만큼 자리를 늘 잡아 두어 배치가 움직이지 않는다 */}
       <div className="bg-base-300/60 rounded-box grid p-3 text-base">
         <div className={cn("[grid-area:1/1]", step !== 1 && "invisible")}>
-          사진이 풀렸으니, 사진 속 어느 점이든 하늘의 어느 방향인지 안다.
+          사진이 해결됐으니, 사진 속 어느 점이든 하늘의 어느 방향인지 안다.
         </div>
         <div className={cn("[grid-area:1/1]", step !== 2 && "invisible")}>
           지평선 위 두 점을 하늘 방향으로 바꾼다. 둘 다 고도 0°인 방향이다.
