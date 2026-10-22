@@ -10,6 +10,7 @@ import {
   zenithFromHorizon,
 } from "@/search/shotTimeEstimate";
 import { photoToSky, projectVecToPhoto } from "@/search/utils/wcs";
+import { cn } from "@/utils/cn";
 
 // 지평선 두 점 → 천정 → 위도·하늘 시계 → 날짜마다 시각. 누각 사진(정답 자세)으로 단계별로 보인다.
 //   ① 풀린 사진: 사진의 점마다 하늘 방향을 안다
@@ -326,49 +327,53 @@ export default function ZenithClockDemo() {
           />
         </div>
       </div>
-      <div className="bg-base-300/60 rounded-box p-3 text-base">
-        {step === 1 &&
-          "사진이 풀렸으니, 사진 속 어느 점이든 하늘의 어느 방향인지 안다."}
-        {step === 2 &&
-          "지평선 위 두 점을 하늘 방향으로 바꾼다. 둘 다 고도 0°인 방향이다."}
-        {step === 3 && (
-          <>
-            두 방향 모두와 90°인 방향이 머리 꼭대기(천정). 천정의 적위{" "}
-            <b className="text-amber-200">
-              {sky.clock.latDeg.toFixed(1)}° = 위도
-            </b>
-            , 적경{" "}
-            <b className="text-amber-200">
-              {hm(sky.clock.lstDeg)} = 그 순간의 하늘 시계
-            </b>
-          </>
-        )}
-        {step === 4 && (
-          <div className="flex flex-col gap-2">
-            <div>
-              하늘 시계가 {hm(sky.clock.lstDeg)}가 되는 순간은 날마다 한 번씩
-              온다. 날짜는 하늘만으로 정할 수 없다.
-            </div>
-            <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
-              {sky.times.map((t) => (
-                <div
-                  key={t.iso}
-                  className={`rounded-box p-2 ${t.answer ? "bg-amber-300/20 outline outline-2 outline-amber-300" : "bg-base-100/60"} ${t.night ? "" : "opacity-50"}`}
-                >
-                  <div className="text-sm opacity-70">{t.label}</div>
-                  <div className="text-lg font-bold">{t.time}</div>
-                  <div className="text-sm">
-                    {t.night
-                      ? t.answer
-                        ? "찍은 분 답: 4~5시"
-                        : "밤"
-                      : "낮이라 안 보임"}
-                  </div>
-                </div>
-              ))}
-            </div>
+      {/* 단계 설명은 모두 같은 칸에 겹쳐 두고 지금 단계만 보인다: 가장 긴 ④만큼 자리를 늘 잡아 두어 배치가 움직이지 않는다 */}
+      <div className="bg-base-300/60 rounded-box grid p-3 text-base">
+        <div className={cn("[grid-area:1/1]", step !== 1 && "invisible")}>
+          사진이 풀렸으니, 사진 속 어느 점이든 하늘의 어느 방향인지 안다.
+        </div>
+        <div className={cn("[grid-area:1/1]", step !== 2 && "invisible")}>
+          지평선 위 두 점을 하늘 방향으로 바꾼다. 둘 다 고도 0°인 방향이다.
+        </div>
+        <div className={cn("[grid-area:1/1]", step !== 3 && "invisible")}>
+          두 방향 모두와 90°인 방향이 머리 꼭대기(천정). 천정의 적위{" "}
+          <b className="text-amber-200">
+            {sky.clock.latDeg.toFixed(1)}° = 위도
+          </b>
+          , 적경{" "}
+          <b className="text-amber-200">
+            {hm(sky.clock.lstDeg)} = 그 순간의 하늘 시계
+          </b>
+        </div>
+        <div
+          className={cn(
+            "flex flex-col gap-2 [grid-area:1/1]",
+            step !== 4 && "invisible",
+          )}
+        >
+          <div>
+            하늘 시계가 {hm(sky.clock.lstDeg)}가 되는 순간은 날마다 한 번씩
+            온다. 날짜는 하늘만으로 정할 수 없다.
           </div>
-        )}
+          <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+            {sky.times.map((t) => (
+              <div
+                key={t.iso}
+                className={`rounded-box p-2 ${t.answer ? "bg-amber-300/20 outline outline-2 outline-amber-300" : "bg-base-100/60"} ${t.night ? "" : "opacity-50"}`}
+              >
+                <div className="text-sm opacity-70">{t.label}</div>
+                <div className="text-lg font-bold">{t.time}</div>
+                <div className="text-sm">
+                  {t.night
+                    ? t.answer
+                      ? "찍은 분 답: 4~5시"
+                      : "밤"
+                    : "낮이라 안 보임"}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
