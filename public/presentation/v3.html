@@ -1213,34 +1213,34 @@
           </aside>
         </section>
 
+        <section class="title-body-slide">
+          <h1>버즈빌은 해외로 워크샵을 가곤 했다는 전설이 있다.</h1>
+          <div class="body center">
+            <img src="resources/plate-solving-saipan-01.jpg" style="width: 100%; max-height: 800px; object-fit: contain; border-radius: 12px;">
+          </div>
+        </section>
+
         <section class="fullscreen-slide">
-          <div class="r-stack">
-            <img src="resources/plate-solving-saipan-02.svg"/>
-            <img class="fragment" src="resources/plate-solving-saipan-04.svg"/>
-            <img class="fragment" src="resources/plate-solving-saipan-06.svg"/>
-            <img class="fragment" src="resources/plate-solving-saipan-07.svg"/>
+          <div style="position: relative;">
+            <div class="r-stack">
+              <img src="resources/plate-solving-saipan-02.svg"/>
+              <img class="fragment" data-fragment-index="1" src="resources/plate-solving-saipan-04.svg"/>
+              <img class="fragment" data-fragment-index="2" src="resources/plate-solving-saipan-06.svg"/>
+              <img class="fragment" data-fragment-index="3" src="resources/plate-solving-saipan-07.svg"/>
+            </div>
+            <!-- 슬랙 캡처의 오른쪽 여백 (앱 캡처가 들어오는 가운데 칸보다 오른쪽) -->
+            <div style="position: absolute; left: 70%; top: 14%; width: 29%; text-align: left; font-size: 0.72em; line-height: 1.45;">
+              <p>사진의 별 8개만으로는<br>밤하늘 전체에서 찾기 어렵다.</p>
+              <p class="fragment" data-fragment-index="4">여기에 '언제', '어디서',<br>'지평선'이 추가되면</p>
+              <p class="fragment" data-fragment-index="5">찍은 시각 <span class="green">22:04 ~ 22:11</span><br><span class="small">(사이판 시각)</span></p>
+              <p class="fragment" data-fragment-index="6">첫 번째 사진이 귀국 후<br>캡처한 것인 걸 알 수 있다.</p>
+            </div>
           </div>
           <aside class="notes">
             2022년 첫 발표에서 사람이 풀었고, V2 발표에서도 다시 보여 드린 사이판 사진입니다.
             <br>
             (넘기며) 별을 찍고, 바다 수평선을 긋고, 메신저에 올라온 시각과 사이판이라는 장소를 넣어서 Stellarium과 맞췄습니다.
-          </aside>
-        </section>
-
-        <section class="title-body-slide">
-          <h1>버즈빌은 해외로 워크샵을 가곤 했다는 전설이 있다.</h1>
-          <div class="body">
-            <div class="two-col" style="grid-template-columns: 1fr 1.3fr;">
-              <img src="resources/plate-solving-saipan-01.jpg" style="max-height: 780px; border-radius: 12px;">
-              <div>
-                <p>별 <span class="yellow">10개</span>로는 10억 분의 1이 안 나온다</p>
-                <p class="fragment">+ 언제(올린 시각), 어디서(사이판), 지평선(바다)</p>
-                <p class="fragment">→ 남은 건 바라본 방향과 화각뿐</p>
-                <p class="fragment">클릭 없이 풀림 · 찍은 시각 <span class="green">22:04 ~ 22:11</span><br><span class="small">메신저에 올린 시각 22:36 (모두 사이판 시각 · 캡처의 9:36 PM은 한국에서 본 한국 시각)</span></p>
-              </div>
-            </div>
-          </div>
-          <aside class="notes">
+            <br>
             사이판 사진은 진짜 별이 10개 남짓이라, 9개가 맞아도 10억 분의 1 수준의 확신이 수학적으로 안 나옵니다. 하늘 전체를 뒤지면 후보가 워낙 많아서, 별 몇 개가 맞는 정도는 가짜 후보도 해냅니다. 실제로 가장 좋은 답도 10만 분의 1 수준에서 멈췄는데, 가짜 후보도 거기까지는 옵니다.
             <br>
             그때 사람은 메신저 시각, 사이판이라는 장소, 바다 수평선으로 풀었습니다. 이 방법을 그대로 기능으로 만들었습니다.
