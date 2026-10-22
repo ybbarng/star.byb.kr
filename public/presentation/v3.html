@@ -1339,18 +1339,25 @@
           </aside>
         </section>
 
-        <section class="fullscreen-slide">
-          <div class="r-stack">
-            <img src="resources/opencv-04.svg"/>
-            <div class="fragment" style="width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #0a0a0aee;">
-              <h1>OpenCV를 쓰지 말자</h1>
-              <p><span class="red">3.9MB</span>를 받아서 쓰는 건 흑백 · 흐림 · 빼기 · 별 감지</p>
-            </div>
+        <section class="title-body-slide">
+          <h1>OpenCV의 손익 계산</h1>
+          <div class="body center">
+            <table class="compare" style="font-size: 1.3em;">
+              <tr><th></th><th>OpenCV</th><th>직접 짜면</th></tr>
+              <tr><td>역할</td><td>흑백 · 흐림 · 빼기 · 별 감지</td><td>같은 일, 약 120줄</td></tr>
+              <tr><td>용량</td><td class="red">3.86MB</td><td class="green">0</td></tr>
+              <tr><td>속도</td><td class="text-neutral-400">측정 중</td><td class="text-neutral-400">측정 중</td></tr>
+            </table>
+          </div>
+          <div class="fragment" style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: #0a0a0aee;">
+            <h1>OpenCV를 쓰지 말자</h1>
           </div>
           <aside class="notes">
             V2에서 OpenCV를 빌드하려다 포기하고 그냥 썼습니다.
             <br>
-            이번에는 아예 뺐습니다. 쓰는 기능이 흑백, 흐림, 빼기뿐이라 직접 짰습니다. 3.9MB가 빠졌습니다.
+            OpenCV가 해 주던 일은 흑백, 흐림, 빼기, 그리고 밝은 점을 골라 별로 집어내는 별 감지였습니다. 별 감지는 V2 뒤에 "주변보다 밝은 점" 방식으로 바꾸면서 이미 직접 짰고, 남은 흑백, 흐림, 빼기도 120줄 남짓이면 됩니다. 그런데 이걸 위해 3.86MB를 받고 있었습니다.
+            <br>
+            (넘기면) 그래서 아예 뺐습니다. 3.9MB가 빠졌습니다.
             <br>
             덤으로, 테스트와 브라우저가 서로 다른 흐림을 쓰고 있었다는 것도 알게 됐습니다. 테스트에서 잰 성적이 실제 앱과 다를 수 있었다는 뜻이라, 같은 코드를 쓰게 맞췄습니다.
           </aside>
