@@ -256,6 +256,27 @@ export default function ZenithClockDemo() {
     }
 
     if (step >= 3) {
+      // 지평선 아래(천정에서 90° 넘게 떨어진 하늘)는 어둡게 덮는다: 그 순간 땅에 가려 안 보이는 곳
+      const Z = sky.zenith;
+      const CELL = 3;
+
+      ctx.fillStyle = "rgba(0,0,0,0.62)";
+
+      for (let y = 0; y < CHART_H; y += CELL) {
+        const dec = ((CHART_H / 2 - (y + CELL / 2)) / (CHART_H / 2)) * 90 * D;
+
+        for (let x = 0; x < CHART_W; x += CELL) {
+          const ra = (1 - (x + CELL / 2) / CHART_W) * 2 * Math.PI;
+          const below =
+            Math.cos(dec) * Math.cos(ra) * Z[0] +
+              Math.cos(dec) * Math.sin(ra) * Z[1] +
+              Math.sin(dec) * Z[2] <
+            0;
+
+          if (below) ctx.fillRect(x, y, CELL, CELL);
+        }
+      }
+
       // 지평선 큰 원
       ctx.fillStyle = "rgba(74,222,128,0.6)";
 
