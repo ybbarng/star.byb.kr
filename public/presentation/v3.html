@@ -516,7 +516,6 @@
               <tr><td>자동으로 풀리는 샘플</td><td>16장 중 4장</td><td class="green">16장 중 14장 <span class="small">(시각·장소를 알면 15장)</span></td></tr>
               <tr><td>틀린 답을 낸 횟수</td><td class="red">12번 <span class="small">(늘 답을 낸다)</span></td><td class="green">0번</td></tr>
               <tr><td>처음 받는 양</td><td>약 8MB</td><td class="green">약 0.68MB</td></tr>
-              <tr><td>서버가 하는 일</td><td>(계획: 작업자·메시지 큐)</td><td class="green">정적 파일만</td></tr>
             </table>
           </div>
           <aside class="notes">
@@ -1231,8 +1230,6 @@
             마지막 남은 일, 웹사이트 배포입니다.
             <br>
             V2 때 드림 챌린지 목표 중 하나가 "아무나 Plate Solving을 시도해 볼 수 있는 웹사이트"였는데, 이건 하지 못했습니다.
-            <br>
-            계획은 무거운 계산을 서버에서 돌리려고 작업자와 메시지 큐를 두는 것이었습니다.
           </aside>
         </section>
 
@@ -1243,7 +1240,6 @@
               <li><span class="yellow">정확도</span> 아무 사진이나 기대만큼 풀지 못하고, 틀린 답도 맞다고 했다</li>
               <li><span class="yellow">속도</span> 풀이가 너무 오래 걸렸다</li>
               <li><span class="yellow">용량</span> 받는 양이 많아 서버 비용이 걱정됐다</li>
-              <li><span class="yellow">부하</span> 받는 양을 줄이려고 서버에서 풀면 서버 부하가 걱정됐다</li>
               <li><span class="yellow">편의성</span> 개발이 멈춰 쓰기 불편했고, 사람이 별을 고쳐야 풀렸다</li>
             </ul>
           </div>
@@ -1256,8 +1252,6 @@
             <br>
             용량. 받는 양이 많아서 서버 비용이 걱정됐습니다.
             <br>
-            부하. 받는 양을 줄이려고 계산을 서버로 옮기면 이번에는 서버 부하가 걱정이었습니다. 2023년에는 계산 한 번에 메모리를 4GB 넘게 썼습니다. 이걸 찾아오는 사람마다 서버에서 돌린다고 생각하면 감당할 수 없었습니다.
-            <br>
             편의성. 개발 도중에 멈춰서 쓰기 불편했고, 사람이 별 표시를 고쳐 줘야 풀렸습니다. 저는 어떤 점을 지울지 알지만 처음 온 사람은 모릅니다.
           </aside>
         </section>
@@ -1269,7 +1263,6 @@
               <li class="done"><span class="yellow">정확도</span> <span class="small text-neutral-400">모르면 모른다고 · 사람 손 없이 풀기</span></li>
               <li class="done"><span class="yellow">속도</span> <span class="small text-neutral-400">후보까지 약 4초 → 확신까지 0.13초 (중앙값)</span></li>
               <li><span class="yellow">용량</span></li>
-              <li><span class="yellow">부하</span></li>
               <li><span class="yellow">편의성</span></li>
             </ul>
           </div>
@@ -1393,50 +1386,6 @@
               <li class="done"><span class="yellow">정확도</span> <span class="small text-neutral-400">모르면 모른다고 · 사람 손 없이 풀기</span></li>
               <li class="done"><span class="yellow">속도</span> <span class="small text-neutral-400">후보까지 약 4초 → 확신까지 0.13초 (중앙값)</span></li>
               <li class="done"><span class="yellow">용량</span> <span class="small text-neutral-400">약 8MB → 0.68MB</span></li>
-              <li><span class="yellow">부하</span></li>
-              <li><span class="yellow">편의성</span></li>
-            </ul>
-          </div>
-          <aside class="notes">
-            용량은 8MB에서 0.68MB로 줄였습니다. 다음은 부하입니다.
-          </aside>
-        </section>
-
-
-        <section class="title-body-slide">
-          <h1>서버는 정적 파일만</h1>
-          <div class="body center">
-            <table class="compare" style="font-size: 1.1em;">
-              <tr><th></th><th>V2 그대로<br><span class="small">브라우저에서 풀기</span></th><th>V2를 서버에서 풀면<br><span class="small">계획했던 길</span></th><th>V3<br><span class="small">브라우저에서 풀기</span></th></tr>
-              <tr><td>방문자당 보내는 양</td><td class="red">약 28MB</td><td>작음</td><td class="green">0.68MB</td></tr>
-              <tr><td>서버 메모리</td><td>0</td><td class="red">프로세스 하나에 약 0.75GB</td><td class="green">0</td></tr>
-              <tr><td>사진 한 장의 서버 계산</td><td>0</td><td class="red">약 0.5초 <span class="small">(12MP 1초)</span></td><td class="green">0</td></tr>
-              <tr><td>코어 하나가 감당</td><td>-</td><td>초당 약 2장</td><td>-</td></tr>
-            </table>
-          </div>
-          <aside class="notes">
-            V2를 그대로 올렸다면 서버 계산은 0이지만, 방문자 한 명에게 약 28MB를 보내야 했습니다. 패턴 DB만 65MB, 압축해도 22MB였습니다. 이게 용량 걱정입니다.
-            <br>
-            그걸 피하려고 서버에서 풀면, 지금 V2 코드를 그대로 서버처럼 돌려 재 보니 프로세스 하나가 준비만 마쳐도 메모리를 약 0.75GB 쓰고, 사진 한 장에 CPU가 약 0.5초, 큰 사진은 1초 듭니다. 코어 하나로 초당 2장 안팎이고, 4개를 띄우면 메모리만 3~4GB입니다. 이게 부하 걱정입니다.
-            <br>
-            V3는 둘 다 피했습니다. 계산은 각자의 브라우저가 하고, 서버는 0.68MB짜리 정적 파일만 내려 줍니다. 계산이 없어진 게 아니라 사용자 쪽으로 간 겁니다. 그래서 몇 명이 오든 서버 부담이 거의 늘지 않습니다.
-            <br>
-            (측정 조건) 노트북(M3 Pro)에서 node로 서버 역할을 흉내 낸 값입니다. 업로드 전송과 대기열은 빠져 있습니다. 28MB는 V2의 패턴 DB 압축 크기, OpenCV, 글꼴을 더한 값입니다.
-            <br>
-            V2에서 그렸던 작업자, 메시지 큐 구조가 필요 없어졌습니다.
-            <br>
-            2023년 드림 챌린지 때는 SvelteKit, RabbitMQ, docker-compose로 서비스 여러 개를 띄웠는데, 이제는 정적 파일 묶음 하나입니다.
-          </aside>
-        </section>
-
-        <section class="title-body-slide">
-          <h1>V2를 배포하지 못한 이유</h1>
-          <div class="body center">
-            <ul class="checklist" style="font-size: 1.35em; line-height: 1.8;">
-              <li class="done"><span class="yellow">정확도</span> <span class="small text-neutral-400">모르면 모른다고 · 사람 손 없이 풀기</span></li>
-              <li class="done"><span class="yellow">속도</span> <span class="small text-neutral-400">후보까지 약 4초 → 확신까지 0.13초 (중앙값)</span></li>
-              <li class="done"><span class="yellow">용량</span> <span class="small text-neutral-400">약 8MB → 0.68MB</span></li>
-              <li class="done"><span class="yellow">부하</span> <span class="small text-neutral-400">서버에서 도는 계산 0</span></li>
               <li class="fragment check-on" data-fragment-index="2"><span class="yellow">편의성</span></li>
             </ul>
           </div>
@@ -1444,7 +1393,7 @@
             <h1>편의성은 직접 판단해 보세요.</h1>
           </div>
           <aside class="notes">
-            부하도 없어졌습니다. 서버는 파일만 내려 줍니다.
+            용량은 8MB에서 0.68MB로 줄였습니다.
             <br>
             (넘기면) 남은 편의성은 제가 체크할 수 없습니다. 사람 손 없이 풀리게 했고 주소 하나로 열리지만, 쓰기 편한지는 써 보시는 분들이 정할 일입니다. 마지막에 직접 써 보실 수 있게 해 드리겠습니다.
             <br>
