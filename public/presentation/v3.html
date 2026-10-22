@@ -1298,12 +1298,12 @@
         <section class="title-body-slide">
           <h1>V2를 배포하지 못한 이유</h1>
           <div class="body center">
-            <ul style="font-size: 1.35em; line-height: 1.8;">
+            <ul class="checklist" style="font-size: 1.35em; line-height: 1.8;">
               <li><span class="yellow">정확도</span> 아무 사진이나 기대만큼 풀지 못하고, 틀린 답도 맞다고 했다</li>
-              <li><span class="yellow">편의성</span> 개발이 멈춰 쓰기 불편했고, 사람이 별을 고쳐야 풀렸다</li>
               <li><span class="yellow">속도</span> 풀이가 너무 오래 걸렸다</li>
               <li><span class="yellow">용량</span> 받는 양이 많아 서버 비용이 걱정됐다</li>
               <li><span class="yellow">부하</span> 받는 양을 줄이려고 서버에서 풀면 서버 부하가 걱정됐다</li>
+              <li><span class="yellow">편의성</span> 개발이 멈춰 쓰기 불편했고, 사람이 별을 고쳐야 풀렸다</li>
             </ul>
           </div>
           <aside class="notes">
@@ -1311,15 +1311,31 @@
             <br>
             정확도. 어떤 사진을 올려도 기대만큼 풀어 준다고 할 수 없었고, 틀린 답도 맞다고 했습니다. 공개 서비스에서는 못 푸는 것보다 틀린 답을 자신 있게 말하는 게 더 나쁩니다.
             <br>
-            편의성. 개발 도중에 멈춰서 쓰기 불편했고, 사람이 별 표시를 고쳐 줘야 풀렸습니다. 저는 어떤 점을 지울지 알지만 처음 온 사람은 모릅니다.
-            <br>
             속도. 풀이가 너무 오래 걸렸습니다.
             <br>
             용량. 받는 양이 많아서 서버 비용이 걱정됐습니다.
             <br>
             부하. 받는 양을 줄이려고 계산을 서버로 옮기면 이번에는 서버 부하가 걱정이었습니다. 2023년에 실제로 서버에서 돌려 보니 메모리를 4GB 넘게 썼고, star.byb.kr 서버에서는 메모리가 모자라 설치부터 실패했습니다.
             <br>
-            정확도와 편의성은 앞에서 풀었습니다. 틀린 답은 "모르면 모른다고 하기"로, 사람 손은 "사람이 하던 일을 컴퓨터로"로 없앴습니다. 속도도 확신하면 바로 멈추고, 길어도 8초에서 끊습니다. 이제 남은 건 용량과 부하입니다.
+            편의성. 개발 도중에 멈춰서 쓰기 불편했고, 사람이 별 표시를 고쳐 줘야 풀렸습니다. 저는 어떤 점을 지울지 알지만 처음 온 사람은 모릅니다.
+          </aside>
+        </section>
+
+        <section class="title-body-slide">
+          <h1>V2를 배포하지 못한 이유</h1>
+          <div class="body center">
+            <ul class="checklist" style="font-size: 1.35em; line-height: 1.8;">
+              <li class="done"><span class="yellow">정확도</span> <span class="small text-neutral-400">모르면 모른다고 · 사람 손 없이 풀기</span></li>
+              <li class="done"><span class="yellow">속도</span> <span class="small text-neutral-400">확신하면 바로 멈춘다 · 길어도 8초</span></li>
+              <li><span class="yellow">용량</span></li>
+              <li><span class="yellow">부하</span></li>
+              <li><span class="yellow">편의성</span></li>
+            </ul>
+          </div>
+          <aside class="notes">
+            정확도와 속도는 앞에서 풀었습니다. 틀린 답은 "모르면 모른다고 하기"로 걸러 내고, 별 고르기는 "사람이 하던 일을 컴퓨터로"에서 사람 손 없이 하게 했습니다. 속도는 확신하면 바로 멈추고, 길어도 8초에서 끊습니다.
+            <br>
+            이제 용량부터 하나씩 보겠습니다.
           </aside>
         </section>
 
@@ -1386,6 +1402,22 @@
           </aside>
         </section>
 
+        <section class="title-body-slide">
+          <h1>V2를 배포하지 못한 이유</h1>
+          <div class="body center">
+            <ul class="checklist" style="font-size: 1.35em; line-height: 1.8;">
+              <li class="done"><span class="yellow">정확도</span> <span class="small text-neutral-400">모르면 모른다고 · 사람 손 없이 풀기</span></li>
+              <li class="done"><span class="yellow">속도</span> <span class="small text-neutral-400">확신하면 바로 멈춘다 · 길어도 8초</span></li>
+              <li class="done"><span class="yellow">용량</span> <span class="small text-neutral-400">약 8MB → 0.68MB</span></li>
+              <li><span class="yellow">부하</span></li>
+              <li><span class="yellow">편의성</span></li>
+            </ul>
+          </div>
+          <aside class="notes">
+            용량은 8MB에서 0.68MB로 줄였습니다. 다음은 부하입니다.
+          </aside>
+        </section>
+
 
         <section class="title-body-slide">
           <h1>서버는 정적 파일만</h1>
@@ -1403,6 +1435,22 @@
             V2에서 그렸던 작업자, 메시지 큐 구조가 필요 없어졌습니다. 그래서 star.byb.kr에 올렸습니다.
             <br>
             2023년 드림 챌린지 때는 SvelteKit, RabbitMQ, docker-compose로 서비스 여러 개를 띄웠는데, 이제는 정적 파일 묶음 하나입니다.
+          </aside>
+        </section>
+
+        <section class="title-body-slide">
+          <h1>V2를 배포하지 못한 이유</h1>
+          <div class="body center">
+            <ul class="checklist" style="font-size: 1.35em; line-height: 1.8;">
+              <li class="done"><span class="yellow">정확도</span> <span class="small text-neutral-400">모르면 모른다고 · 사람 손 없이 풀기</span></li>
+              <li class="done"><span class="yellow">속도</span> <span class="small text-neutral-400">확신하면 바로 멈춘다 · 길어도 8초</span></li>
+              <li class="done"><span class="yellow">용량</span> <span class="small text-neutral-400">약 8MB → 0.68MB</span></li>
+              <li class="done"><span class="yellow">부하</span> <span class="small text-neutral-400">서버에서 도는 계산 0</span></li>
+              <li><span class="yellow">편의성</span></li>
+            </ul>
+          </div>
+          <aside class="notes">
+            부하도 없어졌습니다. 서버는 파일만 내려 줍니다. 남은 편의성은 맨 마지막에 보겠습니다.
           </aside>
         </section>
 
@@ -1499,6 +1547,24 @@
           </div>
           <aside class="notes">
             그래도 남은 일이 있습니다. 다음 V4를 기대해 주세요.
+          </aside>
+        </section>
+
+        <section class="title-body-slide">
+          <h1>V2를 배포하지 못한 이유</h1>
+          <div class="body center">
+            <ul class="checklist" style="font-size: 1.35em; line-height: 1.8;">
+              <li class="done"><span class="yellow">정확도</span> <span class="small text-neutral-400">모르면 모른다고 · 사람 손 없이 풀기</span></li>
+              <li class="done"><span class="yellow">속도</span> <span class="small text-neutral-400">확신하면 바로 멈춘다 · 길어도 8초</span></li>
+              <li class="done"><span class="yellow">용량</span> <span class="small text-neutral-400">약 8MB → 0.68MB</span></li>
+              <li class="done"><span class="yellow">부하</span> <span class="small text-neutral-400">서버에서 도는 계산 0</span></li>
+              <li><span class="yellow">편의성</span> <span class="fragment small">→ 직접 써 보고 체크해 주세요</span></li>
+            </ul>
+          </div>
+          <aside class="notes">
+            남은 하나, 편의성입니다. 사람 손 없이 풀리게 했고, 이제 주소 하나로 열립니다.
+            <br>
+            (넘기면) 그래도 쓰기 편한지는 제가 체크하지 않겠습니다. 써 보시는 분들이 정할 일입니다.
           </aside>
         </section>
 
