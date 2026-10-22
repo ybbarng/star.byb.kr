@@ -307,6 +307,14 @@ export default function ZenithClockDemo() {
       ctx.font = "bold 14px sans-serif";
       ctx.fillText("천정", zx + 14, zy - 10);
     }
+
+    // 위아래 방향: 땅의 방향과 헷갈리지 않게 '하늘의' 북쪽·남쪽 (지평선 아래 덮개보다 위에 그린다)
+    ctx.fillStyle = "rgba(255,255,255,0.75)";
+    ctx.font = "bold 13px sans-serif";
+    ctx.textAlign = "right";
+    ctx.fillText("↑ 하늘의 북쪽", CHART_W - 6, 16);
+    ctx.fillText("↓ 하늘의 남쪽", CHART_W - 6, CHART_H - 20);
+    ctx.textAlign = "left";
   }, [sky, step]);
 
   if (!data || !sky) {
