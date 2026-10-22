@@ -15,10 +15,10 @@ import {
 } from "@/test/synthetic/loadCatalog";
 
 // 발표의 사이판 사진: 별이 10개 안팎이라 blind 풀이는 우연과 구분하지 못한다(log-odds 5대).
-// 발표에서 사람이 쓴 단서 — 슬랙에 올라온 시각(2019-06-17 21:36, 사이판 시간), 사이판, 바다 수평선 —
+// 발표에서 사람이 쓴 단서 — 슬랙에 올라온 시각(2019-06-17 22:36 사이판, 캡처엔 한국 시각 21:36), 사이판, 바다 수평선 —
 // 로 푼다. 정답(센타우루스·남십자, 사람 라벨 data/search/saipan.json)은 판정에 쓰지 않는다.
 const FILE = "20190617-jarrod-saipan.jpg";
-const POSTED_AT = new Date("2019-06-17T21:36:00+10:00");
+const POSTED_AT = new Date("2019-06-17T22:36:00+10:00");
 const SAIPAN = { latDeg: 15.18, lonDeg: 145.75 };
 // 바다 수평선 (사진을 잘라 눈으로 찾음)
 const SEA_HORIZON: [Point2D, Point2D] = [
@@ -65,10 +65,10 @@ describe.skipIf(!ready)("사이판 사진: 시각·장소·수평선으로 풀�
     expect(
       angleDeg(r.centerVector, answerVector(getSampleAnswer(FILE)!)),
     ).toBeLessThan(2);
-    // 찾은 촬영 시각은 올린 시각에서 30분 남짓 뒤 (슬랙이 한국 시간으로 보였다면 25분 앞)
+    // 찾은 촬영 시각은 올린 시각보다 25~30분 앞 (찍고 나서 올렸다)
     const minutes = (r.date.getTime() - POSTED_AT.getTime()) / 60000;
-    expect(minutes).toBeGreaterThan(15);
-    expect(minutes).toBeLessThan(60);
+    expect(minutes).toBeGreaterThan(-60);
+    expect(minutes).toBeLessThan(-15);
   }, 60000);
 
   it("사람이 찍지 않고 자동으로 찾은 지평선으로도 확신한다", async () => {
