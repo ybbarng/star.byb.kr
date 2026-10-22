@@ -25,15 +25,11 @@ const RA_MAX = 210;
 const DEC_MIN = -22;
 const DEC_MAX = 22;
 
-// 세 사진을 따로 풀어 얻은 달 위치 (J2000 적경·적위, 도)
-const PHOTO_MOONS = [
-  { name: "034 (약 73mm)", ra: 173.6, dec: 0.2 },
-  { name: "039 (약 24mm)", ra: 173.3, dec: 0.1 },
-  { name: "040 (약 24mm)", ra: 173.6, dec: 0.4 },
-];
+// 세 사진을 따로 풀어 얻은 달 위치의 평균 (J2000 적경·적위, 도).
+// 034(약 73mm) 173.6·0.2, 039(약 24mm) 173.3·0.1, 040(약 24mm) 173.6·0.4 — 서로 0.3° 안이라 달 하나로 그린다
 const TARGET = { ra: 173.5, dec: 0.23 };
-// 사진 속 달은 가는 그믐달 (빛나는 부분이 이보다 작다)
-const MAX_LIT = 0.15;
+// 사진 속 달은 가는 그믐달. 사진으로는 빛나는 비율을 정확히 못 재니 10% 이하면 맞는 것으로 본다
+const MAX_LIT = 0.1;
 
 const visible = (p: { moonAlt: number; sunAlt: number; lit: number }) =>
   p.moonAlt > 0 && p.sunAlt < -6 && p.lit <= MAX_LIT;
@@ -54,10 +50,13 @@ const moonAt = (t: Date) => {
   const moon = moonVectorFrom(jd, OBSERVER);
   const sun = sunVector(jd);
   const [ra, dec] = raDecOf(ofDateToJ2000(moon, jd));
+  const [sunRa, sunDec] = raDecOf(ofDateToJ2000(sun, jd));
 
   return {
     ra,
     dec,
+    sunRa,
+    sunDec,
     lit: (1 - (moon[0] * sun[0] + moon[1] * sun[1] + moon[2] * sun[2])) / 2,
     moonAlt: altAzOf(moon, jd, OBSERVER).altDeg,
     sunAlt: altAzOf(sun, jd, OBSERVER).altDeg,
@@ -191,25 +190,54 @@ export default function MoonDateDemo() {
       ctx.stroke();
     });
 
-    // 사진 속 달 세 개
-    ctx.font = "bold 13px sans-serif";
+    // 사진 속 달: 세 장의 달 자리에, 맞는 때의 모양(빛나는 비율·해 쪽 방향)으로 크게 그린다
+    const t = toXY(TARGET.ra, TARGET.dec);
+    const shot = passes.find(visible);
+    const r = 24;
+    ctx.fillStyle = "#1e293b";
+    ctx.strokeStyle = "rgba(253,230,138,0.35)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(t.x, t.y, r, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.stroke();
 
-    for (const m of PHOTO_MOONS) {
-      const p = toXY(m.ra, m.dec);
+    if (shot) {
+      // 달에서 본 해 쪽 방향 (적경이 왼쪽으로 커지고, 화면 y는 아래로)
+      const da = (shot.sunRa - shot.ra) * D;
+      const d1 = shot.dec * D;
+      const d2 = shot.sunDec * D;
+      const angle = Math.atan2(
+        -(
+          Math.sin(d2) * Math.cos(d1) -
+          Math.cos(d2) * Math.sin(d1) * Math.cos(da)
+        ),
+        -Math.cos(d2) * Math.sin(da),
+      );
+      // 해 쪽 반원에서 경계 타원을 빼면 빛나는 부분 (그믐달은 경계가 해 쪽으로 휜다)
+      ctx.save();
+      ctx.translate(t.x, t.y);
+      ctx.rotate(angle);
       ctx.fillStyle = "#fde68a";
       ctx.beginPath();
-      ctx.arc(p.x, p.y, 4, 0, 2 * Math.PI);
+      ctx.arc(0, 0, r, -Math.PI / 2, Math.PI / 2);
+      ctx.ellipse(
+        0,
+        0,
+        r * Math.abs(1 - 2 * shot.lit),
+        r,
+        0,
+        Math.PI / 2,
+        -Math.PI / 2,
+        shot.lit < 0.5,
+      );
       ctx.fill();
+      ctx.restore();
     }
 
-    const t = toXY(TARGET.ra, TARGET.dec);
-    ctx.strokeStyle = "#fde68a";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.arc(t.x, t.y, 14, 0, 2 * Math.PI);
-    ctx.stroke();
+    ctx.font = "bold 13px sans-serif";
     ctx.fillStyle = "#fde68a";
-    ctx.fillText("사진 속 달 (세 장)", t.x + 18, t.y - 10);
+    ctx.fillText("사진 속 달 (세 장)", t.x + 30, t.y - 18);
   }, [passes, picked]);
 
   return (
@@ -232,10 +260,25 @@ export default function MoonDateDemo() {
             onClick={() => setPicked(i)}
           >
             <span className="font-bold">{kstLabel(p.t)}</span>
-            <span className="opacity-80">
-              {/* 해가 떠 있으면 낮. 달이 땅 아래면 보이지 않으니 0% */}
-              {p.sunAlt > -6 ? "낮" : "밤"} ·{" "}
-              {p.moonAlt < 0 ? 0 : Math.round(p.lit * 100)}%
+            <span>
+              {/* 해가 떠 있으면 낮. 달이 땅 아래면 보이지 않으니 0%. 사진과 맞는 쪽(밤, 10% 이하)을 굵고 희게 */}
+              <span
+                className={
+                  p.sunAlt > -6 ? "opacity-40" : "font-bold text-white"
+                }
+              >
+                {p.sunAlt > -6 ? "낮" : "밤"}
+              </span>
+              <span className="opacity-60"> · </span>
+              <span
+                className={
+                  p.moonAlt > 0 && p.lit <= MAX_LIT
+                    ? "font-bold text-white"
+                    : "opacity-40"
+                }
+              >
+                {p.moonAlt < 0 ? 0 : Math.round(p.lit * 100)}%
+              </span>
             </span>
           </button>
         ))}
