@@ -234,6 +234,25 @@ export default function ZenithClockDemo() {
       ctx.fillText(`${dec}°`, 2, y - 2);
     }
 
+    // 별자리선 (흐리게). 적경 0시·24시 경계를 넘는 선분은 지도 양 끝으로 갈라지니 그리지 않는다
+    ctx.strokeStyle = "rgba(253,230,138,0.22)";
+    ctx.lineWidth = 1;
+
+    for (const c of CONSTELLATIONS) {
+      const pts = c.stars.map((v) => chartXY(raDecOf(v as Point3D)));
+
+      for (let i = 0; i < pts.length - 1; i++) {
+        const [p, q] = [pts[i], pts[i + 1]];
+
+        if (Math.abs(p[0] - q[0]) > CHART_W / 2) continue;
+
+        ctx.beginPath();
+        ctx.moveTo(p[0], p[1]);
+        ctx.lineTo(q[0], q[1]);
+        ctx.stroke();
+      }
+    }
+
     for (const s of STARS) {
       if (s.mag > 4) continue;
 
@@ -308,13 +327,61 @@ export default function ZenithClockDemo() {
       ctx.fillText("천정", zx + 14, zy - 10);
     }
 
+    // 축 눈금(적경 시각·적위 각도)은 지평선 아래 덮개 위에 다시 그려 늘 잘 보이게 한다
+    if (step >= 3) {
+      // 덮개 아래로 사라진 격자선도 다시 (덮개 밖은 원래 선과 겹쳐 조금 진해질 뿐)
+      ctx.strokeStyle = "rgba(160,180,255,0.12)";
+      ctx.lineWidth = 1;
+
+      for (let h = 0; h <= 24; h += 2) {
+        const [x] = chartXY([h * 15, 0]);
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, CHART_H);
+        ctx.stroke();
+      }
+
+      for (let dec = -60; dec <= 60; dec += 30) {
+        const [, y] = chartXY([0, dec]);
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(CHART_W, y);
+        ctx.stroke();
+      }
+    }
+
+    ctx.fillStyle = "rgba(255,255,255,0.6)";
+    ctx.font = "11px sans-serif";
+
+    for (let h = 0; h < 24; h += 4) {
+      const [x] = chartXY([h * 15, 0]);
+      ctx.fillText(`${h}시`, x + 2, CHART_H - 4);
+    }
+
+    for (let dec = -60; dec <= 60; dec += 30) {
+      const [, y] = chartXY([0, dec]);
+      ctx.fillText(`${dec}°`, 2, y - 2);
+    }
+
+    if (step >= 3) {
+      // 천정에서 내린 점선이 가로축(적경 = 시간)과 만나는 곳에 그 순간의 하늘 시계
+      const [zx] = chartXY(raDecOf(sky.zenith));
+      const label = `하늘 시계 ${hm(sky.clock.lstDeg)}`;
+      ctx.font = "bold 14px sans-serif";
+      const w = ctx.measureText(label).width + 12;
+      const bx = Math.min(CHART_W - w - 2, Math.max(2, zx - w / 2));
+      ctx.fillStyle = "rgba(11,15,34,0.9)";
+      ctx.fillRect(bx, CHART_H - 40, w, 20);
+      ctx.fillStyle = "#fde68a";
+      ctx.fillText(label, bx + 6, CHART_H - 25);
+    }
+
     // 위아래 방향: 땅의 방향과 헷갈리지 않게 '하늘의' 북쪽·남쪽 (지평선 아래 덮개보다 위에 그린다)
     ctx.fillStyle = "rgba(255,255,255,0.75)";
     ctx.font = "bold 13px sans-serif";
-    ctx.textAlign = "right";
-    ctx.fillText("↑ 하늘의 북쪽", CHART_W - 6, 16);
-    ctx.fillText("↓ 하늘의 남쪽", CHART_W - 6, CHART_H - 20);
-    ctx.textAlign = "left";
+    // 왼쪽 위·아래에 둔다 (오른쪽 아래는 하늘 시계 값 자리와 겹칠 수 있다)
+    ctx.fillText("↑ 하늘의 북쪽", 36, 16);
+    ctx.fillText("↓ 하늘의 남쪽", 36, CHART_H - 20);
   }, [sky, step]);
 
   if (!data || !sky) {
