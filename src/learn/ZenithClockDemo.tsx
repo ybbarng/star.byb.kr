@@ -364,17 +364,14 @@ export default function ZenithClockDemo() {
     }
 
     if (step >= 3) {
-      // 천정에서 그은 가로 점선(적위를 읽는 선)이 세로축과 만나는 왼쪽 끝에, 축 눈금과 나란히 위도
+      // 천정에서 그은 가로 점선(적위를 읽는 선)의 왼쪽 끝 바로 위에 위도 (점선은 끝까지 보이게)
       {
         const [, zy] = chartXY(raDecOf(sky.zenith));
         const lat = `위도 ${sky.clock.latDeg.toFixed(1)}°`;
         ctx.font = "bold 14px sans-serif";
-        const lw = ctx.measureText(lat).width + 12;
-        const lx = 0;
-        ctx.fillStyle = "rgba(11,15,34,0.9)";
-        ctx.fillRect(lx, zy - 10, lw, 20);
+        // 바탕 상자 없이 글자만: 지평선 점을 가리지 않는다
         ctx.fillStyle = "#fde68a";
-        ctx.fillText(lat, lx + 4, zy + 5);
+        ctx.fillText(lat, 4, zy - 7);
       }
 
       // 천정에서 내린 점선이 가로축(적경 = 시간)과 만나는 곳에 그 순간의 하늘 시계
@@ -382,7 +379,8 @@ export default function ZenithClockDemo() {
       const label = `하늘 시계 ${hm(sky.clock.lstDeg)}`;
       ctx.font = "bold 14px sans-serif";
       const w = ctx.measureText(label).width + 12;
-      const bx = Math.min(CHART_W - w - 2, Math.max(2, zx - w / 2));
+      // 세로 점선을 가리지 않게 점선 오른쪽에 (자리가 없으면 왼쪽)
+      const bx = zx + 6 + w <= CHART_W ? zx + 6 : zx - 6 - w;
       ctx.fillStyle = "rgba(11,15,34,0.9)";
       ctx.fillRect(bx, CHART_H - 40, w, 20);
       ctx.fillStyle = "#fde68a";
