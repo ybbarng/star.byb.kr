@@ -126,7 +126,7 @@ export default function Page() {
         </p>
       </LearnSection>
 
-      <LearnSection title="사각형 색인과 HEALPix">
+      <LearnSection title="사각형 색인과 HEALPix" id="healpix">
         <p>
           처음 만든 방법은 별 <b>넷</b>의 모양(기하 해싱)이었어요. 문제는 조합의
           수예요. 별 k개에서 넷을 고르는 방법은 k⁴/24 정도로, 별이 두 배면

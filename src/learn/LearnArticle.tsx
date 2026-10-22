@@ -87,15 +87,18 @@ export default function LearnArticle({
 }
 
 // 본문 한 칸 (제목 + 내용)
+// id를 주면 다른 곳(발표 자료)에서 그 절로 바로 링크할 수 있다
 export function LearnSection({
   title,
+  id,
   children,
 }: {
   title: string;
+  id?: string;
   children: React.ReactNode;
 }) {
   return (
-    <section className="flex flex-col gap-3">
+    <section id={id} className="flex scroll-mt-20 flex-col gap-3">
       <h2 className="text-xl font-bold">{title}</h2>
       <div className="flex flex-col gap-3 leading-relaxed opacity-85">
         {children}
