@@ -72,6 +72,9 @@ export default function ZenithClockDemo() {
   const [data, setData] = useState<Data | null>(null);
   const [image, setImage] = useState<HTMLImageElement | null>(null);
   const [step, setStep] = useState<Step>(1);
+  // 지평선 두 점 (사진 좌표). 처음엔 자료의 먼 능선 두 점, ②부터 사람이 끌어서 옮길 수 있다
+  const [horizon, setHorizon] = useState<[Point2D, Point2D] | null>(null);
+  const dragging = useRef<0 | 1 | null>(null);
   const photo = useRef<HTMLCanvasElement>(null);
   const chart = useRef<HTMLCanvasElement>(null);
 
@@ -80,7 +83,12 @@ export default function ZenithClockDemo() {
 
     fetch("/learn/zenith-seoul.json")
       .then((r) => r.json())
-      .then((d: Data) => alive && setData(d));
+      .then((d: Data) => {
+        if (!alive) return;
+
+        setData(d);
+        setHorizon(d.horizon);
+      });
     const img = new Image();
     img.onload = () => alive && setImage(img);
     img.src = SRC;
@@ -91,15 +99,19 @@ export default function ZenithClockDemo() {
   }, []);
 
   const sky = useMemo(() => {
-    if (!data) return null;
+    if (!data || !horizon) return null;
 
-    const a = photoToSky(data.TP, data.horizon[0]);
-    const b = photoToSky(data.TP, data.horizon[1]);
+    const a = photoToSky(data.TP, horizon[0]);
+    const b = photoToSky(data.TP, horizon[1]);
     const zenith = zenithFromHorizon(
       a,
       b,
       photoToSky(data.TP, [data.W / 2, 0]),
-    )!;
+    );
+
+    // 두 점이 겹치면 지평선을 정할 수 없다
+    if (!zenith) return null;
+
     const clock = skyClockOf(zenith);
     // 지평선 = 천정에서 90° 떨어진 큰 원
     const u = a;
@@ -134,7 +146,7 @@ export default function ZenithClockDemo() {
     });
 
     return { a, b, zenith, clock, ring, times };
-  }, [data]);
+  }, [data, horizon]);
 
   // 사진
   useEffect(() => {
@@ -176,7 +188,7 @@ export default function ZenithClockDemo() {
     }
 
     if (step >= 2) {
-      const [p, q] = data.horizon;
+      const [p, q] = horizon!;
       ctx.strokeStyle = "#4ade80";
       ctx.lineWidth = 3;
       ctx.beginPath();
@@ -185,16 +197,23 @@ export default function ZenithClockDemo() {
       ctx.stroke();
       ctx.fillStyle = "#4ade80";
 
-      for (const [x, y] of data.horizon) {
+      for (const [x, y] of horizon!) {
         ctx.beginPath();
         ctx.arc(x * k, y * k, 7, 0, 2 * Math.PI);
         ctx.fill();
       }
 
       ctx.font = "bold 14px sans-serif";
-      ctx.fillText("먼 능선 = 지평선", q[0] * k + 10, q[1] * k - 8);
+      ctx.fillText(
+        horizon === data.horizon ||
+          (horizon![0] === data.horizon[0] && horizon![1] === data.horizon[1])
+          ? "먼 능선 = 지평선"
+          : "지평선",
+        q[0] * k + 10,
+        q[1] * k - 8,
+      );
     }
-  }, [data, image, sky, step]);
+  }, [data, image, sky, step, horizon]);
 
   // 하늘 지도 (적경·적위)
   useEffect(() => {
@@ -395,9 +414,24 @@ export default function ZenithClockDemo() {
     ctx.fillText("↓ 하늘의 남쪽", 36, CHART_H - 20);
   }, [sky, step]);
 
-  if (!data || !sky) {
+  // 화면 좌표 → 사진 좌표 (사진 밖으로는 못 나가게)
+  const toPhoto = (e: React.PointerEvent<HTMLCanvasElement>): Point2D => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const W = data?.W ?? 1;
+    const H = data?.H ?? 1;
+
+    return [
+      Math.min(W, Math.max(0, ((e.clientX - rect.left) / rect.width) * W)),
+      Math.min(H, Math.max(0, ((e.clientY - rect.top) / rect.height) * H)),
+    ];
+  };
+
+  if (!data || !sky || !horizon) {
     return <div className="text-sm opacity-60">자료를 불러오는 중…</div>;
   }
+
+  const moved =
+    horizon[0] !== data.horizon[0] || horizon[1] !== data.horizon[1];
 
   return (
     <div className="flex flex-col gap-3">
@@ -411,6 +445,13 @@ export default function ZenithClockDemo() {
             {s.label}
           </button>
         ))}
+        {/* 늘 자리를 잡아 두고, 지평선을 옮겼을 때만 보인다 */}
+        <button
+          className={cn("btn btn-sm btn-ghost ml-auto", !moved && "invisible")}
+          onClick={() => setHorizon(data.horizon)}
+        >
+          지평선 원래대로
+        </button>
       </div>
       <div className="grid gap-3 md:grid-cols-2">
         <div className="flex flex-col gap-1">
@@ -419,8 +460,47 @@ export default function ZenithClockDemo() {
           </div>
           <canvas
             ref={photo}
-            className="rounded-box h-auto w-full"
+            className={cn(
+              "rounded-box h-auto w-full touch-none",
+              step >= 2 && "cursor-grab",
+            )}
             style={{ maxHeight: "80vh" }}
+            onPointerDown={(e) => {
+              if (step < 2 || !data || !horizon) return;
+
+              const p = toPhoto(e);
+              // 화면에서 손가락 크기(약 24px) 안의 점을 잡는다
+              const reach =
+                (24 / e.currentTarget.getBoundingClientRect().width) * data.W;
+              const d = horizon.map((h) =>
+                Math.hypot(h[0] - p[0], h[1] - p[1]),
+              );
+              const i = d[0] <= d[1] ? 0 : 1;
+
+              if (d[i] > reach) return;
+
+              dragging.current = i;
+              e.currentTarget.setPointerCapture(e.pointerId);
+            }}
+            onPointerMove={(e) => {
+              const i = dragging.current;
+
+              if (i === null || !horizon) return;
+
+              const p = toPhoto(e);
+              const other = horizon[1 - i];
+
+              // 두 점이 너무 붙으면 지평선을 정할 수 없으니 그 자리로는 옮기지 않는다
+              if (Math.hypot(p[0] - other[0], p[1] - other[1]) < data!.W * 0.02)
+                return;
+
+              const next: [Point2D, Point2D] = [horizon[0], horizon[1]];
+              next[i] = p;
+              setHorizon(next);
+            }}
+            onPointerUp={() => {
+              dragging.current = null;
+            }}
           />
         </div>
         <div className="flex flex-col gap-1">
