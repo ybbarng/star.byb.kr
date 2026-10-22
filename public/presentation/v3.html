@@ -130,6 +130,8 @@
       .checklist li { margin: 0.5em 0; }
       .checklist li::before { content: "☐ "; color: oklch(.708 0 0); }
       .checklist li.done::before { content: "☑ "; color: #4ade80; }
+      .reveal .slides section .checklist li.fragment.check-on { opacity: 1; visibility: inherit; }
+      .checklist li.check-on.visible::before { content: "☑ "; color: #4ade80; }
 
       /* 땅 가리기: 사진 위에 아래쪽을 덮는 띠 */
       .sky-crop { position: relative; }
@@ -1488,11 +1490,18 @@
               <li class="done"><span class="yellow">속도</span> <span class="small text-neutral-400">확신하면 바로 멈춘다 · 길어도 8초</span></li>
               <li class="done"><span class="yellow">용량</span> <span class="small text-neutral-400">약 8MB → 0.68MB</span></li>
               <li class="done"><span class="yellow">부하</span> <span class="small text-neutral-400">서버에서 도는 계산 0</span></li>
-              <li><span class="yellow">편의성</span></li>
+              <li class="fragment check-on" data-fragment-index="2"><span class="yellow">편의성</span></li>
             </ul>
           </div>
+          <div class="fragment fade-in-then-out" data-fragment-index="1" style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: #0a0a0aee;">
+            <h1>편의성은 직접 판단해 보세요.</h1>
+          </div>
           <aside class="notes">
-            부하도 없어졌습니다. 서버는 파일만 내려 줍니다. 남은 편의성은 맨 마지막에 보겠습니다.
+            부하도 없어졌습니다. 서버는 파일만 내려 줍니다.
+            <br>
+            (넘기면) 남은 편의성은 제가 체크할 수 없습니다. 사람 손 없이 풀리게 했고 주소 하나로 열리지만, 쓰기 편한지는 써 보시는 분들이 정할 일입니다. 마지막에 직접 써 보실 수 있게 해 드리겠습니다.
+            <br>
+            (넘기면) 그래도 배포는 했으니 체크합니다.
           </aside>
         </section>
 
@@ -1589,24 +1598,6 @@
           </div>
           <aside class="notes">
             그래도 남은 일이 있습니다. 다음 V4를 기대해 주세요.
-          </aside>
-        </section>
-
-        <section class="title-body-slide">
-          <h1>V2를 배포하지 못한 이유</h1>
-          <div class="body center">
-            <ul class="checklist" style="font-size: 1.35em; line-height: 1.8;">
-              <li class="done"><span class="yellow">정확도</span> <span class="small text-neutral-400">모르면 모른다고 · 사람 손 없이 풀기</span></li>
-              <li class="done"><span class="yellow">속도</span> <span class="small text-neutral-400">확신하면 바로 멈춘다 · 길어도 8초</span></li>
-              <li class="done"><span class="yellow">용량</span> <span class="small text-neutral-400">약 8MB → 0.68MB</span></li>
-              <li class="done"><span class="yellow">부하</span> <span class="small text-neutral-400">서버에서 도는 계산 0</span></li>
-              <li><span class="yellow">편의성</span> <span class="fragment small">→ 직접 써 보고 체크해 주세요</span></li>
-            </ul>
-          </div>
-          <aside class="notes">
-            남은 하나, 편의성입니다. 사람 손 없이 풀리게 했고, 이제 주소 하나로 열립니다.
-            <br>
-            (넘기면) 그래도 쓰기 편한지는 제가 체크하지 않겠습니다. 써 보시는 분들이 정할 일입니다.
           </aside>
         </section>
 
