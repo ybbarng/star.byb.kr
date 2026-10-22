@@ -56,13 +56,5 @@
     "tailwindcss": "^4.0.0",
     "typescript": "^5",
     "vitest": "^3.0.3"
-  },
-  "description": "나만의 작고 소중한 Plate Solver",
-  "main": "index.js",
-  "directories": {
-    "doc": "docs"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC"
+  }
 }
