@@ -12,6 +12,7 @@ import { setVerifyListener } from "@/search/solveCore";
 import { DEFAULT_SOLVERS, solvePhoto } from "@/search/solvePhoto";
 import { buildSolverContext } from "@/search/solverContext";
 import { ACCEPT } from "@/search/solvers/candidates";
+import { fitFisheyeCamera, projectFisheye } from "@/search/utils/fisheye";
 import { fitHomography2D } from "@/search/utils/homography";
 import { selectTopByPriority } from "@/search/utils/selectStars";
 import { umeyamaSimilarity2D } from "@/search/utils/similarity";
@@ -34,7 +35,7 @@ import {
 // 발표·원리 데모 자료 (public/learn/): 실제 풀이를 돌려 검증한 후보를 모은다.
 //   candidates-seoul.json  서울 누각 사진에서 검증한 후보 전부 (겹친 수·짝 수·기대치·정답 여부)
 //                          + V2가 고른 답(지문 거리 1등), 옛 점수(몇 배) 1등 가짜, 진짜 답의 겹침 그림
-//   refine-milky.json      은하수 사진에서 짝 3개로만 / 겹친 별 전부로 닮음 변환 / 같은 짝으로 원근 변환까지 맞춘 변환
+//   refine-<사진>.json     시야가 넓은 사진 네 장에서 같은 짝으로 맞춘 모델 다섯 가지(V2 짝만·닮음·방사 왜곡·어안·원근)의 별 자리와 격자
 //   triangle-dipper.json   북두칠성 사진에서 일곱 별의 자리와 실제 화각 (삼각형 크기 거르기 데모)
 //   zenith-seoul.json      누각 사진의 정답 자세와 먼 능선 두 점 (지평선 → 천정 → 하늘 시계 데모)
 //
@@ -300,17 +301,30 @@ const buildSeoul = async () => {
   );
 };
 
-const buildMilky = async () => {
-  const { stars, W, H, verified, out, answer } = await solveCollecting(
-    "20220328-brice-Milky Way over Buzzvil.jpg",
-  );
+// 오차 보정 데모: 시야가 넓은 사진에서 같은 짝(최종 답이 겹친 별)으로 여러 모델을 맞춰 본다.
+// 모델마다 짝 별을 놓은 자리와 하늘의 같은 간격 격자를 미리 계산해 둔다 (데모는 그리기만).
+//   seed         짝지은 별 3~4개로만 맞춘 닮음 변환 (V2가 하던 것)
+//   similarity   겹친 별 전부로 닮음 변환 (돌리기·키우기·옮기기)
+//   radial       닮음 변환 + 방사형 렌즈 왜곡 하나 (가장자리로 갈수록 늘거나 줄어든다)
+//   fisheye      등거리 어안 렌즈 (광학중심·초점·왜곡을 맞춘다, search/utils/fisheye.ts)
+//   perspective  원근 변환 (V3)
+const REFINE_PHOTOS = [
+  { key: "milky", file: "20220328-brice-Milky Way over Buzzvil.jpg" },
+  { key: "seoul", file: SEOUL },
+  { key: "aust", file: "20231012-nike-aust-01.jpg" },
+  { key: "jeungseun", file: "20230904-nike-jeungseun-03.png" },
+];
 
-  if (!out.found || !out.transform) throw new Error("은하수를 풀지 못했다");
+const buildRefine = async (key: string, file: string) => {
+  const { stars, W, H, verified, out } = await solveCollecting(file);
+
+  if (!out.found || !out.transform) throw new Error(`${file}을 풀지 못했다`);
 
   const tol = Math.max(5, Math.hypot(W, H) * 0.006);
   const photo = selectTopByPriority(stars, 60);
   const final = out.transform;
   const matches = matchesOf(final, photo, W, H, tol);
+  const center = recoverCenter(final, W, H);
 
   const plane = (P: Mat3, v: Point3D): Point2D => {
     const p = mat3MulVec(P, v);
@@ -318,9 +332,15 @@ const buildMilky = async () => {
     return [p[0] / p[2], p[1] / p[2]];
   };
 
-  // 1) 정답 근처 후보 중 겹침이 가장 많은 것의 짝(별 3~4개)만으로 맞춘 닮음 변환 (V2가 하던 것)
+  const apply = (M: Mat3, p: Point2D): Point2D => {
+    const q = mat3MulVec(M, [p[0], p[1], 1]);
+
+    return [q[0] / q[2], q[1] / q[2]];
+  };
+
+  // ① 정답 근처 후보 중 겹침이 가장 많은 것의 짝만으로 맞춘 닮음 변환
   const seed = verified
-    .filter((v) => angleDeg(v.result.centerVector, answer) < 6)
+    .filter((v) => angleDeg(v.result.centerVector, center) < 6)
     .sort((a, b) => b.result.inlierCount - a.result.inlierCount)[0];
   const sum = seed.databaseQuad.reduce(
     (a, v) => [a[0] + v[0], a[1] + v[1], a[2] + v[2]],
@@ -328,49 +348,173 @@ const buildMilky = async () => {
   );
   const n = Math.hypot(sum[0], sum[1], sum[2]);
   const P0 = projectionMatrix([sum[0] / n, sum[1] / n, sum[2] / n]);
-  const seedTP = mat3Mul(
-    umeyamaSimilarity2D(
-      seed.databaseQuad.map((v) => plane(P0, v)),
-      seed.photoQuad,
-    ).matrix,
-    P0,
-  );
-  // 2) 겹친 별 전부로 맞춘 닮음 변환 (돌리기·키우기·옮기기만)
-  const P1 = projectionMatrix(recoverCenter(final, W, H));
+  const seedM = umeyamaSimilarity2D(
+    seed.databaseQuad.map((v) => plane(P0, v)),
+    seed.photoQuad,
+  ).matrix;
+
+  // ②~⑤는 모두 같은 짝: 광축을 지나는 접선 평면 좌표 ↔ 사진 별
+  const P1 = projectionMatrix(center);
   const skyPlane = matches.map((m) => plane(P1, ctx.catalog[m.star].vector));
   const photoPlane = matches.map((m) => photo[m.photo]);
-  const similarityTP = mat3Mul(
-    umeyamaSimilarity2D(skyPlane, photoPlane).matrix,
-    P1,
-  );
-  // 3) 같은 짝으로 원근 변환만 바꿔 맞춘다 — ②와 짝은 같고 모델만 다르다.
-  //    풀이의 최종 변환(final)은 별 60개로 다듬기까지 거친 것이라, 짝을 고르는 데만 쓴다.
+  const similarityM = umeyamaSimilarity2D(skyPlane, photoPlane).matrix;
+
+  // ③ 방사형 왜곡: u' = u·(1 + k·|u|²)로 편 뒤 닮음 변환. k는 촘촘히 훑어 가장 잘 맞는 값
+  const warp = (u: Point2D, k: number): Point2D => {
+    const f = 1 + k * (u[0] * u[0] + u[1] * u[1]);
+
+    return [u[0] * f, u[1] * f];
+  };
+
+  let radial = { k: 0, M: similarityM, rms: Infinity };
+
+  for (let k = -0.8; k <= 0.8; k += 0.005) {
+    const warped = skyPlane.map((u) => warp(u, k));
+    const M = umeyamaSimilarity2D(warped, photoPlane).matrix;
+    const rms = Math.sqrt(
+      warped.reduce((s, u, i) => {
+        const q = apply(M, u);
+
+        return (
+          s + (q[0] - photoPlane[i][0]) ** 2 + (q[1] - photoPlane[i][1]) ** 2
+        );
+      }, 0) / warped.length,
+    );
+
+    if (rms < radial.rms) radial = { k, M, rms };
+  }
+
+  // ④ 어안 렌즈
+  const fisheye = fitFisheyeCamera(
+    matches.map((m) => ({
+      x: photo[m.photo][0],
+      y: photo[m.photo][1],
+      v: ctx.catalog[m.star].vector,
+    })),
+    W,
+    H,
+  ).camera;
+  // ⑤ 원근 변환
   const homography = fitHomography2D(skyPlane, photoPlane);
 
   if (!homography) throw new Error("원근 변환을 맞추지 못했다");
 
-  const perspectiveTP = mat3Mul(homography, P1);
+  const models: Record<string, (v: Point3D) => Point2D | null> = {
+    seed: (v) => {
+      const p = mat3MulVec(P0, v);
 
-  const data = {
-    W,
-    H,
-    tol: round(tol),
-    seeds: seed.photoQuad.map((p) => [round(p[0]), round(p[1])]),
-    stages: {
-      seed: roundMat(seedTP),
-      similarity: roundMat(similarityTP),
-      perspective: roundMat(perspectiveTP),
+      return p[2] > 0 ? apply(seedM, [p[0] / p[2], p[1] / p[2]]) : null;
     },
-    // 겹친 별: 사진 위치와 그 별의 방향
-    pairs: matches.map((m) => ({
-      photo: photo[m.photo].map(round),
-      vector: ctx.catalog[m.star].vector.map(round),
-    })),
+    similarity: (v) => {
+      const p = mat3MulVec(P1, v);
+
+      return p[2] > 0 ? apply(similarityM, [p[0] / p[2], p[1] / p[2]]) : null;
+    },
+    radial: (v) => {
+      const p = mat3MulVec(P1, v);
+
+      return p[2] > 0
+        ? apply(radial.M, warp([p[0] / p[2], p[1] / p[2]], radial.k))
+        : null;
+    },
+    fisheye: (v) => projectFisheye(fisheye, v),
+    perspective: (v) => {
+      const p = mat3MulVec(P1, v);
+
+      return p[2] > 0 ? apply(homography, [p[0] / p[2], p[1] / p[2]]) : null;
+    },
   };
 
-  writeFileSync(resolve(OUT, "refine-milky.json"), JSON.stringify(data));
+  // 하늘의 같은 간격 격자: 광축 접선 평면에서 사진 대각선 시야를 조금 넘게 덮는다
+  const corners = [
+    [0, 0],
+    [W, H],
+  ].map((c) => photoToSky(final, c as Point2D));
+  const half = Math.tan((angleDeg(corners[0], corners[1]) / 2 / D) * 1.05);
+
+  const Pinv = (u: number, v: number): Point3D => {
+    const q = [0, 1, 2].map((k) => P1[0][k] * u + P1[1][k] * v + P1[2][k]);
+    const m = Math.hypot(q[0], q[1], q[2]);
+
+    return [q[0] / m, q[1] / m, q[2] / m];
+  };
+
+  const LINES = 12;
+  const gridSky: Point3D[][] = [];
+
+  for (let g = -LINES / 2; g <= LINES / 2; g++) {
+    for (const vertical of [true, false]) {
+      const line: Point3D[] = [];
+
+      for (let t = -24; t <= 24; t++) {
+        const a = (g / (LINES / 2)) * half;
+        const b = (t / 24) * half;
+        line.push(vertical ? Pinv(a, b) : Pinv(b, a));
+      }
+
+      gridSky.push(line);
+    }
+  }
+
+  const inView = (p: Point2D | null) =>
+    p !== null &&
+    p[0] > -W * 0.3 &&
+    p[0] < W * 1.3 &&
+    p[1] > -H * 0.3 &&
+    p[1] < H * 1.3;
+  const pairs = matches.map((m) => ctx.catalog[m.star].vector);
+
+  const data = {
+    src: `/samples/${file}`,
+    W,
+    H,
+    seeds: seed.photoQuad.map((p) => [round(p[0]), round(p[1])]),
+    photo: photoPlane.map((p) => [round(p[0]), round(p[1])]),
+    models: Object.fromEntries(
+      Object.entries(models).map(([name, f]) => [
+        name,
+        {
+          placed: pairs.map((v) => {
+            const p = f(v);
+
+            return p ? [round(p[0]), round(p[1])] : null;
+          }),
+          // 사진 밖으로 멀리 나간 점에서 선을 끊는다
+          grid: gridSky.flatMap((line) => {
+            const parts: number[][][] = [[]];
+
+            for (const v of line) {
+              const p = f(v);
+
+              if (inView(p))
+                parts[parts.length - 1].push([round(p![0]), round(p![1])]);
+              else if (parts[parts.length - 1].length) parts.push([]);
+            }
+
+            return parts.filter((l) => l.length > 1);
+          }),
+        },
+      ]),
+    ),
+  };
+
+  writeFileSync(resolve(OUT, `refine-${key}.json`), JSON.stringify(data));
+
+  const err = (name: string) => {
+    const d = data.models[name].placed.map((p, i) =>
+      p
+        ? Math.hypot(p[0] - photoPlane[i][0], p[1] - photoPlane[i][1])
+        : Infinity,
+    );
+
+    return `${(d.reduce((a, b) => a + b, 0) / d.length).toFixed(1)}/${Math.max(...d).toFixed(0)}`;
+  };
+
   console.log(
-    `은하수: 겹친 별 ${matches.length}개, 짝 ${seed.photoQuad.length}개`,
+    `${key}: 겹친 별 ${matches.length}개, 짝 ${seed.photoQuad.length}개 · 평균/최대 px ` +
+      Object.keys(models)
+        .map((m) => `${m} ${err(m)}`)
+        .join(", "),
   );
 };
 
@@ -434,7 +578,7 @@ const run = async () => {
   mkdirSync(OUT, { recursive: true });
   buildZenith();
   await buildSeoul();
-  await buildMilky();
+  for (const { key, file } of REFINE_PHOTOS) await buildRefine(key, file);
   await buildDipper();
 };
 

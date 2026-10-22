@@ -1,34 +1,37 @@
 "use client";
 
-import type { Point2D, Point3D } from "@/scripts/hash/types";
-import type { Mat3 } from "@/search/utils/similarity";
+import type { Point2D } from "@/scripts/hash/types";
 import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  projectionMatrix,
-  projectVecToPhoto,
-  recoverCenter,
-} from "@/search/utils/wcs";
+import { cn } from "@/utils/cn";
 
-// 오차 보정 데모: 은하수 사진에서 겹친 별 30개가 답의 변환으로 어디에 놓이는지 단계별로 본다.
-//   ① 짝지은 별 3개로만 맞추기 (V2): 짝 근처는 맞지만 멀어질수록 어긋난다
-//   ② 겹친 별 전부로 맞추기 (닮음 변환: 돌리기·키우기·옮기기): 고르게 나아지지만 가장자리가 남는다
-//   ③ 원근 변환까지: 비스듬히 보정된 사진의 키스톤까지 맞춘다 (V3)
-// 흰 점이 사진의 별, 노란 점이 변환으로 배치한 지도 별, 빨간 선이 어긋남, 초록 테두리가 매칭한 별(짝)이다.
-// 자료: public/learn/refine-milky.json (scripts/learn/buildDemoData.ts)
+// 오차 보정 데모: 시야가 넓은 사진에서 같은 짝(겹친 별)으로 여러 모델을 맞춰, 지도 별이 어디에 놓이는지 본다.
+//   ① 짝지은 별 3~4개로만 맞추기 (V2): 짝 근처는 맞지만 멀어질수록 어긋난다
+//   ② 겹친 별 전부로 닮음 변환 (돌리기·키우기·옮기기)
+//   ③ ② + 방사형 렌즈 왜곡 (가장자리로 갈수록 늘거나 줄어든다)
+//   ④ 어안 렌즈 (등거리 투영 + 광학중심·왜곡)
+//   ⑤ 원근 변환 (V3)
+// 흰 점이 사진의 별, 노란 점이 모델로 배치한 지도 별, 빨간 선이 어긋남, 초록 테두리가 매칭한 별(짝)이다.
+// 자료: public/learn/refine-<사진>.json (scripts/learn/buildDemoData.ts가 모델마다 별 자리와 격자를 미리 계산)
 
-const SRC = "/samples/20220328-brice-Milky Way over Buzzvil.jpg";
+const PHOTOS = [
+  { key: "milky", label: "은하수 (원근 보정)" },
+  { key: "seoul", label: "누각" },
+  { key: "aust", label: "호주" },
+  { key: "jeungseun", label: "증선" },
+] as const;
 
-type Stage = "seed" | "similarity" | "perspective";
+type Model = "seed" | "similarity" | "radial" | "fisheye" | "perspective";
 
 interface Data {
+  src: string;
   W: number;
   H: number;
   seeds: Point2D[];
-  stages: Record<Stage, Mat3>;
-  pairs: { photo: Point2D; vector: Point3D }[];
+  photo: Point2D[];
+  models: Record<Model, { placed: (Point2D | null)[]; grid: Point2D[][] }>;
 }
 
-const STAGES: { key: Stage; label: string; note: string }[] = [
+const MODELS: { key: Model; label: string; note: string }[] = [
   {
     key: "seed",
     label: "① 짝지은 별로만: V2",
@@ -36,129 +39,135 @@ const STAGES: { key: Stage; label: string; note: string }[] = [
   },
   {
     key: "similarity",
-    label: "② 겹치는 별 전부로 평균내기",
-    note: "돌리기·키우기·옮기기만으로는 가장자리가 남는다",
+    label: "② 겹친 별 전부로 닮음 변환",
+    note: "돌리기·키우기·옮기기만. 고르게 나아지지만 가장자리가 남는다",
+  },
+  {
+    key: "radial",
+    label: "③ ② + 렌즈 왜곡",
+    note: "가장자리로 갈수록 늘거나 줄어드는 렌즈 왜곡 하나를 더한다",
+  },
+  {
+    key: "fisheye",
+    label: "④ 어안 렌즈",
+    note: "광축에서의 각도에 비례해 펼치는 어안 렌즈로 본다",
   },
   {
     key: "perspective",
-    label: "③ ② + 원근 변환까지: V3",
-    note: "비스듬히 보정된 사진의 기울어짐까지 맞춘다",
+    label: "⑤ 원근 변환: V3",
+    note: "비스듬히 찍거나 보정한 사진의 기울어짐까지 맞춘다",
   },
 ];
 
 export default function RefineStepsDemo() {
+  const [photo, setPhoto] = useState<(typeof PHOTOS)[number]["key"]>("milky");
   const [data, setData] = useState<Data | null>(null);
   const [image, setImage] = useState<HTMLImageElement | null>(null);
-  const [stage, setStage] = useState<Stage>("seed");
+  const [model, setModel] = useState<Model>("seed");
   const canvas = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     let alive = true;
 
-    fetch("/learn/refine-milky.json")
+    fetch(`/learn/refine-${photo}.json`)
       .then((r) => r.json())
-      .then((d: Data) => alive && setData(d));
-    const img = new Image();
-    img.onload = () => alive && setImage(img);
-    img.src = SRC;
+      .then((d: Data) => {
+        if (!alive) return;
+
+        setData(d);
+        const img = new Image();
+        img.onload = () => alive && setImage(img);
+        img.src = d.src;
+      });
 
     return () => {
       alive = false;
     };
-  }, []);
+  }, [photo]);
 
   const errors = useMemo(
     () =>
-      data?.pairs.map(({ photo, vector }) => {
-        const p = projectVecToPhoto(data.stages[stage], vector);
+      data?.photo.map((p, i) => {
+        const at = data.models[model].placed[i];
 
         return {
-          photo,
-          at: p,
-          d: p ? Math.hypot(p[0] - photo[0], p[1] - photo[1]) : Infinity,
+          photo: p,
+          at,
+          d: at ? Math.hypot(at[0] - p[0], at[1] - p[1]) : Infinity,
         };
       }) ?? [],
-    [data, stage],
+    [data, model],
   );
 
   useEffect(() => {
     const el = canvas.current;
     const context = el?.getContext("2d");
 
-    if (!el || !context || !data || !image) return;
+    if (
+      !el ||
+      !context ||
+      !data ||
+      !image ||
+      image.src.indexOf(encodeURI(data.src)) < 0
+    )
+      return;
 
+    // 사진마다 비율이 달라도 그림 칸은 4:3 그대로, 사진은 가운데에 맞춘다
     const W = 960;
-    const k = W / data.W;
-    const H = Math.round(data.H * k);
+    const H = 720;
+    const k = Math.min(W / data.W, H / data.H);
+    const ox = (W - data.W * k) / 2;
+    const oy = (H - data.H * k) / 2;
+    const X = (x: number) => ox + x * k;
+    const Y = (y: number) => oy + y * k;
     const dpr = Math.min(2, window.devicePixelRatio || 1);
     el.width = W * dpr;
     el.height = H * dpr;
     context.setTransform(dpr, 0, 0, dpr, 0, 0);
-    context.drawImage(image, 0, 0, W, H);
+    context.fillStyle = "#000";
+    context.fillRect(0, 0, W, H);
+    context.save();
+    context.beginPath();
+    context.rect(ox, oy, data.W * k, data.H * k);
+    context.clip();
+    context.drawImage(image, ox, oy, data.W * k, data.H * k);
     context.fillStyle = "rgba(5,8,20,0.5)";
     context.fillRect(0, 0, W, H);
 
-    // 하늘의 같은 간격 격자를 이 단계의 변환으로 사진에 그린다: 닮음 변환이면 반듯하고, 원근 변환이면 사다리꼴
-    {
-      const TP = data.stages[stage];
-      const P = projectionMatrix(
-        recoverCenter(data.stages.perspective, data.W, data.H),
+    // 하늘의 같은 간격 격자를 이 모델로 사진에 그린다: 닮음이면 반듯, 원근이면 사다리꼴, 왜곡·어안이면 휜다
+    context.strokeStyle = "rgba(147,197,253,0.35)";
+    context.lineWidth = 1;
+
+    for (const line of data.models[model].grid) {
+      context.beginPath();
+      line.forEach(([x, y], i) =>
+        i === 0 ? context.moveTo(X(x), Y(y)) : context.lineTo(X(x), Y(y)),
       );
-
-      const toSky = (x: number, y: number): Point3D => {
-        const v = [0, 1, 2].map((k) => P[0][k] * x + P[1][k] * y + P[2][k]);
-        const n = Math.hypot(v[0], v[1], v[2]);
-
-        return [v[0] / n, v[1] / n, v[2] / n];
-      };
-
-      context.strokeStyle = "rgba(147,197,253,0.35)";
-      context.lineWidth = 1;
-
-      for (let g = -6; g <= 6; g++) {
-        for (const vertical of [true, false]) {
-          context.beginPath();
-
-          for (let t = -6; t <= 6; t += 0.25) {
-            const [x, y] = vertical
-              ? [g * 0.08, t * 0.08]
-              : [t * 0.08, g * 0.08];
-            const p = projectVecToPhoto(TP, toSky(x, y));
-
-            if (!p) continue;
-
-            if (t === -6) context.moveTo(p[0] * k, p[1] * k);
-            else context.lineTo(p[0] * k, p[1] * k);
-          }
-
-          context.stroke();
-        }
-      }
+      context.stroke();
     }
 
-    if (stage === "seed") {
+    if (model === "seed") {
       context.strokeStyle = "#4ade80";
       context.lineWidth = 3;
 
       for (const [x, y] of data.seeds) {
         context.beginPath();
-        context.arc(x * k, y * k, 15, 0, 2 * Math.PI);
+        context.arc(X(x), Y(y), 15, 0, 2 * Math.PI);
         context.stroke();
       }
     }
 
     // 흰 점 = 사진 별, 노란 점 = 배치한 별(같은 크기), 빨간 선 = 어긋남.
-    // 선을 길이로 색칠하면 짧은 선이 안 보여서 한 색으로 두고, 길이 자체로 어긋남을 읽는다.
     // 선 → 사진 별 → 배치한 별 순으로 그려, 잘 맞으면 노란 점이 흰 점을 덮는다.
     context.lineWidth = 3;
     context.strokeStyle = "#f87171";
 
-    for (const { photo, at } of errors) {
+    for (const { photo: p, at } of errors) {
       if (!at) continue;
 
       context.beginPath();
-      context.moveTo(photo[0] * k, photo[1] * k);
-      context.lineTo(at[0] * k, at[1] * k);
+      context.moveTo(X(p[0]), Y(p[1]));
+      context.lineTo(X(at[0]), Y(at[1]));
       context.stroke();
     }
 
@@ -166,9 +175,9 @@ export default function RefineStepsDemo() {
     context.strokeStyle = "rgba(0,0,0,0.6)";
     context.lineWidth = 1.5;
 
-    for (const { photo } of errors) {
+    for (const { photo: p } of errors) {
       context.beginPath();
-      context.arc(photo[0] * k, photo[1] * k, 6, 0, 2 * Math.PI);
+      context.arc(X(p[0]), Y(p[1]), 6, 0, 2 * Math.PI);
       context.fill();
       context.stroke();
     }
@@ -179,69 +188,84 @@ export default function RefineStepsDemo() {
       if (!at) continue;
 
       context.beginPath();
-      context.arc(at[0] * k, at[1] * k, 6, 0, 2 * Math.PI);
+      context.arc(X(at[0]), Y(at[1]), 6, 0, 2 * Math.PI);
       context.fill();
       context.stroke();
     }
-  }, [data, image, stage, errors]);
 
-  if (!data) {
-    return <div className="text-sm opacity-60">자료를 불러오는 중…</div>;
-  }
+    context.restore();
+  }, [data, image, model, errors]);
 
   const finite = errors.map((e) => e.d).filter(Number.isFinite);
-  const mean = finite.reduce((a, b) => a + b, 0) / finite.length;
-  const max = Math.max(...finite);
-  const current = STAGES.find((s) => s.key === stage)!;
+  const mean = finite.length
+    ? finite.reduce((a, b) => a + b, 0) / finite.length
+    : 0;
+  const max = finite.length ? Math.max(...finite) : 0;
+  const current = MODELS.find((m) => m.key === model)!;
 
   return (
-    <div className="grid gap-4 md:grid-cols-[1fr_17rem]">
-      <canvas
-        ref={canvas}
-        style={{ maxHeight: "80vh" }}
-        className="rounded-box h-auto w-full"
-      />
-      <div className="flex flex-col gap-3 text-base">
-        <div className="flex flex-col gap-2">
-          {STAGES.map((s) => (
-            <button
-              key={s.key}
-              className={`btn btn-sm justify-start ${stage === s.key ? "btn-primary" : ""}`}
-              onClick={() => setStage(s.key)}
-            >
-              {s.label}
-            </button>
-          ))}
-        </div>
-        <div className="text-sm opacity-80">{current.note}</div>
-        <div className="bg-base-300/60 rounded-box flex flex-col gap-1 p-3">
-          <div>
-            평균 어긋남 <b className="text-lg">{mean.toFixed(1)}px</b>
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-wrap gap-1">
+        {PHOTOS.map((p) => (
+          <button
+            key={p.key}
+            className={cn("btn btn-sm", photo === p.key && "btn-secondary")}
+            onClick={() => setPhoto(p.key)}
+          >
+            {p.label}
+          </button>
+        ))}
+      </div>
+      <div className="grid gap-4 md:grid-cols-[1fr_17rem]">
+        <canvas
+          ref={canvas}
+          style={{ maxHeight: "80vh" }}
+          className="rounded-box aspect-[4/3] h-auto w-full bg-black"
+        />
+        <div className="flex flex-col gap-3 text-base">
+          <div className="flex flex-col gap-2">
+            {MODELS.map((m) => (
+              <button
+                key={m.key}
+                className={cn(
+                  "btn btn-sm justify-start",
+                  model === m.key && "btn-primary",
+                )}
+                onClick={() => setModel(m.key)}
+              >
+                {m.label}
+              </button>
+            ))}
           </div>
-          <div className="text-sm opacity-80">
-            가장 크게 {max.toFixed(0)}px · 겹친 별 {data.pairs.length}개 기준
+          <div className="min-h-[2lh] text-sm opacity-80">{current.note}</div>
+          <div className="bg-base-300/60 rounded-box flex flex-col gap-1 p-3">
+            <div>
+              평균 어긋남 <b className="text-lg">{mean.toFixed(1)}px</b>
+            </div>
+            <div className="text-sm opacity-80">
+              가장 크게 {max.toFixed(0)}px · 겹친 별 {data?.photo.length ?? "…"}
+              개 기준
+            </div>
           </div>
-        </div>
-        <ul className="flex flex-col gap-1 text-sm">
-          <li>
-            <span className="text-white">●</span> 사진의 별
-          </li>
-          <li>
-            <span className="text-blue-300">▦</span> 하늘의 같은 간격 격자
-            (반듯하면 닮음, 사다리꼴이면 원근)
-          </li>
-          <li>
-            <span className="text-yellow-300">●</span> 변환으로 배치한 지도 별
-          </li>
-          <li>
-            <span className="text-red-400">━</span> 어긋남 (길수록 크게 어긋남)
-          </li>
-          {stage === "seed" && (
+          <ul className="flex flex-col gap-1 text-sm">
             <li>
+              <span className="text-white">●</span> 사진의 별
+            </li>
+            <li>
+              <span className="text-blue-300">▦</span> 하늘의 같은 간격 격자
+            </li>
+            <li>
+              <span className="text-yellow-300">●</span> 모델로 배치한 지도 별
+            </li>
+            <li>
+              <span className="text-red-400">━</span> 어긋남 (길수록 크게
+              어긋남)
+            </li>
+            <li className={model === "seed" ? "" : "invisible"}>
               <span className="text-green-400">◯</span> 매칭한 별 (짝)
             </li>
-          )}
-        </ul>
+          </ul>
+        </div>
       </div>
     </div>
   );
