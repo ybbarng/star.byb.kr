@@ -2,6 +2,8 @@ import AnswerCheckDemo from "@/learn/AnswerCheckDemo";
 import CandidateScatterDemo from "@/learn/CandidateScatterDemo";
 import LearnArticle, { Figure, LearnSection } from "@/learn/LearnArticle";
 import { Callout, DataTable } from "@/learn/parts";
+import PerspectiveDemo from "@/learn/PerspectiveDemo";
+import RansacDemo from "@/learn/RansacDemo";
 import RefineStepsDemo from "@/learn/RefineStepsDemo";
 import { learnMetadata } from "@/learn/steps";
 import VerifyOverlayDemo from "@/learn/VerifyOverlayDemo";
@@ -21,14 +23,14 @@ export default function Page() {
           위에 투영하면, 정답일 때는 <b>짝에 쓰지 않은</b> 사진 속 다른 별들
           위에도 지도 별이 척척 겹쳐요.
         </p>
-        <Figure caption="서울 근처 누각 사진에서 풀이가 실제로 확인한 후보 둘이에요. 파랑은 짝지은 별(답을 만들 때 쓴 별이라 당연히 겹쳐요), 초록은 그 밖에 더 겹친 별이에요. '아무렇게나 놓기'로 우연히 겹치는 수도 세어 보세요.">
+        <Figure caption="서울 근처 누각 사진에 V2 방식(지문이 가장 가까운 quad = 답)을 돌린 결과예요. 오른쪽 그래프의 점을 누르면 그 후보대로 별 지도를 겹쳐요. 빨강은 식별에 쓴 별(답을 만들 때 쓴 별이라 당연히 겹쳐요), 초록은 그 밖에 더 겹친 별이에요.">
           <AnswerCheckDemo />
         </Figure>
         <p>
-          가짜 답은 짝지은 별 4개 말고는 2개만 더 겹치고, 진짜 답은 26개가 더
-          겹쳐요. 한편 별 지도를 아무렇게나 놓아도 우연히 겹치는 별이 가끔
-          있어요. 여러 번 놓아 본 평균이 <b>우연히 겹칠 기대치</b>예요. 이 둘을
-          비교하는 게 4장의 이야기예요.
+          지문이 가장 가까운 1등은 식별에 쓴 별 4개 말고는 하나도 더 겹치지
+          않고, 15등인 정답은 15개가 더 겹쳐요. 한편 별 지도를 아무렇게나 놓아도
+          우연히 겹치는 별이 가끔 있어요. 그 평균이 <b>우연히 겹칠 기대치</b>
+          예요. 이 둘을 비교하는 게 4장의 이야기예요.
         </p>
         <Figure caption="북두칠성 샘플을 이 기기에서 실제로 풀고, 찾은 답대로 별 지도를 겹친 모습이에요. 슬라이더로 답을 조금만 틀어 보세요.">
           <VerifyOverlayDemo />
@@ -52,6 +54,9 @@ export default function Page() {
           변환을 가리키니까 이겨요. 그다음 사진 중심(광축)이 하늘의 어디를
           가리키는지 다시 잡아 한 번 더 맞춰요.
         </p>
+        <Figure caption="짝 20쌍 중 6쌍이 가짜인 합성 하늘이에요. '전부로 평균내기'는 가짜에 끌려가요. '2쌍 뽑기'를 몇 번 눌러 보고, '200번 뽑기'로 끝까지 가 보세요. '가짜 짝 보기'를 켜면 어느 것이 가짜였는지 보여요.">
+          <RansacDemo />
+        </Figure>
         <Figure caption="석촌호수 은하수 사진에서 겹친 별 30개를 세 가지 변환으로 놓아 봐요. 선이 어긋남이고, 파란 격자는 하늘의 같은 간격 선을 그 변환으로 그린 거예요.">
           <RefineStepsDemo />
         </Figure>
@@ -97,6 +102,16 @@ export default function Page() {
           비스듬히 찍었거나, 건물을 똑바로 세우는 보정을 한 사진은 위쪽은 넓고
           아래쪽은 좁게 펼쳐져서, 돌리고 키우기만으로는 맞지 않아요.
         </p>
+        <p>
+          그렇다고 사진이 얼마나 비스듬한지 미리 재지는 않아요. 원근 변환은
+          기울기가 없으면 닮음 변환과 같아지니, 일단 맞춰 보고 세 가지를 봐요.
+          짝이 8개 이상인가(적으면 숫자 8개짜리 변환이 짝에만 억지로 맞춰져요),
+          모양이 말이 되는가(늘어남 비 2.5 이하), 맞는 별이 늘었나. 셋 다 맞을
+          때만 원근 변환을 써요.
+        </p>
+        <Figure caption="합성 하늘의 별 40개예요. 기울기를 0으로 두면 원근 변환을 써도 맞는 별이 늘지 않아 닮음 변환 그대로예요. 기울기를 키우거나, 짝을 7개 아래로 줄여 보세요.">
+          <PerspectiveDemo />
+        </Figure>
         <DataTable
           head={["석촌호수 은하수에 맞춘 모델", "어긋남"]}
           rows={[
