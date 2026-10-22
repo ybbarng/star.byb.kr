@@ -12,7 +12,7 @@ import {
 } from "@/search/utils/ephemeris";
 
 // 달로 날짜 맞히기: 처음 보는 화악산 사진 세 장(저작권 때문에 사진은 싣지 않는다)을 각각 풀어 얻은 달의 하늘 위치를
-// 적경·적위 지도에 찍고, 2026년 하반기 달의 길을 겹친다. 달은 27.3일마다 그 자리를 지나지만, 그때 달이 떠 있고
+// 적경·적위 지도에 찍고, 2026년 한 해 달의 길을 겹친다. 달은 27.3일마다 그 자리를 지나지만, 그때 달이 떠 있고
 // 해가 져 있어야 사진에 찍힌다. 장소는 글에 적힌 화악산으로 둔다. 계산은 search/utils/ephemeris.ts와 같다.
 
 const D = Math.PI / 180;
@@ -74,15 +74,16 @@ export default function MoonDateDemo() {
   const canvas = useRef<HTMLCanvasElement>(null);
   const [picked, setPicked] = useState<number | null>(null);
 
-  // 2026년 7~12월, 달이 사진 속 달 자리에 가장 가까이 온 때마다 (10분 간격으로 훑는다)
+  // 2026년 한 해, 달이 사진 속 달 자리에 가장 가까이 온 때마다 (10분 간격으로 훑는다). 14번 지나는데
+  // 같은 자리에서 가는 그믐달이 되려면 해도 가을 자리에 있어야 해서 맞는 때는 한 번뿐이다
   const passes = useMemo(() => {
     const out: { t: Date; path: { ra: number; dec: number }[] }[] = [];
-    const start = Date.UTC(2026, 6, 1);
+    const start = Date.UTC(2026, 0, 1);
     let prev = Infinity;
     let prevT = start;
     let falling = false;
 
-    for (let m = 0; m < 6 * 24 * 184; m++) {
+    for (let m = 0; m < 6 * 24 * 365; m++) {
       const t = start + m * 600000;
       const p = moonAt(new Date(t));
       const d = Math.hypot(
@@ -106,15 +107,6 @@ export default function MoonDateDemo() {
 
     return out.map((p) => ({ ...p, ...moonAt(p.t) }));
   }, []);
-
-  // 사진 속 달은 새벽 하늘의 가는 그믐달이다: 달이 떠 있고, 해가 졌고, 빛나는 부분이 작아야 한다
-  const verdict = (p: (typeof passes)[number]) => {
-    if (p.moonAlt < 0) return "달이 땅 아래";
-    if (p.sunAlt > -6) return "해가 떠 있음";
-    if (p.lit > MAX_LIT) return "달 모양이 다름";
-
-    return `새벽, 달 고도 ${p.moonAlt.toFixed(0)}°`;
-  };
 
   useEffect(() => {
     const el = canvas.current;
@@ -221,32 +213,32 @@ export default function MoonDateDemo() {
   }, [passes, picked]);
 
   return (
-    <div className="grid gap-4 md:grid-cols-[1fr_18rem]">
-      <canvas
-        ref={canvas}
-        className="rounded-box h-auto w-full"
-        style={{ maxHeight: "80vh" }}
-      />
-      <div className="flex flex-col gap-2 text-base">
-        <div className="text-sm opacity-70">
-          2026년 하반기에 달이 그 자리를 지난 때 (화악산 기준)
+    <div className="grid gap-4 md:grid-cols-[1fr_16rem]">
+      <div className="flex flex-col gap-2">
+        <canvas
+          ref={canvas}
+          className="rounded-box h-auto w-full"
+          style={{ maxHeight: "80vh" }}
+        />
+        <div className="text-center text-base">
+          사진 정보: 2026년, 화악산, 밤, 가는 그믐달
         </div>
+      </div>
+      <div className="flex flex-col gap-1 text-sm">
         {passes.map((p, i) => (
           <button
             key={p.t.getTime()}
-            className={`rounded-box flex flex-col items-start px-3 py-1 text-left ${visible(p) ? "bg-green-400/20 outline outline-2 outline-green-400" : i === picked ? "bg-blue-300/20" : "bg-base-300/60"}`}
+            className={`rounded-box flex items-baseline justify-between gap-2 px-2 py-0.5 text-left ${visible(p) ? "bg-green-400/20 outline outline-2 outline-green-400" : i === picked ? "bg-blue-300/20" : "bg-base-300/60"}`}
             onClick={() => setPicked(i)}
           >
             <span className="font-bold">{kstLabel(p.t)}</span>
-            <span className="text-sm opacity-80">
-              {verdict(p)} · 빛나는 부분 {Math.round(p.lit * 100)}%
+            <span className="opacity-80">
+              {/* 해가 떠 있으면 낮. 달이 땅 아래면 보이지 않으니 0% */}
+              {p.sunAlt > -6 ? "낮" : "밤"} ·{" "}
+              {p.moonAlt < 0 ? 0 : Math.round(p.lit * 100)}%
             </span>
           </button>
         ))}
-        <div className="text-sm opacity-70">
-          달은 27.3일마다 같은 자리를 지난다. 사진 속 달은 새벽 하늘의 가는
-          그믐달이라, 달이 떠 있고 해가 졌고 모양까지 맞는 때는 하나뿐이다.
-        </div>
       </div>
     </div>
   );
