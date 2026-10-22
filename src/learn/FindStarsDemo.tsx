@@ -96,9 +96,16 @@ export default function FindStarsDemo() {
   const handleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!image || !stars) return;
 
+    // 사진은 4:3 칸 안에 비율을 지켜 들어가 있어(object-contain) 남는 여백을 빼고 잰다
     const rect = e.currentTarget.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * image.width;
-    const y = ((e.clientY - rect.top) / rect.height) * image.height;
+    const scale = Math.min(
+      rect.width / image.width,
+      rect.height / image.height,
+    );
+    const left = rect.left + (rect.width - image.width * scale) / 2;
+    const top = rect.top + (rect.height - image.height * scale) / 2;
+    const x = (e.clientX - left) / scale;
+    const y = (e.clientY - top) / scale;
     const near = pickTop(stars, order).reduce<DetectedStar | null>(
       (best, s) =>
         !best ||
@@ -151,12 +158,13 @@ export default function FindStarsDemo() {
       </div>
       <div className="grid items-start gap-3 md:grid-cols-[1fr_auto]">
         <div className="flex flex-col gap-2">
-          <div className="rounded-box relative overflow-hidden bg-black">
+          {/* 사진마다 비율이 달라도 칸 크기는 4:3 그대로 둔다 */}
+          <div className="rounded-box relative aspect-[4/3] overflow-hidden bg-black">
             <canvas
               ref={canvas}
               width={image?.width ?? 4}
               height={image?.height ?? 3}
-              className="block h-auto w-full cursor-pointer"
+              className="block h-full w-full cursor-pointer object-contain"
               onClick={handleClick}
             />
             {running && (
@@ -168,24 +176,25 @@ export default function FindStarsDemo() {
               </div>
             )}
           </div>
-          {stars && (
-            <p className="text-xs opacity-70">
-              찾은 점 {stars.length}개 중 상위 {TOP}개.{" "}
-              {order === "brightness"
-                ? "밝기만 보면 건물·나무 사이 불빛이 앞자리를 차지해요."
-                : "주변이 고른 하늘인 점을 먼저 고르면 진짜 별이 앞으로 와요."}
-            </p>
-          )}
+          {/* 찾는 중에도 줄을 비워 두어 높이가 바뀌지 않게 한다 */}
+          <p className="min-h-[2lh] text-xs opacity-70">
+            {stars && (
+              <>
+                찾은 점 {stars.length}개 중 상위 {TOP}개.{" "}
+                {order === "brightness"
+                  ? "밝기만 보면 건물·나무 사이 불빛이 앞자리를 차지해요."
+                  : "주변이 고른 하늘인 점을 먼저 고르면 진짜 별이 앞으로 와요."}
+              </>
+            )}
+          </p>
         </div>
         {/* 점을 고르기 전에도 자리를 잡아 둬서, 눌러도 배치가 움직이지 않는다 */}
         <div className="md:w-[17rem]">
-          {image && (
-            <RingInspector
-              image={image}
-              star={inspect}
-              starlike={STARLIKE_RING_CONTRAST}
-            />
-          )}
+          <RingInspector
+            image={image}
+            star={inspect}
+            starlike={STARLIKE_RING_CONTRAST}
+          />
         </div>
       </div>
     </div>
