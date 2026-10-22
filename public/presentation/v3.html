@@ -1406,14 +1406,22 @@
         <section class="title-body-slide">
           <h1>서버는 정적 파일만</h1>
           <div class="body center">
-            <div class="cards">
-              <div class="card"><div class="num">0</div><div class="desc">서버에서 도는 계산</div></div>
-              <div class="card"><div class="num">0.68MB</div><div class="desc">처음 받는 양 (다시 오면 캐시)</div></div>
-              <div class="card"><div class="num">🔒</div><div class="desc">사진은 서버로 보내지 않는다</div></div>
-            </div>
+            <table class="compare" style="font-size: 1.1em;">
+              <tr><th></th><th>V2 그대로<br><span class="small">브라우저에서 풀기</span></th><th>V2를 서버에서 풀면<br><span class="small">계획했던 길</span></th><th>V3<br><span class="small">브라우저에서 풀기</span></th></tr>
+              <tr><td>방문자당 보내는 양</td><td class="red">약 28MB</td><td>작음</td><td class="green">0.68MB</td></tr>
+              <tr><td>서버 메모리</td><td>0</td><td class="red">프로세스 하나에 약 0.75GB</td><td class="green">0</td></tr>
+              <tr><td>사진 한 장의 서버 계산</td><td>0</td><td class="red">약 0.5초 <span class="small">(12MP 1초)</span></td><td class="green">0</td></tr>
+              <tr><td>코어 하나가 감당</td><td>-</td><td>초당 약 2장</td><td>-</td></tr>
+            </table>
           </div>
           <aside class="notes">
-            별 찾기, 풀이, 게임 계산까지 전부 브라우저에서 합니다. 서버는 정적 파일만 내려 주니까 부하도 비용도 거의 없습니다.
+            V2를 그대로 올렸다면 서버 계산은 0이지만, 방문자 한 명에게 약 28MB를 보내야 했습니다. 패턴 DB만 65MB, 압축해도 22MB였습니다. 이게 용량 걱정입니다.
+            <br>
+            그걸 피하려고 서버에서 풀면, 지금 V2 코드를 그대로 서버처럼 돌려 재 보니 프로세스 하나가 준비만 마쳐도 메모리를 약 0.75GB 쓰고, 사진 한 장에 CPU가 약 0.5초, 큰 사진은 1초 듭니다. 코어 하나로 초당 2장 안팎이고, 4개를 띄우면 메모리만 3~4GB입니다. 이게 부하 걱정입니다.
+            <br>
+            V3는 둘 다 피했습니다. 계산은 각자의 브라우저가 하고, 서버는 0.68MB짜리 정적 파일만 내려 줍니다. 계산이 없어진 게 아니라 사용자 쪽으로 간 겁니다. 그래서 몇 명이 오든 서버 부담이 거의 늘지 않습니다.
+            <br>
+            (측정 조건) 노트북(M3 Pro)에서 node로 서버 역할을 흉내 낸 값입니다. 업로드 전송과 대기열은 빠져 있습니다. 28MB는 V2의 패턴 DB 압축 크기, OpenCV, 글꼴을 더한 값입니다.
             <br>
             V2에서 그렸던 작업자, 메시지 큐 구조가 필요 없어졌습니다.
             <br>
