@@ -282,17 +282,6 @@ export default function ZenithClockDemo() {
       ctx.fill();
     }
 
-    if (step >= 2) {
-      ctx.fillStyle = "#4ade80";
-
-      for (const v of [sky.a, sky.b]) {
-        const [x, y] = chartXY(raDecOf(v));
-        ctx.beginPath();
-        ctx.arc(x, y, 6, 0, 2 * Math.PI);
-        ctx.fill();
-      }
-    }
-
     if (step >= 3) {
       // 지평선 아래(천정에서 90° 넘게 떨어진 하늘)는 어둡게 덮는다: 그 순간 땅에 가려 안 보이는 곳
       const Z = sky.zenith;
@@ -314,7 +303,51 @@ export default function ZenithClockDemo() {
           if (below) ctx.fillRect(x, y, CELL, CELL);
         }
       }
+    }
 
+    if (step >= 2) {
+      // 사진의 초록 선과 같은 것: 두 점 사이 지평선(대원의 짧은 호)을 하늘 지도에도 잇는다
+      const [a, b] = [sky.a, sky.b];
+      const omega = Math.acos(
+        Math.max(-1, Math.min(1, a[0] * b[0] + a[1] * b[1] + a[2] * b[2])),
+      );
+      ctx.strokeStyle = "#4ade80";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      let prev: Point2D | null = null;
+
+      for (let i = 0; i <= 40; i++) {
+        const t = i / 40;
+        const wa = Math.sin((1 - t) * omega) / Math.sin(omega);
+        const wb = Math.sin(t * omega) / Math.sin(omega);
+        const p = chartXY(
+          raDecOf([
+            wa * a[0] + wb * b[0],
+            wa * a[1] + wb * b[1],
+            wa * a[2] + wb * b[2],
+          ]),
+        );
+
+        // 적경 0시·24시 경계에서는 지도 양 끝으로 갈라지니 끊는다
+        if (prev && Math.abs(p[0] - prev[0]) < CHART_W / 2)
+          ctx.lineTo(p[0], p[1]);
+        else ctx.moveTo(p[0], p[1]);
+
+        prev = p;
+      }
+
+      ctx.stroke();
+      ctx.fillStyle = "#4ade80";
+
+      for (const v of [sky.a, sky.b]) {
+        const [x, y] = chartXY(raDecOf(v));
+        ctx.beginPath();
+        ctx.arc(x, y, 6, 0, 2 * Math.PI);
+        ctx.fill();
+      }
+    }
+
+    if (step >= 3) {
       // 지평선 큰 원
       ctx.fillStyle = "rgba(74,222,128,0.6)";
 
@@ -450,7 +483,7 @@ export default function ZenithClockDemo() {
           className={cn("btn btn-sm btn-ghost ml-auto", !moved && "invisible")}
           onClick={() => setHorizon(data.horizon)}
         >
-          지평선 원래대로
+          지평선을 먼 능선에
         </button>
       </div>
       <div className="grid gap-3 md:grid-cols-2">
