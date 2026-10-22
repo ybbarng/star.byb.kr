@@ -10,12 +10,21 @@ import { cn } from "@/utils/cn";
 // 별 찾기 데모: 실제 샘플 사진에서 별을 찾고, "밝은 순"과 "별다운 순" 상위 30개를 비교한다.
 // 밝기만 보면 건물·가로등 불빛이 앞에 오고, 별다움(주변 고리가 고른 하늘인지)을 먼저 보면 진짜 별이 앞에 온다.
 
+// 밝은 순으로 고르면 가짜가 앞자리를 차지하는 사진들 (괄호 안: 밝은 순 → 별다운 순, 앞쪽 25개 안 진짜 별 수)
 const DEMO_PHOTOS = [
+  // 1 → 13
+  { src: "/samples/20220607-berry-seoul.jpg", title: "누각 (지붕·불빛)" },
+  // 1 → 22: 조명 받은 나무 줄기
+  { src: "/samples/20250117-carl-aurora-03.jpg", title: "오로라 (나무 줄기)" },
+  // 2 → 17
   {
-    src: "/samples/20220607-berry-seoul.jpg",
-    title: "서울 근처 산 (누각 불빛)",
+    src: "/samples/20220328-brice-Milky Way over Buzzvil.jpg",
+    title: "은하수 (건물 창문)",
   },
-  { src: "/samples/big-dipper.jpg", title: "북두칠성 (나무)" },
+  // 2 → 21
+  { src: "/samples/20250117-carl-aurora-01.jpg", title: "오로라 (집 불빛)" },
+  // 0 → 24
+  { src: "/samples/20230904-nike-jeungseun-01.png", title: "증선 (구름·노을)" },
 ];
 const TOP = 30;
 
