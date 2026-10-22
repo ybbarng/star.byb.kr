@@ -83,6 +83,9 @@
       .bars .track { flex: 1; height: 0.9em; background: #222; border-radius: 0.3em; overflow: hidden; }
       .bars .fill { height: 100%; background: #818cf8; border-radius: 0.3em; }
       .bars .fill.hot { background: #fde68a; }
+      .bars .track { position: relative; }
+      .bars .fill.was { opacity: 0.3; }
+      .bars .fill.now { position: absolute; left: 0; top: 0; background: #4ade80; }
       .bars .value { width: 6em; text-align: right; font-family: monospace; }
 
       /* 비교 표 */
@@ -1340,6 +1343,24 @@
         </section>
 
         <section class="title-body-slide">
+          <h1>처음 받는 양: 약 8MB</h1>
+          <div class="body center">
+            <div class="bars" style="font-size: 0.9em;">
+              <div class="row"><span class="label">OpenCV</span><span class="track"><span class="fill" style="width: 100%; display: block;"></span></span><span class="value">3.86MB</span></div>
+              <div class="row"><span class="label">글꼴</span><span class="track"><span class="fill" style="width: 53%; display: block;"></span></span><span class="value">2.05MB</span></div>
+              <div class="row"><span class="label">quad DB</span><span class="track"><span class="fill" style="width: 38%; display: block;"></span></span><span class="value">1.46MB</span></div>
+              <div class="row"><span class="label">나머지</span><span class="track"><span class="fill" style="width: 15%; display: block;"></span></span><span class="value">0.58MB</span></div>
+            </div>
+            <p style="text-align: left;">합계 <span class="red">약 8MB</span> <span class="small text-neutral-400">플레이트 솔버를 열어 사진 한 장 풀 때까지 (압축)</span></p>
+          </div>
+          <aside class="notes">
+            플레이트 솔버를 열어서 사진 한 장 풀 때까지 받는 양을 재 봤습니다. 약 8MB였습니다.
+            <br>
+            OpenCV가 3.9MB로 가장 컸고, 그다음이 의외로 글꼴 2MB, 그리고 quad DB 1.5MB입니다. 이 순서대로 하나씩 보겠습니다.
+          </aside>
+        </section>
+
+        <section class="title-body-slide">
           <h1>OpenCV의 손익 계산</h1>
           <div class="body center">
             <table class="compare" style="font-size: 1.3em;">
@@ -1360,6 +1381,22 @@
             (넘기면) 그래서 아예 뺐습니다. 3.9MB가 빠졌습니다.
             <br>
             덤으로, 테스트와 브라우저가 서로 다른 흐림을 쓰고 있었다는 것도 알게 됐습니다. 테스트에서 잰 성적이 실제 앱과 다를 수 있었다는 뜻이라, 같은 코드를 쓰게 맞췄습니다.
+          </aside>
+        </section>
+
+        <section class="title-body-slide">
+          <h1>글꼴: 쓰인 글자만 받자</h1>
+          <div class="body center">
+            <table class="compare" style="font-size: 1.3em; width: 100%;">
+              <tr><th></th><th>통짜 파일</th><th>쓰인 조각만</th></tr>
+              <tr><td style="white-space: nowrap;">받는 글자</td><td>한글 1만 1천여 자</td><td>92조각 중 화면에 나온 것</td></tr>
+              <tr><td>용량</td><td class="red">2.05MB</td><td class="green">0.31MB</td></tr>
+            </table>
+          </div>
+          <aside class="notes">
+            재 보기 전에는 글꼴이 이렇게 클 줄 몰랐습니다. Pretendard 가변 글꼴 통짜 파일에 한글 1만 1천여 자가 다 들어 있어서 2MB였고, 모든 페이지가 받았습니다.
+            <br>
+            Pretendard가 공식으로 주는 동적 부분 집합으로 바꿨습니다. 글자를 92조각으로 나눠 두고, 브라우저가 화면에 쓰인 글자가 든 조각만 받습니다. 플레이트 솔버는 0.31MB입니다.
           </aside>
         </section>
 
@@ -1392,20 +1429,18 @@
         </section>
 
         <section class="title-body-slide">
-          <h1>처음 받는 양</h1>
+          <h1>처음 받는 양: 8MB → 0.68MB</h1>
           <div class="body center">
             <div class="bars" style="font-size: 0.9em;">
-              <div class="row"><span class="label">OpenCV</span><span class="track"><span class="fill" style="width: 100%; display: block;"></span></span><span class="value">3.86MB → 0</span></div>
-              <div class="row"><span class="label">글꼴</span><span class="track"><span class="fill" style="width: 53%; display: block;"></span></span><span class="value">2.05 → 0.31</span></div>
-              <div class="row"><span class="label">quad DB</span><span class="track"><span class="fill" style="width: 38%; display: block;"></span></span><span class="value">1.46MB → 0</span></div>
-              <div class="row"><span class="label">나머지</span><span class="track"><span class="fill" style="width: 15%; display: block;"></span></span><span class="value">0.58 → 0.37</span></div>
+              <div class="row"><span class="label">OpenCV</span><span class="track"><span class="fill was" style="width: 100%; display: block;"></span></span><span class="value">3.86 → 0</span></div>
+              <div class="row"><span class="label">글꼴</span><span class="track"><span class="fill was" style="width: 53%; display: block;"></span><span class="fill now" style="width: 8%; display: block;"></span></span><span class="value">2.05 → 0.31</span></div>
+              <div class="row"><span class="label">quad DB</span><span class="track"><span class="fill was" style="width: 38%; display: block;"></span></span><span class="value">1.46 → 0</span></div>
+              <div class="row"><span class="label">나머지</span><span class="track"><span class="fill was" style="width: 15%; display: block;"></span><span class="fill now" style="width: 9.6%; display: block;"></span></span><span class="value">0.58 → 0.37</span></div>
             </div>
             <p style="text-align: left;">합계 <span class="red">약 8MB</span> → <span class="green big">0.68MB</span></p>
           </div>
           <aside class="notes">
-            플레이트 솔버를 열어서 사진 한 장 풀 때까지 받는 양입니다. 8MB에서 0.68MB가 됐습니다.
-            <br>
-            재 보니 의외로 글꼴이 2MB로 컸습니다. 화면에 쓰인 글자 조각만 받게 바꿨습니다.
+            모아 보면 처음 받는 양이 8MB에서 0.68MB가 됐습니다. 나머지에서도 쓰지 않던 mathjs를 빼고 별 목록을 줄였습니다.
           </aside>
         </section>
 
