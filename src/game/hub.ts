@@ -101,6 +101,28 @@ export const GAMES: GameEntry[] = [
     accent: "from-rose-300/40 to-slate-500/10",
   },
   {
+    href: "/games/shadow-clock",
+    kind: "game",
+    title: "그림자 시계",
+    summary:
+      "땅에 세운 막대와 그림자만 보고 여기가 어디(위도)인지, 언제(계절·시각)인지 맞혀요.",
+    learn: "정오 그림자 길이 → 해 높이 → 위도, 그림자 방향 → 시각 (해시계)",
+    ready: true,
+    icon: "☀️",
+    accent: "from-yellow-300/40 to-amber-600/10",
+  },
+  {
+    href: "/games/eratosthenes",
+    kind: "explore",
+    title: "에라토스테네스 되어 보기",
+    summary:
+      "같은 날 정오, 두 도시의 막대 그림자 각도를 직접 재서 지구 둘레를 구해 봐요.",
+    learn: "평행한 햇빛, 그림자 각도 차이 = 지구 중심각, 비례식으로 둘레",
+    ready: true,
+    icon: "📐",
+    accent: "from-lime-300/40 to-emerald-600/10",
+  },
+  {
     href: "/games/quad-fingerprint",
     kind: "game",
     title: "별 넷 지문 맞추기",

@@ -40,6 +40,15 @@ const RECORDS: Record<string, () => string | null> = {
 
     return best === null ? null : `최고 ${best.toLocaleString()}점`;
   },
+  "/games/shadow-clock": () => {
+    const scores = ["intro", "easy", "normal"]
+      .map((d) => readBest(`shadow-clock-${d}`))
+      .filter((v): v is number => v !== null);
+
+    return scores.length
+      ? `최고 ${Math.max(...scores).toLocaleString()}점`
+      : null;
+  },
   "/games/quad-fingerprint": () => {
     const scores = ["intro", "easy", "normal", "hard"]
       .map((d) => readBest(`quad-fingerprint-${d}`))
