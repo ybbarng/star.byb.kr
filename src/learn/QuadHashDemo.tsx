@@ -248,8 +248,8 @@ export default function QuadHashDemo({ hint = true }: { hint?: boolean }) {
           </div>
         </div>
         <div className="text-sm opacity-70">
-          별 지도에서 미리 계산한 8만 3천 개의 quad 중 가장 가까운 것을 찾으면
-          된다.
+          별 지도의 quad 8만 3천 개 중 지문이 가까운 것들을 찾아, 나머지 별까지
+          맞는지 확인한다.
         </div>
         <div className="text-sm opacity-50">
           Astrometry.net 논문에서 제시한 방식

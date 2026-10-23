@@ -12,7 +12,9 @@ import {
 // 삼각형 크기 거르기 데모: 북두칠성 사진에서 별 셋을 고르면, 밝은 별 삼각형 4만여 개 중 모양이 닮은 것을
 // 가로 = 모양 차이, 세로 = 하늘에서의 크기(가장 긴 변, 로그 눈금)로 찍는다. 사진만으로는 픽셀이 몇 도인지 몰라
 // 크기를 비교할 수 없다. 화각을 하나 짐작하면 사진 삼각형의 크기가 정해지고, 그 절반~두 배 밖은 버린다.
-// 풀이(search/solvers/triangle.ts)와 같은 화각 후보·크기 허용 배율(2)·확인 개수(가까운 8개)다.
+// 풀이(search/solvers/triangle.ts)와 같은 화각 후보·크기 허용 배율(2)·순서다: 모양이 가장 가까운 8개를 먼저
+// 가져오고(SEARCH_DEPTH 1), 그 안에서 크기가 안 맞는 것은 확인하지 않는다. 그래서 크기 거르기는 확인 횟수를
+// 줄여 빠르게 할 뿐, 8개 밖의 정답을 끌어올리지는 않는다.
 // 자료: public/learn/triangle-dipper.json (scripts/learn/buildDemoData.ts)
 
 const SRC = "/samples/big-dipper.jpg";
@@ -126,11 +128,21 @@ export default function TriangleSizeDemo() {
       photoSize === null ||
       (sizeDeg / photoSize <= SIZE_TOLERANCE &&
         sizeDeg / photoSize >= 1 / SIZE_TOLERANCE);
-    const eligible = similar.filter((c) => fits(c.t.sizeDeg));
+    // 풀이 순서: 모양으로 가까운 K개 → 그중 크기가 맞는 것만 확인
+    const nearest = similar.slice(0, K);
+    const checked = nearest.filter((c) => fits(c.t.sizeDeg));
     const rankAll = similar.findIndex((c) => c.truth) + 1;
-    const rankNow = eligible.findIndex((c) => c.truth) + 1;
+    const truthChecked = checked.some((c) => c.truth);
 
-    return { similar, eligible, photoSize, fits, rankAll, rankNow };
+    return {
+      similar,
+      nearest,
+      checked,
+      photoSize,
+      fits,
+      rankAll,
+      truthChecked,
+    };
   }, [data, triangles, picked, fov]);
 
   // 사진과 고른 삼각형
@@ -226,24 +238,27 @@ export default function TriangleSizeDemo() {
       ctx.setLineDash([]);
     }
 
-    const top8 = new Set(view.eligible.slice(0, K).map((c) => c.t));
+    const nearest = new Set(view.nearest.map((c) => c.t));
 
     for (const c of view.similar) {
       const on = view.fits(c.t.sizeDeg);
-      ctx.fillStyle = top8.has(c.t)
-        ? "#fdba74"
-        : on
-          ? "rgba(199,210,254,0.9)"
-          : "rgba(199,210,254,0.12)";
+      const near = nearest.has(c.t);
+      // 주황: 가까운 8개 중 크기가 맞아 확인하는 것, 빨간 테두리: 8개 안이지만 크기가 안 맞아 버리는 것
+      ctx.fillStyle =
+        near && on
+          ? "#fdba74"
+          : on
+            ? "rgba(199,210,254,0.9)"
+            : "rgba(199,210,254,0.12)";
       ctx.beginPath();
-      ctx.arc(
-        toX(c.diff),
-        toY(c.t.sizeDeg),
-        top8.has(c.t) ? 4 : 2.6,
-        0,
-        2 * Math.PI,
-      );
+      ctx.arc(toX(c.diff), toY(c.t.sizeDeg), near ? 4 : 2.6, 0, 2 * Math.PI);
       ctx.fill();
+
+      if (near && !on) {
+        ctx.strokeStyle = "#f87171";
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      }
     }
 
     const truth = view.similar.find((c) => c.truth);
@@ -334,22 +349,27 @@ export default function TriangleSizeDemo() {
             <b className="text-lg">{view.similar.length}개</b>
           </div>
           <div className="bg-base-300/60 rounded-box p-3">
+            가까운 {K}개 중{" "}
             {view.photoSize === null ? (
-              "화각을 모르면 크기로 거를 수 없다"
+              <>
+                확인 <b className="text-lg">{view.checked.length}개</b>
+              </>
             ) : (
               <>
-                크기 {view.photoSize.toFixed(1)}°의 절반~두 배만{" "}
-                <b className="text-lg">{view.eligible.length}개</b>
+                크기({view.photoSize.toFixed(1)}°의 절반~두 배)가 맞아 확인{" "}
+                <b className="text-lg">{view.checked.length}개</b>
               </>
             )}
           </div>
           <div className="bg-base-300/60 rounded-box p-3">
-            정답 순위{" "}
+            정답의 모양 순위{" "}
             <b className="text-lg">
-              {view.rankNow > 0 ? `${view.rankNow}등` : "밖"}
+              {view.rankAll > 0 ? `${view.rankAll}등` : "밖"}
             </b>{" "}
-            {view.rankNow > 0 && view.rankNow <= K ? (
-              <span className="text-green-400">가까운 {K}개 안 → 확인</span>
+            {view.truthChecked ? (
+              <span className="text-green-400">확인 대상</span>
+            ) : view.rankAll > 0 && view.rankAll <= K ? (
+              <span className="text-red-400">크기가 안 맞아 버림</span>
             ) : (
               <span className="text-red-400">가까운 {K}개 밖</span>
             )}
