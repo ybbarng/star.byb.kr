@@ -72,14 +72,14 @@ export const GAMES: GameEntry[] = [
     accent: "from-cyan-300/40 to-blue-500/10",
   },
   {
-    href: "/plate-solver",
+    href: "/games/human-vs-computer",
     title: "사람 계산원 vs 컴퓨터",
     summary:
-      "사람이 별자리를 찾는 동안 컴퓨터는 1초 만에 풀어요. 컴퓨터가 어떻게 푸는지 단계별로 따라 해 봐요. (발표용, 준비 중)",
-    learn: "플레이트 솔빙: 별 패턴 → 해시 → 데이터베이스 → 검증",
-    ready: false,
+      "사진 속 별자리를 누가 먼저 찾을까요? 나는 눈으로, 컴퓨터는 플레이트 솔버로. 마지막 판에는 반전이 있어요!",
+    learn: "플레이트 솔빙: 별 찾기 → 모양 맞추기 → 확인, 그리고 사람의 단서",
+    ready: true,
     icon: "🤖",
-    accent: "from-slate-400/30 to-slate-600/10",
+    accent: "from-rose-300/40 to-slate-500/10",
   },
 ];
 

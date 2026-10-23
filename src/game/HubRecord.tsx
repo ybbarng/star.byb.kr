@@ -35,6 +35,11 @@ const RECORDS: Record<string, () => string | null> = {
 
     return best === null ? null : `최고 ${best.toLocaleString()}점`;
   },
+  "/games/human-vs-computer": () => {
+    const best = readBest("human-vs-computer");
+
+    return best === null ? null : `최고 ${best.toLocaleString()}점`;
+  },
   "/games/light-time-capsule": () => {
     try {
       const c = JSON.parse(
