@@ -28,7 +28,10 @@ export const whereSummary = (where: WhereShot) => {
     where.latDeg !== undefined
       ? latText(where.latDeg, where.estimated ? 0 : 1)
       : `${edgeText(where.latRange![0])} ~ ${edgeText(where.latRange![1])}`;
-  const lon = where.lonDeg !== null ? ` · ${lonText(where.lonDeg, 1)}` : "";
+  const lon =
+    where.lonDeg !== null
+      ? ` · ${lonText(where.lonDeg, where.estimated ? 0 : 1)}`
+      : "";
 
   return `${where.estimated ? "약 " : ""}${lat}${lon}${where.estimated ? " (추정)" : ""}`;
 };
@@ -82,7 +85,9 @@ export default function WhereShotCard({
         <div className="text-xs opacity-60">
           {where.source === "record" && recordNote
             ? recordNote
-            : SOURCE_LABELS[where.source]}
+            : where.lonFromTime
+              ? "지평선과 촬영 시각으로"
+              : SOURCE_LABELS[where.source]}
         </div>
       </div>
       {where.source === "stars" && (
@@ -91,10 +96,16 @@ export default function WhereShotCard({
           지평선을 찍으면 위도를 하나로 좁혀요.
         </p>
       )}
+      {where.lonFromTime && (
+        <p className="text-xs opacity-70">
+          지평선으로 잰 천정이 그 순간 어느 경도 위에 있었는지로 경도를
+          구했어요. 촬영 시각이 4분 틀리면 경도가 1° 틀려요.
+        </p>
+      )}
       {where.lonDeg === null && (
         <p className="text-xs opacity-70">
-          경도는 정확한 촬영 시각이 있어야 알 수 있어요. 같은 하늘이 경도마다
-          다른 시각에 오거든요.
+          경도는 시간대까지 아는 촬영 시각이 있어야 알 수 있어요. 같은 하늘이
+          경도마다 다른 시각에 오거든요.
         </p>
       )}
       {where.source === "stars" && (

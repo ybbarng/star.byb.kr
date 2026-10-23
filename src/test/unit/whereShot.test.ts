@@ -1,7 +1,15 @@
 import type { Point3D } from "@/scripts/hash/types";
 import { describe, expect, it } from "vitest";
+import { exactShotUtc, shotFromExif } from "@/plate-solver/shotTime";
+import { horizonCameraTP } from "@/search/horizonSolve";
 import { skyClockOf, zenithFromHorizon } from "@/search/shotTimeEstimate";
-import { julianDay, zenithVector } from "@/search/utils/ephemeris";
+import {
+  fromAltAzJ2000,
+  horizontalFrameJ2000,
+  julianDay,
+  zenithVector,
+} from "@/search/utils/ephemeris";
+import { photoToSky, projectVecToPhoto } from "@/search/utils/wcs";
 import {
   HORIZON_LAT_TOLERANCE_DEG,
   latRangeFromStars,
@@ -116,6 +124,115 @@ describe("지평선을 찍었을 때: 위도 하나 (추정)", () => {
     });
 
     expect(where?.source).toBe("stars");
+  });
+});
+
+// 정답을 아는 합성 사진(compass.test와 같은 방식): 시각·장소로 카메라를 세우고,
+// 지평선 위 두 방위를 사진에 찍은 뒤 풀이 변환으로 되돌린다
+const horizonFromPhoto = (
+  date: Date,
+  observer: { latDeg: number; lonDeg: number },
+  azimuthDeg: number,
+) => {
+  const W = 4000;
+  const H = 1848;
+  const TP = horizonCameraTP(
+    date,
+    observer,
+    { azimuthDeg, altitudeDeg: 15, rollDeg: 1, fovDeg: 50 },
+    W,
+    H,
+  );
+  const frame = horizontalFrameJ2000(julianDay(date), observer);
+  const a = projectVecToPhoto(TP, fromAltAzJ2000(frame, 0, azimuthDeg - 20))!;
+  const b = projectVecToPhoto(TP, fromAltAzJ2000(frame, 0, azimuthDeg + 20))!;
+
+  return {
+    a: photoToSky(TP, a),
+    b: photoToSky(TP, b),
+    sky: photoToSky(TP, [W / 2, 0]),
+  };
+};
+
+describe("지평선 + 시간대까지 아는 촬영 시각: 경도 (추정)", () => {
+  it.each([
+    ["옐로나이프", new Date("2024-04-02T05:24:15Z"), 62.53, -114.2, 20],
+    ["서울", new Date("2021-10-02T19:30:00Z"), 37.5, 127, 250],
+    ["케이프타운", new Date("2023-06-20T21:00:00Z"), -33.9, 18.4, 180],
+    ["날짜 변경선 근처", new Date("2019-06-17T12:36:00Z"), 15.18, 179.5, 160],
+  ] as const)(
+    "%s: 되찾은 경도가 0.5° 안으로 맞는다",
+    (_, date, latDeg, lonDeg, azimuthDeg) => {
+      const horizon = horizonFromPhoto(date, { latDeg, lonDeg }, azimuthDeg);
+      const where = whereShot({ horizon, utc: date })!;
+
+      expect(where.source).toBe("horizon");
+      expect(where.lonFromTime).toBe(true);
+      expect(where.latDeg!).toBeCloseTo(latDeg, 0);
+      const lonError = ((where.lonDeg! - lonDeg + 540) % 360) - 180;
+      expect(Math.abs(lonError)).toBeLessThan(0.5);
+    },
+  );
+
+  it("시각이 1시간 틀리면 경도가 15°쯤 틀린다 (그래서 시간대를 추정한 시각은 쓰지 않는다)", () => {
+    const date = new Date("2024-04-02T05:24:15Z");
+    const horizon = horizonFromPhoto(
+      date,
+      { latDeg: 62.53, lonDeg: -114.2 },
+      20,
+    );
+    const where = whereShot({
+      horizon,
+      utc: new Date(date.getTime() + 3600000),
+    })!;
+
+    expect(where.lonDeg! - -114.2).toBeCloseTo(-15.04, 0);
+  });
+
+  it("촬영 시각이 없으면 경도는 모름", () => {
+    const date = new Date("2024-04-02T05:24:15Z");
+    const horizon = horizonFromPhoto(
+      date,
+      { latDeg: 62.53, lonDeg: -114.2 },
+      20,
+    );
+
+    expect(whereShot({ horizon })!.lonDeg).toBeNull();
+    expect(whereShot({ horizon, utc: null })!.lonFromTime).toBeUndefined();
+    expect(whereShot({ horizon, utc: new Date(NaN) })!.lonDeg).toBeNull();
+  });
+});
+
+describe("경도에 쓸 수 있는 촬영 시각 (시간대까지 아는가)", () => {
+  const exif = {
+    localDateTime: "2024-04-01T23:24:15",
+    latDeg: null,
+    lonDeg: null,
+  };
+
+  it("EXIF에 시간대가 있으면 그 순간을 쓴다", () => {
+    const shot = shotFromExif({ ...exif, offset: "-06:00" });
+
+    expect(exactShotUtc(shot)?.toISOString()).toBe("2024-04-02T05:24:00.000Z");
+  });
+
+  it("EXIF에 시간대가 없으면 (브라우저 시간대로 추정) 쓰지 않는다", () => {
+    const shot = shotFromExif({ ...exif, offset: null });
+
+    expect(shot?.offsetGuessed).toBe(true);
+    expect(exactShotUtc(shot)).toBeNull();
+  });
+
+  it("'언제 찍었을까?'에서 하늘로 거꾸로 찾은 시각은 쓰지 않는다", () => {
+    expect(
+      exactShotUtc({
+        local: "2024-04-01T23:24",
+        offset: "-06:00",
+        source: "manual",
+        note: "사진에서 추정",
+      }),
+    ).toBeNull();
+    expect(exactShotUtc(null)).toBeNull();
   });
 });
 

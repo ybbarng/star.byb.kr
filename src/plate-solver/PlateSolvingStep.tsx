@@ -13,6 +13,7 @@ import MiniSkyMap from "@/plate-solver/MiniSkyMap";
 import { getSampleAnswer, matchesAnswer } from "@/plate-solver/sampleAnswers";
 import {
   ESTIMATED_SHOT_NOTE,
+  exactShotUtc,
   getSampleShot,
   shotDate,
   shotFromExif,
@@ -382,6 +383,7 @@ export default function PlateSolvingStep() {
             }
           : null,
       stars,
+      utc: exactShotUtc(shot),
     });
   }, [
     image,

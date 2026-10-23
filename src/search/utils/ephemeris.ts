@@ -53,6 +53,18 @@ export const ofDateToJ2000 = (v: Point3D, jd: number): Point3D => {
   return eclipticToEquatorial(lambda, beta, J2000);
 };
 
+// 반대로: 카탈로그(J2000) 방향을 그날의 춘분점 기준으로 (항성시와 비교할 때)
+export const j2000ToOfDate = (v: Point3D, jd: number): Point3D => {
+  const eps = obliquityDeg(J2000);
+  const ex = v[0];
+  const ey = cosD(eps) * v[1] + sinD(eps) * v[2];
+  const ez = -sinD(eps) * v[1] + cosD(eps) * v[2];
+  const lambda = Math.atan2(ey, ex) / D + (1.396971 * (jd - J2000)) / 36525;
+  const beta = Math.asin(Math.max(-1, Math.min(1, ez))) / D;
+
+  return eclipticToEquatorial(lambda, beta, jd);
+};
+
 // 해의 방향 (지구 중심)
 export const sunVector = (jd: number): Point3D => {
   const n = jd - J2000;

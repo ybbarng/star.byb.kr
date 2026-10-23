@@ -8,12 +8,26 @@ export interface ShotTime {
   observer?: Observer;
   source: "exif" | "record" | "manual";
   note?: string;
+  // 시간대를 몰라 이 브라우저의 시간대로 둔 시각 (현지 시각은 맞아도 UTC 순간은 몇 시간 틀릴 수 있다)
+  offsetGuessed?: boolean;
 }
 
 // "언제 찍었을까?"에서 고른 시각의 설명. 이 장소는 하늘에서 추정한 값이다.
 export const ESTIMATED_SHOT_NOTE = "사진에서 추정";
 
 export const shotDate = (s: ShotTime) => new Date(`${s.local}${s.offset}`);
+
+// 시간대까지 믿을 수 있는 촬영 순간(UTC). 경도처럼 순간이 정확해야 하는 계산에만 쓴다.
+// 시간대를 추정한 시각, 하늘에서 거꾸로 찾은 시각(장소를 추정해 넣었다)은 null.
+export const exactShotUtc = (s: ShotTime | null): Date | null => {
+  if (!s || s.offsetGuessed || s.note === ESTIMATED_SHOT_NOTE) {
+    return null;
+  }
+
+  const date = shotDate(s);
+
+  return Number.isNaN(date.getTime()) ? null : date;
+};
 
 // 이 브라우저의 시간대 ("+09:00")
 export const browserOffset = (at = new Date()) => {
@@ -79,5 +93,6 @@ export const shotFromExif = (exif: PhotoExif | null): ShotTime | null => {
         : undefined,
     source: "exif",
     note: exif.offset ? "사진 정보(EXIF)" : "사진 정보(EXIF), 시간대는 추정",
+    ...(!exif.offset && { offsetGuessed: true }),
   };
 };
