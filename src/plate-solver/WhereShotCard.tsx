@@ -16,6 +16,7 @@ const SOURCE_LABELS = {
   record: "샘플의 촬영 기록",
   manual: "입력한 장소",
   horizon: "지평선으로 잰 하늘의 기울기에서",
+  starsTime: "사진 속 별들과 시간대까지 아는 촬영 시각에서",
   stars: "사진에 담긴 별들에서",
 } as const;
 
@@ -28,10 +29,15 @@ export const whereSummary = (where: WhereShot) => {
     where.latDeg !== undefined
       ? latText(where.latDeg, where.estimated ? 0 : 1)
       : `${edgeText(where.latRange![0])} ~ ${edgeText(where.latRange![1])}`;
+  const lonRange = where.region?.lonRange;
   const lon =
     where.lonDeg !== null
       ? ` · ${lonText(where.lonDeg, where.estimated ? 0 : 1)}`
-      : "";
+      : where.region
+        ? lonRange
+          ? ` · ${lonText(lonRange[0])} ~ ${lonText(lonRange[1])}`
+          : " · 경도 전체"
+        : "";
 
   return `${where.estimated ? "약 " : ""}${lat}${lon}${where.estimated ? " (추정)" : ""}`;
 };
@@ -52,8 +58,12 @@ export default function WhereShotCard({
     const guides: MapGuides = {
       color: COLOR,
       latLines: lat !== undefined ? [lat] : [],
-      latBands: where.latRange ? [where.latRange] : [],
+      // 영역이 있으면 위도 띠 대신 그 칸들만 칠한다
+      latBands: where.latRange && !where.region ? [where.latRange] : [],
       lonLines: lon !== null ? [lon] : [],
+      ...(where.region && {
+        cells: { stepDeg: where.region.stepDeg, centers: where.region.cells },
+      }),
     };
     const pins: MapPin[] = known
       ? [{ latDeg: lat, lonDeg: lon, color: `rgb(${COLOR})` }]
@@ -62,7 +72,7 @@ export default function WhereShotCard({
     return {
       pins,
       guides,
-      focus: known ? { latDeg: lat, lonDeg: lon } : undefined,
+      focus: known ? { latDeg: lat, lonDeg: lon } : where.region?.center,
     };
   }, [where]);
 
@@ -80,6 +90,8 @@ export default function WhereShotCard({
       <div>
         <div className="font-bold">
           {where.source === "stars" && "이 하늘이 보이는 위도: "}
+          {where.source === "starsTime" &&
+            "이 순간 이 별들이 모두 떠 있던 곳: "}
           {whereSummary(where)}
         </div>
         <div className="text-xs opacity-60">
@@ -96,19 +108,25 @@ export default function WhereShotCard({
           지평선을 찍으면 위도를 하나로 좁혀요.
         </p>
       )}
+      {where.source === "starsTime" && (
+        <p className="text-xs opacity-70">
+          촬영 순간에 사진 속 별들이 모두 지평선 위에 있고, 해가 충분히
+          진(지평선 아래 12°) 곳만 칠했어요. 지평선을 찍으면 한 곳으로 좁혀요.
+        </p>
+      )}
       {where.lonFromTime && (
         <p className="text-xs opacity-70">
           지평선으로 잰 천정이 그 순간 어느 경도 위에 있었는지로 경도를
           구했어요. 촬영 시각이 4분 틀리면 경도가 1° 틀려요.
         </p>
       )}
-      {where.lonDeg === null && (
+      {where.lonDeg === null && where.source !== "starsTime" && (
         <p className="text-xs opacity-70">
           경도는 시간대까지 아는 촬영 시각이 있어야 알 수 있어요. 같은 하늘이
           경도마다 다른 시각에 오거든요.
         </p>
       )}
-      {where.source === "stars" && (
+      {(where.source === "stars" || where.source === "starsTime") && (
         <button className="btn btn-xs self-start" onClick={onPickHorizon}>
           지평선 찍으러 가기
         </button>

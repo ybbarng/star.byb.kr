@@ -26,6 +26,8 @@ export interface MapGuides {
   latLines?: number[];
   latBands?: [number, number][]; // [남, 북]
   lonLines?: number[];
+  // 칠할 위도·경도 칸 (가운데 [위도, 경도], 한 변 stepDeg)
+  cells?: { stepDeg: number; centers: [number, number][] };
   color: string; // "r,g,b"
 }
 
@@ -264,6 +266,21 @@ const drawGuides = (
 
   for (const [south, north] of g.latBands ?? []) {
     ctx.fillRect(0, P.y(north), W, P.y(south) - P.y(north));
+  }
+
+  if (g.cells) {
+    const half = g.cells.stepDeg / 2;
+    // 칸 사이에 틈이 보이지 않게 조금 겹쳐 칠한다
+    const size = g.cells.stepDeg * Math.abs(P.x(1) - P.x(0)) + 0.5;
+    ctx.fillStyle = `rgba(${g.color},0.4)`;
+
+    for (const [lat, lon] of g.cells.centers) {
+      for (const o of [-360, 0, 360]) {
+        ctx.fillRect(P.x(lon - half + o), P.y(lat + half), size, size);
+      }
+    }
+
+    ctx.fillStyle = `rgba(${g.color},0.22)`;
   }
 
   ctx.strokeStyle = `rgba(${g.color},0.95)`;
