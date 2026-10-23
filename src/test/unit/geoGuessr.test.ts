@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { altAzOfTarget, buildGuide } from "@/game/geo/guide";
 import {
   constellationRaDeg,
   distanceKm,
@@ -34,7 +35,7 @@ describe("육지 판정", () => {
 describe("문제 만들기", () => {
   const SEEDS = Array.from({ length: 30 }, (_, i) => i * 7919 + 1);
 
-  it.each(["easy", "normal", "hard"] as const)(
+  it.each(["intro", "easy", "normal", "hard"] as const)(
     "%s: 땅 위에서, 하늘 때에 맞는 순간",
     (difficulty) => {
       for (const seed of SEEDS) {
@@ -97,5 +98,50 @@ describe("풀이", () => {
       ((((toMin(e.localClock) - toMin(e.utcClock)) / 60) % 24) + 24) % 24;
 
     expect(Math.abs(diff - ((e.hourOffset + 24) % 24))).toBeLessThan(0.05);
+  });
+});
+
+describe("입문 길잡이", () => {
+  const SEEDS = Array.from({ length: 40 }, (_, i) => i * 104729 + 3);
+
+  it("찾으라는 것은 그 하늘의 지평선 위에 있고, 맞는 보기가 꼭 하나 이상 있다", () => {
+    for (const seed of SEEDS) {
+      const p = makeGeoProblem(seed, "intro");
+      const steps = buildGuide(p);
+
+      expect(steps.length).toBeGreaterThanOrEqual(4);
+
+      for (const s of steps) {
+        if (s.choices) {
+          expect(s.choices.some((c) => c.correct)).toBe(true);
+        }
+
+        for (const v of s.target?.vectors ?? []) {
+          expect(altAzOfTarget(p, v).altDeg).toBeGreaterThan(2);
+        }
+      }
+    }
+  });
+
+  it("극 높이 보기의 정답 구간에 실제 위도가 든다", () => {
+    for (const seed of SEEDS) {
+      const p = makeGeoProblem(seed, "intro");
+      const band = buildGuide(p).find((s) =>
+        s.choices?.some((c) => c.label.includes("지평선 가까이")),
+      );
+
+      if (!band) continue;
+
+      const right = band.choices!.find((c) => c.correct)!;
+      const lat = Math.abs(p.observer.latDeg);
+      const [lo, hi] = right.label.includes("0~20")
+        ? [0, 20]
+        : right.label.includes("20~40")
+          ? [20, 40]
+          : [40, 90];
+
+      expect(lat).toBeGreaterThanOrEqual(lo);
+      expect(lat).toBeLessThan(hi);
+    }
   });
 });

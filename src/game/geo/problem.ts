@@ -20,7 +20,8 @@ import { createRng } from "@/utils/rng";
 // 낮밤 지도의 그 시각인 곳을 찾아야 한다 — 크로노미터로 경도를 구하던 항해사와 같다. 위도는 천구의 극 높이 등.
 // 달은 실제 위치에 그리지만 풀이에는 쓰지 않는다 (숙련자용 숨은 단서: 달 거리법).
 
-export type GeoDifficulty = "easy" | "normal" | "hard";
+// 입문: 쉬움과 같은 하늘에, 길잡이(guide.ts)가 단서를 하나씩 같이 찾는다
+export type GeoDifficulty = "intro" | "easy" | "normal" | "hard";
 export type SkyTime = "dusk" | "night" | "dawn"; // 노을이 남은 저녁, 한밤, 동트기 전
 
 export interface GeoSettings {
@@ -39,6 +40,18 @@ export interface GeoSettings {
 }
 
 export const GEO_SETTINGS: Record<GeoDifficulty, GeoSettings> = {
+  intro: {
+    compass: true,
+    seasonCard: true,
+    timeBands: true,
+    hoverTime: true,
+    magLimit: 5,
+    lightPollution: 0.1,
+    mountainCount: 0,
+    hidePoleChance: 0,
+    cloudCount: 0,
+    timeWeights: { dusk: 0.4, night: 0.3, dawn: 0.3 },
+  },
   easy: {
     compass: true,
     seasonCard: true,

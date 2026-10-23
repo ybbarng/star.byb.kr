@@ -1,8 +1,10 @@
 "use client";
 
 import type { MapPin } from "@/game/geo/drawMap";
+import type { GuideTarget } from "@/game/geo/guide";
 import type { GeoDifficulty, GeoProblem, HintKey } from "@/game/geo/problem";
-import { useMemo, useState } from "react";
+import type { Point3D } from "@/scripts/hash/types";
+import { useCallback, useMemo, useState } from "react";
 import {
   ChoiceCards,
   CountUp,
@@ -13,6 +15,7 @@ import {
   saveBest,
 } from "@/game/fx/Fx";
 import { sfx } from "@/game/fx/sound";
+import GuidePanel from "@/game/geo/GuidePanel";
 import {
   clockLabel,
   distanceKm,
@@ -36,6 +39,11 @@ import { cn } from "@/utils/cn";
 const ROUNDS = 5;
 
 const DIFFICULTIES: { value: GeoDifficulty; title: string; note: string }[] = [
+  {
+    value: "intro",
+    title: "입문",
+    note: "길잡이가 질문하며 단서를 같이 찾아요",
+  },
   { value: "easy", title: "쉬움", note: "방위·지도 시각 띠·계절 카드" },
   { value: "normal", title: "보통", note: "산과 구름이 조금, 시각 띠 없이" },
   { value: "hard", title: "어려움", note: "방위 없음, 산·구름·도시 불빛" },
@@ -200,6 +208,19 @@ function GeoRound({
   const [hints, setHints] = useState<Set<HintKey>>(new Set());
   const [result, setResult] = useState<RoundResult | null>(null);
   const [showLines, setShowLines] = useState(false);
+  // 입문 길잡이: 하늘에서 찾을 것, 찾은 횟수, 보여 줄 자리, 찾은 별자리 선
+  const intro = problem.difficulty === "intro";
+  const [guideTarget, setGuideTarget] = useState<GuideTarget | null>(null);
+  const [foundTick, setFoundTick] = useState(0);
+  const [reveal, setReveal] = useState<{
+    vector: Point3D;
+    nonce: number;
+  } | null>(null);
+  const [foundLines, setFoundLines] = useState<string[]>([]);
+  const onGuideTarget = useCallback(
+    (t: GuideTarget | null) => setGuideTarget(t),
+    [],
+  );
   const penalty = [...hints].reduce((s, h) => s + HINT_COSTS[h], 0);
   const seasonCard = set.seasonCard || hints.has("seasonCard");
   const compass = set.compass || hints.has("compass");
@@ -277,6 +298,10 @@ function GeoRound({
             compass={compass || result !== null}
             timelapse={hints.has("timelapse")}
             constellations={showLines}
+            find={intro && !result ? guideTarget : null}
+            onFound={() => setFoundTick((n) => n + 1)}
+            reveal={reveal}
+            foundLines={foundLines}
           />
           <RoundBanner
             key={round}
@@ -330,6 +355,24 @@ function GeoRound({
               onNext={() => onDone(result)}
               last={round + 1 >= ROUNDS}
             />
+          )}
+
+          {!result && intro && (
+            <div className="bg-base-200/80 rounded-box flex flex-col gap-2 p-3 text-sm backdrop-blur">
+              <GuidePanel
+                problem={problem}
+                foundTick={foundTick}
+                onTarget={onGuideTarget}
+                onReveal={(vector) =>
+                  setReveal((r) => ({ vector, nonce: (r?.nonce ?? 0) + 1 }))
+                }
+                onLines={(label) =>
+                  setFoundLines((ls) =>
+                    ls.includes(label) ? ls : [...ls, label],
+                  )
+                }
+              />
+            </div>
           )}
 
           {!result && (

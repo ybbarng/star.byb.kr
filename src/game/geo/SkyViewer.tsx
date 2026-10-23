@@ -1,10 +1,12 @@
 "use client";
 
+import type { GuideTarget } from "@/game/geo/guide";
 import type { GeoProblem } from "@/game/geo/problem";
-import type { Point2D } from "@/scripts/hash/types";
+import type { Point2D, Point3D } from "@/scripts/hash/types";
 import { useEffect, useRef, useState } from "react";
+import { altAzOfTarget } from "@/game/geo/guide";
 import { GEO_SETTINGS } from "@/game/geo/problem";
-import { CONSTELLATIONS, STARS } from "@/game/sky/catalog";
+import { CONSTELLATIONS, constellationParts, STARS } from "@/game/sky/catalog";
 import { drawSky } from "@/game/sky/drawSky";
 import { horizonCameraTP } from "@/search/horizonSolve";
 import { horizontalFrameJ2000, julianDay } from "@/search/utils/ephemeris";
@@ -26,13 +28,26 @@ export default function SkyViewer({
   compass,
   timelapse,
   constellations,
+  find,
+  onFound,
+  reveal,
+  foundLines = [],
 }: {
   problem: GeoProblem;
   compass: boolean;
   timelapse: boolean;
   constellations: boolean;
+  // 길잡이(입문): 이 별들 근처를 누르면 onFound
+  find?: GuideTarget | null;
+  onFound?: () => void;
+  // 길잡이가 "여기 있어요"로 하늘을 돌려 보여 줄 자리 (nonce가 바뀔 때마다)
+  reveal?: { vector: Point3D; nonce: number } | null;
+  // 길잡이에서 찾은 별자리의 선 (catalog 라벨)
+  foundLines?: string[];
 }) {
   const canvas = useRef<HTMLCanvasElement>(null);
+  const tpRef = useRef<ReturnType<typeof horizonCameraTP> | null>(null);
+  const [ring, setRing] = useState<Point3D | null>(null);
   const [view, setView] = useState({
     az: problem.startAzimuthDeg,
     alt: 25,
@@ -45,7 +60,26 @@ export default function SkyViewer({
 
   useEffect(() => {
     setView({ az: problem.startAzimuthDeg, alt: 25, fov: 80 });
+    setRing(null);
   }, [problem]);
+
+  // 길잡이가 보여 줄 자리로 하늘을 돌린다
+  useEffect(() => {
+    if (!reveal) return;
+
+    const { altDeg, azDeg } = altAzOfTarget(problem, reveal.vector);
+    setView((v) => ({
+      ...v,
+      az: azDeg,
+      alt: Math.max(-5, Math.min(85, altDeg)),
+    }));
+    setRing(reveal.vector);
+  }, [reveal, problem]);
+
+  // 찾을 것이 바뀌면 표시 고리를 지운다
+  useEffect(() => {
+    setRing(null);
+  }, [find]);
 
   // 휠로 확대·축소 (페이지가 스크롤되지 않게 직접 붙인다)
   useEffect(() => {
@@ -92,6 +126,12 @@ export default function SkyViewer({
         H,
       );
     const TP = cam(problem.date);
+    tpRef.current = TP;
+    const lines = constellations
+      ? CONSTELLATIONS
+      : foundLines.length
+        ? foundLines.flatMap((label) => constellationParts(label))
+        : undefined;
 
     drawSky(ctx, {
       width: W,
@@ -107,8 +147,24 @@ export default function SkyViewer({
       compass,
       mountains: problem.mountains,
       clouds: problem.clouds,
-      constellations: constellations ? CONSTELLATIONS : undefined,
+      constellations: lines,
     });
+
+    // 길잡이가 가리키는 자리
+    if (ring) {
+      const p = projectVecToPhoto(TP, ring);
+
+      if (p) {
+        ctx.save();
+        ctx.strokeStyle = "rgba(253,224,71,0.9)";
+        ctx.lineWidth = 3;
+        ctx.setLineDash([8, 6]);
+        ctx.beginPath();
+        ctx.arc(p[0], p[1], 46, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
 
     if (timelapse) {
       // 카메라는 땅에 고정, 시간만 거꾸로: 별이 지나온 길
@@ -159,11 +215,42 @@ export default function SkyViewer({
 
       ctx.restore();
     }
-  }, [problem, view, compass, timelapse, constellations, set]);
+  }, [
+    problem,
+    view,
+    compass,
+    timelapse,
+    constellations,
+    set,
+    ring,
+    foundLines,
+  ]);
 
   const onPointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
     drag.current = { x: e.clientX, y: e.clientY, az: view.az, alt: view.alt };
     e.currentTarget.setPointerCapture(e.pointerId);
+  };
+
+  // 끌지 않고 누른 자리: 길잡이가 찾으라는 별 근처인지
+  const onTap = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    const TP = tpRef.current;
+
+    if (!find || !onFound || !TP) return;
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * W;
+    const y = ((e.clientY - rect.top) / rect.height) * H;
+    const tolPx = Math.max(28, (find.toleranceDeg / view.fov) * W);
+    const hit = find.vectors.some((v) => {
+      const p = projectVecToPhoto(TP, v);
+
+      return p && Math.hypot(p[0] - x, p[1] - y) <= tolPx;
+    });
+
+    if (hit) {
+      setRing(null);
+      onFound();
+    }
   };
 
   const onPointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
@@ -183,7 +270,13 @@ export default function SkyViewer({
     setView((v) => ({ ...v, az, alt }));
   };
 
-  const onPointerUp = () => {
+  const onPointerUp = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    const d = drag.current;
+
+    if (d && Math.hypot(e.clientX - d.x, e.clientY - d.y) < 5) {
+      onTap(e);
+    }
+
     drag.current = null;
   };
 
@@ -197,12 +290,12 @@ export default function SkyViewer({
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
-        onPointerCancel={onPointerUp}
+        onPointerCancel={() => (drag.current = null)}
       />
       {compass && (
         <div className="pointer-events-none absolute top-3 right-3 rounded-full bg-black/55 px-3 py-1 text-xs backdrop-blur">
           {DIRECTIONS[Math.round(view.az / 45) % 8]}쪽을 보고 있어요
-          {problem.difficulty === "easy" &&
+          {(problem.difficulty === "easy" || problem.difficulty === "intro") &&
             ` · 화면 가운데 고도 ${Math.round(view.alt)}°`}
         </div>
       )}
