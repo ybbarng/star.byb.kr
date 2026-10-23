@@ -107,7 +107,9 @@ describe("춘분점과 점성술", () => {
 describe("연도 표시", () => {
   it("천문 연도 0년은 기원전 1년", () => {
     expect(yearLabel(0)).toBe("기원전 1년");
-    expect(yearLabel(-2799)).toBe("기원전 2,800년");
+    expect(yearLabel(-2799)).toBe("기원전 2800년");
+    expect(yearLabel(2026)).toBe("2026년");
+    expect(yearLabel(-12000)).toBe("기원전 12,001년");
     expect(yearLabel(14000)).toBe("14,000년");
   });
 });

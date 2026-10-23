@@ -139,8 +139,8 @@ export const poleStarEras = <T extends PoleStarCandidate>(
   return [...best.values()].sort((a, b) => a.bestYear - b.bestYear);
 };
 
-// 천문 연도 → 보이는 연도 (0년 = 기원전 1년)
+// 천문 연도 → 보이는 연도 (0년 = 기원전 1년). 네 자리까지는 보통 연도처럼 쉼표 없이(2026년), 만 단위부터 쉼표
+const yearNumber = (n: number) => (n >= 10000 ? n.toLocaleString() : `${n}`);
+
 export const yearLabel = (year: number) =>
-  year <= 0
-    ? `기원전 ${(1 - year).toLocaleString()}년`
-    : `${year.toLocaleString()}년`;
+  year <= 0 ? `기원전 ${yearNumber(1 - year)}년` : `${yearNumber(year)}년`;
