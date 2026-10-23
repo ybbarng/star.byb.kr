@@ -35,6 +35,8 @@ export interface LessonStep {
   marks: Mark[];
   time?: LocalTime; // 이 단계만 다른 시각
   sky?: { magLimit?: number; lightPollution?: number };
+  // 정해 둔 카메라 (방위·높이·시야각 °). 없으면 표시들이 다 들어오게 맞춘다
+  view?: { az: number; alt: number; fov: number };
   tap?: { target: TapTarget; tolDeg: number; prompt: string; found: string };
   // 다룰 별이 낮게 있어도 되는 단계 (가을 저녁 낮은 북두칠성처럼, 낮은 것 자체를 보여 줄 때)
   allowLow?: boolean;
@@ -866,6 +868,7 @@ export const LESSONS: Lesson[] = [
       {
         say: "8월 12일 저녁 9시 반, 경북 영양의 반딧불이 밤하늘 보호공원. 그믐이라 달이 없어요. 남쪽 지평선에서 머리 위까지 희뿌연 띠가 솟아 있어요. 은하수예요.",
         marks: [{ kind: "milkyWay" }],
+        view: { az: 185, alt: 42, fov: 100 },
       },
       {
         say: "은하수는 우리은하를 안에서 본 모습이에요. 원반 모양 은하 속에 있으니 원반이 하늘을 한 바퀴 두르는 띠로 보여요.",
@@ -893,12 +896,20 @@ export const LESSONS: Lesson[] = [
       {
         say: "같은 자리, 같은 시각인데 서울 도심이라면? 광해(도시 불빛)가 하늘을 밝혀 3등급보다 어두운 별과 은하수가 모두 지워져요.",
         sky: { magLimit: 3, lightPollution: 0.85 },
-        marks: [{ kind: "asterism", id: "summer-triangle" }],
+        marks: [
+          { kind: "milkyWay" },
+          { kind: "asterism", id: "summer-triangle" },
+        ],
+        view: { az: 185, alt: 42, fov: 100 },
       },
       {
         say: "2주 뒤(8월 26일), 보름이 가까운 달이 뜬 밤이에요. 어두운 시골이어도 달빛이 하늘을 밝혀 은하수가 거의 안 보여요. 은하수는 그믐 무렵에 보러 가요.",
         time: { y: 2026, m: 8, d: 26, h: 21, min: 30 },
-        marks: [{ kind: "asterism", id: "summer-triangle" }],
+        marks: [
+          { kind: "milkyWay" },
+          { kind: "asterism", id: "summer-triangle" },
+        ],
+        view: { az: 175, alt: 42, fov: 100 },
       },
       {
         say: "겨울엔 반대쪽, 은하 바깥쪽을 봐요. 오리온 옆 겨울철 대삼각형 안을 지나는 은하수는 여름보다 훨씬 희미해요. 별이 적은 은하 가장자리 쪽이라서예요.",

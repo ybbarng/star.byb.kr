@@ -26,7 +26,7 @@ import { projectVecToPhoto } from "@/search/utils/wcs";
 const D = Math.PI / 180;
 export const FOV_MIN = 30;
 export const FOV_MAX = 120;
-const MILKY_WAY = milkyWayPatches(3);
+const MILKY_WAY = milkyWayPatches(2);
 const ECLIPTIC = eclipticPoints(2);
 
 export interface SkyRing {
@@ -151,21 +151,37 @@ export const drawSchoolSky = (
           c.save();
           c.globalCompositeOperation = "screen";
 
+          // 광해·달빛이 하늘을 밝히면 어두운 띠부터 묻힌다 (밝은 중심부가 가장 늦게 사라진다)
+          const fade = (1 - glow) ** 2;
+
           for (const p of MILKY_WAY) {
-            if (up(p.vector) < -0.05) continue;
+            if (up(p.vector) < -0.03) continue;
 
             const at = proj(p.vector);
-
-            if (!at || at[0] < -300 || at[0] > W + 300) continue;
-
             const r = p.widthDeg * pxPerDeg;
-            const a = 0.16 * p.brightness * (1 - glow) ** 2;
 
-            if (a < 0.005) continue;
+            if (
+              !at ||
+              at[0] < -r ||
+              at[0] > W + r ||
+              at[1] < -r ||
+              at[1] > H + r
+            ) {
+              continue;
+            }
 
+            // 지평선 가까이는 공기층에 묻혀 흐려진다
+            const low = Math.min(1, Math.max(0, up(p.vector) / 0.17));
+            const a =
+              0.085 * p.brightness * fade * (0.45 + 0.55 * low) - 0.012 * glow;
+
+            if (a < 0.003) continue;
+
+            const rgb = `${Math.round(185 + 35 * p.warm)},${Math.round(195 + 10 * p.warm)},${Math.round(235 - 45 * p.warm)}`;
             const g = c.createRadialGradient(at[0], at[1], 0, at[0], at[1], r);
-            g.addColorStop(0, `rgba(190,200,235,${a})`);
-            g.addColorStop(1, "rgba(190,200,235,0)");
+            g.addColorStop(0, `rgba(${rgb},${a})`);
+            g.addColorStop(0.45, `rgba(${rgb},${a * 0.45})`);
+            g.addColorStop(1, `rgba(${rgb},0)`);
             c.fillStyle = g;
             c.fillRect(at[0] - r, at[1] - r, 2 * r, 2 * r);
           }

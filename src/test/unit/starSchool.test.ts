@@ -373,7 +373,8 @@ describe("은하수", () => {
   });
 
   it("은하수 띠는 데네브·남십자·석탄자루 곁을 지나고, 북극성에선 멀다", () => {
-    const patches = milkyWayPatches();
+    // 눈에 띄는 띠만 (가장자리의 아주 옅은 조각은 빼고)
+    const patches = milkyWayPatches().filter((p) => p.brightness >= 0.1);
     const nearest = (v: ReturnType<typeof hrVector>) =>
       Math.min(...patches.map((p) => separationDeg(p.vector, v)));
 
@@ -381,6 +382,26 @@ describe("은하수", () => {
     expect(nearest(hrVector("4730"))).toBeLessThan(6);
     expect(nearest(raDecVector(192.5, -62.5))).toBeLessThan(6);
     expect(nearest(hrVector("424"))).toBeGreaterThan(20);
+  });
+
+  it("궁수자리 쪽이 가장 밝고 두껍고, 마차부자리 쪽(은하 반대편)은 희미하다. 석탄자루는 어둡게 뚫려 있다", () => {
+    const patches = milkyWayPatches();
+    // 그 방향 둘레 4° 안 조각들의 밝기 합 (띠의 밝기 × 두께)
+    const light = (v: ReturnType<typeof hrVector>, r = 4) =>
+      patches
+        .filter((p) => separationDeg(p.vector, v) < r)
+        .reduce((s, p) => s + p.brightness, 0);
+    const across = (l: number) =>
+      [-12, -8, -4, 0, 4, 8, 12].reduce(
+        (s, b) => s + light(galacticVector(l, b), 2),
+        0,
+      );
+
+    expect(across(0)).toBeGreaterThan(3 * across(180));
+    expect(across(76)).toBeGreaterThan(across(180) * 2);
+    expect(light(galacticVector(301, -0.5), 2)).toBeLessThan(
+      light(galacticVector(310, 0), 2) * 0.6,
+    );
   });
 });
 

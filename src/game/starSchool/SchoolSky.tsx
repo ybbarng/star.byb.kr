@@ -1,7 +1,7 @@
 "use client";
 
 import type { Mark } from "@/game/starSchool/lessons";
-import type { SkyRing } from "@/game/starSchool/schoolSkyDraw";
+import type { SkyRing, SkyView } from "@/game/starSchool/schoolSkyDraw";
 import type { SkyPlace } from "@/game/starSchool/skyMath";
 import type { Point3D } from "@/scripts/hash/types";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -35,6 +35,7 @@ export default function SchoolSky({
   lightPollution,
   marks,
   aim,
+  look,
   aimKey,
   targets,
   onTap,
@@ -48,6 +49,7 @@ export default function SchoolSky({
   lightPollution: number;
   marks: Mark[];
   aim?: Point3D[]; // 카메라를 맞출 방향들 (없으면 표시들로)
+  look?: SkyView; // 정해 둔 카메라 (지평선부터 머리 위까지처럼 방향들로 맞추기 어려울 때)
   aimKey: string; // 바뀌면 카메라를 다시 맞춘다
   targets?: SkyTargets | null;
   // 하늘을 눌렀을 때: 찾을 자리 중 몇 번째 근처인지 (아니면 −1), 누른 방향
@@ -64,7 +66,8 @@ export default function SchoolSky({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [aimKey],
   );
-  const [view, setView] = useState(() => aimView(aimVectors, date, place));
+  const startView = () => look ?? aimView(aimVectors, date, place);
+  const [view, setView] = useState(startView);
   const drag = useRef<{ x: number; y: number; az: number; alt: number } | null>(
     null,
   );
@@ -91,7 +94,7 @@ export default function SchoolSky({
   }, []);
 
   useEffect(() => {
-    setView(aimView(aimVectors, date, place));
+    setView(startView());
     // 단계가 바뀔 때만 다시 맞춘다
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [aimKey]);
@@ -227,10 +230,7 @@ export default function SchoolSky({
         {directionWord(view.az)}쪽 · 높이 {Math.round(view.alt)}°
       </div>
       <div className="absolute right-2 bottom-2 flex gap-1">
-        <button
-          className="btn btn-xs"
-          onClick={() => setView(aimView(aimVectors, date, place))}
-        >
+        <button className="btn btn-xs" onClick={() => setView(startView())}>
           처음 자리
         </button>
         <button

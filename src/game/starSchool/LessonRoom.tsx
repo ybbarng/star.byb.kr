@@ -394,6 +394,7 @@ function LessonPlayer({
             lightPollution={step.sky?.lightPollution ?? lesson.lightPollution}
             marks={marks}
             aim={aimFallback(lesson, stepIdx)}
+            look={step.view}
             aimKey={`${lesson.id}-${stepIdx}`}
             targets={
               tap
