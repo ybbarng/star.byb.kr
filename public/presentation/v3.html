@@ -1675,6 +1675,60 @@
         showSlideNumber: 'all',
         plugins: [ RevealMarkdown, RevealHighlight, RevealNotes ]
       });
+
+      // 발표 리모컨 (src/scripts/presentation/remote.ts): 주소에 ?remote 가 있을 때만.
+      // 지금 장의 노트·제목·다음 장을 리모컨 서버로 보내고, 휴대폰의 넘기기를 받는다. ?remote=호스트:포트 로 서버를 바꿀 수 있다
+      (() => {
+        const params = new URLSearchParams(location.search);
+
+        if (!params.has('remote')) return;
+
+        const server = 'http://' + (params.get('remote') || 'localhost:5026');
+        const titleOf = (slide) =>
+          slide?.querySelector('h1')?.textContent.trim() ||
+          (slide?.querySelector('iframe') ? '(데모 화면)' : slide?.querySelector('img') ? '(그림)' : '');
+        const report = () => {
+          const slide = Reveal.getCurrentSlide();
+          const slides = Reveal.getSlides();
+          const index = slides.indexOf(slide);
+          const fragmentIndexes = new Set(
+            [...slide.querySelectorAll('.fragment')].map((f) => f.getAttribute('data-fragment-index')),
+          );
+
+          fetch(server + '/state', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              index,
+              total: slides.filter((s) => !s.hasAttribute('data-appendix')).length,
+              title: titleOf(slide),
+              notes: Reveal.getSlideNotes(slide) || '',
+              nextTitle: titleOf(slides[index + 1]),
+              fragment: Reveal.getIndices().f ?? -1,
+              fragments: fragmentIndexes.size,
+              appendix: slide.hasAttribute('data-appendix'),
+            }),
+          }).catch(() => {});
+        };
+
+        ['ready', 'slidechanged', 'fragmentshown', 'fragmenthidden'].forEach((e) => Reveal.on(e, report));
+
+        if (Reveal.isReady()) report();
+
+        const listen = () => {
+          const es = new EventSource(server + '/deck');
+          es.addEventListener('command', (e) => {
+            const { action } = JSON.parse(e.data);
+
+            if (action === 'next') Reveal.next();
+            if (action === 'prev') Reveal.prev();
+            if (action === 'first') Reveal.slide(0);
+          });
+          es.addEventListener('open', report);
+        };
+
+        listen();
+      })();
     </script>
   </body>
 </html>
