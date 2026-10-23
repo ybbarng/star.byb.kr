@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { CONSTELLATIONS, STARS } from "@/game/sky/catalog";
 import { cn } from "@/utils/cn";
 
-// 별 지도 데모: 별 지도(1,625개)를 손으로 돌려 보는 천구.
+// 별 지도 데모: 별 지도(1,625개)를 천구 안에서 올려다보며 끌어 돌려 보는 하늘.
 // 등급 한계를 바꾸면 별 수가 어떻게 변하는지, 별자리선, HEALPix 192칸을 켜 볼 수 있다.
 // 별을 누르면 적경·적위와 단위 벡터를, 칸 모드에서 빈 곳을 누르면 그 칸(중심에서 10°)의 별 수와
 // 별 넷 조합 수를 보여 준다 (search/quadDatabase.ts와 같은 규칙).
@@ -17,29 +17,30 @@ const NSIDE = 4;
 const CELL_RADIUS_DEG = 10;
 const D = Math.PI / 180;
 
-type Mat = number[]; // 3×3 행 우선
+// 천구 안(지구)에서 바라본다: 화면 가운데가 보는 방향, 위가 북쪽, 왼쪽이 동쪽 (실제 밤하늘과 같은 배치).
+// 평사 투영이라 넓게 봐도 별자리 모양이 덜 일그러진다
+const HALF_FOV_DEG = 60; // 화면 가운데에서 좌우 끝까지
 
-const rotation = (yaw: number, pitch: number): Mat => {
-  const cy = Math.cos(yaw);
-  const sy = Math.sin(yaw);
-  const cp = Math.cos(pitch);
-  const sp = Math.sin(pitch);
+type View = { ra: number; dec: number }; // 보는 방향 (도)
 
-  // 먼저 z축으로 yaw, 그다음 x축으로 pitch
-  return [cy, -sy, 0, cp * sy, cp * cy, -sp, sp * sy, sp * cy, cp];
+const basisOf = ({ ra, dec }: View) => {
+  const a = ra * D;
+  const d = dec * D;
+  const forward: Point3D = [
+    Math.cos(d) * Math.cos(a),
+    Math.cos(d) * Math.sin(a),
+    Math.sin(d),
+  ];
+  const up: Point3D = [
+    -Math.sin(d) * Math.cos(a),
+    -Math.sin(d) * Math.sin(a),
+    Math.cos(d),
+  ];
+  // 안에서 보면 동쪽(적경이 커지는 쪽)이 왼쪽이라 오른쪽은 서쪽
+  const right: Point3D = [Math.sin(a), -Math.cos(a), 0];
+
+  return { forward, up, right };
 };
-
-const apply = (m: Mat, v: Point3D): Point3D => [
-  m[0] * v[0] + m[1] * v[1] + m[2] * v[2],
-  m[3] * v[0] + m[4] * v[1] + m[5] * v[2],
-  m[6] * v[0] + m[7] * v[1] + m[8] * v[2],
-];
-
-const applyT = (m: Mat, v: Point3D): Point3D => [
-  m[0] * v[0] + m[3] * v[1] + m[6] * v[2],
-  m[1] * v[0] + m[4] * v[1] + m[7] * v[2],
-  m[2] * v[0] + m[5] * v[1] + m[8] * v[2],
-];
 
 const dot = (a: Point3D, b: Point3D) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 
@@ -232,8 +233,8 @@ type CellMode = "none" | "healpix" | "grid";
 
 export default function SkySphere() {
   const canvas = useRef<HTMLCanvasElement>(null);
-  const [yaw, setYaw] = useState(-2.4);
-  const [pitch, setPitch] = useState(-1.0);
+  // 처음에는 오리온자리 쪽을 본다
+  const [view, setView] = useState<View>({ ra: 84, dec: 5 });
   const [magLimit, setMagLimit] = useState(5);
   const [showLines, setShowLines] = useState(true);
   const [cellMode, setCellMode] = useState<CellMode>("none");
@@ -241,7 +242,7 @@ export default function SkySphere() {
   const showCells = cellMode === "healpix";
   const [picked, setPicked] = useState<Picked>(null);
   const drag = useRef<{ x: number; y: number; moved: boolean } | null>(null);
-  const size = useRef({ width: 600, radius: 280 });
+  const size = useRef({ width: 600, scale: 260 });
 
   const visibleCount = useMemo(
     () => STARS.filter((s) => s.mag <= magLimit).length,
@@ -271,28 +272,30 @@ export default function SkySphere() {
     el.height = Math.round(width * dpr);
     context.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    const radius = width * 0.47;
     const c = width / 2;
-    size.current = { width, radius };
-    const m = rotation(yaw, pitch);
+    // 평사 투영: 보는 방향에서 θ 떨어진 별은 가운데에서 2·tan(θ/2)만큼
+    const scale = c / (2 * Math.tan((HALF_FOV_DEG * D) / 2));
+    size.current = { width, scale };
+    const { forward, up, right } = basisOf(view);
 
-    // 화면 x = 회전 후 x, 화면 y = -z, 앞쪽(보이는 쪽) = y > 0
+    // 앞쪽(보는 방향에서 90° 안)만 그린다
     const project = (v: Point3D) => {
-      const r = apply(m, v);
+      const z = dot(v, forward);
+      const k = (2 * scale) / (1 + z);
 
-      return { x: c + r[0] * radius, y: c - r[2] * radius, front: r[1] > 0 };
+      return {
+        x: c + dot(v, right) * k,
+        y: c - dot(v, up) * k,
+        front: z > 0,
+      };
     };
 
     context.clearRect(0, 0, width, width);
-    const glow = context.createRadialGradient(c, c, radius * 0.2, c, c, radius);
+    const glow = context.createRadialGradient(c, c, c * 0.2, c, c, c * 1.4);
     glow.addColorStop(0, "#141a33");
     glow.addColorStop(1, "#0b0f22");
     context.fillStyle = glow;
-    context.beginPath();
-    context.arc(c, c, radius, 0, 2 * Math.PI);
-    context.fill();
-    context.strokeStyle = "rgba(160,180,255,0.35)";
-    context.stroke();
+    context.fillRect(0, 0, width, width);
 
     const polyline = (points: Point3D[], style: string, width = 1) => {
       context.strokeStyle = style;
@@ -395,9 +398,19 @@ export default function SkySphere() {
         context.stroke();
       }
     });
+
+    // 방향 표시: 하늘을 올려다볼 때처럼 위가 북쪽, 왼쪽이 동쪽
+    context.fillStyle = "rgba(255,255,255,0.55)";
+    context.font = "12px sans-serif";
+    context.textAlign = "center";
+    context.fillText("북 ↑", c, 16);
+    context.textAlign = "left";
+    context.fillText("← 동", 6, c + 4);
+    context.textAlign = "right";
+    context.fillText("서 →", width - 6, c + 4);
+    context.textAlign = "start";
   }, [
-    yaw,
-    pitch,
+    view,
     magLimit,
     showLines,
     showCells,
@@ -414,18 +427,22 @@ export default function SkySphere() {
 
     if (!el) return;
 
+    // 평사 투영을 거꾸로: 화면 점 → 하늘 방향
     const rect = el.getBoundingClientRect();
-    const { width, radius } = size.current;
-    const x = (clientX - rect.left - width / 2) / radius;
-    const z = -(clientY - rect.top - width / 2) / radius;
-
-    if (x * x + z * z > 1) return;
-
-    const v = applyT(rotation(yaw, pitch), [
-      x,
-      Math.sqrt(1 - x * x - z * z),
-      z,
-    ]);
+    const { width, scale } = size.current;
+    const px = (clientX - rect.left - width / 2) / scale;
+    const py = -(clientY - rect.top - width / 2) / scale;
+    const rho2 = px * px + py * py;
+    const z = (4 - rho2) / (4 + rho2);
+    const { forward, up, right } = basisOf(view);
+    const v = normalize(
+      [0, 1, 2].map(
+        (k) =>
+          (right[k] * px * (1 + z)) / 2 +
+          (up[k] * py * (1 + z)) / 2 +
+          forward[k] * z,
+      ) as Point3D,
+    );
 
     if (showCells) {
       setPicked({ kind: "cell", ipix: healpix.vec2pix_nest(NSIDE, v) });
@@ -528,8 +545,16 @@ export default function SkySphere() {
 
           if (Math.abs(dx) + Math.abs(dy) > 2) d.moved = true;
 
-          setYaw((y) => y + dx * 0.006);
-          setPitch((p) => Math.max(-1.55, Math.min(1.55, p + dy * 0.006)));
+          // 하늘을 손으로 잡아 끈다: 오른쪽으로 끌면 별이 오른쪽으로 따라오도록 보는 방향은 동쪽(적경 +)으로,
+          // 아래로 끌면 위쪽(북쪽)을 보게. 가운데 기준 1픽셀 = 1/scale 라디안
+          const step = 1 / size.current.scale / D;
+
+          setView((v) => ({
+            ra:
+              (v.ra + (dx * step) / Math.max(0.2, Math.cos(v.dec * D)) + 360) %
+              360,
+            dec: Math.max(-89, Math.min(89, v.dec + dy * step)),
+          }));
           d.x = e.clientX;
           d.y = e.clientY;
         }}
