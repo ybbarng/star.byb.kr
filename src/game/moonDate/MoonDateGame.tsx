@@ -706,7 +706,8 @@ function ResultPanel({
 
       <div className="rounded-lg bg-indigo-500/15 p-3 text-xs ring-1 ring-indigo-300/30">
         🏔️ 발표의 화악산 사진도 이렇게 풀었어요. 2026년 달은 사진 속 자리를 14번
-        지나갔지만, 해가 진 밤에 가는 그믐달로 떠 있던 때는 한 번뿐이었어요.
+        지나갔지만, 해 뜨기 전 어두운 하늘에 가는 그믐달로 떠 있던 때는 10월 9일
+        새벽 한 번뿐이었어요.
       </div>
       <div className="text-[11px] opacity-55">
         계산의 한계: 달 위치는 약 0.3° 안쪽으로 맞아서, 별자리 경계 가까이에
