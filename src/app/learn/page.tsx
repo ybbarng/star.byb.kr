@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BasicsTopicList } from "@/learn/basics/BasicsTopicList";
 import { Stat } from "@/learn/LearnArticle";
 import { LEARN_STEPS, learnHref } from "@/learn/steps";
 
@@ -84,6 +85,29 @@ export default function Page() {
           직접 해 보기
         </Link>
       </div>
+
+      <section
+        id="basics"
+        className="fx-rise flex scroll-mt-20 flex-col gap-4 border-t border-white/10 pt-10"
+        style={{ animationDelay: "300ms" }}
+      >
+        <div className="flex flex-col gap-2">
+          <div className="text-xs font-bold tracking-wide opacity-60">
+            두 번째 갈래
+          </div>
+          <h2 className="text-2xl font-black">
+            <Link href="/learn/basics" className="link link-hover">
+              하늘 읽기 기초
+            </Link>
+          </h2>
+          <p className="text-sm opacity-75">
+            솔버와 놀이터 밑에 깔린 천문 개념이에요. 위도·경도와 하늘의
+            좌표부터, 은하수가 기운 까닭, 옛 선원의 위치 찾기까지. 🔭 솔버가
+            쓰는 개념, 🌍 놀이터에서 쓰는 개념, ✨ 배경 지식으로 표시했어요.
+          </p>
+        </div>
+        <BasicsTopicList />
+      </section>
     </div>
   );
 }

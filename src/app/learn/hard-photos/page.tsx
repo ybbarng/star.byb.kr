@@ -62,7 +62,10 @@ export default function Page() {
         </Callout>
       </LearnSection>
 
-      <LearnSection title="별이 열 개 남짓인 사진: 시각·장소·지평선">
+      <LearnSection
+        title="별이 열 개 남짓인 사진: 시각·장소·지평선"
+        id="horizon-solve"
+      >
         <p>
           사이판 바닷가 사진은 밝은 별이 10개 남짓이라, 모양만으로는 10억 분의 1
           수준의 확신이 나올 수 없어요. 2022년 발표에서는 사람이 이렇게
@@ -136,7 +139,7 @@ export default function Page() {
         </p>
       </LearnSection>
 
-      <LearnSection title="찍은 시각을 거꾸로 찾기">
+      <LearnSection title="찍은 시각을 거꾸로 찾기" id="shot-time">
         <p>
           거꾸로, 사진이 풀리고 지평선이 보이면 <b>찍은 시각과 위도</b>를 계산할
           수 있어요. 지평선 두 점의 하늘 방향에서 머리 꼭대기(천정) 방향을
@@ -190,7 +193,7 @@ export default function Page() {
         </p>
       </LearnSection>
 
-      <LearnSection title="해·달·행성 그리기">
+      <LearnSection title="해·달·행성 그리기" id="sun-moon">
         <p>
           별은 거의 움직이지 않지만 해·달·행성은 날마다 자리를 옮겨요. 찍은
           시각을 알면(샘플 기록, 사진의 촬영 정보, 사람이 넣은 값 순서로) 궤도
