@@ -63,6 +63,11 @@ export const BASICS_TOPICS: BasicsTopic[] = [
       { mark: "games", label: "SkyGuessr", href: "/games/sky-guessr" },
       {
         mark: "games",
+        label: "별자리 익히기: 북극성 찾기 (북극성 높이 = 위도)",
+        href: "/games/star-school/lessons",
+      },
+      {
+        mark: "games",
         label: "극지방·적도 하늘 여행",
         href: "/games/latitude-trip",
       },
@@ -131,6 +136,11 @@ export const BASICS_TOPICS: BasicsTopic[] = [
         mark: "games",
         label: "달로 날짜 맞히기 (달도 27.3일과 29.5일)",
         href: "/games/moon-date",
+      },
+      {
+        mark: "games",
+        label: "별자리 익히기: 북두칠성 시계",
+        href: "/games/star-school/lessons",
       },
     ],
   },

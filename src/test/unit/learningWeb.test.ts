@@ -1,6 +1,7 @@
 import { existsSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { GAMES, gameForPath } from "@/game/hub";
+import { LESSONS, lessonById, stepBasics } from "@/game/starSchool/lessons";
 import { BASICS_TOPICS, basicsTopic } from "@/learn/basics/topics";
 
 // 세 갈래(찾는 원리·하늘 읽기 기초·별 놀이터)를 잇는 링크가 실제 있는 곳을 가리키는지,
@@ -54,6 +55,46 @@ describe("하늘 읽기 기초 → 이 개념을 쓰는 곳", () => {
     for (const t of BASICS_TOPICS) {
       for (const l of t.links) {
         expect(pageExists(l.href), `${t.slug}: ${l.href}`).toBe(true);
+      }
+    }
+  });
+});
+
+describe("별자리 익히기 수업 → 하늘 읽기 기초", () => {
+  it("수업마다 가리키는 기초 페이지가 목차에 있다", () => {
+    for (const l of LESSONS) {
+      expect(l.basics.length, l.id).toBeGreaterThan(0);
+
+      for (const slug of [...l.basics, ...l.steps.flatMap(stepBasics)]) {
+        expect(basicsTopic(slug), `${l.id}: ${slug}`).toBeDefined();
+      }
+    }
+  });
+
+  it("별 징검다리 단계는 별 건너뛰기, 은하수·황도 수업은 그 기초 페이지로 간다", () => {
+    const steps = LESSONS.flatMap((l) => l.steps);
+    const hops = steps.filter((s) => s.marks.some((m) => m.kind === "hop"));
+
+    expect(hops.length).toBeGreaterThan(0);
+
+    for (const s of hops) {
+      expect(stepBasics(s)).toContain("star-hopping");
+    }
+
+    const lessonSlugs = (id: string) =>
+      lessonById(id)!.steps.flatMap(stepBasics);
+
+    expect(lessonSlugs("milky-way")).toContain("milky-way");
+    expect(lessonSlugs("ecliptic")).toContain("earth-tilt");
+  });
+
+  it("기초 페이지의 '이 개념을 쓰는 곳'에 수업 목록이 있다", () => {
+    for (const l of LESSONS) {
+      for (const slug of l.basics) {
+        const back = basicsTopic(slug)!.links.some(
+          (x) => x.href === "/games/star-school/lessons",
+        );
+        expect(back, `${l.id} → ${slug}`).toBe(true);
       }
     }
   });

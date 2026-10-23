@@ -72,8 +72,33 @@ export interface Lesson {
   quiz: QuizQuestion[];
   fact: string; // 수업 끝에 들려줄 한마디
   links?: { href: string; label: string }[];
+  basics: string[]; // 더 알아볼 하늘 읽기 기초 페이지 (src/learn/basics/topics.ts의 slug)
   learns: string[]; // 마치면 도감에서 열리는 것 (dex id)
 }
+
+// 단계마다 곁들일 하늘 읽기 기초: 별 징검다리·손 각도는 별 건너뛰기, 은하수는 은하수, 황도는 지구의 기울기
+export const stepBasics = (step: LessonStep): string[] => {
+  const kinds = new Set(step.marks.map((m) => m.kind));
+  const slugs: string[] = [];
+
+  if (
+    kinds.has("hop") ||
+    kinds.has("path") ||
+    /주먹|손가락|한 뼘/.test(step.say)
+  ) {
+    slugs.push("star-hopping");
+  }
+
+  if (kinds.has("milkyWay")) {
+    slugs.push("milky-way");
+  }
+
+  if (kinds.has("ecliptic")) {
+    slugs.push("earth-tilt");
+  }
+
+  return slugs;
+};
 
 export const SEASON_LESSONS = ["spring", "summer", "autumn", "winter"];
 
@@ -154,6 +179,7 @@ export const LESSONS: Lesson[] = [
     ],
     fact: "북극성은 영원하지 않아요. 지구 자전축이 약 2만 6천 년 주기로 돌아(세차 운동), 약 1만 2천 년 뒤에는 직녀성이 북극 근처에 와요.",
     links: [{ href: "/games/precession", label: "세차운동 타임머신" }],
+    basics: ["star-hopping", "earth-coords"],
     learns: ["a:big-dipper", "a:cassiopeia-w", "c:작은곰자리"],
   },
   {
@@ -232,6 +258,7 @@ export const LESSONS: Lesson[] = [
     ],
     fact: "옛사람들은 북두칠성 손잡이가 가리키는 방향으로 계절을 읽었어요. 저녁에 손잡이가 동쪽을 가리키면 봄, 남쪽이면 여름, 서쪽이면 가을, 북쪽이면 겨울이라고 했어요.",
     links: [{ href: "/games/star-trails", label: "별 궤적 풀기" }],
+    basics: ["sidereal-day"],
     learns: ["a:big-dipper"],
   },
   {
@@ -309,6 +336,7 @@ export const LESSONS: Lesson[] = [
     ],
     fact: "아크투루스는 약 37광년 떨어져 있어요. 지금 보는 빛은 여러분이 태어나기 훨씬 전에 출발했을 수도 있어요. 빛의 타임캡슐에서 확인해 보세요.",
     links: [{ href: "/games/light-time-capsule", label: "빛의 타임캡슐" }],
+    basics: ["star-hopping"],
     learns: [
       "a:spring-arc",
       "a:spring-triangle",
@@ -406,6 +434,7 @@ export const LESSONS: Lesson[] = [
       },
     ],
     fact: "데네브는 약 2,600광년이나 떨어져 있는데도 1등성으로 보여요. 해보다 수만 배 밝은 초거성이라서예요. 반면 직녀성은 25광년, 견우성은 17광년으로 가까워요.",
+    basics: ["star-hopping", "milky-way"],
     learns: [
       "a:summer-triangle",
       "a:northern-cross",
@@ -497,6 +526,7 @@ export const LESSONS: Lesson[] = [
       },
     ],
     fact: "오늘 본 안드로메다은하의 빛은 약 250만 년 전에 출발했어요. 그 빛이 떠날 무렵 지구에는 최초의 사람 속(호모)이 막 나타나고 있었어요.",
+    basics: ["star-hopping"],
     learns: [
       "a:great-square",
       "a:cassiopeia-w",
@@ -612,6 +642,7 @@ export const LESSONS: Lesson[] = [
       },
     ],
     fact: "오리온 대성운은 약 1,300광년 떨어져 있어요. 지금 보는 빛은 통일 신라 무렵인 7세기 말쯤 출발했어요.",
+    basics: ["star-hopping"],
     learns: [
       "a:orion-belt",
       "a:winter-triangle",
@@ -714,6 +745,7 @@ export const LESSONS: Lesson[] = [
       },
     ],
     fact: "오메가 센타우리는 약 1만 7천 광년 떨어진, 별 약 1천만 개의 거대한 구상성단이에요. 오래된 작은 은하가 우리은하에 먹히고 남은 심장일지도 몰라요.",
+    basics: ["star-hopping", "earth-coords"],
     learns: [
       "a:southern-cross",
       "a:pointers",
@@ -808,6 +840,7 @@ export const LESSONS: Lesson[] = [
       },
     ],
     fact: "1987년 대마젤란은하에서 초신성(SN 1987A)이 터져 약 400년 만에 맨눈으로 보였어요. 그 빛은 약 16만 년 전 출발한 것이었어요.",
+    basics: ["milky-way"],
     learns: [
       "d:lmc",
       "d:smc",
@@ -898,6 +931,7 @@ export const LESSONS: Lesson[] = [
     links: [
       { href: "/games/tonight", label: "오늘 밤 내 하늘 (달·박명 보기)" },
     ],
+    basics: ["milky-way"],
     learns: ["d:galactic-center", "d:m8", "a:teapot", "a:milk-dipper"],
   },
   {
@@ -972,6 +1006,7 @@ export const LESSONS: Lesson[] = [
     ],
     fact: "점성술의 별자리는 약 2천 년 전 하늘에 맞춰 정했어요. 그 뒤 세차 운동으로 춘분점이 약 30° 밀려, 지금은 생일에 해가 있는 실제 별자리가 대부분 한 칸 이전 별자리예요.",
     links: [{ href: "/games/birthday", label: "생일 별자리" }],
+    basics: ["earth-tilt"],
     learns: [
       "c:뱀주인자리",
       "c:천칭자리",

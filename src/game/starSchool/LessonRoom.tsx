@@ -8,12 +8,17 @@ import { Confetti, FxLayer, useFx, useShake } from "@/game/fx/Fx";
 import { sfx } from "@/game/fx/sound";
 import { dexEntry } from "@/game/starSchool/dex";
 import { stepDate, tapVector } from "@/game/starSchool/lessonGeometry";
-import { lessonById, SEASON_LESSONS } from "@/game/starSchool/lessons";
+import {
+  lessonById,
+  SEASON_LESSONS,
+  stepBasics,
+} from "@/game/starSchool/lessons";
 import { hasStamp, isSouthOpen, STAMPS } from "@/game/starSchool/passport";
 import { finishLesson, loadSave, writeSave } from "@/game/starSchool/progress";
 import SchoolSky from "@/game/starSchool/SchoolSky";
 import { timeLabel } from "@/game/starSchool/skyMath";
 import { useSave } from "@/game/starSchool/useSave";
+import BasicsLinks from "@/learn/basics/BasicsLinks";
 import { cn } from "@/utils/cn";
 
 // 하늘 길잡이 수업: 목록에서 고르면, 실제 하늘에서 한 걸음씩 별 징검다리를 건너고, 끝에 짧은 퀴즈를 푼다.
@@ -270,6 +275,7 @@ function LessonPlayer({
             ))}
           </div>
         )}
+        <BasicsLinks slugs={lesson.basics} className="justify-center" />
         <div className="flex flex-wrap justify-center gap-2">
           <button className="btn btn-primary" onClick={onExit}>
             수업 목록
@@ -410,6 +416,7 @@ function LessonPlayer({
             📍 {lesson.place.name} · {timeLabel(step.time ?? lesson.time)}
           </div>
           <p className="leading-relaxed">{step.say}</p>
+          <BasicsLinks slugs={stepBasics(step)} />
           {tap && !found && (
             <div className="flex flex-wrap items-center gap-2 rounded-lg bg-amber-300/10 p-2 text-sm">
               <span>👆 {tap.prompt}</span>
