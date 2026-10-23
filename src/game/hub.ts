@@ -100,6 +100,18 @@ export const GAMES: GameEntry[] = [
     icon: "🤖",
     accent: "from-rose-300/40 to-slate-500/10",
   },
+  {
+    href: "/games/quad-fingerprint",
+    kind: "game",
+    title: "별 넷 지문 맞추기",
+    summary:
+      "컴퓨터는 별 네 개의 모양을 숫자 넷(지문)으로 기억해요. 지문을 보고 모양을 고르고, 모양을 보고 지문을 찍어요.",
+    learn:
+      "가장 먼 두 별을 축으로 잡은 나머지 두 별의 좌표 (플레이트 솔버의 quad 지문)",
+    ready: true,
+    icon: "🔍",
+    accent: "from-yellow-200/40 to-indigo-500/10",
+  },
 ];
 
 // 게임 페이지의 제목·설명 (공유 미리보기·브라우저 탭)
