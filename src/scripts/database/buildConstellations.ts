@@ -1,4 +1,3 @@
-import { convertTo3DCoordinates } from "@/scripts/database/coordinates";
 import * as file from "@/scripts/file";
 
 // 별자리선과 별자리 경계를 앱용 파일로 만든다 (원본: data/database/d3-celestial, README 참고).
@@ -30,10 +29,9 @@ const loadStars = () => {
   const starData = bsc5dat.split("\n");
   const starCatalog = new Map<number, Star>();
   starData.forEach((row: string) => {
-    const vector = convertTo3DCoordinates(row.slice(83, 90), row.slice(75, 83));
     const star: Star = {
       id: Number(row.slice(0, 4)),
-      v: [vector.x, vector.y, vector.z],
+      v: bscRowToVector(row),
     };
     starCatalog.set(star.id, star);
   });
@@ -42,6 +40,28 @@ const loadStars = () => {
 };
 
 const D = Math.PI / 180;
+
+// bsc5.dat 한 줄의 J2000 적경(76~83칸 "hhmmss.s")·적위(84~90칸 "+ddmmss") → 단위 벡터.
+// 위치가 없는 줄(카탈로그에서 빠진 번호, 마지막 빈 줄)은 원점으로 둔다 — 별자리선이 붙지 않는다
+const bscRowToVector = (row: string): [number, number, number] => {
+  const ra = row.slice(75, 83).match(/^(\d{2})(\d{2})(\d{2}(?:\.\d*)?)$/);
+  const dec = row.slice(83, 90).match(/^([+-])(\d{2})(\d{2})(\d{2})$/);
+
+  if (!ra || !dec) {
+    return [0, 0, 0];
+  }
+
+  const raDeg = (+ra[1] + +ra[2] / 60 + +ra[3] / 3600) * 15;
+  // 부호는 글자로 읽는다 ("-00…"도 남반구)
+  const decDeg =
+    (dec[1] === "-" ? -1 : 1) * (+dec[2] + +dec[3] / 60 + +dec[4] / 3600);
+
+  return [
+    Math.cos(decDeg * D) * Math.cos(raDeg * D),
+    Math.cos(decDeg * D) * Math.sin(raDeg * D),
+    Math.sin(decDeg * D),
+  ];
+};
 
 // d3-celestial 좌표(적경 -180~180°, 적위°) → 단위 벡터
 const toVector = ([lon, lat]: number[]): [number, number, number] => [
