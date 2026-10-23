@@ -1,3 +1,4 @@
+import { BasicsTerm } from "@/learn/basics/BasicsLinks";
 import LearnArticle, { Figure, LearnSection, Stat } from "@/learn/LearnArticle";
 import { BarChart, Callout, DataTable } from "@/learn/parts";
 import SkySphere from "@/learn/SkySphere";
@@ -22,10 +23,11 @@ export default function Page() {
           <b>5등급까지의 별 1,624개</b>만 써요.
         </p>
         <p>
-          등급은 숫자가 작을수록 밝아요. 1등급 차이가 밝기 약 2.5배예요. 도시
-          근처에서 휴대폰으로 찍은 사진에는 3~4등급, 카메라 장노출에는
-          5~6등급까지 찍혀요. 별을 많이 담을수록 어두운 별까지 맞출 수 있지만,
-          아래에서 보듯 모양 색인이 폭발적으로 커지고 비슷한 모양도 많아져요.
+          <BasicsTerm slug="brightness-distance">등급</BasicsTerm>은 숫자가
+          작을수록 밝아요. 1등급 차이가 밝기 약 2.5배예요. 도시 근처에서
+          휴대폰으로 찍은 사진에는 3~4등급, 카메라 장노출에는 5~6등급까지
+          찍혀요. 별을 많이 담을수록 어두운 별까지 맞출 수 있지만, 아래에서 보듯
+          모양 색인이 폭발적으로 커지고 비슷한 모양도 많아져요.
         </p>
         <BarChart
           items={[
@@ -41,9 +43,10 @@ export default function Page() {
 
       <LearnSection title="별의 위치를 화살표로">
         <p>
-          별 목록은 위치를 적경·적위(하늘의 경도·위도)로 적어 둬요. 그대로 쓰면
-          두 별 사이 각도를 구할 때 삼각함수가 여러 번 필요하고, 적경 0시와
-          24시가 만나는 곳, 천구의 극 근처에서 계산이 까다로워요.
+          별 목록은 위치를 <BasicsTerm slug="sky-coords">적경·적위</BasicsTerm>
+          (하늘의 경도·위도)로 적어 둬요. 그대로 쓰면 두 별 사이 각도를 구할 때
+          삼각함수가 여러 번 필요하고, 적경 0시와 24시가 만나는 곳, 천구의 극
+          근처에서 계산이 까다로워요.
         </p>
         <p>
           그래서 지구 중심에서 별을 가리키는 <b>길이 1인 화살표(단위 벡터)</b>로
@@ -138,10 +141,10 @@ export default function Page() {
           나누는 방법인데, 천문학과 우주배경복사 지도에서 널리 써요. 경도·위도
           격자는 극으로 갈수록 칸이 좁아지지만 HEALPix 칸은 어디서나 같은
           넓이예요. 그래서 칸마다 별 수가 다른 건 칸 탓이 아니라 하늘의 별 분포
-          탓이에요(은하수 쪽에 별이 몰려요). 이 사이트는 192칸(nside 4)으로
-          나누고, 칸 중심에서 10° 안의 별들로 네 별 조합을 만들어요. 그중{" "}
-          <b>모든 별쌍이 10° 안</b>인 조합만 남겨요. 위 천구에서 HEALPix를 켜고
-          칸을 눌러 보세요.
+          탓이에요(<BasicsTerm slug="milky-way">은하수</BasicsTerm> 쪽에 별이
+          몰려요). 이 사이트는 192칸(nside 4)으로 나누고, 칸 중심에서 10° 안의
+          별들로 네 별 조합을 만들어요. 그중 <b>모든 별쌍이 10° 안</b>인 조합만
+          남겨요. 위 천구에서 HEALPix를 켜고 칸을 눌러 보세요.
         </p>
         <Figure caption="등급 한계를 올리면 별 넷 조합(사각형) 수가 폭발해요. '10° 안' 조건이 이것을 7분의 1로 줄여요.">
           <BarChart

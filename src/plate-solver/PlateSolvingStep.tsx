@@ -7,6 +7,7 @@ import type { SolvePhase } from "@/search/solvePhoto";
 import type { SolveCandidateResult } from "@/search/solvers";
 import type { LatLon } from "@/search/whereShot";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { BasicsTerm } from "@/learn/basics/BasicsLinks";
 import { autoHorizon } from "@/plate-solver/autoHorizon";
 import { detectPhotoStars } from "@/plate-solver/detectPhotoStars";
 import MiniSkyMap from "@/plate-solver/MiniSkyMap";
@@ -595,10 +596,12 @@ export default function PlateSolvingStep() {
           ) : (
             confident && (
               <span>
-                지평선을 찍거나 촬영 시각·장소를 알려 주면 방위를 표시해요
+                지평선을 찍거나 촬영 시각·장소를 알려 주면{" "}
+                <BasicsTerm slug="sky-coords">방위</BasicsTerm>를 표시해요
               </span>
             )
           )}
+          {compass && <BasicsTerm slug="sky-coords">방위·고도란?</BasicsTerm>}
         </div>
       </div>
 

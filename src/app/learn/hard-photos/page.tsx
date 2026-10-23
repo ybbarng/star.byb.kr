@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BasicsTerm } from "@/learn/basics/BasicsLinks";
 import LearnArticle, { Figure, LearnSection, Stat } from "@/learn/LearnArticle";
 import MoonDateDemo from "@/learn/MoonDateDemo";
 import { Callout, DataTable } from "@/learn/parts";
@@ -77,7 +78,8 @@ export default function Page() {
           <PoleHeightDemo />
         </Figure>
         <p>
-          언제, 어디서 찍었는지 알면 그 순간 별마다 높이와 방위가 정해져요.
+          언제, 어디서 찍었는지 알면 그 순간 별마다{" "}
+          <BasicsTerm slug="sky-coords">높이와 방위</BasicsTerm>가 정해져요.
           사진에 지평선이 보이면 카메라가 얼마나 기울었는지도 알고요. 남는
           미지수는 &ldquo;어느 쪽을 바라봤나(방위)&rdquo;와 &ldquo;얼마나 넓게
           찍었나(화각)&rdquo;뿐이에요. 하늘 전체 × 회전 × 크기를 다 뒤지는
@@ -141,16 +143,21 @@ export default function Page() {
 
       <LearnSection title="찍은 시각을 거꾸로 찾기" id="shot-time">
         <p>
-          거꾸로, 사진이 풀리고 지평선이 보이면 <b>찍은 시각과 위도</b>를 계산할
-          수 있어요. 지평선 두 점의 하늘 방향에서 머리 꼭대기(천정) 방향을
-          구하면, 천정의 적위가 곧 위도, 적경이 곧 그 순간의 &ldquo;하늘
-          시계&rdquo;(지방 항성시)예요.
+          거꾸로, 사진이 풀리고 지평선이 보이면{" "}
+          <b>
+            찍은 시각과 <BasicsTerm slug="earth-coords">위도</BasicsTerm>
+          </b>
+          를 계산할 수 있어요. 지평선 두 점의 하늘 방향에서 머리 꼭대기(천정)
+          방향을 구하면, 천정의 적위가 곧 위도, 적경이 곧 그 순간의 &ldquo;하늘
+          시계&rdquo;(<BasicsTerm slug="sky-coords">지방 항성시</BasicsTerm>
+          )예요.
         </p>
         <Figure caption="서울 근처 누각 사진으로 ①~④를 차례로 눌러 보세요. 먼 능선 두 점 → 하늘 방향 → 천정(적위 = 위도, 적경 = 하늘 시계) → 날짜마다 같은 하늘이 오는 시각이에요.">
           <ZenithClockDemo />
         </Figure>
         <p>
-          하늘 시계가 같은 값이 되는 순간은 날마다 한 번씩 와요. 그래서
+          하늘 시계가 같은 값이 되는 순간은 날마다 한 번씩,{" "}
+          <BasicsTerm slug="sidereal-day">4분씩 일찍</BasicsTerm> 와요. 그래서
           하늘만으로는 날짜를 정할 수 없고, 날짜마다 후보 시각이 하나씩 나와요.
           해가 떠 있는 시각은 지워요.
         </p>
@@ -195,11 +202,13 @@ export default function Page() {
 
       <LearnSection title="해·달·행성 그리기" id="sun-moon">
         <p>
-          별은 거의 움직이지 않지만 해·달·행성은 날마다 자리를 옮겨요. 찍은
-          시각을 알면(샘플 기록, 사진의 촬영 정보, 사람이 넣은 값 순서로) 궤도
-          계산으로 그 순간의 위치를 구해 사진 위에 함께 그려요. 계산은
-          천문연감의 예제와 비교해 확인했어요(해 0.05°, 달 0.5°, 행성 0.05° 안).
-          성운·성단처럼 자리가 고정된 천체 16개는 늘 그려요.
+          별은 거의 움직이지 않지만 해·달·행성은{" "}
+          <BasicsTerm slug="earth-tilt">해의 길(황도)</BasicsTerm> 근처를 따라
+          날마다 자리를 옮겨요. 찍은 시각을 알면(샘플 기록, 사진의 촬영 정보,
+          사람이 넣은 값 순서로) 궤도 계산으로 그 순간의 위치를 구해 사진 위에
+          함께 그려요. 계산은 천문연감의 예제와 비교해 확인했어요(해 0.05°, 달
+          0.5°, 행성 0.05° 안). 성운·성단처럼 자리가 고정된 천체 16개는 늘
+          그려요.
         </p>
       </LearnSection>
 

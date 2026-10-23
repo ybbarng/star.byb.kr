@@ -2,6 +2,7 @@ import type { MapGuides, MapPin } from "@/game/geo/drawMap";
 import type { WhereShot } from "@/search/whereShot";
 import { useMemo } from "react";
 import WorldMap from "@/game/geo/WorldMap";
+import BasicsLinks from "@/learn/basics/BasicsLinks";
 import { latText, lonText } from "@/search/whereShot";
 
 // 어디서 찍었을까? 아는 만큼만 지도에 긋는다: 위도는 가로선(모르면 띠), 경도는 알 때만 세로선.
@@ -131,6 +132,10 @@ export default function WhereShotCard({
           지평선 찍으러 가기
         </button>
       )}
+      <BasicsLinks
+        slugs={["earth-coords", "navigation"]}
+        label="이건 어떻게 알아요?"
+      />
     </div>
   );
 }

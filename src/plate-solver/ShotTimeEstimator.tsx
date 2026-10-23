@@ -3,6 +3,7 @@ import type { EstimateMarks } from "@/plate-solver/types";
 import type { ShotCandidate } from "@/search/shotTimeEstimate";
 import type { Mat3 } from "@/search/utils/similarity";
 import { useMemo, useState } from "react";
+import { BasicsTerm } from "@/learn/basics/BasicsLinks";
 import { ESTIMATED_SHOT_NOTE } from "@/plate-solver/shotTime";
 import {
   estimateShotTimes,
@@ -140,9 +141,15 @@ export default function ShotTimeEstimator({
         <>
           <p className="text-xs opacity-70">
             위도 약 {result.clock.latDeg.toFixed(0)}° · 해가 진 밤만
-            {marks.moon
-              ? " · 달 위치가 맞는 순 (달은 27일마다 같은 자리로 와서, 달 모양으로 가르세요)"
-              : " · 같은 하늘은 하루 4분씩 일찍 와서 보름 간격으로만 보여요. 달을 찍으면 날짜가 좁혀져요"}
+            {marks.moon ? (
+              " · 달 위치가 맞는 순 (달은 27일마다 같은 자리로 와서, 달 모양으로 가르세요)"
+            ) : (
+              <>
+                {" · 같은 하늘은 "}
+                <BasicsTerm slug="sidereal-day">하루 4분씩 일찍</BasicsTerm>
+                {" 와서 보름 간격으로만 보여요. 달을 찍으면 날짜가 좁혀져요"}
+              </>
+            )}
           </p>
           <ul className="grid grid-cols-2 gap-1">
             {shown.map((c) => {
