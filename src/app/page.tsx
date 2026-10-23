@@ -79,11 +79,22 @@ export default function Page() {
           className="fx-rise fx-card rounded-box flex flex-col items-center gap-4 bg-gradient-to-br from-indigo-500/25 to-fuchsia-500/10 p-6 text-center ring-1 ring-white/10 md:flex-row md:text-left"
           style={{ animationDelay: "350ms" }}
         >
-          {/* 아이콘이 늘어도 화면 밖으로 나가지 않게 여러 줄로 감는다 */}
-          <span className="flex max-w-[13rem] flex-wrap justify-center gap-1 text-2xl md:shrink-0">
-            {games.map((g) => (
-              <span key={g.href}>{g.icon}</span>
-            ))}
+          {/* 아이콘이 늘어도 카드 밖으로 나가지 않게, 가운데 창으로만 보이며 한 줄로 왼쪽으로 흐른다 (양 끝은 흐리게) */}
+          <span
+            aria-hidden
+            className="w-full max-w-[16rem] overflow-hidden text-3xl md:shrink-0"
+            style={{
+              maskImage:
+                "linear-gradient(to right, transparent, black 25%, black 75%, transparent)",
+            }}
+          >
+            <span className="animate-marquee flex w-max">
+              {[...games, ...games].map((g, i) => (
+                <span key={i} className="px-1">
+                  {g.icon}
+                </span>
+              ))}
+            </span>
           </span>
           <span className="flex flex-1 flex-col gap-1">
             <span className="text-xl font-black">별 놀이터</span>
