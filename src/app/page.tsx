@@ -79,7 +79,8 @@ export default function Page() {
           className="fx-rise fx-card rounded-box flex flex-col items-center gap-4 bg-gradient-to-br from-indigo-500/25 to-fuchsia-500/10 p-6 text-center ring-1 ring-white/10 md:flex-row md:text-left"
           style={{ animationDelay: "350ms" }}
         >
-          <span className="flex gap-1 text-3xl">
+          {/* 아이콘이 늘어도 화면 밖으로 나가지 않게 여러 줄로 감는다 */}
+          <span className="flex max-w-[13rem] flex-wrap justify-center gap-1 text-2xl md:shrink-0">
             {games.map((g) => (
               <span key={g.href}>{g.icon}</span>
             ))}
@@ -87,8 +88,10 @@ export default function Page() {
           <span className="flex flex-1 flex-col gap-1">
             <span className="text-xl font-black">별 놀이터</span>
             <span className="text-sm opacity-75">
-              하늘 맞추기, SkyGuessr, 생일 별자리… 게임 {games.length}개로
-              놀면서 별자리와 하늘의 움직임을 배워요.
+              하늘 맞추기, SkyGuessr, 생일 별자리… 게임{" "}
+              {games.filter((g) => g.kind === "game").length}개와 둘러보기{" "}
+              {games.filter((g) => g.kind === "explore").length}개로 놀면서
+              별자리와 하늘의 움직임을 배워요.
             </span>
           </span>
           <span className="btn btn-sm">놀러 가기 →</span>
