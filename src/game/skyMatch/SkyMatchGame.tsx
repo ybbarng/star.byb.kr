@@ -3,6 +3,7 @@
 import type { SkyItem } from "@/game/sky/drawSky";
 import type { Difficulty, SkyScene } from "@/game/sky/scene";
 import type { Emphasis } from "@/game/skyMatch/AllSkyView";
+import type { DialKey, IntroHint } from "@/game/skyMatch/intro";
 import type {
   ComputerSolve,
   Dials,
@@ -35,6 +36,15 @@ import ItemInfo, { canvasPoint } from "@/game/sky/ItemInfo";
 import { dailySeed, localMeanTime, makeSkyScene } from "@/game/sky/scene";
 import AllSkyView from "@/game/skyMatch/AllSkyView";
 import {
+  introHint,
+  introScene,
+  introStartDials,
+  LESSONS,
+  lockedFor,
+  minutesToDays,
+  toIntroHint,
+} from "@/game/skyMatch/intro";
+import {
   answerDials,
   dialDate,
   matchedFlags,
@@ -58,6 +68,7 @@ import { cn } from "@/utils/cn";
 // 어렵지 않게: 단계(돌리기만 → 기울이기만 → 둘 다), 쉬움에서는 정답 하늘의 별자리선(유령)을 보여 주고,
 // 한동안 진전이 없으면 방향 힌트를 조금씩 더 준다. 하늘 전체 뷰에서 극의 높이(위도)와 회전(시각)을 함께 본다.
 // 다 맞추면 "컴퓨터는 이렇게 풀어요": 플레이트 솔빙 → 지평선 → 천정 → 위도·시각.
+// 입문(intro.ts): 다이얼을 하나씩 풀어 주며 위도·시각·날짜가 하늘을 어떻게 바꾸는지 익힌다.
 
 type Level = "1" | "2" | "3";
 
@@ -75,7 +86,11 @@ const LEVELS: { value: Level; title: string; note: string }[] = [
   { value: "3", title: "3단계 둘 다", note: "위도·날짜·시각 모두" },
 ];
 
-const DIFFICULTIES: { value: Difficulty; title: string; note: string }[] = [
+// 입문은 하늘 맞추기에만 있는 난이도: 문제는 쉬움 하늘로 내고, 단계 대신 입문 라운드를 차례로 푼다
+type Mode = Difficulty | "intro";
+
+const DIFFICULTIES: { value: Mode; title: string; note: string }[] = [
+  { value: "intro", title: "입문", note: "다이얼을 하나씩, 개념부터 익혀요" },
   { value: "easy", title: "쉬움", note: "정답 별자리선이 흐리게 보여요" },
   { value: "normal", title: "보통", note: "고리만 보여요" },
   { value: "hard", title: "어려움", note: "고리만, 도시 불빛, 별이 적어요" },
@@ -94,13 +109,18 @@ const HINT_TITLES: Record<HintStage, string> = {
   3: "별이 가야 할 쪽",
   4: "다이얼 구간",
 };
+const INTRO_HINT_TITLES: Record<HintStage, string> = {
+  ...HINT_TITLES,
+  1: "보는 법",
+};
 // 연한 화살표를 그릴 별 수 (밝은 순)
 const ARROW_STARS = 4;
 // 화살표 길이 상한 (정답 자리까지 잇지 않고 방향만)
 const ARROW_MAX_PX = 70;
 
-// 진전이 없으면 이만큼마다 힌트를 한 단계씩 더 준다
+// 진전이 없으면 이만큼마다 힌트를 한 단계씩 더 준다 (입문은 조금 더 빨리)
 const HINT_INTERVAL_MS = 15000;
+const INTRO_HINT_INTERVAL_MS = 10000;
 // 다이얼을 놓은 뒤 이만큼 동안 극·적도·별 궤적 단서를 보여 준다
 const CUE_MS = 1500;
 // 궤적을 그릴 밝은 별 수
@@ -160,16 +180,25 @@ const startDials = (scene: SkyScene, level: Level): Dials => {
 export default function SkyMatchGame() {
   const [started, setStarted] = useState(false);
   const [level, setLevel] = useState<Level>("1");
-  const [difficulty, setDifficulty] = useState<Difficulty>("easy");
+  const [difficulty, setDifficulty] = useState<Mode>("easy");
 
-  // 깬 단계가 있으면 그다음 단계를 미리 골라 둔다 (처음이면 1단계)
+  // 깬 단계가 있으면 그다음 단계를 미리 골라 둔다 (처음이면 1단계).
+  // 아무것도 깬 적 없으면 입문을 골라 둔다
   useEffect(() => {
     const cleared = LEVELS.filter((l) =>
-      DIFFICULTIES.some((d) => readBest(`sky-match-${d.value}-${l.value}`)),
+      DIFFICULTIES.some(
+        (d) =>
+          d.value !== "intro" && readBest(`sky-match-${d.value}-${l.value}`),
+      ),
     ).map((l) => Number(l.value));
     const next = Math.min(3, Math.max(0, ...cleared) + 1);
+    const introPlayed = LESSONS.some((_, i) => readBest(introKey(i)) !== null);
 
     setLevel(String(next) as Level);
+
+    if (cleared.length === 0 && !introPlayed) {
+      setDifficulty("intro");
+    }
   }, []);
 
   if (!started) {
@@ -185,12 +214,27 @@ export default function SkyMatchGame() {
         ]}
         onStart={() => setStarted(true)}
       >
-        <ChoiceCards
-          label="단계 · 무엇을 돌릴까요?"
-          options={LEVELS}
-          value={level}
-          onChange={setLevel}
-        />
+        {difficulty === "intro" ? (
+          <div className="flex w-full flex-col gap-1">
+            <div className="text-left text-xs font-bold opacity-70">
+              입문 · 다섯 라운드
+            </div>
+            <div className="bg-base-200/60 rounded-box p-3 text-left text-sm">
+              {LESSONS.map((l, i) => (
+                <div key={l.title}>
+                  {i + 1}. {l.title}
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <ChoiceCards
+            label="단계 · 무엇을 돌릴까요?"
+            options={LEVELS}
+            value={level}
+            onChange={setLevel}
+          />
+        )}
         <ChoiceCards
           label="난이도 · 얼마나 도와줄까요?"
           options={DIFFICULTIES}
@@ -204,6 +248,9 @@ export default function SkyMatchGame() {
   return <SkyMatchPlay startLevel={level} difficulty={difficulty} />;
 }
 
+// 입문 라운드의 최소 기록 키 (쉬움·보통·어려움 기록과 따로)
+const introKey = (lesson: number) => `sky-match-intro-${lesson + 1}`;
+
 interface RobotState {
   step: 1 | 2 | 3 | 4;
   solve: ComputerSolve;
@@ -214,9 +261,12 @@ function SkyMatchPlay({
   difficulty,
 }: {
   startLevel: Level;
-  difficulty: Difficulty;
+  difficulty: Mode;
 }) {
+  const intro = difficulty === "intro";
   const [level, setLevel] = useState<Level>(startLevel);
+  // 입문 라운드 (0부터)
+  const [lesson, setLesson] = useState(0);
   // 시작할 때마다 새 문제 ("오늘의 문제" 버튼은 날짜로 정한 문제)
   const [seed, setSeed] = useState(() => Math.floor(Math.random() * 1e9));
   const [dialState, setDialState] = useState<Dials | null>(null);
@@ -253,12 +303,27 @@ function SkyMatchPlay({
   const fx = useFx();
 
   const scene = useMemo(
-    () => makeSkyScene(seed, difficulty),
-    [seed, difficulty],
+    () =>
+      difficulty === "intro"
+        ? introScene(seed, lesson)
+        : makeSkyScene(seed, difficulty),
+    [seed, difficulty, lesson],
   );
-  const dials = dialState ?? startDials(scene, level);
+  const dials =
+    dialState ??
+    (intro ? introStartDials(scene, lesson) : startDials(scene, level));
   dialsRef.current = dials;
-  const locked = LOCKED[level];
+  // 돌릴 수 있는 다이얼. locked는 기존 힌트·끌기 함수에 넘기는 말 ("time"은 날짜·시각 둘 다)
+  const free: DialKey[] = intro
+    ? LESSONS[lesson].free
+    : LOCKED[level] === "lat"
+      ? ["day", "minutes"]
+      : LOCKED[level] === "time"
+        ? ["lat"]
+        : ["lat", "day", "minutes"];
+  const locked = intro ? lockedFor(free) : LOCKED[level];
+  // 날짜만 돌리는 입문 라운드: 하늘을 끌면 시각 대신 날짜가 돈다
+  const dayOnly = free.length === 1 && free[0] === "day";
   const targets = useMemo(() => targetStars(scene, STARS), [scene]);
   // 하늘 단서에 쓸, 정답 사진에서 가장 밝은 이름 있는 별 (지평선에 붙은 별보다 사진 위쪽 별)
   const landmark = useMemo(() => {
@@ -301,11 +366,11 @@ function SkyMatchPlay({
   // 쉬움: 정답 하늘의 별자리선 (유령)
   const ghost = useMemo(
     () =>
-      difficulty === "easy"
+      scene.difficulty === "easy"
         ? projectLines(scene.TP, CONSTELLATIONS).filter((l) => l.some(inView))
         : [],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [difficulty, scene],
+    [scene],
   );
   // 다 맞춘 하늘에 이어 그릴 별자리선
   const solvedLines = useMemo(
@@ -316,9 +381,13 @@ function SkyMatchPlay({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [solved, player, scene],
   );
-  const hint =
+  const hint: IntroHint | null =
     hintStage > 0 && !solved
-      ? hintFor(scene, dials, hintStage as HintStage, locked, landmark)
+      ? intro
+        ? introHint(scene, dials, lesson, hintStage as HintStage, landmark)
+        : toIntroHint(
+            hintFor(scene, dials, hintStage as HintStage, locked, landmark),
+          )
       : null;
 
   // 새로 고리에 들어간 별: 초록 고리가 퍼지고, 맞은 수가 늘수록 높은 음
@@ -356,7 +425,10 @@ function SkyMatchPlay({
     }
 
     const t = setInterval(() => {
-      if (Date.now() - progress.current.at < HINT_INTERVAL_MS) {
+      if (
+        Date.now() - progress.current.at <
+        (intro ? INTRO_HINT_INTERVAL_MS : HINT_INTERVAL_MS)
+      ) {
         return;
       }
 
@@ -373,7 +445,7 @@ function SkyMatchPlay({
     }, 1000);
 
     return () => clearInterval(t);
-  }, [solved, robot]);
+  }, [solved, robot, intro]);
 
   // 다 맞췄을 때 한 번: 팡파르, 색종이, 최소 기록 (컴퓨터가 풀었으면 기록하지 않는다)
   useEffect(() => {
@@ -388,13 +460,13 @@ function SkyMatchPlay({
       return;
     }
 
-    const key = `sky-match-${difficulty}-${level}`;
+    const key = intro ? introKey(lesson) : `sky-match-${difficulty}-${level}`;
     const best = readBest(key);
     setResult({ newBest: saveBest(key, moves, true), best, byRobot: false });
     setFire(Date.now());
     sfx.win();
     fx.popup(0.5, 0.45, "맞췄어요!", "#7dffa0", 56);
-  }, [solved, result, robot, difficulty, level, moves, fx]);
+  }, [solved, result, robot, intro, lesson, difficulty, level, moves, fx]);
 
   // 다이얼을 움직이는 동안의 별 궤적 (최근 내 하늘들)
   useEffect(() => {
@@ -475,8 +547,9 @@ function SkyMatchPlay({
     hint?.arrows,
   ]);
 
-  const newRound = (next: number, nextLevel = level) => {
+  const newRound = (next: number, nextLevel = level, nextLesson = lesson) => {
     setLevel(nextLevel);
+    setLesson(nextLesson);
     setSeed(next);
     setDialState(null);
     setLines(false);
@@ -504,6 +577,13 @@ function SkyMatchPlay({
 
   // 다이얼을 한 번 잡을 때마다 한 수
   const countMove = () => setMoves((m) => m + 1);
+
+  // 힌트를 바로 한 단계 더 (입문)
+  const moreHint = () => {
+    sfx.twinkle(2);
+    progress.current.at = Date.now();
+    setHintStage((s) => (s >= 4 ? s : ((s + 1) as HintStage)));
+  };
 
   // 컴퓨터에게 풀게 하기: 한 단계씩 보여 주고, 마지막에 다이얼을 구한 값으로 돌린다
   const runRobot = () => {
@@ -571,7 +651,9 @@ function SkyMatchPlay({
       <div className="bg-base-200/80 rounded-box flex flex-wrap items-center gap-3 px-4 py-2 backdrop-blur">
         <h1 className="text-xl font-bold">하늘 맞추기</h1>
         <span className="badge badge-primary">
-          {LEVELS.find((l) => l.value === level)!.title}
+          {intro
+            ? `입문 ${lesson + 1}/${LESSONS.length} · ${LESSONS[lesson].title}`
+            : LEVELS.find((l) => l.value === level)!.title}
         </span>
         <span className="badge badge-ghost tabular-nums">다이얼 {moves}번</span>
         <div className="grow" />
@@ -585,6 +667,18 @@ function SkyMatchPlay({
           새 문제
         </button>
       </div>
+
+      {intro && !solved && (
+        <div
+          key={lesson}
+          className="fx-rise rounded-box border border-amber-300/40 bg-amber-300/10 px-4 py-3 text-sm leading-relaxed"
+        >
+          <span className="mr-2 font-bold text-amber-200">
+            📘 {LESSONS[lesson].title}
+          </span>
+          {LESSONS[lesson].concept}
+        </div>
+      )}
 
       <div className="flex flex-col gap-4 lg:flex-row">
         <div className="relative grow">
@@ -626,14 +720,30 @@ function SkyMatchPlay({
               }
 
               const p = canvasPoint(e);
+              const cur = dialsRef.current;
               const next = dragDials(
                 scene,
-                dialsRef.current,
+                cur,
                 g.vector,
                 [p.x, p.y],
-                locked,
+                dayOnly ? "lat" : locked,
                 [LAT_MIN, LAT_MAX],
               );
+
+              if (dayOnly) {
+                // 시각 대신 날짜로: 같은 만큼 하늘이 돌도록
+                const day = Math.max(
+                  0,
+                  Math.min(
+                    364,
+                    cur.dayOfYear + minutesToDays(next.minutes - cur.minutes),
+                  ),
+                );
+                setDial({ dayOfYear: day }, "time");
+
+                return;
+              }
+
               const which: Emphasis =
                 Math.abs(next.latDeg - dialsRef.current.latDeg) > 0.05
                   ? "lat"
@@ -702,7 +812,8 @@ function SkyMatchPlay({
               className="fx-rise absolute right-3 bottom-3 left-3 rounded-xl bg-amber-300/90 px-4 py-2 text-sm font-bold text-black shadow-lg"
             >
               <span className="mr-2">
-                💡 힌트 {hint.stage}/4 · {HINT_TITLES[hint.stage]}
+                💡 힌트 {hint.stage}/4 ·{" "}
+                {(intro ? INTRO_HINT_TITLES : HINT_TITLES)[hint.stage]}
               </span>
               {hint.texts.map((t) => (
                 <span key={t} className="mr-2 font-normal">
@@ -756,7 +867,7 @@ function SkyMatchPlay({
             max={LAT_MAX}
             step={1}
             value={dials.latDeg}
-            locked={locked === "lat"}
+            locked={!free.includes("lat")}
             glow={hint?.dial === "lat"}
             target={hint?.dial === "lat" ? hint.target : undefined}
             onChange={(v) => setDial({ latDeg: v }, "lat")}
@@ -769,8 +880,9 @@ function SkyMatchPlay({
             max={364}
             step={1}
             value={dials.dayOfYear}
-            locked={locked === "time"}
-            glow={false}
+            locked={!free.includes("day")}
+            glow={hint?.dial === "day"}
+            target={hint?.dial === "day" ? hint.target : undefined}
             onChange={(v) => setDial({ dayOfYear: v }, "time")}
             onGrab={countMove}
           />
@@ -781,9 +893,9 @@ function SkyMatchPlay({
             max={1435}
             step={5}
             value={dials.minutes}
-            locked={locked === "time"}
-            glow={hint?.dial === "time"}
-            target={hint?.dial === "time" ? hint.target : undefined}
+            locked={!free.includes("minutes")}
+            glow={hint?.dial === "minutes"}
+            target={hint?.dial === "minutes" ? hint.target : undefined}
             onChange={(v) => setDial({ minutes: v }, "time")}
             onGrab={countMove}
           />
@@ -791,7 +903,16 @@ function SkyMatchPlay({
             <button className="btn btn-sm" onClick={() => setLines((h) => !h)}>
               {lines ? "내 하늘 별자리선 끄기" : "내 하늘 별자리선 보기"}
             </button>
-            {!robot && (
+            {intro && (
+              <button
+                className="btn btn-sm btn-warning btn-outline"
+                disabled={hintStage >= 4}
+                onClick={moreHint}
+              >
+                💡 힌트 {hintStage > 0 ? "더 " : ""}보기
+              </button>
+            )}
+            {!robot && !intro && (
               <button className="btn btn-sm btn-ghost" onClick={runRobot}>
                 🤖 컴퓨터에게 맡기기
               </button>
@@ -808,18 +929,35 @@ function SkyMatchPlay({
           dials={dials}
           moves={moves}
           result={result}
-          level={level}
+          nextLabel={
+            intro
+              ? `입문 ${lesson + 2}라운드로 →`
+              : `${Number(level) + 1}단계로 →`
+          }
+          sameLabel={intro ? "같은 라운드 새 문제" : "같은 단계 새 문제"}
+          lessonNote={
+            intro
+              ? lesson + 1 < LESSONS.length
+                ? `다음 라운드: ${LESSONS[lesson + 1].title}`
+                : "입문을 마쳤어요! 처음 화면에서 쉬움을 골라 1단계부터 도전해 보세요."
+              : undefined
+          }
           showRobot={!robot}
           onRobot={runRobot}
           onNext={() => newRound(Math.floor(Math.random() * 1e9))}
           onNextLevel={
-            level !== "3"
-              ? () =>
-                  newRound(
-                    Math.floor(Math.random() * 1e9),
-                    String(Number(level) + 1) as Level,
-                  )
-              : undefined
+            intro
+              ? lesson + 1 < LESSONS.length
+                ? () =>
+                    newRound(Math.floor(Math.random() * 1e9), level, lesson + 1)
+                : undefined
+              : level !== "3"
+                ? () =>
+                    newRound(
+                      Math.floor(Math.random() * 1e9),
+                      String(Number(level) + 1) as Level,
+                    )
+                : undefined
           }
         />
       )}
@@ -1320,7 +1458,9 @@ function Solved({
   dials,
   moves,
   result,
-  level,
+  nextLabel,
+  sameLabel,
+  lessonNote,
   showRobot,
   onRobot,
   onNext,
@@ -1330,7 +1470,9 @@ function Solved({
   dials: Dials;
   moves: number;
   result: { newBest: boolean; best: number | null; byRobot: boolean } | null;
-  level: Level;
+  nextLabel: string;
+  sameLabel: string;
+  lessonNote?: string;
   showRobot: boolean;
   onRobot: () => void;
   onNext: () => void;
@@ -1411,12 +1553,15 @@ function Solved({
           )}
           onClick={onNext}
         >
-          같은 단계 새 문제
+          {sameLabel}
         </button>
         {onNextLevel && (
           <button className="btn btn-primary btn-lg" onClick={onNextLevel}>
-            {Number(level) + 1}단계로 →
+            {nextLabel}
           </button>
+        )}
+        {lessonNote && (
+          <div className="w-full text-sm text-amber-200">{lessonNote}</div>
         )}
       </div>
       <div

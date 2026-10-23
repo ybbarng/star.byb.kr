@@ -393,7 +393,13 @@ export function ChoiceCards<T extends string>({
   label?: string; // 고르는 줄이 여럿일 때 무엇을 고르는 줄인지
 }) {
   const cards = (
-    <div className="grid w-full grid-cols-3 gap-2">
+    <div
+      className={cn(
+        "grid w-full gap-2",
+        // 넷이면 넓은 화면에서 한 줄, 좁은 화면에서 두 줄
+        options.length === 4 ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-3",
+      )}
+    >
       {options.map((o) => (
         <button
           key={o.value}
