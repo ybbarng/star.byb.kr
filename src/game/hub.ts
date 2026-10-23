@@ -168,6 +168,74 @@ export const GAMES: GameEntry[] = [
     icon: "🔍",
     accent: "from-yellow-200/40 to-indigo-500/10",
   },
+  {
+    href: "/games/star-trails",
+    kind: "game",
+    title: "별 궤적 풀기",
+    summary:
+      "밤새 찍은 별 궤적 사진에서 별들이 도는 중심을 찾고, 어디서 몇 시간 찍었는지 맞혀요. 남반구 궤적은 아주 어려워요!",
+    learn: "천구의 극 = 궤적의 중심, 극 높이 = 위도, 한 시간에 15°",
+    ready: true,
+    icon: "💫",
+    accent: "from-indigo-300/40 to-sky-600/10",
+  },
+  {
+    href: "/games/moon-date",
+    kind: "game",
+    title: "달로 날짜 맞히기",
+    summary:
+      "밤하늘 속 달의 모양과 자리만 보고 그해 몇 월 며칠인지 맞혀요. 모양과 자리를 합치면 날짜가 거의 하나로 정해져요.",
+    learn: "달은 하루 13°씩 동쪽으로, 모양은 29.5일·자리는 27.3일 주기",
+    ready: true,
+    icon: "🌒",
+    accent: "from-amber-200/40 to-slate-500/10",
+  },
+  {
+    href: "/games/wanderers",
+    kind: "game",
+    title: "떠돌이별 찾기",
+    summary:
+      "며칠 간격으로 그린 같은 하늘을 넘겨 보며 별 사이를 떠도는 점을 찾아요. 거꾸로 가는 화성, 역사 속 실제 혜성도 나와요!",
+    learn: "행성(떠돌이별)과 붙박이별의 차이, 역행과 충, 혜성 꼬리는 해 반대쪽",
+    ready: true,
+    icon: "🪐",
+    accent: "from-sky-300/40 to-violet-500/10",
+  },
+  {
+    href: "/games/eclipse",
+    kind: "game",
+    title: "식 예측하기",
+    summary:
+      "한 해 달력에서 삭·망과 달의 높낮이 그래프를 보고, 일식·월식이 일어날 날을 골라요. 정답은 NASA 실제 목록!",
+    learn:
+      "식의 두 조건: 삭·망 + 달이 해의 길과 만나는 자리(교점) 근처, 1년에 두 번 오는 식 철",
+    ready: true,
+    icon: "🌘",
+    accent: "from-orange-300/40 to-slate-600/10",
+  },
+  {
+    href: "/games/which-way",
+    kind: "game",
+    title: "어느 쪽을 찍었을까",
+    summary:
+      "같은 밤 같은 곳에서 찍은 하늘 사진 몇 장을 보고, 사진마다 어느 쪽 하늘을 찍었는지 둥근 하늘 지도에 찍어요.",
+    learn:
+      "하늘 지도 읽기(올려다본 지도는 동쪽이 왼쪽), 방위·고도, 사진 한 장 = 하늘의 한 조각",
+    ready: true,
+    icon: "📸",
+    accent: "from-sky-300/40 to-violet-500/10",
+  },
+  {
+    href: "/games/my-constellation",
+    kind: "explore",
+    title: "나만의 별자리",
+    summary:
+      "진짜 별을 이어 내 별자리를 만들고 이름을 붙여요. 그 별자리가 서울(또는 어디든) 하늘에 언제 어디 뜨는지 보고, 그림으로 간직해요.",
+    learn: "별자리는 진짜 별을 사람이 이은 것, 계절·시각에 따라 뜨는 자리",
+    ready: true,
+    icon: "✨",
+    accent: "from-pink-300/40 to-amber-400/10",
+  },
 ];
 
 // 게임 페이지의 제목·설명 (공유 미리보기·브라우저 탭)

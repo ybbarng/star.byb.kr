@@ -4,7 +4,38 @@ import { useEffect, useState } from "react";
 import { readBest } from "@/game/fx/Fx";
 
 // 허브 카드에 보여 줄 내 기록 (이 브라우저에 남긴 최고 기록)
+// 난이도별 최고 점수 중 가장 높은 것 (점수가 클수록 좋은 게임)
+const bestScore = (prefix: string, levels: string[]) => () => {
+  const scores = levels
+    .map((d) => readBest(`${prefix}-${d}`))
+    .filter((v): v is number => v !== null);
+
+  return scores.length
+    ? `최고 ${Math.max(...scores).toLocaleString()}점`
+    : null;
+};
+
 const RECORDS: Record<string, () => string | null> = {
+  "/games/eclipse": bestScore("eclipse", ["intro", "normal", "hard"]),
+  "/games/which-way": bestScore("which-way", [
+    "intro",
+    "easy",
+    "normal",
+    "hard",
+  ]),
+  "/games/star-trails": bestScore("star-trails", [
+    "intro",
+    "easy",
+    "normal",
+    "hard",
+  ]),
+  "/games/moon-date": bestScore("moon-date", ["intro", "easy", "normal"]),
+  "/games/wanderers": bestScore("wanderers", [
+    "intro",
+    "easy",
+    "normal",
+    "hard",
+  ]),
   "/games/sky-guessr": () => {
     const scores = ["easy", "normal", "hard"]
       .map((d) => readBest(`geo-${d}`))
