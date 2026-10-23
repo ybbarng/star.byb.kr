@@ -264,7 +264,7 @@ function Play({
 
       <div className="relative">
         <RoundBanner
-          key={index}
+          key={`banner-${index}`}
           text={`${index + 1} / ${rounds.length}`}
           sub={round.kind === "pick" ? "지문의 모양 고르기" : "지문 찍기"}
         />
@@ -274,14 +274,14 @@ function Play({
         </div>
         {round.kind === "pick" ? (
           <PickView
-            key={index}
+            key={`round-${index}`}
             round={round}
             difficulty={difficulty}
             onScore={onScore}
           />
         ) : (
           <PlaceView
-            key={index}
+            key={`round-${index}`}
             round={round}
             difficulty={difficulty}
             onScore={onScore}
