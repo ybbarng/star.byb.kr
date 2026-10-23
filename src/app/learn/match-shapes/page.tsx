@@ -1,5 +1,6 @@
 import LearnArticle, { Figure, LearnSection } from "@/learn/LearnArticle";
 import { Callout, DataTable } from "@/learn/parts";
+import QuadBudgetDemo from "@/learn/QuadBudgetDemo";
 import QuadHashDemo from "@/learn/QuadHashDemo";
 import QuadReachDemo from "@/learn/QuadReachDemo";
 import ShapeDemo from "@/learn/ShapeDemo";
@@ -65,6 +66,48 @@ export default function Page() {
           C와 D 중 어느 것을 먼저 적을지, A와 B를 바꿔도 되는지 같은 대칭은
           정해진 규칙으로 하나로 맞춰요. 같은 사각형이면 어떤 순서로 넣어도 같은
           지문이 나와야 하니까요.
+        </p>
+      </LearnSection>
+
+      <LearnSection title="사각형은 많을수록 좋을까">
+        <p>
+          V2는 HEALPix 칸마다 칸 중심에서 10° 원 안의 별로 네 별 조합을 모두
+          만들었어요. 원 양 끝의 별끼리는 20°까지 떨어지니, 꽤 크게 퍼진
+          사각형까지 담긴 셈이에요. 그렇게 51만 개, 파일로 65MB였어요. V3는 네
+          별이 모두 서로 10° 안인 사각형만 남겨 8만 3천 개로 줄였어요.
+        </p>
+        <Figure caption="이 기기에서 별 지도로 칸마다 네 별 조합을 모두 만들어 두고, 네 별 사이 최대 거리의 한계를 바꿔 가며 재요. 정답 시험은 6° 안의 작은 사각형 300개의 지문에 사진 오차만큼 흔들림을 더해, 가까운 8개 안에 정답이 드는지 본 거예요(오차 크기는 가정이에요).">
+          <QuadBudgetDemo />
+        </Figure>
+        <ul className="list-disc space-y-1 pl-5">
+          <li>
+            <b>많을 때 얻는 것</b>: 북두칠성처럼 넓게 퍼진 모양도 사각형 하나로
+            담겨요. V2가 북두칠성을 사각형으로 바로 풀 수 있었던 이유예요.
+          </li>
+          <li>
+            <b>많을 때 잃는 것 ① 무게</b>: 받는 양과, 받아서 검색 나무를 쌓는
+            시간이 개수에 비례해요. V2는 후보가 나오기까지 약 4초 중 대부분이 이
+            준비 시간이었어요.
+          </li>
+          <li>
+            <b>많을 때 잃는 것 ② 닮은 가짜</b>: 지문은 숫자 넷짜리 공간의
+            점이라, 점이 많을수록 사진 지문 바로 옆에 우연히 닮은 가짜가 생겨요.
+            그래프에서 한계를 넓힐수록 작은 사각형의 정답이 1등을 놓치는 일이
+            늘어요.
+          </li>
+          <li>
+            <b>많을 때 잃는 것 ③ 큰 사각형은 덜 믿을 만해요</b>: 크게 퍼진
+            사각형은 넷이 모두 사진에 찍혀 있어야 하고, 광각 사진의 가장자리
+            일그러짐을 더 많이 받아 사진 속 모양이 하늘과 더 어긋나요(데모에는
+            넣지 않았어요).
+          </li>
+        </ul>
+        <p>
+          그래서 V3는 사각형을 줄여 가볍고 덜 헷갈리게 만들고, 줄이면서 놓친
+          넓은 모양은 삼각형으로 메웠어요. 표에서 보듯 북두칠성은 10°
+          사각형으로는 하나도 안 담기지만, 삼각형(한 별에서 18° 안, 밝은 별은
+          30° 안)으로는 담겨요. 별 셋은 조합이 덜 폭발해서 더 넓게 잡아도 감당이
+          되거든요.
         </p>
       </LearnSection>
 
