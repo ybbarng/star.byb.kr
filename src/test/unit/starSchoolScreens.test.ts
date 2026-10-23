@@ -6,16 +6,24 @@ import { dexEntries } from "@/game/starSchool/dex";
 import DexBook, { figureOf } from "@/game/starSchool/DexBook";
 import DrawExercise, { gradeDrawing } from "@/game/starSchool/DrawExercise";
 import { constellationFigure } from "@/game/starSchool/figure";
-import { markVectors, stepDate } from "@/game/starSchool/lessonGeometry";
+import {
+  aimFallback,
+  markVectors,
+  stepDate,
+  stepVectors,
+  tapVector,
+} from "@/game/starSchool/lessonGeometry";
 import LessonRoom from "@/game/starSchool/LessonRoom";
 import { LESSONS } from "@/game/starSchool/lessons";
-import { relationBank } from "@/game/starSchool/quiz";
+import { relationBank, relationVectors } from "@/game/starSchool/quiz";
 import RelationQuestionView from "@/game/starSchool/RelationQuestionView";
 import RelationsGame from "@/game/starSchool/RelationsGame";
 import SchoolHome from "@/game/starSchool/SchoolHome";
 import { aimView, drawSchoolSky } from "@/game/starSchool/schoolSkyDraw";
 import ShapeFigure from "@/game/starSchool/ShapeFigure";
 import { dateAt, observerOf } from "@/game/starSchool/skyMath";
+import { horizonCameraTP } from "@/search/horizonSolve";
+import { projectVecToPhoto } from "@/search/utils/wcs";
 
 // 별자리 익히기 화면: 첫 그림(서버 그리기)이 깨지지 않는지, 하늘 그리기가 모든 수업 단계·관계 문제에서
 // 오류 없이 도는지(가짜 캔버스), 점 잇기 채점이 맞는지.
@@ -144,6 +152,73 @@ describe("하늘 그리기", () => {
         quiet: true,
       });
     }
+  });
+});
+
+// 처음 카메라에 다룰 것(찾을 자리 포함)이 다 들어오는지: 휴대폰(세로에 가깝게)과 넓은 화면 두 크기로
+describe("처음 카메라", () => {
+  const SCREENS = [
+    [360, 378],
+    [705, 437],
+  ] as const;
+
+  const outside = (
+    vs: ReturnType<typeof stepVectors>,
+    view: { az: number; alt: number; fov: number },
+    date: Date,
+    observer: ReturnType<typeof observerOf>,
+  ) =>
+    SCREENS.flatMap(([W, H]) => {
+      const TP = horizonCameraTP(
+        date,
+        observer,
+        {
+          azimuthDeg: view.az,
+          altitudeDeg: view.alt,
+          rollDeg: 0,
+          fovDeg: view.fov,
+        },
+        W,
+        H,
+      );
+
+      return vs
+        .map((v) => projectVecToPhoto(TP, v))
+        .filter((p) => !p || p[0] < 0 || p[0] > W || p[1] < 0 || p[1] > H)
+        .map((p) => `${W}×${H}: ${p?.map(Math.round).join(",")}`);
+    });
+
+  it.each(
+    LESSONS.flatMap((l) => l.steps.map((s, i) => [l.id, i + 1, l, s] as const)),
+  )("%s %i단계", (_, __, lesson, step) => {
+    const idx = lesson.steps.indexOf(step);
+    const date = stepDate(lesson, step);
+    const aim = aimFallback(lesson, idx) ?? stepVectors(step);
+    const view = step.view ?? aimView(aim, date, lesson.place);
+    // 정해 둔 카메라는 넓게 보여 주려는 것이라 찾을 자리만 확인한다
+    const must = step.view
+      ? step.tap
+        ? [tapVector(step.tap.target)]
+        : []
+      : stepVectors(step);
+
+    expect(outside(must, view, date, observerOf(lesson.place))).toEqual([]);
+  });
+
+  it("관계 문제마다", () => {
+    const bad = relationBank().flatMap((q) => {
+      if (q.kind === "order") return [];
+
+      const date = dateAt(q.scene.place, q.scene.time);
+      const aim = relationVectors(q);
+      const view = aimView(aim, date, q.scene.place);
+
+      return outside(aim, view, date, observerOf(q.scene.place)).map(
+        (x) => `${q.key} ${x}`,
+      );
+    });
+
+    expect(bad).toEqual([]);
   });
 });
 

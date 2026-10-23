@@ -16,6 +16,7 @@ import { eclipticPoints, milkyWayPatches } from "@/game/starSchool/milkyWay";
 import {
   centerOf,
   hrVector,
+  normalize,
   observerOf,
   raDecVector,
   separationDeg,
@@ -63,8 +64,25 @@ export const aimView = (
     return { az: place.latDeg >= 0 ? 180 : 0, alt: 35, fov: 90 };
   }
 
-  const c = centerOf(aim);
-  const radius = Math.max(...aim.map((v) => separationDeg(v, c)));
+  // 가운데: 방향들을 다 덮는 가장 작은 원의 중심 (Bădoiu–Clarkson: 가장 먼 점 쪽으로 1/(i+1)씩).
+  // 평균을 쓰면 별이 많은 쪽(북두칠성 일곱 별)으로 쏠려 반대쪽 끝(스피카)이 화면 밖으로 나간다
+  const radiusFrom = (c: Point3D) =>
+    Math.max(...aim.map((v) => separationDeg(v, c)));
+  let c = centerOf(aim);
+  let best = { c, r: radiusFrom(c) };
+
+  for (let i = 1; i <= 60; i++) {
+    const far = aim.reduce((a, v) =>
+      separationDeg(v, c) > separationDeg(a, c) ? v : a,
+    );
+    c = normalize(c.map((x, k) => x + (far[k] - x) / (i + 1)));
+    const r = radiusFrom(c);
+
+    if (r < best.r) best = { c, r };
+  }
+
+  c = best.c;
+  const radius = best.r;
   const fov = Math.max(50, Math.min(FOV_MAX - 5, radius * 2.4 + 14));
   const alt = Math.asin(Math.max(-1, Math.min(1, dot(c, frame.zenith)))) / D;
   const az =

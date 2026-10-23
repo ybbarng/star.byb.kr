@@ -76,8 +76,13 @@ export default function RelationQuestionView({
                   at >= 0 && "btn-primary",
                   done === false && "btn-disabled",
                 )}
-                disabled={at >= 0 || done !== null}
+                // disabled로 막으면 회색이 고른 순서(파란색)를 덮어서, 누르기만 막는다
+                aria-disabled={at >= 0 || done !== null}
                 onClick={() => {
+                  if (at >= 0 || done !== null) {
+                    return;
+                  }
+
                   const want = q.items[sequence.length];
 
                   if (label !== want) {
