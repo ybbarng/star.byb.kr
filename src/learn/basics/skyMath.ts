@@ -448,3 +448,45 @@ export const fistsLabel = (deg: number) => {
         : "주먹 반 개쯤"
       : `주먹 ${n + 1}개쯤`;
 };
+
+// 계절의 저녁 하늘이 "남쪽으로 보여 주는" 자리: 그 계절 가운데 달 15일 저녁 localHour시에 자오선을 지나는
+// 적경(천정의 적경)에서 ±halfWidthHours 안에 있는 밝은 별. 지평선 위로 minMaxAltDeg 이상 뜰 수 있는 별만 센다.
+// 계절별 저녁 수(monthlyEveningCounts)는 서쪽에 남은 지난 계절 별도 세지만, 이것은 그 계절 별자리 자리만 센다.
+export const eveningRegionStars = (
+  stars: CountStar[],
+  o: Omit<SeasonCountOptions, "magLimits" | "minAltDeg"> & {
+    month: number;
+    magLimit: number;
+    halfWidthHours: number;
+    minMaxAltDeg: number;
+  },
+) => {
+  const t = Date.UTC(o.year, o.month - 1, 15, o.localHour - o.utcOffsetHours);
+  const zenith = horizontalFrameJ2000(
+    julianDay(new Date(t)),
+    o.observer,
+  ).zenith;
+  const lst = vectorToRaDec(zenith).raDeg;
+
+  return mergeCloseStars(stars).filter((s) => {
+    const { raDeg, decDeg } = vectorToRaDec(s.vector);
+    const dh = Math.abs(((((raDeg - lst) % 360) + 540) % 360) - 180) / 15;
+
+    return (
+      s.mag <= o.magLimit &&
+      dh <= o.halfWidthHours &&
+      maxAltitudeDeg(o.observer.latDeg, decDeg) >= o.minMaxAltDeg
+    );
+  });
+};
+
+// 은하 경도 binDeg 칸마다 별 수
+export const galacticLongitudeHistogram = (stars: CountStar[], binDeg = 30) => {
+  const bins = new Array(Math.round(360 / binDeg)).fill(0);
+
+  for (const s of stars) {
+    bins[Math.floor(vectorToGalactic(s.vector).lDeg / binDeg) % bins.length]++;
+  }
+
+  return bins;
+};

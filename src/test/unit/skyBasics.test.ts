@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { GAMES } from "@/game/hub";
 import { STARS } from "@/game/sky/catalog";
+import {
+  HEXAGON,
+  HOT_HISTOGRAM,
+  MONTHLY,
+  REGIONS,
+  SEASON_AVERAGES,
+  VISIBLE,
+} from "@/learn/basics/brightSeasons";
 import { NEAR_BRIGHT_STARS, REFERENCE_PAIRS } from "@/learn/basics/references";
 import {
   altAzAt,
@@ -125,6 +133,22 @@ describe("은하 좌표", () => {
 
   it("은하 중심은 적위 −29°라 서울에서 가장 높이 떠도 23° 남짓", () => {
     expect(90 - 37.57 + GALACTIC_CENTER.decDeg).toBeCloseTo(23.5, 1);
+  });
+
+  it("은하면과 황도는 약 60.2° 기울어 있다", () => {
+    expect(
+      angleBetweenDeg(galacticToVector(0, 90), raDecToVector(270, 66.5607)),
+    ).toBeCloseTo(60.19, 1);
+  });
+
+  it("서울 저녁 9시: 1월엔 반대쪽이 68°, 4월엔 은하 북극이 53°, 8월엔 은하 중심이 정남 23°", () => {
+    const at = (m: number, l: number, b: number) =>
+      altAzAt(galacticToVector(l, b), Date.UTC(2026, m - 1, 15, 12), SEOUL);
+    expect(at(1, 180, 0).altDeg).toBeCloseTo(68, -0.5);
+    expect(at(4, 0, 90).altDeg).toBeCloseTo(53, -0.5);
+    const center = at(8, 0, 0);
+    expect(center.altDeg).toBeCloseTo(23, -0.5);
+    expect(Math.abs(center.azDeg - 180)).toBeLessThan(10);
   });
 
   it("백조자리 데네브는 은하면 바로 위(|b| < 5°)", () => {
@@ -330,5 +354,71 @@ describe("밝기와 거리", () => {
 
   it("1파섹은 3.26광년", () => {
     expect(parallaxToLightYears(1)).toBeCloseTo(3.26, 2);
+  });
+});
+
+describe("겨울 별은 정말 더 밝을까 (서울, 저녁 9시, 고도 10° 위)", () => {
+  const avg = (key: string) =>
+    SEASON_AVERAGES.find((s) => s.key === key)!.averages;
+
+  it("달마다 1.5등급·2.0등급보다 밝은 별 수", () => {
+    expect(MONTHLY.map((m) => m.counts[0])).toEqual([
+      9, 9, 9, 10, 7, 7, 6, 5, 5, 5, 6, 7,
+    ]);
+    expect(MONTHLY.map((m) => m.counts[1])).toEqual([
+      21, 23, 23, 23, 15, 12, 11, 10, 11, 8, 11, 16,
+    ]);
+  });
+
+  it("저녁에 떠 있는 수로는 겨울과 봄이 비슷하고, 여름·가을은 그 절반쯤", () => {
+    expect(avg("winter")[0]).toBeCloseTo(8.3, 1);
+    expect(avg("spring")[0]).toBeCloseTo(8.7, 1);
+    expect(avg("summer")[0]).toBeCloseTo(6.0, 1);
+    expect(avg("autumn")[0]).toBeCloseTo(5.3, 1);
+    expect(avg("winter")[1]).toBeCloseTo(20.0, 1);
+    expect(avg("spring")[1]).toBeCloseTo(20.3, 1);
+    expect(avg("summer")[1]).toBeCloseTo(11.0, 1);
+    expect(avg("autumn")[1]).toBeCloseTo(10.0, 1);
+  });
+
+  it("그 계절 별자리 자리(자오선 ±3시간)로 세면 겨울이 가장 많다", () => {
+    const n = (season: string, k: number) =>
+      REGIONS.find((r) => r.season === season)!.stars[k].length;
+    expect(["겨울", "봄", "여름", "가을"].map((s) => n(s, 0))).toEqual([
+      6, 3, 4, 3,
+    ]);
+    expect(["겨울", "봄", "여름", "가을"].map((s) => n(s, 1))).toEqual([
+      14, 8, 7, 3,
+    ]);
+  });
+
+  it("서울에서 보이는 1.5등급보다 밝은 별 16개 중 8개가 오리온 둘레(적경 4.5h~8h)", () => {
+    expect(VISIBLE).toHaveLength(16);
+    expect(HEXAGON.map((s) => s.name).sort()).toEqual(
+      [
+        "시리우스",
+        "카펠라",
+        "리겔",
+        "베텔게우스",
+        "알데바란",
+        "아다라",
+        "프로키온",
+        "폴룩스",
+      ].sort(),
+    );
+  });
+
+  it("뜨거운 별(1만 K 이상, 3등급까지)은 은하 경도 180~210°와 300~360°에 몰려 있다", () => {
+    expect(HOT_HISTOGRAM).toEqual([2, 2, 3, 4, 4, 5, 9, 5, 3, 7, 10, 14]);
+    const top = [...HOT_HISTOGRAM.keys()]
+      .sort((a, b) => HOT_HISTOGRAM[b] - HOT_HISTOGRAM[a])
+      .slice(0, 3);
+    expect(top.sort((a, b) => a - b)).toEqual([6, 10, 11]);
+  });
+
+  it("오리온 허리띠는 은하 경도 180~210° 칸에 있다", () => {
+    const l = vectorToGalactic(byLatin("Alnilam").vector).lDeg;
+    expect(l).toBeGreaterThan(180);
+    expect(l).toBeLessThan(210);
   });
 });
