@@ -29,6 +29,8 @@ import { sfx } from "@/game/fx/sound";
 import { pickItem, projectLines, STARS } from "@/game/sky/catalog";
 import { drawSky } from "@/game/sky/drawSky";
 import ItemInfo, { canvasPoint } from "@/game/sky/ItemInfo";
+import { dayNumber } from "@/game/starSchool/leitner";
+import { markMissed, updateSave } from "@/game/starSchool/progress";
 import { projectVecToPhoto } from "@/search/utils/wcs";
 import { cn } from "@/utils/cn";
 import { createRng } from "@/utils/rng";
@@ -336,6 +338,10 @@ function FindPlay({
     if (nextMisses.length >= MAX_MISSES) {
       onResult({ points: 0, found: false, clean: false });
       setStatus("revealed");
+      // 못 찾은 별자리는 별자리 익히기의 복습·복수전 목록으로
+      updateSave((s) =>
+        markMissed(s, `c:${target.label}`, dayNumber(new Date())),
+      );
       sfx.lose();
       fx.popup(0.5, 0.4, "여기 있었어요!", "#ffb4b4", 36);
     } else {
