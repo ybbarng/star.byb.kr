@@ -1,6 +1,7 @@
 import LearnArticle, { Figure, LearnSection } from "@/learn/LearnArticle";
 import { Callout, DataTable } from "@/learn/parts";
 import QuadBudgetDemo from "@/learn/QuadBudgetDemo";
+import QuadCellCrossDemo from "@/learn/QuadCellCrossDemo";
 import QuadHashDemo from "@/learn/QuadHashDemo";
 import QuadReachDemo from "@/learn/QuadReachDemo";
 import ShapeDemo from "@/learn/ShapeDemo";
@@ -71,6 +72,16 @@ export default function Page() {
 
       <LearnSection title="사각형은 많을수록 좋을까">
         <p>
+          사각형 색인은 하늘을 <b>HEALPix</b>로 나눠 만들어요. HEALPix는 구를
+          넓이가 모두 같은 칸으로 나누는 방법으로, 여기서는 192칸으로 나눠요.
+          칸마다 칸 중심에서 10° 원 안의 별끼리만 묶으면, 하늘 전체의 별로 넷을
+          고를 때처럼 조합이 끝없이 늘지 않아요(칸 모양은{" "}
+          <a className="link" href="/learn/star-map#healpix">
+            별 지도 준비
+          </a>
+          의 천구에서 볼 수 있어요).
+        </p>
+        <p>
           V2는 HEALPix 칸마다 칸 중심에서 10° 원 안의 별로 네 별 조합을 모두
           만들었어요. 원 양 끝의 별끼리는 20°까지 떨어지니, 꽤 크게 퍼진
           사각형까지 담긴 셈이에요. 그렇게 51만 개, 파일로 65MB였어요. V3는 네
@@ -109,6 +120,14 @@ export default function Page() {
           30° 안)으로는 담겨요. 별 셋은 조합이 덜 폭발해서 더 넓게 잡아도 감당이
           되거든요.
         </p>
+        <p>
+          차이는 칸에 있어요. 사각형은 한 칸 원 안의 별로만 만들어서 칸에
+          갇혀요. 삼각형 색인은 칸 없이 &ldquo;한 별에서 18° 안의 두 별&rdquo;로
+          만들어서, 칸 경계를 넘어 두 칸의 별을 이어요.
+        </p>
+        <Figure caption="실제 별자리 위에 HEALPix 칸(하늘색 선)과, 별자리 별을 가장 많이 담는 칸 A와 그 칸이 못 담은 별을 담는 칸 B의 10° 원을 그렸어요. 파랑·보라는 각 원 안에서 만든 사각형(지금 풀이와 같은 색인), 초록은 두 원 사이를 잇는 삼각형이에요. 초록 삼각형의 세 별을 함께 담는 칸 원은 하나도 없어서, 같은 별들로는 사각형을 만들 수 없어요.">
+          <QuadCellCrossDemo />
+        </Figure>
       </LearnSection>
 
       <LearnSection title="둘 다 쓰는 이유">
