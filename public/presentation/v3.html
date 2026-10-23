@@ -607,7 +607,7 @@
             <br>
             그러면 물을 수 있습니다. 우연이라면 평균 2.4개인데, 26개 이상 겹칠 확률은 얼마일까? 이런 드문 일이 일어날 확률은 푸아송 분포로 계산하는데, 10의 마이너스 17.8승입니다. 기준인 10억 분의 1보다 훨씬 작습니다. 우연으로는 설명이 안 됩니다. 우리 만남은 우연이 아니라 필연입니다.
             <br>
-            (질문이 나오면) 실제 풀이는 변환을 더 정밀하게 다듬어 겹친 별이 늘어서, 이 답을 10의 마이너스 23.8승으로 기록합니다. 데모는 짝지은 별로만 놓은 답이라 조금 덜 나옵니다.
+            (질문이 나오면) 실제 풀이는 확신한 뒤 사진 별을 150개까지 늘려 다시 맞추기 때문에 겹친 별이 49개로 늘어서, 이 답을 10의 마이너스 23.8승으로 기록합니다. 데모는 그 전 단계, 사진 별 60개로 맞춘 답입니다.
             <br>
             (아무 데나 뿌리기를 다시 보여 주며) 뿌린 별이 2개 겹쳤다면, 우연이라도 열에 일곱 번은 그만큼 겹칩니다. 우연입니다.
             <br>
@@ -1195,7 +1195,7 @@
             <br>
             (넘기며) 별을 찍고, 바다 수평선을 긋고, 메신저에 올라온 시각과 사이판이라는 장소를 넣어서 Stellarium과 맞췄습니다.
             <br>
-            사이판 사진은 진짜 별이 10개 남짓이라, 9개가 맞아도 10억 분의 1 수준의 확신이 수학적으로 안 나옵니다. 하늘 전체를 뒤지면 후보가 워낙 많아서, 별 몇 개가 맞는 정도는 가짜 후보도 해냅니다. 실제로 가장 좋은 답도 10만 분의 1 수준에서 멈췄는데, 가짜 후보도 거기까지는 옵니다.
+            사이판 사진은 진짜 별이 10개 남짓이라, 9개가 맞아도 10억 분의 1 수준의 확신이 수학적으로 안 나옵니다. 하늘 전체를 뒤지면 후보가 워낙 많아서, 별 몇 개가 맞는 정도는 가짜 후보도 해냅니다. 실제로 가장 좋은 답도 10만 분의 1 수준에서 멈췄고, 가짜 후보도 2만 분의 1까지 옵니다.
             <br>
             그때 사람은 메신저 시각, 사이판이라는 장소, 바다 수평선으로 풀었습니다. 이 방법을 그대로 기능으로 만들었습니다.
             <br>
@@ -1219,7 +1219,7 @@
           <aside class="notes">
             별하늘지기 카페에서 받은, 방법을 만들 때 한 번도 보지 않은 사진 세 장입니다. 저작권 때문에 사진은 보여 드리지 않겠습니다.
             <br>
-            세 장을 따로 풀었고, 세 장 모두 클릭 없이 확신하며 풀렸습니다. 틀린 답은 없었습니다. 한 장은 줌으로 당겨 찍은 화각 20도짜리(35mm 환산 73mm), 두 장은 57도짜리 광각(24mm)입니다. 달은 별 지도에 없지만, 사진이 풀리면 사진 속 어느 점이든 하늘 좌표로 바꿀 수 있습니다. 노란 원이 세 사진의 달 위치인데, 0.4도 안으로 겹칩니다.
+            세 장을 따로 풀었고, 세 장 모두 클릭 없이 확신하며 풀렸습니다. 틀린 답은 없었습니다. 한 장은 줌으로 당겨 찍은 화각 20도짜리, 두 장은 57도짜리 광각입니다(풀린 화각으로 계산하면 35mm 환산 73mm, 24mm). 달은 별 지도에 없지만, 사진이 풀리면 사진 속 어느 점이든 하늘 좌표로 바꿀 수 있습니다. 노란 원이 세 사진의 달 위치인데, 0.4도 안으로 겹칩니다.
             <br>
             초록·파란 선은 2026년 한 해 달이 지나간 길입니다. 달은 27.3일마다 이 자리를 지나서 1년에 14번입니다. 오른쪽은 그때마다 화악산에서 낮이었는지 밤이었는지, 달이 얼마나 빛났는지입니다. 달이 땅 아래면 0%입니다.
             <br>
@@ -1283,20 +1283,20 @@
         </section>
 
         <section class="title-body-slide">
-          <h1>처음 받는 양: 약 8MB</h1>
+          <h1>처음 받는 양: 약 28MB</h1>
           <div class="body center">
             <div class="bars" style="font-size: 0.9em;">
-              <div class="row"><span class="label">OpenCV</span><span class="track"><span class="fill" style="width: 100%; display: block;"></span></span><span class="value">3.86MB</span></div>
-              <div class="row"><span class="label">글꼴</span><span class="track"><span class="fill" style="width: 53%; display: block;"></span></span><span class="value">2.05MB</span></div>
-              <div class="row"><span class="label">quad DB</span><span class="track"><span class="fill" style="width: 38%; display: block;"></span></span><span class="value">1.46MB</span></div>
-              <div class="row"><span class="label">나머지</span><span class="track"><span class="fill" style="width: 15%; display: block;"></span></span><span class="value">0.58MB</span></div>
+              <div class="row"><span class="label">OpenCV</span><span class="track"><span class="fill" style="width: 17.5%; display: block;"></span></span><span class="value">3.87MB</span></div>
+              <div class="row"><span class="label">글꼴</span><span class="track"><span class="fill" style="width: 9.3%; display: block;"></span></span><span class="value">2.06MB</span></div>
+              <div class="row"><span class="label">quad DB</span><span class="track"><span class="fill" style="width: 100%; display: block;"></span></span><span class="value">22.15MB</span></div>
+              <div class="row"><span class="label">나머지</span><span class="track"><span class="fill" style="width: 1.9%; display: block;"></span></span><span class="value">0.42MB</span></div>
             </div>
-            <p style="text-align: left;">합계 <span class="red">약 8MB</span> <span class="small text-neutral-400">플레이트 솔버를 열어 사진 한 장 풀 때까지 (압축)</span></p>
+            <p style="text-align: left;">합계 <span class="red">약 28MB</span> <span class="small text-neutral-400">V2를 그대로 올렸다면, 플레이트 솔버를 열어 사진 한 장 풀 때까지 (압축)</span></p>
           </div>
           <aside class="notes">
-            플레이트 솔버를 열어서 사진 한 장 풀 때까지 받는 양을 재 봤습니다. 약 8MB였습니다.
+            V2를 그대로 올렸다면 플레이트 솔버를 열어서 사진 한 장 풀 때까지 받는 양을 재 봤습니다. V2 코드를 빌드해서 쟀고, 약 28MB였습니다.
             <br>
-            OpenCV가 3.9MB로 가장 컸고, 그다음이 의외로 글꼴 2MB, 그리고 quad DB 1.5MB입니다. 이 순서대로 하나씩 보겠습니다.
+            가장 큰 건 quad DB 22MB입니다. 65MB짜리 DB를 풀이 코드에 통째로 실었기 때문입니다. 그다음이 OpenCV 3.9MB, 그리고 의외로 글꼴 2MB입니다. OpenCV, 글꼴, DB 순서로 하나씩 보겠습니다.
           </aside>
         </section>
 
@@ -1368,23 +1368,23 @@
             <br>
             그래서 받지 않고 브라우저가 만듭니다. 사진 고르는 동안 노트북에서 0.75초면 됩니다. 휴대폰에서는 아직 못 재 봤습니다.
             <br>
-            2022년 첫 발표에서 Astrometry.net은 별 8,400만 개짜리 카탈로그를 쓴다고 소개했는데, 저는 맨눈으로 보이는 5등급까지 1,625개만 씁니다. 일반인이 찍은 사진에는 그 정도면 충분했습니다.
+            Astrometry.net은 별 수백만~수억 개짜리 카탈로그로 만든 색인을 쓰는데, 저는 맨눈으로 보이는 5등급까지 1,625개만 씁니다. 일반인이 찍은 사진에는 그 정도면 충분했습니다.
           </aside>
         </section>
 
         <section class="title-body-slide">
-          <h1>처음 받는 양: 8MB → 0.68MB</h1>
+          <h1>처음 받는 양: 28MB → 0.68MB</h1>
           <div class="body center">
             <div class="bars" style="font-size: 0.9em;">
-              <div class="row"><span class="label">OpenCV</span><span class="track"><span class="fill was" style="width: 100%; display: block;"></span></span><span class="value">3.86 → 0</span></div>
-              <div class="row"><span class="label">글꼴</span><span class="track"><span class="fill was" style="width: 53%; display: block;"></span><span class="fill now" style="width: 8%; display: block;"></span></span><span class="value">2.05 → 0.31</span></div>
-              <div class="row"><span class="label">quad DB</span><span class="track"><span class="fill was" style="width: 38%; display: block;"></span></span><span class="value">1.46 → 0</span></div>
-              <div class="row"><span class="label">나머지</span><span class="track"><span class="fill was" style="width: 15%; display: block;"></span><span class="fill now" style="width: 9.6%; display: block;"></span></span><span class="value">0.58 → 0.37</span></div>
+              <div class="row"><span class="label">OpenCV</span><span class="track"><span class="fill was" style="width: 17.5%; display: block;"></span></span><span class="value">3.87 → 0</span></div>
+              <div class="row"><span class="label">글꼴</span><span class="track"><span class="fill was" style="width: 9.3%; display: block;"></span><span class="fill now" style="width: 1.4%; display: block;"></span></span><span class="value">2.06 → 0.31</span></div>
+              <div class="row"><span class="label">quad DB</span><span class="track"><span class="fill was" style="width: 100%; display: block;"></span></span><span class="value">22.15 → 0</span></div>
+              <div class="row"><span class="label">나머지</span><span class="track"><span class="fill was" style="width: 1.9%; display: block;"></span><span class="fill now" style="width: 1.7%; display: block;"></span></span><span class="value">0.42 → 0.37</span></div>
             </div>
-            <p style="text-align: left;">합계 <span class="red">약 8MB</span> → <span class="green big">0.68MB</span></p>
+            <p style="text-align: left;">합계 <span class="red">약 28MB</span> → <span class="green big">0.68MB</span></p>
           </div>
           <aside class="notes">
-            모아 보면 처음 받는 양이 8MB에서 0.68MB가 됐습니다. 나머지에서도 쓰지 않던 mathjs를 빼고 별 목록을 줄였습니다.
+            모아 보면 처음 받는 양이 28MB에서 0.68MB, 40분의 1이 됐습니다. 나머지에서도 쓰지 않던 mathjs를 빼고 별 목록을 줄였습니다.
           </aside>
         </section>
 
@@ -1394,7 +1394,7 @@
             <ul class="checklist" style="font-size: 1.35em; line-height: 1.8;">
               <li class="done"><span class="yellow">정확도</span> <span class="small text-neutral-400">모르면 모른다고 · 사람 손 없이 풀기</span></li>
               <li class="done"><span class="yellow">속도</span> <span class="small text-neutral-400">후보까지 약 4초 → 확신까지 0.13초 (중앙값)</span></li>
-              <li class="done"><span class="yellow">용량</span> <span class="small text-neutral-400">약 8MB → 0.68MB</span></li>
+              <li class="done"><span class="yellow">용량</span> <span class="small text-neutral-400">약 28MB → 0.68MB</span></li>
               <li class="fragment check-on" data-fragment-index="2"><span class="yellow">편의성</span></li>
             </ul>
           </div>
@@ -1402,7 +1402,7 @@
             <h1>편의성은 직접 판단해 보세요.</h1>
           </div>
           <aside class="notes">
-            용량은 8MB에서 0.68MB로 줄였습니다.
+            용량은 28MB에서 0.68MB로 줄였습니다.
             <br>
             (넘기면) 남은 편의성은 제가 체크할 수 없습니다. 사람 손 없이 풀리게 했고 주소 하나로 열리지만, 쓰기 편한지는 써 보시는 분들이 정할 일입니다. 마지막에 직접 써 보실 수 있게 해 드리겠습니다.
             <br>

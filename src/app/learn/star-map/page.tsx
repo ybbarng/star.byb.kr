@@ -259,7 +259,7 @@ export default function Page() {
           />
         </Figure>
         <div className="grid grid-cols-3 gap-3">
-          <Stat value="8MB → 0.68MB" label="처음 받는 양" />
+          <Stat value="28MB → 0.68MB" label="처음 받는 양 (V2 → 지금)" />
           <Stat value="약 0.8초" label="색인을 모두 만드는 시간 (PC 측정)" />
           <Stat value="41KB" label="별 목록 (압축)" />
         </div>
