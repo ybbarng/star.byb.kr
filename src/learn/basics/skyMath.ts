@@ -490,3 +490,15 @@ export const galacticLongitudeHistogram = (stars: CountStar[], binDeg = 30) => {
 
   return bins;
 };
+
+// 달이 별 사이를 한 시간에 움직이는 각도 (지구 중심, 그 시각 앞뒤 하루 평균)
+export const moonHourlyMotionDeg = (date: Date) => {
+  const jd = julianDay(date);
+
+  return (
+    angleBetweenDeg(
+      moonPosition(jd - 0.5).vector,
+      moonPosition(jd + 0.5).vector,
+    ) / 24
+  );
+};

@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { GAMES } from "@/game/hub";
 import { STARS } from "@/game/sky/catalog";
@@ -29,6 +30,7 @@ import {
   maxAltitudeDeg,
   meanSolarNoonMinutes,
   moonAngularDiameterDeg,
+  moonHourlyMotionDeg,
   offLineDeg,
   parallaxToLightYears,
   noonSunAltitudeDeg,
@@ -44,6 +46,7 @@ import {
 import { BASICS_TOPICS } from "@/learn/basics/topics";
 import { LEARN_STEPS } from "@/learn/steps";
 import { constellationAt } from "@/search/utils/constellationBounds";
+import { j2000ToOfDate, julianDay } from "@/search/utils/ephemeris";
 
 // 하늘 읽기 기초 페이지가 보여 주는 숫자를 확인한다. 화면의 문장은 이 값들을 따른다.
 const byLatin = (name: string) => {
@@ -57,6 +60,15 @@ const byLatin = (name: string) => {
 };
 
 describe("목차", () => {
+  it("목차의 페이지마다 page.tsx가 있다", () => {
+    for (const t of BASICS_TOPICS) {
+      expect(
+        existsSync(`src/app/learn/basics/${t.slug}/page.tsx`),
+        t.slug,
+      ).toBe(true);
+    }
+  });
+
   it("이 개념을 쓰는 곳의 링크는 실제 있는 페이지다", () => {
     const games = new Set(GAMES.map((g) => g.href));
     const learn = new Set(LEARN_STEPS.map((s) => `/learn/${s.slug}`));
@@ -420,5 +432,29 @@ describe("겨울 별은 정말 더 밝을까 (서울, 저녁 9시, 고도 10° �
     const l = vectorToGalactic(byLatin("Alnilam").vector).lDeg;
     expect(l).toBeGreaterThan(180);
     expect(l).toBeLessThan(210);
+  });
+});
+
+describe("선원의 위치 찾기", () => {
+  it("북극성은 천구의 북극에서 2000년 0.74°, 2026년 약 0.6°", () => {
+    const p = byLatin("Polaris").vector;
+    expect(90 - vectorToRaDec(p).decDeg).toBeCloseTo(0.74, 1);
+    const now = j2000ToOfDate(p, julianDay(new Date(Date.UTC(2026, 0, 1))));
+    expect(90 - vectorToRaDec(now).decDeg).toBeCloseTo(0.6, 1);
+  });
+
+  it("달은 별 사이를 한 시간에 약 0.55° 움직인다 (2026년 평균)", () => {
+    const avg =
+      Array.from({ length: 365 }, (_, d) =>
+        moonHourlyMotionDeg(new Date(Date.UTC(2026, 0, 1 + d))),
+      ).reduce((a, b) => a + b, 0) / 365;
+    expect(avg).toBeCloseTo(0.55, 2);
+  });
+
+  it("정오의 해로 위도: 위도 = 90° − 해 높이 + 해의 적위", () => {
+    for (const dec of [-23.44, 0, 23.44]) {
+      const h = noonSunAltitudeDeg(SEOUL.latDeg, dec);
+      expect(90 - h + dec).toBeCloseTo(SEOUL.latDeg, 9);
+    }
   });
 });
