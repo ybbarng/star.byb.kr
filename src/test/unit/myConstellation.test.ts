@@ -1,5 +1,5 @@
+import type { SkyPose } from "@/game/myConstellation/visibility";
 import { describe, expect, it } from "vitest";
-import { viewFor } from "@/game/myConstellation/drawRealSky";
 import {
   mapProjector,
   MAP_H,
@@ -20,6 +20,16 @@ import {
   tapStar,
   vectorsOf,
 } from "@/game/myConstellation/shape";
+import {
+  altitudeContour,
+  bottomAltitude,
+  contourLabel,
+  domePoint,
+  edgeDirections,
+  horizonMarks,
+  projectAltAz,
+  viewFor,
+} from "@/game/myConstellation/skyGuide";
 import { upsertSaved } from "@/game/myConstellation/storage";
 import {
   bestOnNight,
@@ -41,6 +51,13 @@ import { STARS } from "@/game/sky/catalog";
 import { CITIES, SEOUL } from "@/game/tonight/places";
 import { separationDeg } from "@/game/tonight/report";
 import { localParts, localToUtc } from "@/game/tonight/time";
+import { horizonCameraTP } from "@/search/horizonSolve";
+import {
+  fromAltAzJ2000,
+  horizontalFrameJ2000,
+  julianDay,
+} from "@/search/utils/ephemeris";
+import { projectVecToPhoto } from "@/search/utils/wcs";
 
 // 나만의 별자리: 별 잇기(획·되돌리기·주소), 보관함, 실제 하늘에서의 높이·가장 잘 보이는 달, 찾는 길잡이, 별 지도 투영.
 // 기준은 널리 알려진 사실: 오리온은 서울의 겨울 저녁 남쪽 하늘, 남십자는 서울에서 뜨지 않고 시드니에선 지지 않는다.
@@ -336,13 +353,187 @@ describe("실제 하늘에서", () => {
   it("하늘 그림은 별자리 쪽을 보고, 지평선 아래면 지평선을 본다", () => {
     const t = localToUtc(2026, 1, 20, 21, 0, SEOUL.tz);
     const up = poseAt(orionHrs, t, SEOUL, 3);
-    const v = viewFor(up, orion.radiusDeg);
+    const v = viewFor(up, orion.radiusDeg, W, H);
     expect(v.azimuthDeg).toBeCloseTo(up.centerAz, 6);
-    expect(v.altitudeDeg).toBeCloseTo(up.centerAlt, 6);
     expect(v.fovDeg).toBeGreaterThanOrEqual(50);
 
-    const low = viewFor({ ...up, centerAlt: -20 }, orion.radiusDeg);
+    const low = viewFor({ ...up, centerAlt: -20 }, orion.radiusDeg, W, H);
     expect(low.altitudeDeg).toBeCloseTo(low.fovDeg * 0.32, 6);
+  });
+});
+
+// 하늘에서 보기의 길잡이: 별자리가 작아도 지평선·방위·높이가 같이 보여야 실제 하늘에서 찾을 수 있다
+const W = 1200;
+const H = 900;
+const inFrame = (p: [number, number] | null) =>
+  p !== null && p[0] > 0 && p[0] < W && p[1] > 0 && p[1] < H;
+
+// 가운데 (alt, az)에 반지름 r°쯤 퍼진 작은 별자리 (별 네 개)
+const smallPose = (alt: number, az: number, r: number): SkyPose => ({
+  t: 0,
+  centerAlt: alt,
+  centerAz: az,
+  sunAlt: -30,
+  moonGlow: 0,
+  stars: [
+    [alt + r, az],
+    [alt - r, az],
+    [alt, az + r / Math.cos((alt * Math.PI) / 180)],
+    [alt, az - r / Math.cos((alt * Math.PI) / 180)],
+  ].map(([altDeg, azDeg], i) => ({
+    hr: String(i),
+    mag: 2,
+    altDeg,
+    azDeg,
+    visible: true,
+  })),
+  above: 4,
+  visible: 4,
+});
+
+describe("하늘에서 보기 길잡이", () => {
+  it("화면 투영은 사진 변환(horizonCameraTP)과 같다", () => {
+    const t = localToUtc(2026, 1, 20, 21, 0, SEOUL.tz);
+    const date = new Date(t);
+    const frame = horizontalFrameJ2000(julianDay(date), SEOUL);
+    const view = { azimuthDeg: 160, altitudeDeg: 25, rollDeg: 0, fovDeg: 70 };
+    const TP = horizonCameraTP(date, SEOUL, view, W, H);
+
+    for (const [alt, az] of [
+      [0, 160],
+      [30, 140],
+      [55, 200],
+      [5, 110],
+    ]) {
+      const a = projectAltAz(view, alt, az, W, H)!;
+      const b = projectVecToPhoto(TP, fromAltAzJ2000(frame, alt, az))!;
+      expect(a[0]).toBeCloseTo(b[0], 3);
+      expect(a[1]).toBeCloseTo(b[1], 3);
+    }
+  });
+
+  it("작은 별자리라도 그 아래 지평선과 별자리 전체가 한 화면에 들어온다", () => {
+    for (const [alt, az] of [
+      [8, 120],
+      [25, 180],
+      [45, 250],
+      [62, 30],
+    ]) {
+      const pose = smallPose(alt, az, 2);
+      const v = viewFor(pose, 2, W, H);
+
+      // 별자리 바로 아래 지평선 점이 화면 안, 아래쪽에 있다
+      const foot = projectAltAz(v, 0, az, W, H);
+      expect(inFrame(foot)).toBe(true);
+      expect(foot![1]).toBeGreaterThan(H * 0.7);
+
+      for (const s of pose.stars) {
+        expect(inFrame(projectAltAz(v, s.altDeg, s.azDeg, W, H))).toBe(true);
+      }
+
+      expect(bottomAltitude(v)).toBe(0);
+    }
+  });
+
+  it("실제 오리온(서울 1월 저녁)도 지평선과 함께 보인다", () => {
+    const orionHrs = starsOf(ORION);
+    const orion = shapeGeometry(vectorsOf(ORION));
+    const t = localToUtc(2026, 1, 20, 21, 0, SEOUL.tz);
+    const pose = poseAt(orionHrs, t, SEOUL, 3);
+    const v = viewFor(pose, orion.radiusDeg, W, H);
+
+    expect(inFrame(projectAltAz(v, 0, pose.centerAz, W, H))).toBe(true);
+
+    for (const s of pose.stars) {
+      expect(inFrame(projectAltAz(v, s.altDeg, s.azDeg, W, H))).toBe(true);
+    }
+  });
+
+  it("머리 위 가까이의 별자리는 별자리 쪽을 보고, 지평선이 얼마나 아래인지 알려 준다", () => {
+    const v = viewFor(smallPose(86, 180, 3), 3, W, H);
+    expect(v.altitudeDeg).toBeGreaterThan(60);
+    expect(bottomAltitude(v)).toBeGreaterThan(10);
+  });
+
+  it("남쪽을 보면 '남'이 가운데, '남동'은 왼쪽, '남서'는 오른쪽, 지평선은 한 줄", () => {
+    const view = { azimuthDeg: 180, altitudeDeg: 25, rollDeg: 0, fovDeg: 90 };
+    const marks = horizonMarks(view, W, H);
+    const byLabel = (l: string) => marks.find((m) => m.label === l)!;
+
+    expect(byLabel("남").x).toBeCloseTo(W / 2, 6);
+    expect(byLabel("남동").x).toBeLessThan(W / 2);
+    expect(byLabel("남서").x).toBeGreaterThan(W / 2);
+    expect(marks.some((m) => m.label === "북")).toBe(false);
+
+    // 롤 0이면 지평선은 수평선: 모든 눈금이 같은 높이 (광축보다 25° 아래)
+    const f = H / 2 / Math.tan((45 * Math.PI) / 180);
+    const y = H / 2 + f * Math.tan((25 * Math.PI) / 180);
+
+    for (const m of marks) {
+      expect(m.y).toBeCloseTo(y, 3);
+    }
+
+    // 10°마다 눈금
+    expect(marks.filter((m) => m.label === null).length).toBeGreaterThan(5);
+  });
+
+  it("시야가 좁아도 화면 양 끝 너머의 방위를 알려 준다", () => {
+    // 남쪽을 좁게 보면 '남'만 화면에 있고, 왼쪽 너머는 남동, 오른쪽 너머는 남서
+    const narrow = { azimuthDeg: 180, altitudeDeg: 20, rollDeg: 0, fovDeg: 60 };
+    expect(
+      horizonMarks(narrow, W, H)
+        .filter((m) => m.label)
+        .map((m) => m.label),
+    ).toEqual(["남"]);
+    expect(edgeDirections(narrow, W, H)).toEqual({
+      left: "남동",
+      right: "남서",
+    });
+
+    // 북쪽(0°)을 보면 화면에 '북'이 있고, 왼쪽 너머는 북서, 오른쪽 너머는 북동 (북 0°를 지나도 이름이 맞다)
+    const n = { azimuthDeg: 0, altitudeDeg: 20, rollDeg: 0, fovDeg: 60 };
+    expect(
+      horizonMarks(n, W, H)
+        .filter((m) => m.label)
+        .map((m) => m.label),
+    ).toEqual(["북"]);
+    expect(edgeDirections(n, W, H)).toEqual({ left: "북서", right: "북동" });
+  });
+
+  it("고도 등고선은 지평선보다 위, 높을수록 더 위에 그려진다", () => {
+    const view = { azimuthDeg: 180, altitudeDeg: 30, rollDeg: 0, fovDeg: 80 };
+
+    const yAtCenter = (alt: number) => {
+      const pts = altitudeContour(view, alt, W, H).flat();
+
+      return pts.reduce((a, b) =>
+        Math.abs(b[0] - W / 2) < Math.abs(a[0] - W / 2) ? b : a,
+      )[1];
+    };
+
+    const horizonY = projectAltAz(view, 0, 180, W, H)![1];
+
+    expect(yAtCenter(10)).toBeLessThan(horizonY);
+    expect(yAtCenter(30)).toBeLessThan(yAtCenter(10));
+    expect(yAtCenter(30)).toBeCloseTo(H / 2, 0);
+    expect(yAtCenter(60)).toBeLessThan(yAtCenter(30));
+    expect(contourLabel(30)).toBe("30° · 주먹 3개");
+  });
+
+  it("둥근 하늘 지도: 가운데가 머리 위, 바라보는 쪽이 아래, 그 오른쪽이 오른쪽", () => {
+    const [cx, cy, R] = [100, 100, 50];
+    // 남쪽을 보면: 남이 아래, 서가 오른쪽, 동이 왼쪽, 북이 위
+    const s = domePoint(0, 180, 180, cx, cy, R);
+    expect(s[0]).toBeCloseTo(cx, 6);
+    expect(s[1]).toBeCloseTo(cy + R, 6);
+    expect(domePoint(0, 270, 180, cx, cy, R)[0]).toBeCloseTo(cx + R, 6);
+    expect(domePoint(0, 90, 180, cx, cy, R)[0]).toBeCloseTo(cx - R, 6);
+    expect(domePoint(0, 0, 180, cx, cy, R)[1]).toBeCloseTo(cy - R, 6);
+    // 머리 위는 가운데, 고도 45°는 반지름의 절반
+    const z = domePoint(90, 123, 180, cx, cy, R);
+    expect(z[0]).toBeCloseTo(cx, 6);
+    expect(z[1]).toBeCloseTo(cy, 6);
+    expect(domePoint(45, 180, 180, cx, cy, R)[1]).toBeCloseTo(cy + R / 2, 6);
   });
 });
 
