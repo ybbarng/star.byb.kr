@@ -114,3 +114,21 @@ export const josa = (word: string, withB: string, withoutB: string) => {
 
   return word + (code >= 0 && code < 11172 && code % 28 > 0 ? withB : withoutB);
 };
+
+// "5월 15일 밤 10시" (자정 넘은 시각은 그 날짜 그대로 "5월 16일 새벽 1시")
+export const timeLabel = (t: LocalTime) => {
+  const part =
+    t.h === 0
+      ? "밤 12시"
+      : t.h < 6
+        ? `새벽 ${t.h}시`
+        : t.h < 12
+          ? `아침 ${t.h}시`
+          : t.h < 18
+            ? `낮 ${t.h === 12 ? 12 : t.h - 12}시`
+            : t.h < 21
+              ? `저녁 ${t.h - 12}시`
+              : `밤 ${t.h - 12}시`;
+
+  return `${t.m}월 ${t.d}일 ${part}${t.min ? ` ${t.min}분` : ""}`;
+};
