@@ -48,8 +48,8 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha,scope=star
-          cache-to: type=gha,scope=star,mode=max
+          # 빌드 캐시는 쓰지 않는다: 캐시로 아끼는 건 npm ci(새로 22초)뿐인데, 그 608MB 층을 GHA 캐시에서
+          # 받는 데 5분 넘게 걸렸다 (2026-10-23 실행 39914191665). 나머지 단계는 코드가 바뀌면 어차피 다시 돈다
 
   # 서버에 배포한다. 서버의 배포 키는 forced-command 로 servers 저장소의 apps/star/deploy.sh 만 실행한다.
   # 이미지를 받을 토큰은 이 실행의 GITHUB_TOKEN 을 표준입력으로 넘긴다(서버에 남지 않고, 실행이 끝나면 만료된다).
