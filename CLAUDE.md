@@ -41,15 +41,7 @@ src/
 │   ├── plate-solver/          # Plate Solver 메인 (/plate-solver)
 │   ├── games/                 # 별 놀이터 (/games, 게임 여섯 개)
 │   ├── learn/                 # 찾는 원리 (/learn, 단계별 설명·데모 — 발표 자료로도 쓴다, 부품은 src/learn)
-│   ├── database/              # 별 DB 3D 시각화 (/database)
-│   ├── demo/                  # 발표용 데모 페이지들
-│   │   ├── upload-photo/      # 사진 선택 데모
-│   │   ├── detect-stars/      # 별 검출 데모
-│   │   ├── catalog/           # 별자리 카탈로그 시각화
-│   │   └── healpix/           # HEALPix 시각화
-│   └── hash/                  # 해시 알고리즘 시각화
-│       ├── sample/            # 샘플 해시 시각화
-│       └── feasibility/       # 해시 타당성 검증
+│   └── embed/[demo]/          # 찾는 원리 데모를 발표 화면에 하나씩 (/embed/<이름>)
 ├── game/                      # 별 놀이터(게임): sky(공용 밤하늘 그리기·장면·카탈로그), 게임별 폴더 — docs/game-plans.md
 ├── plate-solver/              # Plate Solver UI 컴포넌트 & 상태
 │   ├── store/                 # Zustand store (context, steps)
@@ -79,7 +71,7 @@ data/                          # 원본 카탈로그 및 입력 데이터
 build/                         # 빌드된 데이터베이스 (gitignore 대상)
 public/
 ├── samples/                   # 샘플 사진들
-└── presentation/              # Reveal.js 발표 슬라이드
+└── presentation/              # Reveal.js 발표 슬라이드 (v3.html. V2 발표는 2026-10-23에 지웠다, git 기록에 있다)
 ```
 
 ## Plate Solving 파이프라인
@@ -88,7 +80,7 @@ public/
 
 1. **reduceDatabase**: BSC5 카탈로그에서 설정 등급 이하의 밝은 별만 필터링 (현재 V≤5, 1,625개)
 2. **toVector**: RA/Dec 천문학 좌표 → 3D 단위 벡터. 앱이 코드에 싣는 `vectors-database.json`은 쓰는 칸(HR·N·V·K·x·y·z, 좌표 소수 8자리)만 남겨 138KB(gzip 41KB)
-3. **createHashFromDatabase**: quad 해시 JSON(발표용 해시 시각화 데모만 읽는다)
+3. **createHashFromDatabase**: quad 해시 JSON(비교용 검색 스크립트 src/scripts/search만 읽는다)
 4. **buildConstellations**: 별자리 연결선 데이터를 벡터 형식으로 변환
 5. **buildParallax**: 빛의 타임캡슐(게임)용 별 거리
 

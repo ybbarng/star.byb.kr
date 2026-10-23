@@ -1,4 +1,4 @@
-import { convertTo3DCoordinates } from "@/app/database/utils/coordinates";
+import { convertTo3DCoordinates } from "@/scripts/database/coordinates";
 import * as file from "@/scripts/file";
 
 // 별자리선과 별자리 경계를 앱용 파일로 만든다 (원본: data/database/d3-celestial, README 참고).
