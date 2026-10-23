@@ -231,8 +231,13 @@ export default function RelationQuestionView({
                 done !== null && i === q.answer && "btn-success",
                 picked === i && i !== q.answer && "btn-error",
               )}
-              disabled={done !== null}
+              // disabled로 막으면 회색이 정답·오답 색을 덮어서, 누르기만 막는다
+              aria-disabled={done !== null}
               onClick={() => {
+                if (done !== null) {
+                  return;
+                }
+
                 setPicked(i);
                 end(i === q.answer);
               }}

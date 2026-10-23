@@ -453,8 +453,9 @@ function QuestionView({
                 answered && c === q.id && "btn-success",
                 answered && answered.picked === c && c !== q.id && "btn-error",
               )}
-              disabled={!!answered}
-              onClick={() => onAnswer(c === q.id, c)}
+              // disabled로 막으면 회색이 정답·오답 색을 덮어서, 누르기만 막는다
+              aria-disabled={!!answered}
+              onClick={() => !answered && onAnswer(c === q.id, c)}
             >
               {nameOf(c)}
             </button>
