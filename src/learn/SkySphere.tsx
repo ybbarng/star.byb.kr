@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { CONSTELLATIONS, STARS } from "@/game/sky/catalog";
 import { cn } from "@/utils/cn";
 
-// 별 지도 데모: 별 지도(1,625개)를 천구 안에서 올려다보며 끌어 돌려 보는 하늘.
+// 별 지도 데모: 별 지도(1,624개)를 천구 안에서 올려다보며 끌어 돌려 보는 하늘.
 // 등급 한계를 바꾸면 별 수가 어떻게 변하는지, 별자리선, HEALPix 192칸을 켜 볼 수 있다.
 // 별을 누르면 적경·적위와 단위 벡터를, 칸 모드에서 빈 곳을 누르면 그 칸(중심에서 10°)의 별 수와
 // 별 넷 조합 수를 보여 준다 (search/quadDatabase.ts와 같은 규칙).
@@ -605,7 +605,7 @@ export default function SkySphere() {
           <div className="opacity-80">
             칸마다 중심에서 10° 원 안의 별로 조합을 만들어요. 원이 이웃 칸과
             겹쳐서 같은 조합이 여러 칸에서 나오면 하나만 남겨요 (84,962 →
-            82,703개). 칸을 누르면 그 칸의 조합 수를 보여 줘요.
+            82,605개). 칸을 누르면 그 칸의 조합 수를 보여 줘요.
           </div>
         ) : (
           <div className="opacity-60">

@@ -421,7 +421,7 @@ export default function QuadBudgetDemo() {
     <div className="flex flex-col gap-3">
       {!quads ? (
         <div className="bg-base-300/60 rounded-box p-4 text-sm opacity-80">
-          별 1,625개로 칸마다 네 별 조합을 모두 만드는 중이에요… (이 기기에서
+          별 1,624개로 칸마다 네 별 조합을 모두 만드는 중이에요… (이 기기에서
           1~2초)
         </div>
       ) : (

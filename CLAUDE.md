@@ -78,7 +78,7 @@ public/
 
 ### 데이터 준비 (오프라인, build_database.sh)
 
-1. **reduceDatabase**: BSC5 카탈로그에서 설정 등급 이하의 밝은 별만 필터링 (현재 V≤5, 1,625개)
+1. **reduceDatabase**: BSC5 카탈로그에서 설정 등급 이하의 밝은 별만 필터링 (현재 V≤5, 1,624개. 폭발 때 밝기로 실린 재발 신성 북쪽왕관자리 T는 평소 밝기로 고쳐 뺀다)
 2. **toVector**: RA/Dec 천문학 좌표 → 3D 단위 벡터. 앱이 코드에 싣는 `vectors-database.json`은 쓰는 칸(HR·N·V·K·x·y·z, 좌표 소수 8자리)만 남겨 138KB(gzip 41KB)
 3. **createHashFromDatabase**: quad 해시 JSON(비교용 검색 스크립트 src/scripts/search만 읽는다)
 4. **buildConstellations**: 별자리 연결선 데이터를 벡터 형식으로 변환
@@ -86,7 +86,7 @@ public/
 
 quad 해시 DB는 내려받지 않고 풀이 Worker가 카탈로그에서 만든다 (`search/quadDatabase.ts`, node 약 0.12~0.2초):
 HEALPix로 천구를 192개 셀(nside=4, 셀 중심에서 10°)로 나눔 → 셀마다 4개 별 조합 → 별쌍이 모두 10° 이내인 compact quad만
-→ 이웃 셀에서 겹친 것 제거(82,703개) → 접선 평면 투영 → 정규화된 4D 해시. 예전 이진 파일(gzip 1.46MB)과 같은 quad·해시다
+→ 이웃 셀에서 겹친 것 제거(82,605개) → 접선 평면 투영 → 정규화된 4D 해시. 예전 이진 파일(gzip 1.46MB)과 같은 quad·해시다
 
 ### 런타임 Plate Solving (브라우저)
 

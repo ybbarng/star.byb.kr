@@ -30,7 +30,7 @@ npm run dev
 `./build_database.sh`가 아래를 차례로 실행해 `build/`에 파일을 만듭니다 (`build/`는 저장소에 올리지 않습니다).
 
 ```sh
-# 예일 밝은 별 목록(BSC5)에서 5등급까지의 밝은 별만 남긴다 (1,625개)
+# 예일 밝은 별 목록(BSC5)에서 5등급까지의 밝은 별만 남긴다 (1,624개)
 npx tsx src/scripts/database/reduceDatabase.ts
 # 적경·적위를 3차원 단위 벡터로 바꾼다
 npx tsx src/scripts/database/toVector.ts

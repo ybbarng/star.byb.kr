@@ -5,14 +5,15 @@ import {
   loadHashes,
 } from "@/test/synthetic/loadCatalog";
 
-// quad 해시 DB를 카탈로그에서 만든다 (브라우저 Worker와 같은 함수). 받던 이진 파일과 같은 82,703개였다.
+// quad 해시 DB를 카탈로그에서 만든다 (브라우저 Worker와 같은 함수). 받던 이진 파일과 같은 82,703개였고,
+// 북쪽왕관자리 T(폭발 때 밝기로 실린 별)를 별 지도에서 뺀 뒤 82,605개
 describe.skipIf(!catalogExists())("quad 해시 DB 만들기", () => {
   const quads = loadHashes();
   const vec = new Map(loadCatalog().map((s) => [s.hr, s.vector]));
   const cos10 = Math.cos((10 * Math.PI) / 180);
 
-  it("이웃 칸에서 겹친 것을 뺀 82,703개", () => {
-    expect(quads.length).toBe(82703);
+  it("이웃 칸에서 겹친 것을 뺀 82,605개", () => {
+    expect(quads.length).toBe(82605);
     expect(new Set(quads.map((q) => [...q.stars].sort().join())).size).toBe(
       quads.length,
     );

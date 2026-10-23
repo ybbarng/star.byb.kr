@@ -6,7 +6,7 @@ import { projectVecToPhoto } from "@/search/utils/wcs";
 import constellationData from "@build/database/vectors-constellations.json";
 import catalogData from "@build/database/vectors-database.json";
 
-// 게임들이 같이 쓰는 별·별자리 데이터 (5등급까지의 별 1,625개, 별자리선 88개)
+// 게임들이 같이 쓰는 별·별자리 데이터 (5등급까지의 별 1,624개, 별자리선 88개)
 
 interface VectorStar {
   HR: string;

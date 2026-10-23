@@ -13,7 +13,7 @@ export const LEARN_STEPS: LearnStep[] = [
     icon: "🗺",
     title: "별 지도 준비",
     summary:
-      "밝은 별 1,625개의 방향과, 별 셋·넷이 이루는 모양의 색인을 만들어 둬요.",
+      "밝은 별 1,624개의 방향과, 별 셋·넷이 이루는 모양의 색인을 만들어 둬요.",
   },
   {
     slug: "find-stars",

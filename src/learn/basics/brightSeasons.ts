@@ -14,13 +14,11 @@ import {
 
 // 「겨울 별은 정말 더 밝을까?」에 보여 줄 숫자. 모두 별 지도(BSC5, 5등급까지)로 센다.
 
-// BSC5에 폭발했을 때의 밝기(2.0등급)로 실린 재발 신성 북쪽왕관자리 T(HR 5958). 평소에는 10등급 남짓이라
-// 맨눈에 보이지 않으니 센 수에서 뺀다
-export const EXCLUDED_HR = ["5958"];
-
-export const COUNT_STARS: (CountStar & { name?: string })[] = STARS.filter(
-  (s) => !EXCLUDED_HR.includes(s.hr),
-).map((s) => ({ vector: s.vector, mag: s.mag, hr: s.hr, name: s.name }));
+// 폭발 때 밝기(2.0등급)로 실린 재발 신성 북쪽왕관자리 T(HR 5958)는 별 지도를 만들 때 이미 평소 밝기로 고쳐 뺐다
+// (scripts/database/reduceDatabase.ts)
+export const COUNT_STARS: (CountStar & { name?: string })[] = STARS.map(
+  (s) => ({ vector: s.vector, mag: s.mag, hr: s.hr, name: s.name }),
+);
 
 export const MAG_LIMITS = [1.5, 2.0];
 export const EVENING_HOUR = 21;
@@ -87,19 +85,17 @@ export const HOT_MAG_LIMIT = 3;
 export const HOT_HISTOGRAM = galacticLongitudeHistogram(
   mergeCloseStars(
     STARS.filter(
-      (s) =>
-        !EXCLUDED_HR.includes(s.hr) &&
-        s.mag <= HOT_MAG_LIMIT &&
-        s.kelvin >= HOT_MIN_KELVIN,
+      (s) => s.mag <= HOT_MAG_LIMIT && s.kelvin >= HOT_MIN_KELVIN,
     ).map((s) => ({ vector: s.vector, mag: s.mag })),
   ),
 );
 
 export const ALL_HISTOGRAM = galacticLongitudeHistogram(
   mergeCloseStars(
-    STARS.filter(
-      (s) => !EXCLUDED_HR.includes(s.hr) && s.mag <= HOT_MAG_LIMIT,
-    ).map((s) => ({ vector: s.vector, mag: s.mag })),
+    STARS.filter((s) => s.mag <= HOT_MAG_LIMIT).map((s) => ({
+      vector: s.vector,
+      mag: s.mag,
+    })),
   ),
 );
 

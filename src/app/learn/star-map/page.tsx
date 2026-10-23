@@ -19,7 +19,7 @@ export default function Page() {
         <p>
           출발점은 <b>예일 밝은 별 목록(BSC5)</b>이에요. 맨눈으로 보이는 별
           9,096개의 위치·밝기·색(표면 온도)이 들어 있어요. 이 중{" "}
-          <b>5등급까지의 별 1,625개</b>만 써요.
+          <b>5등급까지의 별 1,624개</b>만 써요.
         </p>
         <p>
           등급은 숫자가 작을수록 밝아요. 1등급 차이가 밝기 약 2.5배예요. 도시
@@ -31,7 +31,7 @@ export default function Page() {
           items={[
             { label: "4등급까지", value: 518 },
             { label: "4.5등급까지", value: 904 },
-            { label: "5등급까지 (사용)", value: 1625, highlight: true },
+            { label: "5등급까지 (사용)", value: 1624, highlight: true },
             { label: "5.5등급까지", value: 2887 },
             { label: "6등급까지", value: 5080 },
             { label: "BSC5 전체", value: 9096 },
@@ -152,7 +152,7 @@ export default function Page() {
               { label: "5등급까지 (칸 안 모든 조합)", value: 553137 },
               {
                 label: "5등급까지 + 모든 별쌍 10° 안 (사용)",
-                value: 82703,
+                value: 82605,
                 highlight: true,
               },
               { label: "5.5등급까지", value: 4966646 },
@@ -179,16 +179,16 @@ export default function Page() {
           rows={[
             [
               "삼각형",
-              "5등급까지 1,625개",
+              "5등급까지 1,624개",
               "한 별에서 18° 안의 두 별",
               "약 113만",
             ],
             ["밝은 별 삼각형", "3.5등급까지 287개", "30° 안", "약 4.9만"],
             [
               "사각형",
-              "5등급까지 1,625개",
+              "5등급까지 1,624개",
               "HEALPix 칸, 모든 쌍 10° 안",
-              "82,703",
+              "82,605",
             ],
           ]}
         />

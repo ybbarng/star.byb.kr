@@ -180,7 +180,7 @@ export default function MyConstellationGame() {
     >
       <p className="bg-base-200/60 rounded-box p-4 text-left text-sm leading-relaxed opacity-85">
         ✦ 지어낸 별자리가 아니에요. 지도의 별은 모두 실제로 하늘에 있는
-        별(5등급까지 1,625개)이고, 내가 고른 별들은 정말 그 자리에서 빛나고
+        별(5등급까지 1,624개)이고, 내가 고른 별들은 정말 그 자리에서 빛나고
         있어요. 이름만 내가 붙인, 진짜 하늘에서 찾아볼 수 있는 나만의
         별자리예요.
         {shared && (

@@ -52,7 +52,7 @@ export default function Page() {
       >
         <h2 className="text-2xl font-black">숫자로 보면</h2>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-          <Stat value="1,625개" label="별 지도에 담은 별 (5등급까지)" />
+          <Stat value="1,624개" label="별 지도에 담은 별 (5등급까지)" />
           <Stat
             value="약 0.7MB"
             label="처음 받는 양 (압축). 별 모양 색인은 받지 않고 브라우저가 만들어요"
