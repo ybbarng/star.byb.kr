@@ -137,6 +137,17 @@ export default function Page() {
               별자리선·경계(IAU, d3-celestial, BSD)
             </a>
           </span>
+          <span>
+            아이디어:{" "}
+            <a
+              className="link link-hover"
+              href="https://astrometry.net"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Astrometry.net
+            </a>
+          </span>
         </footer>
       </div>
     </SiteShell>
