@@ -29,8 +29,43 @@ export default function ShapeFigure({
   title?: string;
 }) {
   const S = 100; // −1~1 → 0~200
-  const at = (v: number) => (v + 1.15) * S;
+  // 소수 둘째 자리로 자른다: 서버와 브라우저의 부동소수 끝자리가 달라 그림 좌표가 어긋났다고 경고가 났다
+  const at = (v: number) => Math.round((v + 1.15) * S * 100) / 100;
   const silhouette = look === "silhouette";
+  // 별 이름은 밝은 별부터, 이미 놓인 이름과 겹치면 위·아래·왼쪽 자리를 찾고 다 겹치면 뺀다 ("두베메라크" 방지)
+  const nameSpots = new Map<string, [number, number]>();
+
+  if (names && !silhouette) {
+    const boxes: [number, number, number, number][] = [];
+
+    for (const s of [...figure.stars]
+      .filter((s) => s.name && s.mag < 2.6)
+      .sort((a, b) => a.mag - b.mag)) {
+      const w = s.name!.length * 11 + 2;
+      const x = at(s.x);
+      const y = at(s.y);
+      const spot = (
+        [
+          [x + 5, y - 5],
+          [x + 5, y + 14],
+          [x - 5 - w, y - 5],
+          [x - 5 - w, y + 14],
+        ] as [number, number][]
+      ).find(
+        ([tx, ty]) =>
+          !boxes.some(
+            ([bx, by, bw, bh]) =>
+              tx < bx + bw && bx < tx + w && ty - 11 < by + bh && by < ty,
+          ),
+      );
+
+      if (spot) {
+        boxes.push([spot[0], spot[1] - 11, w, 13]);
+        nameSpots.set(s.key, spot);
+      }
+    }
+  }
+
   const lineOpacity =
     look === "lines" ? 0.85 : look === "faint" ? 0.22 : silhouette ? 0.35 : 0;
 
@@ -98,10 +133,10 @@ export default function ShapeFigure({
               fill="rgba(255,240,200,0.18)"
             />
           )}
-          {names && !silhouette && s.name && s.mag < 2.6 && (
+          {nameSpots.get(s.key) && (
             <text
-              x={at(s.x) + 5}
-              y={at(s.y) - 5}
+              x={nameSpots.get(s.key)![0]}
+              y={nameSpots.get(s.key)![1]}
               fontSize="11"
               fill="rgba(255,255,255,0.8)"
             >

@@ -180,14 +180,34 @@ export const drawSchoolSky = (
   ctx.lineJoin = "round";
   ctx.font = "600 13px system-ui, sans-serif";
 
+  // 이름표끼리 겹치면("두베메라크") 위·아래·왼쪽 자리를 차례로 찾아 보고, 다 겹치면 그 이름표는 뺀다
+  const placed: [number, number, number, number][] = [];
+
   const label = (p: Point2D, text: string, color: string, dy = -10) => {
     if (quiet) return;
 
+    const w = ctx.measureText(text).width + 6;
+    const spots: [number, number][] = [
+      [p[0] + 6, p[1] + dy - 11],
+      [p[0] + 6, p[1] + 8],
+      [p[0] - w - 6, p[1] + dy - 11],
+      [p[0] - w - 6, p[1] + 8],
+    ];
+    const free = spots.find(
+      ([x, y]) =>
+        !placed.some(
+          ([bx, by, bw, bh]) =>
+            x < bx + bw && bx < x + w && y < by + bh && by < y + 15,
+        ),
+    );
+
+    if (!free) return;
+
+    placed.push([free[0], free[1], w, 15]);
     ctx.fillStyle = "rgba(0,0,0,0.55)";
-    const w = ctx.measureText(text).width;
-    ctx.fillRect(p[0] + 6, p[1] + dy - 11, w + 6, 15);
+    ctx.fillRect(free[0], free[1], w, 15);
     ctx.fillStyle = color;
-    ctx.fillText(text, p[0] + 9, p[1] + dy);
+    ctx.fillText(text, free[0] + 3, free[1] + 11);
   };
 
   const polyline = (
