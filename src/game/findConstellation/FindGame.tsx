@@ -1,11 +1,17 @@
 "use client";
 
 import type { FindScene } from "@/game/findConstellation/scene";
+import type { FindTarget } from "@/game/findConstellation/targets";
 import type { SkyItem } from "@/game/sky/drawSky";
 import type { Difficulty } from "@/game/sky/scene";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { isHit, makeFindScene } from "@/game/findConstellation/scene";
-import { FIND_TARGETS } from "@/game/findConstellation/targets";
+import {
+  orderTargets,
+  readRecent,
+  rememberTarget,
+} from "@/game/findConstellation/recent";
+import { isHit, makeFindSceneRetry } from "@/game/findConstellation/scene";
+import { findTargets } from "@/game/findConstellation/targets";
 import {
   ChoiceCards,
   CountUp,
@@ -42,9 +48,21 @@ const COMBO_BONUS = 0.25;
 const BANNER_MS = 1200;
 
 const DIFFICULTIES: { value: Difficulty; title: string; note: string }[] = [
-  { value: "easy", title: "쉬움", note: "모양 카드 그대로" },
-  { value: "normal", title: "보통", note: "모양 카드가 돌아가 있어요" },
-  { value: "hard", title: "어려움", note: "이름만 보고 찾아요" },
+  {
+    value: "easy",
+    title: "쉬움",
+    note: `유명한 별자리 ${findTargets("easy").length}개 · 모양 카드 그대로`,
+  },
+  {
+    value: "normal",
+    title: "보통",
+    note: `맨눈으로 찾을 만한 ${findTargets("normal").length}개 · 모양 카드가 돌아가 있어요`,
+  },
+  {
+    value: "hard",
+    title: "어려움",
+    note: `별자리 ${findTargets("hard").length}개 전부 · 이름만 보고 찾아요`,
+  },
 ];
 
 type Phase = "intro" | "play" | "over";
@@ -70,9 +88,26 @@ export default function FindGame() {
   const [phase, setPhase] = useState<Phase>("intro");
   const [difficulty, setDifficulty] = useState<Difficulty>("easy");
   const [gameSeed, setGameSeed] = useState(0);
+  const [order, setOrder] = useState<FindTarget[]>([]);
   const [results, setResults] = useState<RoundResult[]>([]);
   const [newBest, setNewBest] = useState(false);
   const total = results.reduce((a, r) => a + r.points, 0);
+
+  // 새 판: 난이도의 별자리 중 최근에 안 낸 것부터 무작위로
+  // (시작 화면을 거친 뒤라 서버·브라우저 화면이 어긋나지 않는다)
+  const start = () => {
+    const seed = Math.floor(Math.random() * 1e9);
+    setGameSeed(seed);
+    setOrder(
+      orderTargets(
+        findTargets(difficulty),
+        readRecent(difficulty),
+        createRng(seed),
+      ),
+    );
+    setResults([]);
+    setPhase("play");
+  };
 
   if (phase === "intro") {
     return (
@@ -84,12 +119,7 @@ export default function FindGame() {
           "빨리 찾을수록 점수가 높아요. 한 번에 연달아 찾으면 콤보 보너스!",
           `한 문제에 틀릴 수 있는 기회는 ${MAX_MISSES}번이에요.`,
         ]}
-        onStart={() => {
-          // 시작할 때마다 새 문제 (시작 화면을 거친 뒤라 서버·브라우저 화면이 어긋나지 않는다)
-          setGameSeed(Math.floor(Math.random() * 1e9));
-          setResults([]);
-          setPhase("play");
-        }}
+        onStart={start}
       >
         <ChoiceCards
           options={DIFFICULTIES}
@@ -113,14 +143,7 @@ export default function FindGame() {
         newBest={newBest}
         actions={
           <>
-            <button
-              className="btn btn-primary"
-              onClick={() => {
-                setGameSeed(Math.floor(Math.random() * 1e9));
-                setResults([]);
-                setPhase("play");
-              }}
-            >
+            <button className="btn btn-primary" onClick={start}>
               다시 하기
             </button>
             <button className="btn" onClick={() => setPhase("intro")}>
@@ -140,6 +163,7 @@ export default function FindGame() {
     <FindPlay
       difficulty={difficulty}
       gameSeed={gameSeed}
+      order={order}
       results={results}
       onResult={(r) => setResults((rs) => [...rs, r])}
       onFinish={(finalTotal) => {
@@ -153,12 +177,14 @@ export default function FindGame() {
 function FindPlay({
   difficulty,
   gameSeed,
+  order,
   results,
   onResult,
   onFinish,
 }: {
   difficulty: Difficulty;
   gameSeed: number;
+  order: FindTarget[];
   results: RoundResult[];
   onResult: (r: RoundResult) => void;
   onFinish: (total: number) => void;
@@ -178,20 +204,16 @@ function FindPlay({
   const fx = useFx();
   const shake = useShake();
 
-  // 이번 판에 낼 별자리 순서
-  const order = useMemo(() => {
-    const rng = createRng(gameSeed);
-
-    return [...FIND_TARGETS]
-      .map((t) => ({ t, k: rng() }))
-      .sort((a, b) => a.k - b.k)
-      .map(({ t }) => t);
-  }, [gameSeed]);
   const target = order[round % order.length];
   const scene = useMemo(
-    () => makeFindScene(target.label, gameSeed + round, difficulty),
+    () => makeFindSceneRetry(target.label, gameSeed + round, difficulty),
     [target, gameSeed, round, difficulty],
   );
+
+  // 낸 별자리를 기억해 다음 판에는 덜 낸다 (난이도마다 따로)
+  useEffect(() => {
+    rememberTarget(difficulty, target.label, findTargets(difficulty).length);
+  }, [difficulty, target]);
   const lines = useMemo(
     () => (scene ? projectLines(scene.TP, scene.target) : []),
     [scene],

@@ -169,3 +169,20 @@ export const isHit = (scene: FindScene, x: number, y: number): boolean => {
     y <= Math.max(...ys) + pad
   );
 };
+
+// 아주 큰 별자리(바다뱀자리 등)는 시드에 따라 사진 안에 다 들어오는 하늘을 못 만들 때가 있다. 시드를 바꿔 몇 번 더 해 본다.
+export const makeFindSceneRetry = (
+  label: string,
+  seed: number,
+  difficulty: Difficulty,
+): FindScene | null => {
+  for (let i = 0; i < 6; i++) {
+    const scene = makeFindScene(label, seed + i * 104729, difficulty);
+
+    if (scene) {
+      return scene;
+    }
+  }
+
+  return null;
+};
