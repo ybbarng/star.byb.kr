@@ -216,8 +216,13 @@ export const drawTrailPhoto = (
       shown.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
       ctx.stroke();
 
-      // 이름표: 사진 왼쪽 가장자리 가까이
-      const label = shown.find(([x, y]) => x >= 12 && y > 16 && y < H - 6);
+      // 이름표: 사진 가운데 세로줄(바라보는 방위)에 단다. 넓은 화각에선 눈금선이 가장자리로 갈수록
+      // 처져서, 가장자리에 달면 가운데 높이를 10° 넘게 낮게 읽게 된다. 가운데가 화면 밖이면 왼쪽 가장자리
+      const center = project(alt, p.view.azDeg);
+      const label =
+        center && center[1] > 16 && center[1] < H - 6
+          ? center
+          : shown.find(([x, y]) => x >= 12 && y > 16 && y < H - 6);
 
       if (label) {
         ctx.fillText(`${alt}°`, label[0] + 4, label[1] - 5);
