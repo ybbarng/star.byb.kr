@@ -445,6 +445,19 @@ function CapsulePlay() {
           </div>
         </div>
       </div>
+      <p className="px-2 text-xs opacity-55">
+        별까지 거리는{" "}
+        <a
+          className="link"
+          href="https://cdsarc.cds.unistra.fr/viz-bin/cat/V/50"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          예일 밝은 별 목록(BSC5, 1991)
+        </a>
+        에 실린 연주 시차로 셌어요. 최신 위성 측정과 조금 다를 수 있어요
+        (직녀성: 목록 26.5광년, 위성 측정 25광년).
+      </p>
     </div>
   );
 }
