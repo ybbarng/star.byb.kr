@@ -2,6 +2,7 @@
 
 import type { ComputerRun, TeamRun } from "@/game/humanVsComputer/computerRun";
 import type { StageView } from "@/game/humanVsComputer/drawStage";
+import type { ReversalClues } from "@/game/humanVsComputer/rounds";
 import type { Point2D } from "@/scripts/hash/types";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -11,11 +12,10 @@ import { formatSeconds, overlapOf } from "@/game/humanVsComputer/rounds";
 import { REVEAL_COLOR } from "@/game/humanVsComputer/SolveSteps";
 import { constellationParts, projectLines } from "@/game/sky/catalog";
 import { learnHref } from "@/learn/steps";
-import { getSampleShot } from "@/plate-solver/shotTime";
 import { ACCEPT } from "@/search/solvers/candidates";
 
-// 반전 판: 별이 열 개 남짓인 사이판 사진. 컴퓨터는 별만으로는 "모르겠다"고 한다.
-// 사람이 단서 두 가지 — 언제·어디서 찍었는지(샘플에 남은 기록), 수평선(컴퓨터의 제안을 확인하거나 직접 두 점) — 를 주면
+// 반전 판: 별이 열 개 남짓인 바닷가 사진(직접 만든 장면). 컴퓨터는 별만으로는 "모르겠다"고 한다.
+// 사람이 단서 두 가지 — 언제·어디서 찍었는지(판에 적어 둔 기록), 수평선(컴퓨터의 제안을 확인하거나 직접 두 점) — 를 주면
 // 시각·장소 풀이(horizonSolve)로 함께 푼다.
 
 const PHOTO_STARS = 30;
@@ -34,6 +34,7 @@ export default function TeamUp({
   image,
   run,
   answer,
+  clues,
   onView,
   onReveal,
   onPicker,
@@ -42,12 +43,13 @@ export default function TeamUp({
   image: HTMLImageElement;
   run: ComputerRun;
   answer: string;
+  clues: ReversalClues;
   onView: (v: StageView) => void;
   onReveal: (r: { lines: Point2D[][]; color: string } | null) => void;
   onPicker: (fn: ((p: Point2D) => void) | null) => void;
   onSolved: () => void;
 }) {
-  const shot = getSampleShot(image.src);
+  const { shot } = clues;
   const [timeClue, setTimeClue] = useState(false);
   const [horizonStep, setHorizonStep] = useState<
     "none" | "suggest" | "pick" | "done"
@@ -72,8 +74,7 @@ export default function TeamUp({
         horizon: line,
       });
       onReveal({
-        // 남십자 옆의 센타우루스(밝은 두 별)도 같이
-        lines: [answer, "센타우루스자리"].flatMap((label) =>
+        lines: [answer, ...clues.revealWith].flatMap((label) =>
           projectLines(TP, constellationParts(label)),
         ),
         color: REVEAL_COLOR,
@@ -90,7 +91,7 @@ export default function TeamUp({
     );
     // stars는 run에서 나온다
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [team, horizonStep, line, run, image, answer, onView, onReveal]);
+  }, [team, horizonStep, line, run, image, answer, clues, onView, onReveal]);
 
   // 사람이 수평선 두 점을 찍는 중
   useEffect(() => {
@@ -125,7 +126,7 @@ export default function TeamUp({
 
     setSolving(true);
     sfx.whoosh();
-    runWithClues(image, run.stars, [line[0], line[1]])
+    runWithClues(image, run.stars, [line[0], line[1]], clues)
       .then((r) => {
         setTeam(r);
 
@@ -149,7 +150,7 @@ export default function TeamUp({
   }
 
   const localTime = (d: Date) => {
-    const offsetHours = shot ? parseInt(shot.offset, 10) : 0;
+    const offsetHours = parseInt(shot.offset, 10);
 
     return new Date(d.getTime() + offsetHours * 3600000)
       .toISOString()
@@ -183,10 +184,10 @@ export default function TeamUp({
 
           <div className="rounded-box bg-base-300/60 flex flex-col gap-2 p-3">
             <div className="font-bold">단서 1 · 언제, 어디서</div>
-            {timeClue && shot ? (
+            {timeClue ? (
               <div className="fx-rise">
-                {koreanDateTime(shot.local)} 무렵, 사이판(북위{" "}
-                {shot.observer?.latDeg.toFixed(0)}°)
+                {koreanDateTime(shot.local)} 무렵, {clues.place}(북위{" "}
+                {shot.observer.latDeg.toFixed(0)}°)
                 <div className="text-xs opacity-60">
                   {shot.note} — 실제 촬영은 조금 앞이라 앞뒤 몇 시간을 같이
                   찾아요.
@@ -306,6 +307,10 @@ export default function TeamUp({
           </p>
           <p className="mt-1 opacity-80">
             사람은 단서를, 컴퓨터는 계산을 — 둘이 함께일 때 가장 강해요.
+          </p>
+          <p className="mt-1 text-xs opacity-60">
+            이 사진은 직접 만든 장면이에요. 그 날짜·시각·장소의 실제 하늘을
+            계산해 휴대폰 사진처럼 그렸어요.
           </p>
           <Link
             href={learnHref("hard-photos")}

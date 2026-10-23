@@ -1,5 +1,7 @@
+import type { ShotTime } from "@/plate-solver/shotTime";
 import type { Point2D, Point3D } from "@/scripts/hash/types";
 import type { Mat3 } from "@/search/utils/similarity";
+import { SEA_SCENE } from "@/game/humanVsComputer/seaScene";
 import {
   constellationCenter,
   constellationParts,
@@ -10,10 +12,11 @@ import { createRng } from "@/utils/rng";
 
 // 사람 계산원 vs 컴퓨터 (docs/game-plans.md 3절): 저장소 샘플 사진 한 장마다 "사진에 찍힌 별자리"를 보기 넷 중에서 고른다.
 // 같은 순간 컴퓨터는 앱과 같은 풀이(별 찾기 Worker → 풀이 Worker)를 돌린다.
-// 마지막 판은 별이 열 개 남짓인 사이판 사진 — 컴퓨터가 별만으로는 확신하지 못하고, 사람이 단서를 주면 풀린다.
+// 마지막 판은 별이 열 개 남짓인 바닷가 사진(직접 만든 장면, seaScene.ts) — 컴퓨터가 별만으로는 확신하지 못하고,
+// 사람이 단서를 주면 풀린다.
 
 export interface VersusRound {
-  file: string; // public/samples 안의 파일 이름 (src/services/samples.ts와 같다)
+  file: string; // public/samples 안의 파일 이름 (반전 판 말고는 src/services/samples.ts와 같다)
   title: string;
   answer: string; // 별자리 데이터의 이름 (vectors-constellations.json label)
   // 사진 안에 별이 두 개 넘게 들어오는 유명한 별자리 — 헷갈리지 않게 오답 보기에서 뺀다.
@@ -21,6 +24,13 @@ export interface VersusRound {
   inPhoto: string[];
   hint: string; // 답을 낸 뒤 보여 주는 한 줄
   reversal?: boolean; // 반전 판 (컴퓨터가 별만으로는 못 푼다)
+  clues?: ReversalClues; // 반전 판에서 사람이 주는 단서
+}
+
+export interface ReversalClues {
+  shot: ShotTime & { observer: NonNullable<ShotTime["observer"]> }; // 알려 주는 날짜·시각·장소
+  place: string;
+  revealWith: string[]; // 함께 풀면 정답과 같이 그릴 별자리
 }
 
 // 첫 두 판: 별자리 모양이 또렷한 사진
@@ -114,14 +124,28 @@ export const HARD_ROUNDS: VersusRound[] = [
   },
 ];
 
-// 반전 판: 별이 열 개 남짓, 사람의 단서(촬영 시각·장소, 수평선)가 있어야 풀린다
+// 반전 판: 별이 열 개 남짓, 사람의 단서(촬영 시각·장소, 수평선)가 있어야 풀린다.
+// 예전에는 사이판 바다 사진을 썼지만 사람이 크게 찍혀 있어, 같은 상황을 직접 만든 장면으로 바꿨다.
 export const REVERSAL_ROUND: VersusRound = {
-  file: "20190617-jarrod-saipan.jpg",
-  title: "사이판 바다",
-  answer: "남십자자리",
-  inPhoto: ["남십자자리", "센타우루스자리"],
-  hint: "구름 위로 남십자와 센타우루스의 두 밝은 별이 떠 있어요.",
+  file: SEA_SCENE.file,
+  title: "여름밤 바다",
+  answer: "전갈자리",
+  // 정답 자세로 별자리 별을 수평선 위 사진 안에 투영해 셌다 (궁수는 둘이지만 헷갈리지 않게 뺀다)
+  inPhoto: [
+    "전갈자리",
+    "이리자리",
+    "뱀주인자리",
+    "천칭자리",
+    "제단자리",
+    "궁수자리",
+  ],
+  hint: "주황빛 안타레스가 전갈의 심장, 오른쪽 위로 세로로 늘어선 별들이 머리예요. 꼬리는 왼쪽 구름에 숨고 끝의 두 별만 살짝 보여요.",
   reversal: true,
+  clues: {
+    shot: SEA_SCENE.clue,
+    place: SEA_SCENE.place,
+    revealWith: [],
+  },
 };
 
 // 오답 보기로 쓰는 유명한 별자리
@@ -170,8 +194,8 @@ export interface PlannedRound extends VersusRound {
   choices: string[];
 }
 
-// 한 게임: 쉬운 사진 둘 → 어려운 사진 둘 → 사이판. 같은 별자리가 정답인 판은 한 번만
-// (사이판의 정답 남십자가 앞에서 나오면 마지막 판의 답이 쉬워지므로 앞 판에서도 뺀다)
+// 한 게임: 쉬운 사진 둘 → 어려운 사진 둘 → 반전 판. 같은 별자리가 정답인 판은 한 번만
+// (반전 판의 정답이 앞에서 나오면 마지막 판의 답이 쉬워지므로 앞 판에서도 뺀다)
 export const planGame = (seed: number): PlannedRound[] => {
   const rng = createRng(seed);
   const picked: VersusRound[] = [];

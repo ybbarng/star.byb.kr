@@ -1,4 +1,6 @@
 import type { Mat3 } from "@/search/utils/similarity";
+import { existsSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   CHOICES,
@@ -34,13 +36,21 @@ const pose = (file: string) =>
   )[file];
 
 describe("사람 계산원 vs 컴퓨터: 문제", () => {
-  it("모든 사진은 저장소 샘플이고, 정답·보기 별자리 이름이 별자리 데이터에 있다", () => {
+  it("반전 판 말고는 저장소 샘플이고, 정답·보기 별자리 이름이 별자리 데이터에 있다", () => {
     const files = new Set(samples.map((s) => s.src.replace("/samples/", "")));
 
     for (const r of ALL) {
-      expect(files.has(r.file)).toBe(true);
+      expect(r.reversal ? !files.has(r.file) : files.has(r.file), r.file).toBe(
+        true,
+      );
+      expect(
+        existsSync(resolve(process.cwd(), "public/samples", r.file)),
+        r.file,
+      ).toBe(true);
       expect(labels.has(r.answer)).toBe(true);
       expect(r.inPhoto).toContain(r.answer);
+      // 반전 판에만 단서가 있다
+      expect(!!r.clues).toBe(!!r.reversal);
     }
 
     for (const label of FAMOUS) {
@@ -61,7 +71,7 @@ describe("사람 계산원 vs 컴퓨터: 문제", () => {
     }
   });
 
-  it("한 게임은 쉬운 둘 → 어려운 둘 → 사이판, 정답이 겹치지 않고 보기는 넷", () => {
+  it("한 게임은 쉬운 둘 → 어려운 둘 → 반전 판, 정답이 겹치지 않고 보기는 넷", () => {
     for (let seed = 1; seed <= 50; seed++) {
       const game = planGame(seed);
       expect(game).toHaveLength(5);

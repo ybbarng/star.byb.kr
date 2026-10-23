@@ -1,10 +1,11 @@
+import type { ReversalClues } from "@/game/humanVsComputer/rounds";
 import type { DetectedStar } from "@/plate-solver/detectPhotoStars";
 import type { Point2D } from "@/scripts/hash/types";
 import type { HorizonSolveResult } from "@/search/horizonSolve";
 import type { SolvePhotoResult } from "@/search/solvePhoto";
 import { autoHorizon } from "@/plate-solver/autoHorizon";
 import { detectPhotoStars } from "@/plate-solver/detectPhotoStars";
-import { getSampleShot, shotDate } from "@/plate-solver/shotTime";
+import { shotDate } from "@/plate-solver/shotTime";
 import { HORIZON_ACCEPT_LOG_ODDS } from "@/search/horizonSolve";
 import {
   horizonSolveInWorker,
@@ -64,18 +65,13 @@ export interface TeamRun {
   ms: number;
 }
 
-// 반전 판: 사람이 준 단서(샘플에 기록된 촬영 시각·장소, 사람이 확인하거나 찍은 수평선)로 다시 푼다
+// 반전 판: 사람이 준 단서(판에 적어 둔 촬영 시각·장소, 사람이 확인하거나 찍은 수평선)로 다시 푼다
 export const runWithClues = async (
   image: HTMLImageElement,
   stars: DetectedStar[],
   horizon: [Point2D, Point2D],
+  { shot }: ReversalClues,
 ): Promise<TeamRun> => {
-  const shot = getSampleShot(image.src);
-
-  if (!shot?.observer) {
-    return { result: null, accepted: false, ms: 0 };
-  }
-
   const t0 = performance.now();
   const result = await horizonSolveInWorker(
     inputOf(stars),

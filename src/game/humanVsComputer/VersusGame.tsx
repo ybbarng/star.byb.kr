@@ -36,7 +36,7 @@ import { cn } from "@/utils/cn";
 
 // 사람 계산원 vs 컴퓨터 (docs/game-plans.md 3절). 사진 한 장마다 사람은 찍힌 별자리를 보기에서 고르고,
 // 같은 순간 컴퓨터는 앱과 같은 풀이를 Worker에서 돌린다. 컴퓨터의 답은 사람이 답한 뒤에 공개한다.
-// 마지막 사이판 판에서는 컴퓨터가 별만으로 확신하지 못하고, 사람이 단서를 주면 함께 푼다.
+// 마지막 반전 판(직접 만든 바닷가 장면)에서는 컴퓨터가 별만으로 확신하지 못하고, 사람이 단서를 주면 함께 푼다.
 
 const BEST_KEY = "human-vs-computer";
 const MAX_MISSES = 3;
@@ -493,11 +493,12 @@ function VersusPlay({
                   onReveal={setReveal}
                 />
               )}
-              {image && run && target.reversal && (
+              {image && run && target.clues && (
                 <TeamUp
                   image={image}
                   run={run}
                   answer={target.answer}
+                  clues={target.clues}
                   onView={setView}
                   onReveal={setReveal}
                   // 함수를 상태로 담으므로 setPicker(fn)이 fn을 갱신 함수로 부르지 않게 감싼다
