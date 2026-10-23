@@ -189,13 +189,14 @@ export const startSkyEffects = (
     }
   };
 
-  // 화면 전체로 1~2.5초에 별 하나. 절반은 밝은 별(3등급보다 밝은) 중에서 골라 눈에 띄게 한다
+  // 화면 전체로 0.15~0.45초에 별 하나 (어느 순간에나 한두 개가 반짝이는 정도).
+  // 대부분은 모든 별에서 고르게, 4번에 1번은 밝은 별(3등급보다 밝은)에서 골라 십자 빛살도 가끔 보이게 한다
   const scheduleTwinkle = () => {
     twinkleTimer = window.setTimeout(
       () => {
         const stars = getStars();
         const bright = stars.filter((s) => s.mag < 3);
-        const pool = bright.length && Math.random() < 0.5 ? bright : stars;
+        const pool = bright.length && Math.random() < 0.25 ? bright : stars;
 
         if (pool.length) {
           add({
@@ -208,7 +209,7 @@ export const startSkyEffects = (
 
         scheduleTwinkle();
       },
-      rand(1000, 2500),
+      rand(150, 450),
     );
   };
 
