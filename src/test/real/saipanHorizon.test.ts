@@ -65,7 +65,7 @@ describe.skipIf(!ready)("사이판 사진: 시각·장소·수평선으로 풀�
     expect(
       angleDeg(r.centerVector, answerVector(getSampleAnswer(FILE)!)),
     ).toBeLessThan(2);
-    // 찾은 촬영 시각은 올린 시각보다 25~30분 앞 (찍고 나서 올렸다)
+    // 찾은 촬영 시각은 올린 시각보다 20~30분 앞 (찍고 나서 올렸다. 2026-10-23 측정: 수동 수평선 22:16, 자동 지평선 22:10)
     const minutes = (r.date.getTime() - POSTED_AT.getTime()) / 60000;
     expect(minutes).toBeGreaterThan(-60);
     expect(minutes).toBeLessThan(-15);
