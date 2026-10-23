@@ -99,7 +99,7 @@ export default function Page() {
 
         <footer className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs opacity-50">
           <span>
-            만든 사람{" "}
+            만든 이{" "}
             <a
               className="link link-hover"
               href="https://github.com/ybbarng"
@@ -107,6 +107,15 @@ export default function Page() {
               rel="noopener noreferrer"
             >
               ybbarng
+            </a>{" "}
+            with{" "}
+            <a
+              className="link link-hover"
+              href="https://www.claude.com/product/claude-code"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Claude Code
             </a>
           </span>
           <a className="link link-hover" href="/presentation/v3.html">
