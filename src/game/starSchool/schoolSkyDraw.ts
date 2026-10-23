@@ -221,7 +221,14 @@ export const drawSchoolSky = (
 
   // 이름표끼리 겹치면("두베메라크") 위·아래·왼쪽 자리를 차례로 찾아 보고, 다 겹치면 그 이름표는 뺀다.
   // 두 모양이 같은 별을 쓰면(대곡선·대삼각형의 아크투루스) 이름은 한 번만 단다
-  const placed: [number, number, number, number][] = [];
+  // 고리(찾은 별·정답 자리)는 맨 나중에 그리니, 그 자리를 먼저 비워 두어 이름표가 고리에 가리지 않게 한다
+  const placed: [number, number, number, number][] = rings.flatMap((r) => {
+    const p = project(r.vector);
+
+    return p
+      ? [[p[0] - 24, p[1] - 24, 48, 48] as [number, number, number, number]]
+      : [];
+  });
   const labeled = new Set<string>();
 
   const label = (p: Point2D, text: string, color: string, dy = -10) => {

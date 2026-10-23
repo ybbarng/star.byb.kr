@@ -24,6 +24,7 @@ import {
 } from "@/game/starSchool/progress";
 import { cardQuestion, DECKS, deckIds } from "@/game/starSchool/quiz";
 import ShapeFigure from "@/game/starSchool/ShapeFigure";
+import { josa } from "@/game/starSchool/skyMath";
 import { useSave } from "@/game/starSchool/useSave";
 import { cn } from "@/utils/cn";
 import { createRng } from "@/utils/rng";
@@ -468,7 +469,9 @@ function QuestionView({
   return (
     <div className="flex flex-col gap-3">
       <div className="text-center text-lg">
-        <b>{entry.name}</b>은(는) 어느 모양일까요?
+        <b>{entry.name}</b>
+        {josa(entry.name.replace(/ \(.*\)$/, ""), "은", "는").slice(-1)} 어느
+        모양일까요?
       </div>
       <div className="grid grid-cols-2 gap-2">
         {q.choices.map((c) => {
