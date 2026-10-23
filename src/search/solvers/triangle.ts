@@ -143,9 +143,11 @@ export const triangleSolver: Solver = {
         const photo3: Point2D[] = order.map((o) => photoTop[o]);
         // 이 FOV라면 사진 삼각형의 가장 긴 변이 하늘에서 몇 도인지 안다
         const photoSize = longestSide(dirs);
-        // 전체 인덱스와 밝은 별 인덱스에서 각각, 모양이 가깝고 크기도 이 FOV와 맞는
-        // 삼각형을 KD_K개까지 가져온다. 모양만 같고 크기가 다른 삼각형은 이 FOV에서는
-        // 정답일 수 없어 검증하지 않는다(검증 호출이 대부분 여기서 준다).
+        // 전체 인덱스와 밝은 별 인덱스에서 각각, 모양이 가장 가까운 삼각형을
+        // KD_K × SEARCH_DEPTH개 가져와 그중 크기가 이 FOV와 맞는 것만 남긴다(최대 KD_K개).
+        // 모양만 같고 크기가 다른 삼각형은 이 FOV에서는 정답일 수 없어 검증하지 않는다
+        // (검증 호출이 대부분 여기서 준다). SEARCH_DEPTH가 1이면 크기 거르기는 확인할 짝을
+        // 줄일 뿐, 모양 순위 KD_K 밖의 정답을 끌어오지는 않는다.
         const cands = indexes.flatMap((index) =>
           searchTriangle(index, shape, KD_K * SEARCH_DEPTH)
             .map((ent) => ({
