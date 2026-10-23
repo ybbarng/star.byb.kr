@@ -7,7 +7,7 @@ import { dayOfIso, RULE, yearStartJd } from "@/game/eclipse/eclipse";
 import { DAY_TOLERANCE, kindOfSyzygy } from "@/game/eclipse/problem";
 
 // 한 해 달력 그래프: 가로는 1월~12월, 위는 달의 황위(달이 해의 길에서 북·남으로 떨어진 각),
-// 아래 띠는 달이 빛나는 정도(보름이면 꽉, 삭이면 빈). 삭·망 자리(●·○)를 누르거나, 어려움에서는 날짜를 누른다.
+// 아래 띠는 달이 빛나는 정도(보름이면 꽉, 삭이면 빈). 삭·망 자리(어두운 점·노란 점)를 누르거나, 어려움에서는 날짜를 누른다.
 
 const W = 1000;
 const LEFT = 40;
