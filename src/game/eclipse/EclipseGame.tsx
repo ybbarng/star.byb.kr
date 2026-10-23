@@ -329,7 +329,7 @@ function EclipseRound({
         <div className="mt-1 text-xs opacity-60">
           파란 선: 달의 황위(해의 길에서 북·남으로 떨어진 각) · 아래 띠: 달이
           빛나는 정도
-          {set.markers && " · ● 삭 ○ 망"}
+          {set.markers && " · 🌑 어두운 점: 삭(새 달) · 🌕 노란 점: 망(보름)"}
           {set.band &&
             ` · 진한 띠 ±${RULE.sure}°: 거의 틀림없이 식 · 옅은 띠 ±${RULE.maybe}°: 아슬아슬`}
           {" · 날짜는 세계시(UT) 기준이라 한국 날짜와 하루 다를 수 있어요"}
@@ -435,10 +435,10 @@ function SyzygyChips({
               onClick={() => onPick(i)}
             >
               <div className="font-bold">
-                {s.kind === "new" ? "● 삭" : "○ 망"} {dayLabel(year, s.day)}
+                {s.kind === "new" ? "🌑 삭" : "🌕 망"} {dayLabel(year, s.day)}
               </div>
               <div className="opacity-70">
-                {on ? (s.kind === "new" ? "☀️ 일식!" : "🌕 월식!") : " "}
+                {on ? (s.kind === "new" ? "☀️ 일식!" : "🌕 월식!") : "\u00a0"}
               </div>
             </button>
           );
