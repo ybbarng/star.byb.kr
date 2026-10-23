@@ -201,6 +201,13 @@
         color: rgba(255, 255, 255, 0.45);
       }
       .reveal .slide-number a { color: inherit; }
+      /* 휴대폰 미리보기에서 데모 iframe 자리 */
+      .preview-demo {
+        display: flex; align-items: center; justify-content: center;
+        width: 100%; height: 100%; min-height: 400px;
+        border: 4px dashed #4b5563; border-radius: 24px;
+        color: #9ca3af; font-size: 48px;
+      }
     </style>
   </head>
   <body>
@@ -1655,6 +1662,18 @@
     <script src="/presentation/plugin/markdown/markdown.js"></script>
     <script src="/presentation/plugin/highlight/highlight.js"></script>
     <script>
+      // 휴대폰 리모컨의 다음 장 미리보기(?preview): 무거운 데모 iframe은 띄우지 않고 이름표로 바꾼다
+      const PREVIEW = new URLSearchParams(location.search).has('preview');
+
+      if (PREVIEW) {
+        document.querySelectorAll('.slides iframe').forEach((frame) => {
+          const label = document.createElement('div');
+          label.className = 'preview-demo';
+          label.textContent = '데모 화면 · ' + frame.getAttribute('src');
+          frame.replaceWith(label);
+        });
+      }
+
       Reveal.initialize({
         width: 1920,
         height: 1080,
@@ -1673,7 +1692,11 @@
           return [Reveal.getSlidePastCount(slide) + 1, '/', total];
         },
         showSlideNumber: 'all',
-        plugins: [ RevealMarkdown, RevealHighlight, RevealNotes ]
+        plugins: [ RevealMarkdown, RevealHighlight, RevealNotes ],
+        // 미리보기는 보기만: 번호·진행 막대·키보드·터치 없이
+        ...(PREVIEW
+          ? { slideNumber: false, progress: false, keyboard: false, touch: false }
+          : {}),
       });
 
       // 발표 리모컨 (src/scripts/presentation/remote.ts): 주소에 ?remote 가 있을 때만.

@@ -156,8 +156,16 @@ const PHONE_PAGE = `<!doctype html>
   #dot.on { background: #4ade80; }
   #title { padding: 10px 14px 0; font-size: 20px; font-weight: 800; }
   #frag { padding: 0 14px; font-size: 13px; opacity: .65; }
-  #notes { flex: 1; overflow-y: auto; padding: 10px 14px 16px; font-size: 19px; }
-  #next { padding: 8px 14px; font-size: 13px; opacity: .6; border-top: 1px solid #1f2937; }
+  /* 노트가 길면 이 칸 안에서만 스크롤 (flex 자식이라 min-height: 0이 있어야 줄어든다) */
+  #notes { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch;
+           overscroll-behavior: contain; padding: 10px 14px 16px; font-size: 19px; }
+  #next { display: flex; align-items: center; gap: 8px; padding: 6px 14px; font-size: 13px; border-top: 1px solid #1f2937; }
+  #next span { opacity: .6; flex: 1; }
+  #next button { font-size: 12px; padding: 3px 8px; border-radius: 8px; }
+  #preview { flex: none; padding: 0 10px; }
+  #preview.off { display: none; }
+  #preview iframe { display: block; width: 100%; aspect-ratio: 16 / 9; border: 1px solid #374151; border-radius: 8px;
+                    background: #000; pointer-events: none; }
   nav { display: grid; grid-template-columns: 1fr 2fr; gap: 8px; padding: 8px 10px calc(10px + env(safe-area-inset-bottom)); }
   button { font: inherit; font-size: 22px; font-weight: 800; padding: 18px 0; border-radius: 14px; border: 0; color: #fff; background: #374151; }
   button.next { background: #4f46e5; }
@@ -170,7 +178,8 @@ const PHONE_PAGE = `<!doctype html>
 <div id="title"></div>
 <div id="frag"></div>
 <div id="notes"></div>
-<div id="next"></div>
+<div id="next"><span id="nextText"></span><button id="togglePreview">미리보기 끄기</button></div>
+<div id="preview"><iframe id="frame" title="다음 장 미리보기"></iframe></div>
 <nav><button id="prev">◀</button><button id="nextBtn" class="next">다음 ▶</button></nav>
 <script>
   const $ = (id) => document.getElementById(id);
@@ -186,6 +195,29 @@ const PHONE_PAGE = `<!doctype html>
   // 화면이 꺼지지 않게 (지원하는 브라우저만)
   const wake = () => navigator.wakeLock?.request("screen").catch(() => {});
   wake(); document.addEventListener("visibilitychange", () => !document.hidden && wake());
+  // 다음 장 미리보기: 노트북의 발표 자료를 ?preview(데모 iframe 없이)로 띄우고 주소의 #/장/0/클릭 만 바꾼다.
+  // 발표 자료 포트는 기본 5025, 이 페이지 주소에 ?deck=포트 로 바꿀 수 있다
+  const deckPort = new URLSearchParams(location.search).get("deck") || "5025";
+  const deckUrl = location.protocol + "//" + location.hostname + ":" + deckPort + "/presentation/v3.html?preview";
+  const frame = $("frame");
+  let previewOn = localStorage.getItem("remote-preview") !== "off";
+  const applyPreview = () => {
+    $("preview").classList.toggle("off", !previewOn);
+    $("togglePreview").textContent = previewOn ? "미리보기 끄기" : "미리보기 켜기";
+  };
+  $("togglePreview").onclick = () => {
+    previewOn = !previewOn;
+    try { localStorage.setItem("remote-preview", previewOn ? "on" : "off"); } catch {}
+    applyPreview();
+  };
+  applyPreview();
+  const showNext = (s) => {
+    // 이 장에 남은 클릭이 있으면 다음 클릭, 아니면 다음 장의 처음
+    const hash = s.fragments > 0 && s.fragment < s.fragments - 1
+      ? "#/" + s.index + "/0/" + (s.fragment + 1)
+      : "#/" + (s.index + 1);
+    frame.src = deckUrl + hash;
+  };
   const es = new EventSource("/events");
   es.addEventListener("status", (e) => {
     const { decks } = JSON.parse(e.data);
@@ -199,7 +231,9 @@ const PHONE_PAGE = `<!doctype html>
     $("frag").textContent = s.fragments > 0 ? "클릭 " + (s.fragment + 1) + " / " + s.fragments : "";
     $("notes").innerHTML = s.notes || "<span style='opacity:.5'>(노트 없음)</span>";
     $("notes").scrollTop = 0;
-    $("next").textContent = s.nextTitle ? "다음 장: " + s.nextTitle : "";
+    const moreClicks = s.fragments > 0 && s.fragment < s.fragments - 1;
+    $("nextText").textContent = moreClicks ? "다음: 이 장의 다음 클릭" : s.nextTitle ? "다음 장: " + s.nextTitle : "";
+    showNext(s);
   });
   es.onerror = () => { $("dot").classList.remove("on"); $("conn").textContent = "리모컨 서버와 연결이 끊겼어요"; };
 </script>
