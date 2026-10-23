@@ -54,6 +54,7 @@ import {
   guideStar,
   heightWord,
   homeConstellations,
+  moonlessNight,
   pickBestMonth,
   poseAt,
   shapeGeometry,
@@ -967,7 +968,16 @@ function SkyStep({
           {bestMonth?.best && (
             <button
               className="btn btn-sm btn-ghost"
-              onClick={() => jumpTo(bestMonth.best!.t)}
+              onClick={() =>
+                jumpTo(
+                  moonlessNight(
+                    geometry.center,
+                    place,
+                    bestMonth.year,
+                    bestMonth.month,
+                  )?.t ?? bestMonth.best!.t,
+                )
+              }
             >
               ⭐ 가장 잘 보이는 때로
             </button>

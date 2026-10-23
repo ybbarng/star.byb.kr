@@ -197,6 +197,18 @@ export interface SkyPose {
   visible: number; // 보일 만한 별 수
 }
 
+// 달빛 세기 0~1. 밝은 달이 떠 있으면 어두운 별이 묻힌다 (보름달이 높이 뜨면 1.5등급쯤)
+export const moonGlowAt = (t: number, observer: Observer) => {
+  const frame = frameAt(t, observer);
+  const sun = sunAt(t);
+  const moon = moonAt(t, observer);
+  const moonAlt = altOf(moon, frame);
+  const moonLit =
+    (1 - (sun[0] * moon[0] + sun[1] * moon[1] + sun[2] * moon[2])) / 2;
+
+  return moonAlt > 0 ? moonLit * Math.min(1, Math.sin(moonAlt * D) * 3) : 0;
+};
+
 export const poseAt = (
   hrs: string[],
   t: number,
@@ -209,14 +221,7 @@ export const poseAt = (
   const sunAlt = altOf(sunAt(t), frame);
   // 해가 덜 졌으면 하늘이 밝아 어두운 별이 지워진다 (박명 동안 한계 등급이 크게 떨어진다)
   const twilight = Math.max(0, Math.min(1, (sunAlt + 18) / 18));
-  // 밝은 달이 떠 있으면 어두운 별이 묻힌다 (보름달이 높이 뜨면 1.5등급쯤)
-  const sun = sunAt(t);
-  const moon = moonAt(t, observer);
-  const moonAlt = altOf(moon, frame);
-  const moonLit =
-    (1 - (sun[0] * moon[0] + sun[1] * moon[1] + sun[2] * moon[2])) / 2;
-  const moonGlow =
-    moonAlt > 0 ? moonLit * Math.min(1, Math.sin(moonAlt * D) * 3) : 0;
+  const moonGlow = moonGlowAt(t, observer);
   const stars = hrs.map((hr, i) => {
     const s = STAR_BY_HR.get(hr)!;
     const altDeg = altOf(vectors[i], frame);
@@ -305,6 +310,36 @@ export const yearlyBest = (
 
     return { year, month, best: bestOnNight(center, place, year, month, 15) };
   });
+
+// 그달에서 달빛이 가장 적은 밤의 가장 잘 보이는 때. 15일로만 정하면 보름 무렵에 걸려 어두운 별이 지워지기 쉽다.
+// 달빛이 거의 같으면(하루에 0.003씩 깎는다) 15일에 가까운 날
+export const moonlessNight = (
+  center: Point3D,
+  place: Place,
+  year: number,
+  month: number,
+): BestTime | null => {
+  const observer = { latDeg: place.latDeg, lonDeg: place.lonDeg };
+  let best: BestTime | null = null;
+  let bestScore = Infinity;
+
+  for (let day = 1; day <= 28; day++) {
+    const b = bestOnNight(center, place, year, month, day);
+
+    if (!b) {
+      continue;
+    }
+
+    const score = moonGlowAt(b.t, observer) + Math.abs(day - 15) * 0.003;
+
+    if (score < bestScore) {
+      bestScore = score;
+      best = b;
+    }
+  }
+
+  return best;
+};
 
 // 저녁 9시에서 몇 시간 떨어졌는지 (새벽은 다음 날로 센다)
 export const hoursFromEvening = (t: number, tz: string) => {

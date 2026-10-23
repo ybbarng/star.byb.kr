@@ -29,6 +29,8 @@ import {
   findingTips,
   guideStar,
   hoursFromEvening,
+  moonGlowAt,
+  moonlessNight,
   pickBestMonth,
   poseAt,
   relativeDirection,
@@ -241,6 +243,16 @@ describe("실제 하늘에서", () => {
     const p = localParts(best.t, SEOUL.tz);
     expect(p.hour >= 17 || p.hour < 7).toBe(true);
     expect(hoursFromEvening(best.t, SEOUL.tz)).toBeLessThan(10);
+  });
+
+  it("가장 잘 보이는 때로 갈 땐 그달에서 달빛이 적은 밤을 고른다 (15일이 보름 무렵이어도)", () => {
+    const seoul = { latDeg: SEOUL.latDeg, lonDeg: SEOUL.lonDeg };
+    // 2027년 9월 16일이 보름이라 15일 밤은 달빛이 세다
+    const mid = bestOnNight(orion.center, SEOUL, 2027, 9, 15)!;
+    const dark = moonlessNight(orion.center, SEOUL, 2027, 9)!;
+    expect(moonGlowAt(mid.t, seoul)).toBeGreaterThan(0.3);
+    expect(moonGlowAt(dark.t, seoul)).toBeLessThan(0.1);
+    expect(localParts(dark.t, SEOUL.tz).month).toBe(9);
   });
 
   it("서울에서 남십자는 어느 밤에도 뜨지 않는다", () => {
