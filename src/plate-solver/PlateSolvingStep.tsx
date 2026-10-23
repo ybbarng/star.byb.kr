@@ -1,6 +1,7 @@
 import type { SampleAnswer } from "@/plate-solver/sampleAnswers";
 import type { ShotTime } from "@/plate-solver/shotTime";
 import type { Point3D } from "@/scripts/hash/types";
+import type { CompassMark } from "@/search/compass";
 import type { HorizonSolveResult } from "@/search/horizonSolve";
 import type { SolvePhase } from "@/search/solvePhoto";
 import type { SolveCandidateResult } from "@/search/solvers";
@@ -20,14 +21,18 @@ import ShotTimeControl from "@/plate-solver/ShotTimeControl";
 import ShotTimeEstimator from "@/plate-solver/ShotTimeEstimator";
 import { useContextStore } from "@/plate-solver/store/context";
 import WhereShotCard, { whereSummary } from "@/plate-solver/WhereShotCard";
+import { compassMarks, frameFromZenith } from "@/search/compass";
 import useSkyOverlay from "@/search/hooks/useSkyOverlay";
 import useSolve from "@/search/hooks/useSolve";
 import { HORIZON_ACCEPT_LOG_ODDS } from "@/search/horizonSolve";
+import { zenithFromHorizon } from "@/search/shotTimeEstimate";
 import { DEEP_SKY_OBJECTS, solarSystemObjects } from "@/search/skyObjects";
 import { horizonSolveInWorker } from "@/search/solverClient";
 import { ACCEPT } from "@/search/solvers/candidates";
+import { horizontalFrameJ2000, julianDay } from "@/search/utils/ephemeris";
+import { projectFisheye } from "@/search/utils/fisheye";
 import { DEFAULT_DISPLAY_STARS } from "@/search/utils/selectStars";
-import { photoToSky } from "@/search/utils/wcs";
+import { photoToSky, projectVecToPhoto } from "@/search/utils/wcs";
 import { whereShot } from "@/search/whereShot";
 import { readExif } from "@/services/exif";
 import { cn } from "@/utils/cn";
@@ -64,6 +69,7 @@ export default function PlateSolvingStep() {
   const [showDetected, setShowDetected] = useState(false);
   // 별자리 구역(IAU 경계). 켜면 경계선과 구역 이름을, 끄면 별자리선 이름을 쓴다
   const [showRegions, setShowRegions] = useState(true);
+  const [showCompass, setShowCompass] = useState(true);
   // 시각·장소·지평선 풀이 결과 (확신했을 때만 result가 있다)
   const [horizonRun, setHorizonRun] = useState<{
     running: boolean;
@@ -332,66 +338,6 @@ export default function PlateSolvingStep() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [outcome]);
 
-  // 사진 위에 그리기
-  useEffect(() => {
-    if (!canvasElement.current || !image) {
-      return;
-    }
-
-    const context = canvasElement.current.getContext("2d");
-
-    if (!context) {
-      return;
-    }
-
-    context.drawImage(image, 0, 0, image.width, image.height);
-    drawOverlay(context, image, {
-      photoStars: showDetected || detecting ? photoStars : [],
-      skyStars,
-      skyConstellations,
-      skyObjects,
-      boundaries: showRegions ? skyBoundaries : [],
-      regions: showRegions ? skyRegions : [],
-      horizon: horizonTP ? marks.horizon : [],
-    });
-  }, [
-    image,
-    photoStars,
-    showDetected,
-    showRegions,
-    detecting,
-    skyStars,
-    skyConstellations,
-    skyObjects,
-    skyBoundaries,
-    skyRegions,
-    horizonTP,
-    marks,
-  ]);
-
-  // 사진 안에 보이는 별자리 이름
-  const visibleConstellations = useMemo(() => {
-    if (!image) {
-      return [];
-    }
-
-    // 한 별자리가 여러 선 묶음으로 나뉘어 있을 수 있어 이름은 한 번만
-    const names = skyConstellations
-      .filter(({ lines }) =>
-        lines.some(
-          (l) =>
-            l !== null &&
-            l[0] >= 0 &&
-            l[0] < image.width &&
-            l[1] >= 0 &&
-            l[1] < image.height,
-        ),
-      )
-      .map((c) => c.label);
-
-    return [...new Set(names)];
-  }, [skyConstellations, image]);
-
   const transformForWhere =
     !fisheyeCamera && !solving
       ? (horizonTP ?? outcome?.candidates[selected]?.transform)
@@ -446,6 +392,126 @@ export default function PlateSolvingStep() {
     photoStars,
     skyStars,
   ]);
+
+  // 방위(동서남북): 지평선 두 점이 있으면 그 천정으로, 없으면 촬영 시각·장소의 천정으로.
+  // 둘 다 없으면 null (추측해서 그리지 않는다)
+  const compass = useMemo((): CompassMark[] | null => {
+    if (!image || solving) {
+      return null;
+    }
+
+    const T = transformForWhere;
+    const project = fisheyeCamera
+      ? (v: Point3D) => projectFisheye(fisheyeCamera, v)
+      : T
+        ? (v: Point3D) => projectVecToPhoto(T, v)
+        : null;
+
+    if (!project) {
+      return null;
+    }
+
+    // 지평선은 직선투영일 때만 되돌릴 수 있다
+    const zenith =
+      T && marks.horizon.length === 2
+        ? zenithFromHorizon(
+            photoToSky(T, marks.horizon[0]),
+            photoToSky(T, marks.horizon[1]),
+            photoToSky(T, [image.width / 2, 0]),
+          )
+        : null;
+    // 시각·장소 풀이가 확신했으면 그 시각이 더 정확하다
+    const date = horizonRun.result?.date ?? (shot ? shotDate(shot) : null);
+    const frame = zenith
+      ? frameFromZenith(zenith)
+      : shot?.observer && date && !Number.isNaN(date.getTime())
+        ? horizontalFrameJ2000(julianDay(date), shot.observer)
+        : null;
+
+    if (!frame) {
+      return null;
+    }
+
+    const unit = Math.hypot(image.width, image.height) / 1400;
+
+    return compassMarks(project, frame, {
+      width: image.width,
+      height: image.height,
+      margin: 30 * unit,
+      minGap: 70 * unit,
+    });
+  }, [
+    image,
+    solving,
+    transformForWhere,
+    fisheyeCamera,
+    marks.horizon,
+    horizonRun.result,
+    shot,
+  ]);
+
+  // 사진 위에 그리기
+  useEffect(() => {
+    if (!canvasElement.current || !image) {
+      return;
+    }
+
+    const context = canvasElement.current.getContext("2d");
+
+    if (!context) {
+      return;
+    }
+
+    context.drawImage(image, 0, 0, image.width, image.height);
+    drawOverlay(context, image, {
+      photoStars: showDetected || detecting ? photoStars : [],
+      skyStars,
+      skyConstellations,
+      skyObjects,
+      boundaries: showRegions ? skyBoundaries : [],
+      regions: showRegions ? skyRegions : [],
+      horizon: horizonTP ? marks.horizon : [],
+      compass: showCompass && compass ? compass : [],
+    });
+  }, [
+    showCompass,
+    compass,
+    image,
+    photoStars,
+    showDetected,
+    showRegions,
+    detecting,
+    skyStars,
+    skyConstellations,
+    skyObjects,
+    skyBoundaries,
+    skyRegions,
+    horizonTP,
+    marks,
+  ]);
+
+  // 사진 안에 보이는 별자리 이름
+  const visibleConstellations = useMemo(() => {
+    if (!image) {
+      return [];
+    }
+
+    // 한 별자리가 여러 선 묶음으로 나뉘어 있을 수 있어 이름은 한 번만
+    const names = skyConstellations
+      .filter(({ lines }) =>
+        lines.some(
+          (l) =>
+            l !== null &&
+            l[0] >= 0 &&
+            l[0] < image.width &&
+            l[1] >= 0 &&
+            l[1] < image.height,
+        ),
+      )
+      .map((c) => c.label);
+
+    return [...new Set(names)];
+  }, [skyConstellations, image]);
 
   if (!image) {
     return null;
@@ -505,6 +571,23 @@ export default function PlateSolvingStep() {
             />
             컴퓨터가 찾은 별 표시 ({photoStars.length}개)
           </label>
+          {compass ? (
+            <label className="flex cursor-pointer items-center gap-2">
+              <input
+                type="checkbox"
+                className="toggle toggle-xs"
+                checked={showCompass}
+                onChange={(e) => setShowCompass(e.target.checked)}
+              />
+              방위 (동서남북)
+            </label>
+          ) : (
+            confident && (
+              <span>
+                지평선을 찍거나 촬영 시각·장소를 알려 주면 방위를 표시해요
+              </span>
+            )
+          )}
         </div>
       </div>
 
@@ -796,6 +879,7 @@ const drawOverlay = (
     boundaries: Overlay["boundaries"];
     regions: Overlay["regions"];
     horizon: [number, number][];
+    compass: CompassMark[];
   },
 ) => {
   // 사진 크기와 무관하게 비슷한 크기로 보이도록 표시 크기를 대각선 길이에 맞춘다
@@ -943,6 +1027,33 @@ const drawOverlay = (
     context.lineTo(...layers.horizon[1]);
     context.stroke();
   }
+
+  // 방위: 지평선 위면 짧은 눈금 위에, 아니면 그 자리(사진 가장자리 쪽)에 이름만
+  const COMPASS_COLOR = "oklch(0.9 0.13 160)";
+  context.textAlign = "center";
+
+  for (const m of layers.compass) {
+    const size = Math.round(fontPx * (m.cardinal ? 1.4 : 1));
+    context.font = `bold ${size}px Pretendard Variable, sans-serif`;
+
+    if (m.onHorizon) {
+      context.strokeStyle = COMPASS_COLOR;
+      context.lineWidth = 2.5 * unit;
+      context.beginPath();
+      context.moveTo(m.x, m.y);
+      context.lineTo(m.x, m.y - 10 * unit);
+      context.stroke();
+    }
+
+    const y = m.onHorizon ? m.y - 16 * unit : m.y + size * 0.35;
+    context.strokeStyle = SHADOW;
+    context.lineWidth = 4 * unit;
+    context.strokeText(m.label, m.x, y);
+    context.fillStyle = COMPASS_COLOR;
+    context.fillText(m.label, m.x, y);
+  }
+
+  context.textAlign = "start";
 };
 
 // 풀이 진행 단계를 사람이 읽는 문장으로
