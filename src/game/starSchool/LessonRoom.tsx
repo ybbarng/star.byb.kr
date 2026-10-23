@@ -10,6 +10,7 @@ import { dexEntry } from "@/game/starSchool/dex";
 import {
   aimFallback,
   stepDate,
+  stepVectors,
   tapVector,
 } from "@/game/starSchool/lessonGeometry";
 import {
@@ -393,7 +394,9 @@ function LessonPlayer({
             magLimit={step.sky?.magLimit ?? lesson.magLimit}
             lightPollution={step.sky?.lightPollution ?? lesson.lightPollution}
             marks={marks}
-            aim={aimFallback(lesson, stepIdx)}
+            // 찾기 문제 동안 정답 표시를 숨겨도 카메라는 단계 전체(숨긴 표시·찾을 자리 포함)를 본다.
+            // 숨긴 표시로만 이루어진 단계(머리 위 직녀성)가 기본 방향(남쪽)을 보지 않게
+            aim={aimFallback(lesson, stepIdx) ?? stepVectors(step)}
             look={step.view}
             aimKey={`${lesson.id}-${stepIdx}`}
             targets={

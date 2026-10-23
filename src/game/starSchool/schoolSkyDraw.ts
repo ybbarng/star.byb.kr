@@ -201,11 +201,13 @@ export const drawSchoolSky = (
   ctx.lineJoin = "round";
   ctx.font = "600 13px system-ui, sans-serif";
 
-  // 이름표끼리 겹치면("두베메라크") 위·아래·왼쪽 자리를 차례로 찾아 보고, 다 겹치면 그 이름표는 뺀다
+  // 이름표끼리 겹치면("두베메라크") 위·아래·왼쪽 자리를 차례로 찾아 보고, 다 겹치면 그 이름표는 뺀다.
+  // 두 모양이 같은 별을 쓰면(대곡선·대삼각형의 아크투루스) 이름은 한 번만 단다
   const placed: [number, number, number, number][] = [];
+  const labeled = new Set<string>();
 
   const label = (p: Point2D, text: string, color: string, dy = -10) => {
-    if (quiet) return;
+    if (quiet || !text || labeled.has(text)) return;
 
     const w = ctx.measureText(text).width + 6;
     const spots: [number, number][] = [
@@ -213,6 +215,8 @@ export const drawSchoolSky = (
       [p[0] + 6, p[1] + 8],
       [p[0] - w - 6, p[1] + dy - 11],
       [p[0] - w - 6, p[1] + 8],
+      [p[0] - w / 2, p[1] + dy - 28],
+      [p[0] - w / 2, p[1] + 24],
     ];
     const free = spots.find(
       ([x, y]) =>
@@ -225,6 +229,7 @@ export const drawSchoolSky = (
     if (!free) return;
 
     placed.push([free[0], free[1], w, 15]);
+    labeled.add(text);
     ctx.fillStyle = "rgba(0,0,0,0.55)";
     ctx.fillRect(free[0], free[1], w, 15);
     ctx.fillStyle = color;

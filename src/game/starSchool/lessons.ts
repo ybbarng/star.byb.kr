@@ -111,6 +111,9 @@ export const stepBasics = (step: LessonStep): string[] => {
 
 export const SEASON_LESSONS = ["spring", "summer", "autumn", "winter"];
 
+// 북쪽 하늘 (북극을 가운데). 북두칠성 시계는 단계마다 같은 자리에서 보아야 국자가 도는 것이 보인다
+const NORTH_POLE_VIEW = { az: 0, alt: 38, fov: 100 };
+
 // 카시오페이아 W의 바깥 두 변: 카프 → 셰다르, 세긴 → 루크바
 export const CASSIOPEIA_SIDES: [string, string, string, string] = [
   "21",
@@ -135,6 +138,7 @@ export const LESSONS: Lesson[] = [
       {
         say: "2월 말 저녁 9시, 서울의 북쪽 하늘이에요. 북극성은 가장 밝은 별이 아니에요(2등성). 그래서 밝은 길잡이부터 찾아요.",
         marks: [],
+        view: NORTH_POLE_VIEW,
       },
       {
         say: "북동쪽에 국자 모양 일곱 별, 북두칠성이 서 있어요. 국자는 큰곰자리의 엉덩이와 꼬리예요.",
@@ -224,6 +228,7 @@ export const LESSONS: Lesson[] = [
           { kind: "asterism", id: "big-dipper" },
           { kind: "pole", south: false },
         ],
+        view: NORTH_POLE_VIEW,
       },
       {
         say: "다음 날 새벽 1시. 세 시간 만에 북극성을 중심으로 시곗바늘 반대 방향으로 45° 돌았어요. 한 시간에 15°씩, 하루에 한 바퀴예요.",
@@ -232,6 +237,7 @@ export const LESSONS: Lesson[] = [
           { kind: "asterism", id: "big-dipper" },
           { kind: "pole", south: false },
         ],
+        view: NORTH_POLE_VIEW,
       },
       {
         say: "7월 15일 밤 10시. 같은 시각인데 석 달 만에 90° 돌아 북서쪽에 있어요. 같은 시각이면 한 달에 30°씩 돌아요 (한 달에 2시간씩 일찍 같은 자리에 와요).",
@@ -240,6 +246,7 @@ export const LESSONS: Lesson[] = [
           { kind: "asterism", id: "big-dipper" },
           { kind: "pole", south: false },
         ],
+        view: NORTH_POLE_VIEW,
       },
       {
         say: "10월 15일 밤 10시. 북두칠성이 북쪽 지평선 가까이 낮게 깔려 일부는 산이나 건물에 가려요. 가을엔 높이 뜬 카시오페이아로 북극성을 찾아요.",
@@ -249,6 +256,7 @@ export const LESSONS: Lesson[] = [
           { kind: "asterism", id: "cassiopeia-w" },
           { kind: "pole", south: false },
         ],
+        view: NORTH_POLE_VIEW,
         allowLow: true,
       },
       {
@@ -258,6 +266,7 @@ export const LESSONS: Lesson[] = [
           { kind: "asterism", id: "big-dipper" },
           { kind: "pole", south: false },
         ],
+        view: NORTH_POLE_VIEW,
       },
     ],
     quiz: [
@@ -395,7 +404,10 @@ export const LESSONS: Lesson[] = [
       },
       {
         say: "직녀성에서 남동쪽으로 견우성(알타이르), 동쪽(왼쪽)으로 데네브. 세 별이 여름철 대삼각형이에요. 칠월칠석 이야기의 견우와 직녀 사이로 은하수가 흘러요.",
-        marks: [{ kind: "asterism", id: "summer-triangle" }],
+        marks: [
+          { kind: "asterism", id: "summer-triangle" },
+          { kind: "milkyWay" },
+        ],
         tap: {
           target: { hr: "7557" },
           tolDeg: 3,
@@ -528,6 +540,7 @@ export const LESSONS: Lesson[] = [
           { kind: "constellation", label: "페르세우스자리" },
           { kind: "asterism", id: "cassiopeia-w" },
           { kind: "deepSky", id: "double-cluster" },
+          { kind: "star", hr: "936" },
         ],
       },
     ],
@@ -696,7 +709,10 @@ export const LESSONS: Lesson[] = [
     steps: [
       {
         say: "5월 15일 저녁 8시, 오스트레일리아 시드니(남위 34°). 남반구 가을 저녁, 남쪽 하늘 높이 은하수 속에 작은 십자가가 서 있어요.",
-        marks: [{ kind: "asterism", id: "southern-cross" }],
+        marks: [
+          { kind: "asterism", id: "southern-cross" },
+          { kind: "milkyWay" },
+        ],
       },
       {
         say: "십자가 왼쪽(동쪽)의 아주 밝은 두 별이 지시별이에요. 알파 센타우리와 하다르. 이 둘이 가리키는 쪽에 있는 게 진짜 남십자예요.",
@@ -1012,6 +1028,7 @@ export const LESSONS: Lesson[] = [
         time: { y: 2026, m: 11, d: 10, h: 21, min: 0 },
         marks: [
           { kind: "ecliptic" },
+          { kind: "constellation", label: "염소자리" },
           { kind: "constellation", label: "물병자리" },
           { kind: "constellation", label: "물고기자리" },
           { kind: "constellation", label: "양자리" },

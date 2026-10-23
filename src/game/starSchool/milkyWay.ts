@@ -63,9 +63,9 @@ const BRIGHT: [number, number][] = [
   [210, 0.18],
   [240, 0.24],
   [265, 0.38],
-  [290, 0.62],
-  [310, 0.6],
-  [330, 0.66],
+  [290, 0.7],
+  [310, 0.72],
+  [330, 0.75],
   [348, 0.85],
   [360, 1],
 ];
@@ -105,7 +105,7 @@ const dust = (l: number, b: number) => {
       ? 0.6 * gauss(b - 1.5, 1.8) * Math.min(1, (d - 12) / 8, (88 - d) / 8)
       : 0;
   const ophiuchus = 0.45 * gauss(d - 4, 7) * gauss(b - 7, 3);
-  const coalsack = 0.75 * gauss(d + 59, 2.2) * gauss(b + 0.5, 2.2);
+  const coalsack = 0.85 * gauss(d + 59, 2.2) * gauss(b + 0.5, 2.2);
 
   return Math.min(0.9, rift + ophiuchus + coalsack);
 };
