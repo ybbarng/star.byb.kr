@@ -134,6 +134,29 @@ export const GAMES: GameEntry[] = [
     accent: "from-lime-300/40 to-emerald-600/10",
   },
   {
+    href: "/games/latitude-trip",
+    kind: "explore",
+    title: "극지방·적도 하늘 여행",
+    summary:
+      "위도를 북극에서 남극까지 옮기며 별이 도는 모습을 봐요. 북극에선 지평선과 나란히, 적도에선 똑바로 뜨고 져요.",
+    learn: "천구의 극 높이 = 위도, 지지 않는 별, 별이 뜨는 기울기",
+    ready: true,
+    icon: "🌐",
+    accent: "from-teal-300/40 to-sky-600/10",
+  },
+  {
+    href: "/games/precession",
+    kind: "explore",
+    title: "세차운동 타임머신",
+    summary:
+      "연도를 돌리면 천구의 북극이 별 사이를 돌아 북극성이 바뀌어요. 피라미드 시대엔 투반, 1만 2천 년 뒤엔 직녀성!",
+    learn:
+      "세차 운동(약 2만 6천 년), 북극성의 교대, 점성술 별자리가 어긋나는 이유",
+    ready: true,
+    icon: "🌀",
+    accent: "from-purple-300/40 to-pink-500/10",
+  },
+  {
     href: "/games/quad-fingerprint",
     kind: "game",
     title: "별 넷 지문 맞추기",
