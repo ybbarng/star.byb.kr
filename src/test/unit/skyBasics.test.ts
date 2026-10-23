@@ -1,13 +1,16 @@
 import { describe, expect, it } from "vitest";
 import { GAMES } from "@/game/hub";
 import { STARS } from "@/game/sky/catalog";
-import { REFERENCE_PAIRS } from "@/learn/basics/references";
+import { NEAR_BRIGHT_STARS, REFERENCE_PAIRS } from "@/learn/basics/references";
 import {
   altAzAt,
   angleBetweenDeg,
+  airmass,
   arcPoints,
+  brightnessRatio,
   clockLabel,
   dayLengthHours,
+  extinctionMag,
   fistsLabel,
   DAILY_EARLIER_SECONDS,
   GALACTIC_CENTER,
@@ -19,6 +22,7 @@ import {
   meanSolarNoonMinutes,
   moonAngularDiameterDeg,
   offLineDeg,
+  parallaxToLightYears,
   noonSunAltitudeDeg,
   raDecToVector,
   SEOUL,
@@ -291,5 +295,40 @@ describe("손 각도와 스타 호핑", () => {
     expect(fistsLabel(9)).toBe("주먹 1개쯤");
     expect(fistsLabel(25.7)).toBe("주먹 2개 반쯤");
     expect(fistsLabel(28.7)).toBe("주먹 3개쯤");
+  });
+});
+
+describe("밝기와 거리", () => {
+  it("5등급 차이는 정확히 100배, 1등급은 약 2.512배", () => {
+    expect(brightnessRatio(5)).toBeCloseTo(100, 9);
+    expect(brightnessRatio(1)).toBeCloseTo(2.512, 3);
+  });
+
+  it("대기층 두께: 머리 위 1, 고도 30° 약 2, 고도 10° 약 5.6", () => {
+    expect(airmass(90)).toBeCloseTo(1, 3);
+    expect(airmass(30)).toBeCloseTo(2, 1);
+    expect(airmass(10)).toBeCloseTo(5.6, 1);
+  });
+
+  it("고도 10°의 별은 머리 위보다 1등급 남짓(약 3배) 어둡다", () => {
+    const d = extinctionMag(10) - extinctionMag(90);
+    expect(d).toBeGreaterThan(1);
+    expect(d).toBeLessThan(1.3);
+    expect(brightnessRatio(d)).toBeCloseTo(2.9, 0);
+  });
+
+  it("센타우루스자리 알파 4.3광년, 시리우스 8.7광년, 프로키온 11.3광년 (BSC5 시차)", () => {
+    const ly = (name: string) =>
+      NEAR_BRIGHT_STARS.find((s) => s.name === name)!.lightYears;
+    expect(ly("시리우스")).toBeCloseTo(8.7, 1);
+    expect(ly("프로키온")).toBeCloseTo(11.3, 1);
+    // 가장 가까운 밝은 별은 센타우루스자리 알파 (서울에서는 뜨지 않는다)
+    expect(NEAR_BRIGHT_STARS[0].name).toBe("알파 센타우리");
+    expect(NEAR_BRIGHT_STARS[0].lightYears).toBeCloseTo(4.3, 1);
+    expect(NEAR_BRIGHT_STARS.every((s) => s.lightYears < 82)).toBe(true);
+  });
+
+  it("1파섹은 3.26광년", () => {
+    expect(parallaxToLightYears(1)).toBeCloseTo(3.26, 2);
   });
 });
