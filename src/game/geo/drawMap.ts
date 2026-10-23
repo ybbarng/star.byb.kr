@@ -21,6 +21,14 @@ export interface MapPin {
   label?: string;
 }
 
+// 아는 만큼 긋는 위도·경도 (어디서 찍었을까?): 위도는 가로선·띠, 경도는 세로선
+export interface MapGuides {
+  latLines?: number[];
+  latBands?: [number, number][]; // [남, 북]
+  lonLines?: number[];
+  color: string; // "r,g,b"
+}
+
 export const mapProjection = (W: number, H: number, v: MapView) => ({
   x: (lon: number) => W / 2 + (lon - v.centerLon) * v.pxPerDeg,
   y: (lat: number) => H / 2 - (lat - v.centerLat) * v.pxPerDeg,
@@ -57,7 +65,13 @@ export const drawWorldMap = (
   H: number,
   view: MapView,
   utc: Date,
-  opts: { timeBands: boolean; pins: MapPin[]; line?: [MapPin, MapPin] },
+  opts: {
+    timeBands: boolean;
+    pins: MapPin[];
+    line?: [MapPin, MapPin];
+    shade?: boolean; // 낮밤 음영 (기본 켬)
+    guides?: MapGuides;
+  },
 ) => {
   const P = mapProjection(W, H, view);
   const offsets = [-360, 0, 360];
@@ -105,33 +119,13 @@ export const drawWorldMap = (
     ctx.stroke();
   }
 
-  // 낮밤: 해가 지평선 아래면 어둡게, 박명(0~-18°)은 그 사이
-  const sunAlt = sunAltitudeAt(utc);
-  const w = Math.ceil(W / SHADE_SCALE);
-  const h = Math.ceil(H / SHADE_SCALE);
-  shadeCanvas ??= document.createElement("canvas");
-  shadeCanvas.width = w;
-  shadeCanvas.height = h;
-  const small = shadeCanvas.getContext("2d")!;
-  const image = small.createImageData(w, h);
-
-  for (let j = 0; j < h; j++) {
-    const lat = Math.max(-90, Math.min(90, P.lat((j + 0.5) * SHADE_SCALE)));
-
-    for (let i = 0; i < w; i++) {
-      const alt = sunAlt(lat, P.lon((i + 0.5) * SHADE_SCALE));
-      const night = Math.max(0, Math.min(1, -alt / 18));
-      const k = (j * w + i) * 4;
-      image.data[k] = 2;
-      image.data[k + 1] = 6;
-      image.data[k + 2] = 22;
-      image.data[k + 3] = Math.round(night * 175);
-    }
+  if (opts.shade !== false) {
+    drawShade(ctx, W, H, P, utc);
   }
 
-  small.putImageData(image, 0, 0);
-  ctx.imageSmoothingEnabled = true;
-  ctx.drawImage(shadeCanvas, 0, 0, w * SHADE_SCALE, h * SHADE_SCALE);
+  if (opts.guides) {
+    drawGuides(ctx, W, H, P, opts.guides);
+  }
 
   // 현지 시각 띠 (쉬움): 경도 15°마다 1시간, 밤 시간대만
   if (opts.timeBands) {
@@ -218,4 +212,75 @@ export const drawWorldMap = (
   }
 
   ctx.textAlign = "start";
+};
+
+type Projection = ReturnType<typeof mapProjection>;
+
+// 낮밤: 해가 지평선 아래면 어둡게, 박명(0~-18°)은 그 사이
+const drawShade = (
+  ctx: CanvasRenderingContext2D,
+  W: number,
+  H: number,
+  P: Projection,
+  utc: Date,
+) => {
+  const sunAlt = sunAltitudeAt(utc);
+  const w = Math.ceil(W / SHADE_SCALE);
+  const h = Math.ceil(H / SHADE_SCALE);
+  shadeCanvas ??= document.createElement("canvas");
+  shadeCanvas.width = w;
+  shadeCanvas.height = h;
+  const small = shadeCanvas.getContext("2d")!;
+  const image = small.createImageData(w, h);
+
+  for (let j = 0; j < h; j++) {
+    const lat = Math.max(-90, Math.min(90, P.lat((j + 0.5) * SHADE_SCALE)));
+
+    for (let i = 0; i < w; i++) {
+      const alt = sunAlt(lat, P.lon((i + 0.5) * SHADE_SCALE));
+      const night = Math.max(0, Math.min(1, -alt / 18));
+      const k = (j * w + i) * 4;
+      image.data[k] = 2;
+      image.data[k + 1] = 6;
+      image.data[k + 2] = 22;
+      image.data[k + 3] = Math.round(night * 175);
+    }
+  }
+
+  small.putImageData(image, 0, 0);
+  ctx.imageSmoothingEnabled = true;
+  ctx.drawImage(shadeCanvas, 0, 0, w * SHADE_SCALE, h * SHADE_SCALE);
+};
+
+// 위도 띠·가로선, 경도 세로선 (경도는 한 바퀴마다 다시 그린다)
+const drawGuides = (
+  ctx: CanvasRenderingContext2D,
+  W: number,
+  H: number,
+  P: Projection,
+  g: MapGuides,
+) => {
+  ctx.fillStyle = `rgba(${g.color},0.22)`;
+
+  for (const [south, north] of g.latBands ?? []) {
+    ctx.fillRect(0, P.y(north), W, P.y(south) - P.y(north));
+  }
+
+  ctx.strokeStyle = `rgba(${g.color},0.95)`;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+
+  for (const lat of g.latLines ?? []) {
+    ctx.moveTo(0, P.y(lat));
+    ctx.lineTo(W, P.y(lat));
+  }
+
+  for (const lon of g.lonLines ?? []) {
+    for (const o of [-360, 0, 360]) {
+      ctx.moveTo(P.x(lon + o), 0);
+      ctx.lineTo(P.x(lon + o), H);
+    }
+  }
+
+  ctx.stroke();
 };

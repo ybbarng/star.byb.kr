@@ -10,6 +10,9 @@ export interface ShotTime {
   note?: string;
 }
 
+// "언제 찍었을까?"에서 고른 시각의 설명. 이 장소는 하늘에서 추정한 값이다.
+export const ESTIMATED_SHOT_NOTE = "사진에서 추정";
+
 export const shotDate = (s: ShotTime) => new Date(`${s.local}${s.offset}`);
 
 // 이 브라우저의 시간대 ("+09:00")

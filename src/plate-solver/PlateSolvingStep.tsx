@@ -1,17 +1,25 @@
 import type { SampleAnswer } from "@/plate-solver/sampleAnswers";
 import type { ShotTime } from "@/plate-solver/shotTime";
+import type { Point3D } from "@/scripts/hash/types";
 import type { HorizonSolveResult } from "@/search/horizonSolve";
 import type { SolvePhase } from "@/search/solvePhoto";
 import type { SolveCandidateResult } from "@/search/solvers";
+import type { LatLon } from "@/search/whereShot";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { autoHorizon } from "@/plate-solver/autoHorizon";
 import { detectPhotoStars } from "@/plate-solver/detectPhotoStars";
 import MiniSkyMap from "@/plate-solver/MiniSkyMap";
 import { getSampleAnswer, matchesAnswer } from "@/plate-solver/sampleAnswers";
-import { getSampleShot, shotDate, shotFromExif } from "@/plate-solver/shotTime";
+import {
+  ESTIMATED_SHOT_NOTE,
+  getSampleShot,
+  shotDate,
+  shotFromExif,
+} from "@/plate-solver/shotTime";
 import ShotTimeControl from "@/plate-solver/ShotTimeControl";
 import ShotTimeEstimator from "@/plate-solver/ShotTimeEstimator";
 import { useContextStore } from "@/plate-solver/store/context";
+import WhereShotCard, { whereSummary } from "@/plate-solver/WhereShotCard";
 import useSkyOverlay from "@/search/hooks/useSkyOverlay";
 import useSolve from "@/search/hooks/useSolve";
 import { HORIZON_ACCEPT_LOG_ODDS } from "@/search/horizonSolve";
@@ -19,6 +27,8 @@ import { DEEP_SKY_OBJECTS, solarSystemObjects } from "@/search/skyObjects";
 import { horizonSolveInWorker } from "@/search/solverClient";
 import { ACCEPT } from "@/search/solvers/candidates";
 import { DEFAULT_DISPLAY_STARS } from "@/search/utils/selectStars";
+import { photoToSky } from "@/search/utils/wcs";
+import { whereShot } from "@/search/whereShot";
 import { readExif } from "@/services/exif";
 import { cn } from "@/utils/cn";
 
@@ -49,6 +59,8 @@ export default function PlateSolvingStep() {
   const [detectError, setDetectError] = useState<string | null>(null);
   const [selected, setSelected] = useState(0);
   const [shot, setShot] = useState<ShotTime | null>(null);
+  // 사진 EXIF의 GPS. 촬영 시각이 없어도 장소만은 쓴다 (어디서 찍었을까?)
+  const [exifGps, setExifGps] = useState<LatLon | null>(null);
   const [showDetected, setShowDetected] = useState(false);
   // 별자리 구역(IAU 경계). 켜면 경계선과 구역 이름을, 끄면 별자리선 이름을 쓴다
   const [showRegions, setShowRegions] = useState(true);
@@ -178,6 +190,7 @@ export default function PlateSolvingStep() {
   }, [solving, outcome, shot, marks.horizon, runHorizonSolve]);
 
   // 촬영 시각: 기록을 아는 샘플이면 그 기록, 아니면 사진의 EXIF. 둘 다 없으면 사람이 넣는다.
+  // EXIF의 GPS는 기록이 있어도 따로 읽어 둔다 (장소는 사진의 위치 정보가 가장 믿을 만하다).
   useEffect(() => {
     if (!image) {
       return;
@@ -185,17 +198,25 @@ export default function PlateSolvingStep() {
 
     const known = getSampleShot(image.src);
     setShot(known);
-
-    if (known) {
-      return;
-    }
+    setExifGps(null);
 
     let cancelled = false;
     fetch(image.src)
       .then((r) => r.arrayBuffer())
       .then((buffer) => {
-        if (!cancelled) {
-          setShot(shotFromExif(readExif(buffer)));
+        if (cancelled) {
+          return;
+        }
+
+        const exif = readExif(buffer);
+        setExifGps(
+          exif?.latDeg != null && exif.lonDeg != null
+            ? { latDeg: exif.latDeg, lonDeg: exif.lonDeg }
+            : null,
+        );
+
+        if (!known) {
+          setShot(shotFromExif(exif));
         }
       })
       .catch(() => {});
@@ -371,16 +392,68 @@ export default function PlateSolvingStep() {
     return [...new Set(names)];
   }, [skyConstellations, image]);
 
+  const transformForWhere =
+    !fisheyeCamera && !solving
+      ? (horizonTP ?? outcome?.candidates[selected]?.transform)
+      : undefined;
+
+  // 어디서 찍었을까? 사진 GPS → 기록·입력한 장소 → 지평선 → 사진에 담긴 별 순으로
+  const where = useMemo(() => {
+    if (!image) {
+      return null;
+    }
+
+    // "언제 찍었을까?"에서 고른 시각은 장소가 하늘에서 추정한 값이라 입력한 장소로 보지 않는다
+    const place =
+      shot?.observer &&
+      (shot.source === "record" ||
+        (shot.source === "manual" && shot.note !== ESTIMATED_SHOT_NOTE))
+        ? { ...shot.observer, source: shot.source }
+        : null;
+    const T = transformForWhere;
+    const toSky = (p: [number, number]) => photoToSky(T!, p);
+
+    // 별 범위는 찾은 별 중 카탈로그 별과 겹친 것(맞는 별)만 쓴다. 사진 모서리를 되돌리면
+    // 땅·건물 쪽 방향까지 들어가 범위가 틀리게 좁아지고, 검출만 쓰면 불빛이 섞인다.
+    const unit = Math.hypot(image.width, image.height) / 1400;
+    const stars: Point3D[] = T
+      ? photoStars
+          .filter((p) =>
+            skyStars.some((s) => Math.hypot(s.x - p.x, s.y - p.y) < 8 * unit),
+          )
+          .map((p) => toSky([p.x, p.y]))
+      : [];
+
+    return whereShot({
+      exif: exifGps,
+      place,
+      horizon:
+        T && marks.horizon.length === 2
+          ? {
+              a: toSky(marks.horizon[0]),
+              b: toSky(marks.horizon[1]),
+              sky: toSky([image.width / 2, 0]),
+            }
+          : null,
+      stars,
+    });
+  }, [
+    image,
+    shot,
+    exifGps,
+    transformForWhere,
+    marks.horizon,
+    photoStars,
+    skyStars,
+  ]);
+
   if (!image) {
     return null;
   }
 
   const candidates = outcome?.candidates ?? [];
   const answer = getSampleAnswer(image.src);
-  const selectedTransform =
-    !fisheyeCamera && !solving
-      ? (horizonTP ?? candidates[selected]?.transform)
-      : undefined;
+  const selectedTransform = transformForWhere;
   // 별을 찾은 뒤 풀이가 시작되기 전 잠깐도 진행 중으로 본다
   const busy =
     detecting ||
@@ -631,6 +704,20 @@ export default function PlateSolvingStep() {
                 <p className="text-xs">{horizonRun.message}</p>
               )}
             </div>
+          </Section>
+        )}
+
+        {confident && where && (
+          <Section
+            title="어디서 찍었을까?"
+            summary={whereSummary(where)}
+            defaultOpen
+          >
+            <WhereShotCard
+              where={where}
+              recordNote={shot?.note}
+              onPickHorizon={() => goTo("edit", "horizon")}
+            />
           </Section>
         )}
 

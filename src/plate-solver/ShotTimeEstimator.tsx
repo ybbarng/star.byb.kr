@@ -3,6 +3,7 @@ import type { EstimateMarks } from "@/plate-solver/types";
 import type { ShotCandidate } from "@/search/shotTimeEstimate";
 import type { Mat3 } from "@/search/utils/similarity";
 import { useMemo, useState } from "react";
+import { ESTIMATED_SHOT_NOTE } from "@/plate-solver/shotTime";
 import {
   estimateShotTimes,
   skyClockOf,
@@ -161,7 +162,7 @@ export default function ShotTimeEstimator({
                           lonDeg,
                         },
                         source: "manual",
-                        note: "사진에서 추정",
+                        note: ESTIMATED_SHOT_NOTE,
                       })
                     }
                   >

@@ -1,6 +1,6 @@
 "use client";
 
-import type { MapPin, MapView } from "@/game/geo/drawMap";
+import type { MapGuides, MapPin, MapView } from "@/game/geo/drawMap";
 import { useEffect, useRef, useState } from "react";
 import { drawWorldMap, mapProjection } from "@/game/geo/drawMap";
 import { clockLabel } from "@/game/geo/problem";
@@ -21,6 +21,8 @@ export default function WorldMap({
   line,
   onPick,
   focus,
+  shade,
+  guides,
 }: {
   utc: Date;
   timeBands: boolean;
@@ -29,6 +31,8 @@ export default function WorldMap({
   line?: [MapPin, MapPin];
   onPick?: (latDeg: number, lonDeg: number) => void;
   focus?: { latDeg: number; lonDeg: number }; // 결과 화면: 이곳을 가운데로
+  shade?: boolean; // 낮밤 음영 (기본 켬)
+  guides?: MapGuides; // 위도 띠·선, 경도 선
 }) {
   const wrapper = useRef<HTMLDivElement>(null);
   const fitted = useRef(false);
@@ -96,8 +100,14 @@ export default function WorldMap({
     ctx.canvas.width = Math.round(size.w * dpr);
     ctx.canvas.height = Math.round(size.h * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    drawWorldMap(ctx, size.w, size.h, view, utc, { timeBands, pins, line });
-  }, [size, view, utc, timeBands, pins, line]);
+    drawWorldMap(ctx, size.w, size.h, view, utc, {
+      timeBands,
+      pins,
+      line,
+      shade,
+      guides,
+    });
+  }, [size, view, utc, timeBands, pins, line, shade, guides]);
 
   // 휠 확대 (커서 자리를 고정한 채)
   useEffect(() => {
