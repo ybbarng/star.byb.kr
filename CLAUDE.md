@@ -39,10 +39,12 @@ src/
 ├── app/                       # Next.js App Router 페이지
 │   ├── page.tsx               # 홈 (/)
 │   ├── plate-solver/          # Plate Solver 메인 (/plate-solver)
-│   ├── games/                 # 별 놀이터 (/games, 게임 여섯 개)
-│   ├── learn/                 # 찾는 원리 (/learn, 단계별 설명·데모 — 발표 자료로도 쓴다, 부품은 src/learn)
+│   ├── games/                 # 별 놀이터 (/games: 별자리 익히기 + 게임 12개 + 둘러보기 7개, 목록 src/game/hub.ts)
+│   ├── learn/                 # 찾는 원리 (/learn, 단계별 설명·데모, 부품은 src/learn)
+│   │   └── basics/            # 하늘 읽기 기초 (/learn/basics/<slug>, 목차 src/learn/basics/topics.ts — 좌표·항성시·기울기·스타 호핑 등 9쪽)
 │   └── embed/[demo]/          # 찾는 원리 데모를 발표 화면에 하나씩 (/embed/<이름>)
-├── game/                      # 별 놀이터(게임): sky(공용 밤하늘 그리기·장면·카탈로그), 게임별 폴더 — docs/game-plans.md
+├── game/                      # 별 놀이터(게임): sky(공용 밤하늘 그리기·장면·카탈로그), starSchool(별자리 익히기: 도감·카드 연습·길잡이 수업·관계 맞히기), 게임별 폴더 — docs/game-plans.md
+│                              # 게임·기초·찾는 원리는 서로 링크로 잇는다 (hub.ts의 basics, topics.ts의 쓰는 곳 — test/unit/learningWeb.test.ts가 확인)
 ├── plate-solver/              # Plate Solver UI 컴포넌트 & 상태
 │   ├── store/                 # Zustand store (context, steps)
 │   ├── SelectPhotoStep.tsx    # Step 0: 사진 선택
@@ -106,7 +108,7 @@ HEALPix로 천구를 192개 셀(nside=4, 셀 중심에서 10°)로 나눔 → �
    - 직선투영으로 확신 못 하면 어안 blind 풀이 시도
 4. **별자리 표시**: 선택한 해의 변환으로 카탈로그 별/별자리를 사진 좌표로 투영 (카메라 뒤쪽 별은 제외).
    유명한 딥스카이(`skyObjects.ts`)는 늘, 해·달·행성(`utils/ephemeris.ts`·`utils/planets.ts`)은 촬영 시각
-   (샘플 기록 → EXIF → 사람이 입력)을 알 때만 그린다
+   (샘플 기록 → EXIF → 올린 파일 이름 → 사람이 입력)을 알 때만 그린다. 파일 이름(`20240401_232411` 꼴)은 시간대를 추정한다 (Pixel `PXL_`은 UTC)
 5. **촬영 시각 추정** (`shotTimeEstimate.ts`): 사람이 찍은 지평선 두 점 → 천정 → 위도·지방 항성시 →
    날짜별로 같은 하늘이 되는 밤 시각. 달을 찍으면 달 위치가 맞는 날짜 순 (달 모양으로 27.3일 간격을 가른다)
 6. **시각·장소·지평선 풀이** (`horizonSolve.ts`, 별이 10개 안팎이라 blind가 확신 못 하는 사진): 촬영 시각(범위)·장소와
@@ -114,6 +116,12 @@ HEALPix로 천구를 192개 셀(nside=4, 셀 중심에서 10°)로 나눔 → �
    기준은 합성 장면 130개(`synthetic/horizonScene.ts`)로 정했다 (사이판 사진이 이것으로 풀린다)
    - 지평선은 자동으로 제안한다 (`utils/horizonDetect.ts`: 열마다 밝기 계단 → RANSAC 직선). 틀리면 사람이 다시 찍는다.
      blind가 확신 못 하고 촬영 시각·장소가 있으면 시각·장소 풀이가 자동으로 돈다 (사이판 샘플은 클릭 없이 풀린다)
+   - blind가 이미 확신했으면 이 풀이는 권하지 않는다 (지평선이 1°쯤 틀어지면 확신을 못 해 헷갈렸다)
+7. **어디서 찍었을까·방위** (`whereShot.ts`, `compass.ts`, 카드 `plate-solver/WhereShotCard.tsx`): 사진 GPS → 샘플 기록·입력한 장소 →
+   지평선(위도, 시간대까지 아는 촬영 시각이 있으면 경도도: 천정의 지방 항성시 − 그리니치 항성시) →
+   시간대까지 아는 촬영 시각만 있으면 그 순간 사진 속 별이 모두 떠 있고 해가 −12° 아래인 곳을 지도에 칠한다 →
+   그것도 없으면 별들이 보이는 위도 범위. 사진 GPS·기록·입력이 아니면 "(추정)"을 붙인다.
+   방위(동서남북)는 지평선 두 점이나 촬영 시각·장소로 지평 좌표계를 알 때만 사진 위에 그린다 (모르면 그리지 않는다)
 
 점검 결과와 개선 계획: `docs/improvement-plan.md`, 시도·발견 기록: `docs/experiments-journey.md`, 다운로드 용량 최적화(발표용): `docs/download-optimization.md`
 
