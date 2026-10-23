@@ -286,3 +286,135 @@ export const EXTINCTION_MAG_PER_AIRMASS = 0.25;
 
 export const extinctionMag = (altDeg: number, k = EXTINCTION_MAG_PER_AIRMASS) =>
   k * airmass(altDeg);
+
+// ── 둥근 하늘 그림 (천정이 가운데, 가장자리가 지평선) ──────────────
+// 남쪽을 보고 서서 머리 위로 들어 올린 모습이라 북이 위, 동이 왼쪽이다 (오늘 밤 내 하늘과 같은 평사 투영).
+// 지평선 아래(up < −0.02)는 null
+export const domeProjector = (
+  t: number,
+  observer: Observer,
+  R: number,
+  cx: number,
+  cy: number,
+) => {
+  const f = horizontalFrameJ2000(julianDay(new Date(t)), observer);
+
+  return (v: Point3D) => {
+    const up = dot(f.zenith, v);
+
+    if (up < -0.02) {
+      return null;
+    }
+
+    const k = R / (1 + up);
+
+    return { x: cx - k * dot(f.east, v), y: cy - k * dot(f.north, v), up };
+  };
+};
+
+// ── 지구 위의 거리와 시각 ─────────────────────────────────
+// 자오선 둘레 약 40,008km → 위도 1°는 어디서나 약 111km
+export const KM_PER_DEG_LAT = 40008 / 360;
+
+// 경도 1°의 길이는 위도가 높을수록 짧다 (적도 둘레 40,075km × cos 위도)
+export const kmPerDegLon = (latDeg: number) =>
+  (40075 / 360) * Math.cos(latDeg * D);
+
+// 지구는 한 시간에 15°씩 돈다. 경도 lonDeg인 곳에서 평균 해가 남중하는 시각 (그 나라 시각, 분).
+// 균시차(해가 한 해 동안 최대 16분 앞서고 늦는 것)는 뺀다
+export const meanSolarNoonMinutes = (lonDeg: number, utcOffsetHours: number) =>
+  12 * 60 + (utcOffsetHours * 15 - lonDeg) * 4;
+
+// ── 적도 좌표와 지평 좌표를 잇는 값 ──────────────────────
+// 시간각: 별이 남중(자오선)을 지나고 얼마나 서쪽으로 돌았나 = 지방 항성시 − 적경
+export const hourAngleDeg = (lstDeg: number, raDeg: number) =>
+  ((((lstDeg - raDeg + 180) % 360) + 360) % 360) - 180;
+
+// 그 위도에서 이 적위의 별이 가장 높이 뜰 때의 고도
+export const maxAltitudeDeg = (latDeg: number, decDeg: number) =>
+  90 - Math.abs(latDeg - decDeg);
+
+// 지지 않는 별 / 뜨고 지는 별 / 뜨지 않는 별 (대기 굴절은 뺀다)
+export const starVisibility = (latDeg: number, decDeg: number) =>
+  latDeg >= 0
+    ? decDeg > 90 - latDeg
+      ? "circumpolar"
+      : decDeg < latDeg - 90
+        ? "never"
+        : "rises"
+    : decDeg < -90 - latDeg
+      ? "circumpolar"
+      : decDeg > latDeg + 90
+        ? "never"
+        : "rises";
+
+// 낮의 길이(시간): 해 윗가장자리가 지평선에 닿는 때 기준 (대기 굴절 34′ + 해 반지름 16′ = −0.833°)
+export const dayLengthHours = (latDeg: number, sunDecDeg: number) => {
+  const h0 = -0.833 * D;
+  const c =
+    (Math.sin(h0) - Math.sin(latDeg * D) * Math.sin(sunDecDeg * D)) /
+    (Math.cos(latDeg * D) * Math.cos(sunDecDeg * D));
+
+  if (c <= -1) {
+    return 24;
+  }
+
+  if (c >= 1) {
+    return 0;
+  }
+
+  return (2 * Math.acos(c)) / D / 15;
+};
+
+// 별이 남중하는 시각: 그날(그 나라 시각 0시부터 24시간 안) 지방 항성시가 적경과 같아지는 때 (분)
+export const transitMinutes = (
+  raDeg: number,
+  year: number,
+  month: number, // 1~12
+  day: number,
+  observer: Observer,
+  utcOffsetHours: number,
+) => {
+  const t0 = Date.UTC(year, month - 1, day) - utcOffsetHours * 3600000;
+  const lst0 = gmstDeg(julianDay(new Date(t0))) + observer.lonDeg;
+  const dDeg = (((raDeg - lst0) % 360) + 360) % 360;
+
+  return ((dDeg / (360 + GMST_EXTRA_DEG_PER_DAY)) * 86400) / 60;
+};
+
+export const clockLabel = (minutes: number) => {
+  const m = Math.round(((minutes % 1440) + 1440) % 1440);
+
+  return `${Math.floor(m / 60)}:${String(m % 60).padStart(2, "0")}`;
+};
+
+// ── 하늘에서 두 방향 사이를 잇는 큰 원의 호 ──────────────────
+// a에서 b까지 (extend > 1이면 b를 지나 그 배수만큼 더 간다: 지시별 × 5 → 북극성)
+export const arcPoints = (
+  a: Point3D,
+  b: Point3D,
+  extend = 1,
+  steps = 32,
+): Point3D[] => {
+  const theta = angleBetweenDeg(a, b) * D;
+
+  if (theta < 1e-9) {
+    return [a];
+  }
+
+  return Array.from({ length: steps + 1 }, (_, i) => {
+    const s = (i / steps) * extend * theta;
+    const k1 = Math.sin(theta - s) / Math.sin(theta);
+    const k2 = Math.sin(s) / Math.sin(theta);
+
+    return [0, 1, 2].map((j) => k1 * a[j] + k2 * b[j]) as Point3D;
+  });
+};
+
+// 큰 원 a→b(연장선 포함)에서 점 v가 얼마나 벗어났나 (도)
+export const offLineDeg = (a: Point3D, b: Point3D, v: Point3D) => {
+  const n = cross(a, b);
+  const len = Math.hypot(n[0], n[1], n[2]);
+
+  return Math.abs(Math.asin(dot(n, v) / len)) / D;
+};

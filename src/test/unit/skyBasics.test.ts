@@ -2,16 +2,26 @@ import { describe, expect, it } from "vitest";
 import { GAMES } from "@/game/hub";
 import { STARS } from "@/game/sky/catalog";
 import {
+  altAzAt,
   angleBetweenDeg,
+  clockLabel,
   DAILY_EARLIER_SECONDS,
   GALACTIC_CENTER,
   GALACTIC_TILT_DEG,
   galacticToVector,
+  KM_PER_DEG_LAT,
+  kmPerDegLon,
+  maxAltitudeDeg,
+  meanSolarNoonMinutes,
   noonSunAltitudeDeg,
   raDecToVector,
+  SEOUL,
   SIDEREAL_DAY_SECONDS,
+  starVisibility,
   sunDeclinationExtremes,
+  transitMinutes,
   vectorToGalactic,
+  vectorToRaDec,
 } from "@/learn/basics/skyMath";
 import { BASICS_TOPICS } from "@/learn/basics/topics";
 import { LEARN_STEPS } from "@/learn/steps";
@@ -118,5 +128,67 @@ describe("은하 좌표", () => {
     const g = vectorToGalactic(v);
     expect(Math.abs(g.bDeg)).toBeLessThan(0.1 / 3600);
     expect(Math.min(g.lDeg, 360 - g.lDeg)).toBeLessThan(0.1 / 3600);
+  });
+});
+
+describe("지구 위의 좌표", () => {
+  it("위도 1°는 약 111km, 서울에서 경도 1°는 약 88km", () => {
+    expect(KM_PER_DEG_LAT).toBeCloseTo(111.1, 1);
+    expect(kmPerDegLon(SEOUL.latDeg)).toBeCloseTo(88.2, 0);
+  });
+
+  it("서울의 평균 해는 한국 시각 12시 32분에 남중한다", () => {
+    expect(clockLabel(meanSolarNoonMinutes(SEOUL.lonDeg, 9))).toBe("12:32");
+  });
+});
+
+describe("하늘의 좌표", () => {
+  it("서울에서 직녀성은 89°, 시리우스는 36°까지 뜬다", () => {
+    const dec = (n: string) => vectorToRaDec(byLatin(n).vector).decDeg;
+    expect(maxAltitudeDeg(SEOUL.latDeg, dec("Vega"))).toBeCloseTo(88.8, 0);
+    expect(maxAltitudeDeg(SEOUL.latDeg, dec("Sirius"))).toBeCloseTo(35.7, 0);
+  });
+
+  it("서울에서 적위 +52.4° 북쪽은 지지 않고, −52.4° 남쪽은 뜨지 않는다", () => {
+    expect(starVisibility(SEOUL.latDeg, 53)).toBe("circumpolar");
+    expect(starVisibility(SEOUL.latDeg, 52)).toBe("rises");
+    expect(starVisibility(SEOUL.latDeg, -53)).toBe("never");
+    expect(starVisibility(-33.87, -60)).toBe("circumpolar");
+  });
+
+  it("베텔게우스의 적경은 5h 55m", () => {
+    expect(vectorToRaDec(byLatin("Betelgeuse").vector).raDeg / 15).toBeCloseTo(
+      5.92,
+      2,
+    );
+  });
+
+  it("남중 시각에는 정남(방위 180°)에 있다", () => {
+    const v = byLatin("Betelgeuse").vector;
+    const m = transitMinutes(vectorToRaDec(v).raDeg, 2026, 1, 15, SEOUL, 9);
+    const t = Date.UTC(2026, 0, 15) - 9 * 3600000 + m * 60000;
+    const { azDeg, altDeg } = altAzAt(v, t, SEOUL);
+    // 별 지도(2000년)와 그날 기준 항성시의 차이 0.4°만큼 어긋날 수 있다
+    expect(Math.abs(azDeg - 180)).toBeLessThan(1);
+    expect(altDeg).toBeCloseTo(maxAltitudeDeg(SEOUL.latDeg, 7.41), 0);
+  });
+});
+
+describe("하루 4분", () => {
+  it("베텔게우스의 남중은 한 달에 약 2시간씩 이르다", () => {
+    const ra = vectorToRaDec(byLatin("Betelgeuse").vector).raDeg;
+    const m = Array.from({ length: 12 }, (_, i) =>
+      transitMinutes(ra, 2026, i + 1, 1, SEOUL, 9),
+    );
+
+    for (let i = 1; i < 12; i++) {
+      const earlier = (((m[i - 1] - m[i]) % 1440) + 1440) % 1440;
+      expect(earlier).toBeGreaterThan(105);
+      expect(earlier).toBeLessThan(126);
+    }
+
+    // 1월 1일 자정 무렵, 7월 1일에는 낮(정오 무렵)에 남중
+    expect(Math.min(m[0], 1440 - m[0])).toBeLessThan(30);
+    expect(Math.abs(m[6] - 12 * 60)).toBeLessThan(60);
   });
 });
