@@ -418,6 +418,14 @@ describe("도감", () => {
     expect([4, 5, 6]).toContain(best.month);
   });
 
+  it("북쪽왕관자리에는 재발 신성 T의 이야기가 있고, 날짜를 단정하지 않는다", () => {
+    const story = dexEntry("c:북쪽왕관자리")!.story;
+
+    expect(story).toContain("1866");
+    expect(story).toContain("1946");
+    expect(story).not.toMatch(/20[2-9]\d년에? (폭발|터)/);
+  });
+
   it("작은곰자리는 서울에서 지지 않는다", () => {
     expect(eveningBest(dexEntry("c:작은곰자리")!.center).allYear).toBe(true);
   });

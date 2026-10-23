@@ -16,7 +16,7 @@ export default function Page() {
           방법을 알게 돼요.
         </p>
       </div>
-      {(["game", "explore"] as const).map((kind, k) => (
+      {(["learn", "game", "explore"] as const).map((kind, k) => (
         <section key={kind} className="flex flex-col gap-3">
           <div className="flex flex-wrap items-baseline gap-x-3">
             <h2 className="text-2xl font-bold">{KIND_LABELS[kind].title}</h2>
@@ -49,7 +49,11 @@ export default function Page() {
                     </p>
                     {g.ready && (
                       <span className="text-primary text-sm font-bold">
-                        {g.kind === "game" ? "플레이 →" : "둘러보기 →"}
+                        {g.kind === "game"
+                          ? "플레이 →"
+                          : g.kind === "learn"
+                            ? "배우러 가기 →"
+                            : "둘러보기 →"}
                       </span>
                     )}
                   </div>

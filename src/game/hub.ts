@@ -1,8 +1,12 @@
 // 게임 허브("별 놀이터")에 보여 줄 목록 (docs/game-plans.md).
 // 점수를 겨루는 게임과, 게임은 아니지만 하늘을 만져 보며 둘러보는 것(둘러보기)을 나눠 보여 준다
-export type GameKind = "game" | "explore";
+export type GameKind = "learn" | "game" | "explore";
 
 export const KIND_LABELS: Record<GameKind, { title: string; note: string }> = {
+  learn: {
+    title: "배우기",
+    note: "별자리 모양과 서로의 자리를 차근차근 익혀요",
+  },
   game: { title: "게임", note: "점수를 겨루며 하늘 읽는 법을 익혀요" },
   explore: {
     title: "둘러보기",
@@ -22,6 +26,18 @@ export interface GameEntry {
 }
 
 export const GAMES: GameEntry[] = [
+  {
+    href: "/games/star-school",
+    kind: "learn",
+    title: "별자리 익히기",
+    summary:
+      "도감을 모으고, 카드로 모양을 익히고, 실제 하늘에서 별 징검다리를 건너요. 사계절 도장을 모으면 남반구 하늘이 열려요!",
+    learn:
+      "별자리 88개의 모양, 길잡이 모양(대삼각형·대사각형), 별 사이 길 찾기, 황도 13개, 남십자",
+    ready: true,
+    icon: "🏫",
+    accent: "from-amber-200/50 to-indigo-500/10",
+  },
   {
     href: "/games/sky-guessr",
     kind: "game",

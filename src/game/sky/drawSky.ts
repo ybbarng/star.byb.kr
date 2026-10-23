@@ -44,6 +44,12 @@ export interface DrawSkyOptions {
   mountains?: Mountain[];
   // 구름: 하늘의 그 자리(고도·방위)를 덮어 별을 가린다
   clouds?: Cloud[];
+  // 별보다 먼저(하늘 바탕 위에) 그릴 것: 은하수처럼 별 뒤에 깔리는 빛. 하늘 밝기(달빛·박명·광해, 0~1)를 받아 그만큼 흐리게 그린다
+  underlay?: (
+    ctx: CanvasRenderingContext2D,
+    project: (v: Point3D) => Point2D | null,
+    skyGlow: number,
+  ) => void;
 }
 
 export interface Mountain {
@@ -178,6 +184,8 @@ export const drawSky = (
       ctx.restore();
     }
   }
+
+  o.underlay?.(ctx, project, Math.min(1, Math.max(moonGlow, dusk, lp)));
 
   // 2) 별: 밝은 달·박명·광해가 어두운 별을 지운다. 지평선 근처는 대기에 묻힌다.
   const limit =

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { readBest } from "@/game/fx/Fx";
+import { loadSave, rankOf } from "@/game/starSchool/progress";
 
 // 허브 카드에 보여 줄 내 기록 (이 브라우저에 남긴 최고 기록)
 // 난이도별 최고 점수 중 가장 높은 것 (점수가 클수록 좋은 게임)
@@ -87,6 +88,13 @@ const RECORDS: Record<string, () => string | null> = {
 
     return scores.length
       ? `최고 ${Math.max(...scores).toLocaleString()}점`
+      : null;
+  },
+  "/games/star-school": () => {
+    const save = loadSave();
+
+    return save.xp > 0
+      ? `${rankOf(save.xp).rank.title} · 도감 ${save.learned.length}`
       : null;
   },
   "/games/light-time-capsule": () => {

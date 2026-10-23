@@ -6,9 +6,11 @@ import {
   uniqueStars,
 } from "@/game/sky/catalog";
 import { asterismById } from "@/game/starSchool/asterisms";
+import { deepSkyById } from "@/game/starSchool/deepSky";
 import {
   centerOf,
   hrVector,
+  raDecVector,
   separationDeg,
   STAR_BY_HR,
 } from "@/game/starSchool/skyMath";
@@ -73,17 +75,20 @@ const build = (
   lineVectors: Point3D[][],
   memberVectors: Point3D[],
   fieldMag: number,
+  minRadiusDeg = 2,
 ): Figure => {
   const plane = planeOf(center);
   const keys = memberVectors.map(keyOf);
   const raw = memberVectors.map(plane);
   const radiusDeg = Math.max(
     ...memberVectors.map((v) => separationDeg(v, center)),
-    2,
+    minRadiusDeg,
   );
   const scale =
-    Math.max(...raw.map(([x, y]) => Math.max(Math.abs(x), Math.abs(y))), 1e-6) *
-    1.08;
+    Math.max(
+      ...raw.map(([x, y]) => Math.max(Math.abs(x), Math.abs(y))),
+      Math.tan((minRadiusDeg * Math.PI) / 180),
+    ) * 1.08;
   const fit = ([x, y]: [number, number]): [number, number] => [
     x / scale,
     y / scale,
@@ -170,6 +175,23 @@ export const asterismFigure = (id: string): Figure => {
     vs,
     3.8,
   );
+  cache.set(key, f);
+
+  return f;
+};
+
+// 딥스카이: 그 자리를 가운데 두고 둘레 별들과 함께 (반지름 9° 안팎)
+export const deepSkyFigure = (id: string): Figure => {
+  const key = `d:${id}`;
+  const hit = cache.get(key);
+
+  if (hit) {
+    return hit;
+  }
+
+  const d = deepSkyById(id);
+  const v = raDecVector(d.raDeg, d.decDeg);
+  const f = build(v, [], [v], 4.5, Math.max(9, d.sizeDeg * 1.5));
   cache.set(key, f);
 
   return f;

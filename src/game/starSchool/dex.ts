@@ -44,6 +44,12 @@ export interface DexEntry {
   extra?: string; // 거리 등 한 줄
 }
 
+// 도감에만 덧붙이는 이야기 한 줄
+const STORY_NOTES: Record<string, string> = {
+  북쪽왕관자리:
+    "왕관 곁의 북쪽왕관자리 T(HR 5958)는 '불꽃 별'이라 불리는 재발 신성이에요. 평소엔 약 10등급이라 맨눈에 안 보이지만 약 80년마다 폭발해 며칠 동안 2~3등급까지 밝아져요. 기록된 폭발은 1866년과 1946년이고, 2015년부터 폭발 전 신호가 다시 보여 다음 폭발을 기다리고 있어요.",
+};
+
 const FAMOUS_TIPS = new Map(FAMOUS.map((f) => [f.label, f.tip]));
 const EASY = new Set(findTargets("easy").map((t) => t.label));
 const NORMAL = new Set(findTargets("normal").map((t) => t.label));
@@ -83,7 +89,9 @@ const constellationEntries = (): DexEntry[] =>
       name: t.label,
       fame: EASY.has(t.label) ? 3 : NORMAL.has(t.label) ? 2 : 1,
       season: t.season,
-      story: t.story,
+      story: STORY_NOTES[t.label]
+        ? `${t.story} ${STORY_NOTES[t.label]}`
+        : t.story,
       howTo: FAMOUS_TIPS.get(t.label),
       hemisphere: hemisphereOf(center),
       center,
