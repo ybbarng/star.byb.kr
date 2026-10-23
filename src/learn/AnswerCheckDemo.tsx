@@ -9,7 +9,7 @@ import { projectVecToPhoto } from "@/search/utils/wcs";
 // 답 확인 데모: 서울 누각 사진의 진짜 별만 남기고(V2에서 사람이 별을 고친 것처럼) V2 방식으로 quad를 찾는다.
 // 오른쪽 그래프는 지문 거리 순 앞쪽 후보 20개: 점 하나가 사진 quad 하나와 그 짝 지도 quad이고, 가운데(+)에서의 거리가
 // 두 지문의 차이다 (가운데 = 지문이 똑같음).
-// 점을 누르면 그 후보대로 별 지도를 사진에 겹친다. 식별에 쓴 별(빨강)은 당연히 겹치고, 그 밖에 겹친 별(초록)이
+// 점을 누르면 그 후보대로 별 지도를 사진에 겹친다. 짝지은 별(빨강)은 당연히 겹치고, 그 밖에 겹친 별(초록)이
 // 답이 맞는지 알려 준다 — 지문이 가장 가까운 1등(주황)보다 15등인 정답(보라)이 훨씬 많이 겹친다.
 // 자료: public/learn/candidates-seoul.json (scripts/learn/buildDemoData.ts)
 
@@ -90,7 +90,7 @@ export default function AnswerCheckDemo() {
     context.fillStyle = "rgba(5,8,20,0.45)";
     context.fillRect(0, 0, W, H);
 
-    // 발표 화면에서도 또렷하게: 사진 별은 노란 점, 답대로 놓은 별 지도는 파란 원, 식별에 쓴 별은 빨간 원.
+    // 발표 화면에서도 또렷하게: 사진 별은 노란 점, 답대로 놓은 별 지도는 파란 원, 짝지은 별은 빨간 원.
     // 노란 점이 파란 원 안에 들면 겹친 것이다.
     context.lineWidth = 3;
     context.strokeStyle = "#60a5fa";
@@ -109,7 +109,7 @@ export default function AnswerCheckDemo() {
       context.fill();
     }
 
-    // 식별에 쓴 별을 잇는 다각형 외곽선 (얇은 빨간 점선). 무게중심 둘레 각도 순으로 이어 선이 엇갈리지 않게
+    // 짝지은 별을 잇는 다각형 외곽선 (얇은 빨간 점선). 무게중심 둘레 각도 순으로 이어 선이 엇갈리지 않게
     const corners = pick.seeds.map((i) => photo[i]);
     const cx = corners.reduce((sum, p) => sum + p[0], 0) / corners.length;
     const cy = corners.reduce((sum, p) => sum + p[1], 0) / corners.length;
@@ -128,7 +128,7 @@ export default function AnswerCheckDemo() {
     context.stroke();
     context.setLineDash([]);
 
-    // 겹친 별: 초록 원 (식별에 쓴 별은 빨간 원). 노란 점·파란 원·초록 원이 과녁처럼 보인다
+    // 겹친 별: 초록 원 (짝지은 별은 빨간 원). 노란 점·파란 원·초록 원이 과녁처럼 보인다
     context.lineWidth = 4;
     context.strokeStyle = "#4ade80";
 
@@ -188,7 +188,7 @@ export default function AnswerCheckDemo() {
             <span className="text-blue-400">◯</span> 답대로 놓은 별 지도
           </li>
           <li>
-            <span className="text-red-500">◯</span> 식별에 쓴 별
+            <span className="text-red-500">◯</span> 짝지은 별
           </li>
           <li>
             <span className="text-green-400">◯</span> 그 밖에 겹친 별
@@ -278,7 +278,7 @@ export default function AnswerCheckDemo() {
             {pick.real && <span className="text-purple-300"> · 정답</span>}
           </div>
           <div className="text-sm opacity-80">
-            겹친 별 <b>{pick.count}개</b> = 식별에 쓴 별{" "}
+            겹친 별 <b>{pick.count}개</b> = 짝지은 별{" "}
             <span className="text-red-400">{pick.seeds.length}</span> + 그 밖에{" "}
             <b className="text-green-400">{pick.count - pick.seeds.length}</b>
           </div>

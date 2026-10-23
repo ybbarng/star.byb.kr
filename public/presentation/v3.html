@@ -349,9 +349,9 @@
         </section>
 
         <section class="title-body-slide">
-          <h1>별의 배치를 식별하려면?</h1>
+          <h1>별 배치를 알아보려면?</h1>
           <div class="body">
-            <p class="subtitle">별 4개로 회전, 크기, 이동에 강건한 지문 만들기</p>
+            <p class="subtitle">별 4개로, 돌려도 키워도 옮겨도 그대로인 지문 만들기</p>
             <div class="demo-frame" style="height: 82%;">
               <iframe src="/embed/quad-hash"></iframe>
             </div>
@@ -426,27 +426,27 @@
           <div class="body center">
             <div class="thumbs">
               <div class="cell"><img src="/samples/thumbs/big-dipper.webp"><span class="stamp">성공</span></div>
-              <div class="cell"><img src="/samples/thumbs/20220607-berry-seoul.webp"><span class="stamp fail">실패</span></div>
-              <div class="cell"><img src="/samples/thumbs/20220328-brice-Milky Way over Buzzvil.webp"><span class="stamp fail">실패</span></div>
-              <div class="cell"><img src="/samples/thumbs/20190617-jarrod-saipan.webp"><span class="stamp fail">실패</span></div>
+              <div class="cell"><img src="/samples/thumbs/20220607-berry-seoul.webp"><span class="stamp fail">틀림</span></div>
+              <div class="cell"><img src="/samples/thumbs/20220328-brice-Milky Way over Buzzvil.webp"><span class="stamp fail">틀림</span></div>
+              <div class="cell"><img src="/samples/thumbs/20190617-jarrod-saipan.webp"><span class="stamp fail">틀림</span></div>
               <div class="cell"><img src="/samples/thumbs/20231012-nike-aust-01.webp"><span class="stamp">성공</span></div>
               <div class="cell"><img src="/samples/thumbs/20231012-nike-aust-02.webp"><span class="stamp">성공</span></div>
-              <div class="cell"><img src="/samples/thumbs/20230904-nike-jeungseun-01.webp"><span class="stamp fail">실패</span></div>
-              <div class="cell"><img src="/samples/thumbs/20230904-nike-jeungseun-02.webp"><span class="stamp fail">실패</span></div>
-              <div class="cell"><img src="/samples/thumbs/20230904-nike-jeungseun-03.webp"><span class="stamp fail">실패</span></div>
-              <div class="cell"><img src="/samples/thumbs/20230904-nike-jeungseun-04.webp"><span class="stamp fail">실패</span></div>
-              <div class="cell"><img src="/samples/thumbs/20250117-carl-aurora-01.webp"><span class="stamp fail">실패</span></div>
-              <div class="cell"><img src="/samples/thumbs/20250117-carl-aurora-02.webp"><span class="stamp fail">실패</span></div>
-              <div class="cell"><img src="/samples/thumbs/20250117-carl-aurora-03.webp"><span class="stamp fail">실패</span></div>
-              <div class="cell"><img src="/samples/thumbs/20250117-carl-aurora-04.webp"><span class="stamp fail">실패</span></div>
+              <div class="cell"><img src="/samples/thumbs/20230904-nike-jeungseun-01.webp"><span class="stamp fail">틀림</span></div>
+              <div class="cell"><img src="/samples/thumbs/20230904-nike-jeungseun-02.webp"><span class="stamp fail">틀림</span></div>
+              <div class="cell"><img src="/samples/thumbs/20230904-nike-jeungseun-03.webp"><span class="stamp fail">틀림</span></div>
+              <div class="cell"><img src="/samples/thumbs/20230904-nike-jeungseun-04.webp"><span class="stamp fail">틀림</span></div>
+              <div class="cell"><img src="/samples/thumbs/20250117-carl-aurora-01.webp"><span class="stamp fail">틀림</span></div>
+              <div class="cell"><img src="/samples/thumbs/20250117-carl-aurora-02.webp"><span class="stamp fail">틀림</span></div>
+              <div class="cell"><img src="/samples/thumbs/20250117-carl-aurora-03.webp"><span class="stamp fail">틀림</span></div>
+              <div class="cell"><img src="/samples/thumbs/20250117-carl-aurora-04.webp"><span class="stamp fail">틀림</span></div>
               <div class="cell"><img src="/samples/thumbs/cafe-orion.webp"><span class="stamp">성공</span></div>
-              <div class="cell"><img src="/samples/thumbs/google-unknown.webp"><span class="stamp fail">실패</span></div>
+              <div class="cell"><img src="/samples/thumbs/google-unknown.webp"><span class="stamp fail">틀림</span></div>
             </div>
           </div>
           <aside class="notes">
             V2 코드를 그대로 받아 샘플 16장에 사람 손 없이 돌려 봤습니다. V2는 지문이 가장 가까운 quad를 1순위 답으로 냅니다. 16장 모두 답을 냈는데, 맞은 건 북두칠성, 호주 두 장, 오리온, 네 장입니다.
             <br>
-            구글에서 찾은 사진은 우리도 정답을 모르지만, V2가 낸 답대로 별 지도를 겹치면 quad에 쓴 별 말고 겹친 별이 2개로, 우연히 겹칠 기대치와 같습니다. 그래서 이것도 실패입니다.
+            구글에서 찾은 사진은 우리도 정답을 모르지만, V2가 낸 답대로 별 지도를 겹치면 quad에 쓴 별 말고 겹친 별이 2개로, 우연히 겹칠 기대치와 같습니다. 그래서 이것도 틀림입니다.
             <br>
             V2 때는 사람이 별을 고치고 후보를 하나씩 눌러 보며 이걸 메웠습니다.
           </aside>
@@ -579,13 +579,13 @@
             <br>
             앞쪽 별 15개로 quad 1,252개를 만들고, 각각 지문이 가장 가까운 지도 quad를 찾았습니다. 오른쪽 그래프가 그중 지문이 가까운 20쌍입니다. 점 하나가 사진 quad 하나와 그 짝 지도 quad이고, 가운데 +에서 멀수록 두 지문이 다릅니다. 가운데는 지문이 똑같은 자리입니다.
             <br>
-            (주황 1등) V2는 가장 가까운 이 1등을 답으로 냈습니다. 빨간 원과 점선이 이 답을 식별하는 데 쓴 별 4개, 파란 원이 이 답대로 놓은 별 지도입니다. 식별에 쓴 4개는 당연히 겹치지만, 그 밖에 겹친 별은 하나도 없습니다. (회색 점 몇 개를 눌러 보며) 다른 후보도 4~5개뿐입니다.
+            (주황 1등) V2는 가장 가까운 이 1등을 답으로 냈습니다. 빨간 원과 점선이 이 답을 만들 때 짝지은 별 4개, 파란 원이 이 답대로 놓은 별 지도입니다. 짝지은 4개는 당연히 겹치지만, 그 밖에 겹친 별은 하나도 없습니다. (회색 점 몇 개를 눌러 보며) 다른 후보도 4~5개뿐입니다.
             <br>
-            (보라 15등) 정답 quad는 15등이었습니다. 지문 거리는 1등의 거의 두 배입니다. 그런데 겹쳐 보면 식별에 쓴 4개 말고도 15개가 더 겹칩니다. 초록 원입니다. 겹쳤다는 건 사진 대각선의 0.6%, 이 사진에서는 11픽셀 안에 들어왔다는 뜻입니다.
+            (보라 15등) 정답 quad는 15등이었습니다. 지문 거리는 1등의 거의 두 배입니다. 그런데 겹쳐 보면 짝지은 4개 말고도 15개가 더 겹칩니다. 초록 원입니다. 겹쳤다는 건 사진 대각선의 0.6%, 이 사진에서는 11픽셀 안에 들어왔다는 뜻입니다.
             <br>
             지문이 가장 가깝다고 정답은 아닙니다. V2 별 지도에는 quad가 51만 개나 있으니, 아무 별 4개나 골라도 우연히 아주 비슷한 지문이 있습니다. V2 코드를 샘플에 그대로 돌려 봐도, 정답을 아는 14장 중 1등이 정답인 사진은 4장뿐이었습니다.
             <br>
-            그러니 답이 맞는지는 지문 거리가 아니라 "식별에 쓰지 않은 별이 얼마나 겹치나"로 봐야 합니다. 그럼 몇 개가 겹쳐야 정답이라고 할까요?
+            그러니 답이 맞는지는 지문 거리가 아니라 "짝에 쓰지 않은 별이 얼마나 겹치나"로 봐야 합니다. 그럼 몇 개가 겹쳐야 정답이라고 할까요?
           </aside>
         </section>
 
@@ -599,7 +599,7 @@
           <aside class="notes">
             몇 개가 겹쳐야 정답일까요? 그냥 개수로 정하기는 어렵습니다. 틀린 답이어도 별 지도를 놓으면 우연히 몇 개는 겹치기 때문입니다.
             <br>
-            같은 누각 사진의 정답입니다. 노란 점이 사진 별, 파란 점이 지도 별입니다. 노란 점 둘레의 흐린 원이 "겹쳤다"고 보는 범위, 11픽셀입니다. 답대로 놓으면 29개가 겹칩니다. 그중 빨간 3개는 이 답을 식별하는 데 쓴 별이라 당연히 겹칩니다. 증거는 그 밖에 겹친 초록 26개입니다.
+            같은 누각 사진의 정답입니다. 노란 점이 사진 별, 파란 점이 지도 별입니다. 노란 점 둘레의 흐린 원이 "겹쳤다"고 보는 범위, 11픽셀입니다. 답대로 놓으면 29개가 겹칩니다. 그중 빨간 3개는 이 답을 만들 때 짝지은 별이라 당연히 겹칩니다. 증거는 그 밖에 겹친 초록 26개입니다.
             <br>
             (아무 데나 뿌리기) 이번에는 같은 수의 지도 별 168개를 사진 위에 아무 데나 뿌려 봤습니다. 그래도 몇 개는 흐린 원 안에 떨어집니다. (100번 더) 백 번 뿌려 평균을 내면 2.4개쯤입니다. 이게 "우연히 겹칠 기대치"입니다.
             <br>
@@ -607,7 +607,7 @@
             <br>
             그러면 물을 수 있습니다. 우연이라면 평균 2.4개인데, 26개 이상 겹칠 확률은 얼마일까? 이런 드문 일이 일어날 확률은 푸아송 분포로 계산하는데, 10의 마이너스 17.8승입니다. 기준인 10억 분의 1보다 훨씬 작습니다. 우연으로는 설명이 안 됩니다. 우리 만남은 우연이 아니라 필연입니다.
             <br>
-            (질문이 나오면) 실제 풀이는 변환을 더 정밀하게 다듬어 겹친 별이 늘어서, 이 답을 10의 마이너스 23.8승으로 기록합니다. 데모는 식별에 쓴 별로만 놓은 답이라 조금 덜 나옵니다.
+            (질문이 나오면) 실제 풀이는 변환을 더 정밀하게 다듬어 겹친 별이 늘어서, 이 답을 10의 마이너스 23.8승으로 기록합니다. 데모는 짝지은 별로만 놓은 답이라 조금 덜 나옵니다.
             <br>
             (아무 데나 뿌리기를 다시 보여 주며) 뿌린 별이 2개 겹쳤다면, 우연이라도 열에 일곱 번은 그만큼 겹칩니다. 우연입니다.
             <br>
@@ -710,7 +710,7 @@
             <br>
             V2는 지문이 가장 가까운 quad를 그대로 답으로 냈습니다. 틀려도 답이라서, 맞는지는 사람이 눈으로 확인해야 했습니다.
             <br>
-            V3는 후보마다 우연일 확률을 재서, 10억 분의 1보다 작은 후보가 나오면 찾았다고 하고 바로 멈춥니다. 없으면 "모름"입니다. 틀린 답을 내지 않습니다.
+            V3는 후보마다 우연일 확률을 재서, 10억 분의 1보다 작은 후보, 곧 필연인 후보가 나오면 찾았다고 하고 바로 멈춥니다. 이제부터 이걸 "확신했다"고 부르겠습니다. 없으면 "모름"입니다. 틀린 답을 내지 않습니다.
             <br>
             모름이면 다음 방법으로 시도합니다. 별을 더 쓰거나, 하늘 부분만 보거나, 다른 모양으로 찾거나, 촬영 시각과 장소를 씁니다. 거기서 나온 후보도 같은 기준으로 다시 판정해서, 필연이면 정답으로 표시합니다. 그래도 모르면 그때 그럴듯한 후보를 보여 주고 사람이 확인합니다. 오른쪽 위 "사람이 확인"은 V2와 같은 자리입니다. V2는 늘 거기로 가고, V3는 끝까지 모를 때만 갑니다.
             <br>
@@ -741,7 +741,7 @@
             </div>
           </div>
           <aside class="notes">
-            석촌호수 은하수 사진에서 겹친 별 30개를 놓고 보겠습니다. 이 사진은 V2에서는 틀린 답이었지만, 이 이야기 끝의 원근 변환으로 풀리는 답을 미리 가져왔습니다. 가장자리 어긋남이 가장 잘 보이는 사진이라서입니다. 흰 점이 사진의 별, 노란 점이 모델로 배치한 지도 별, 둘을 잇는 빨간 선이 어긋남입니다. 선이 길수록 크게 어긋난 겁니다. 초록 테두리는 매칭한 별, 짝입니다.
+            석촌호수 은하수 사진에서 겹친 별 30개를 놓고 보겠습니다. 이 사진은 V2에서는 틀린 답이었지만, 이 이야기 끝의 원근 변환으로 풀리는 답을 미리 가져왔습니다. 가장자리 어긋남이 가장 잘 보이는 사진이라서입니다. 흰 점이 사진의 별, 노란 점이 변환 방식(모델)으로 배치한 지도 별, 둘을 잇는 빨간 선이 어긋남입니다. 선이 길수록 크게 어긋난 겁니다. 초록 테두리는 매칭한 별, 짝입니다.
             <br>
             (①) V2처럼 짝지은 별 서너 개로만 변환을 구하면, 짝 근처는 맞는데 멀어질수록 크게 어긋납니다. 평균 35픽셀, 가장 크게 288픽셀입니다.
             <br>
@@ -761,8 +761,8 @@
           <h1>V3: 오차 보정</h1>
           <div class="body center">
             <ul>
-              <li>겹친 별 여러 쌍으로 다시 맞추기 (RANSAC)</li>
-              <li>원근 보정한 사진은 원근 변환으로</li>
+              <li>몇 쌍씩 무작위로 맞춰 보고, 가장 많은 별이 동의하는 것 고르기 (RANSAC)</li>
+              <li>건물을 똑바로 세운 사진은 사다리꼴까지 맞추는 원근 변환으로</li>
               <li>확신한 뒤 별 60개로 한 번 더 다듬기</li>
             </ul>
             <p class="fragment" style="text-align: left;">최종으로 풀리는 사진 14장 중 가장 아슬아슬한 사진도 우연일 확률 <span class="green">10⁻¹⁷·⁷</span><br><span class="small">기준 10⁻⁹보다 한참 아래</span></p>
@@ -952,7 +952,7 @@
             <br>
             quad를 자동 풀이에 맞게 고쳤을 때(사진 별을 칸마다 고르게 고르고, 가까운 별끼리 묶고, 겹친 별로 다시 맞추기) 5장이 풀렸는데, 하필 가장 쉬워 보이는 북두칠성 사진이 안 풀린 이유가 이것이었습니다. 사진에서는 앞쪽 별부터 quad를 만드는데, 북두칠성 사진의 앞쪽 별이 바로 이 일곱 개라 DB에 맞는 quad가 없었습니다. (질문이 나오면) 지금은 입력 별을 60개까지 늘려, 주변의 어두운 별 넷으로 quad로도 풀립니다.
             <br>
-            넓히면 조합이 폭발하니, 별 셋짜리 삼각형을 더했습니다. 셋은 조합이 세제곱으로 늘고, 넓게 보는 대신 밝은 별(3.5등급)만 써서 30도까지 넓혀도 4만 8천 개로 감당이 됩니다.
+            넓히면 조합이 폭발하니, 별 셋짜리 삼각형을 더했습니다. 셋은 조합이 세제곱으로 늘고, 넓게 보는 대신 밝은 별(3.5등급까지, 등급은 숫자가 작을수록 밝습니다)만 써서 30도까지 넓혀도 4만 8천 개로 감당이 됩니다.
           </aside>
         </section>
 
@@ -966,7 +966,7 @@
           <aside class="notes">
             별 셋, 삼각형이면 어떨까요. 셋이면 조합이 덜 폭발해서 18도, 밝은 별만이면 30도까지 넓힐 수 있고, 진짜 별이 셋만 잡혀도 됩니다.
             <br>
-            모양 값은 짧은 변 나누기 긴 변, 중간 변 나누기 긴 변 두 숫자입니다. 삼각형을 끌어서 만들어 보시면, 하늘에서 모양이 닮은 삼각형 8개를 별 이름과 함께 찾아 줍니다.
+            삼각형의 지문은 모양 값이라고 부르겠습니다. 짧은 변 나누기 긴 변, 중간 변 나누기 긴 변 두 숫자입니다. 삼각형을 끌어서 만들어 보시면, 하늘에서 모양이 닮은 삼각형 8개를 별 이름과 함께 찾아 줍니다.
             <br>
             그런데 오른쪽 그림처럼 모양 값 평면이 빽빽합니다. 닮은 삼각형이 너무 많습니다. 사실 삼각형은 2023년 드림 챌린지 때 이것 때문에 실패했던 방법입니다. 그때는 각도가 같은 삼각형이 3천 개 가까이 나와서 가를 수가 없었습니다.
           </aside>
@@ -993,7 +993,7 @@
         </section>
 
         <section class="title-body-slide">
-          <h1>삼각형과 quad는 서로 보완재: 둘 다 쓰자</h1>
+          <h1>삼각형과 quad는 서로 못 푸는 사진을 푼다: 둘 다 쓰자</h1>
           <div class="body center">
             <table class="compare" style="font-size: 0.9em;">
               <tr><th></th><th>삼각형 (별 셋)</th><th>quad (별 넷)</th></tr>

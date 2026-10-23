@@ -11,10 +11,10 @@ import { projectVecToPhoto } from "@/search/utils/wcs";
 // 우연과 필연 데모: 서울 누각 사진의 진짜 답으로, 답대로 놓은 지도 별이 사진 별과 몇 개 겹치는지 보이고,
 // 같은 수의 지도 별을 사진 위에 아무 데나 뿌려 우연히 몇 개 겹치는지 센다. 그 평균이 우연 기대치다.
 // 기대치 = 사진 별 수 × 화면 안 지도 별 수 × (허용 반경 원 넓이 ÷ 사진 넓이) — solveCore와 같은 식.
-// 판정: 식별에 쓴 별(답을 만들 때 쓴 별, 당연히 겹친다)을 뺀 겹친 별이 우연으로 나올 확률(푸아송 꼬리)이
+// 판정: 짝지은 별(답을 만들 때 쓴 별, 당연히 겹친다)을 뺀 겹친 별이 우연으로 나올 확률(푸아송 꼬리)이
 // 기준(10억 분의 1)보다 작으면 필연이다 — solveCore·candidates.ts와 같은 판정.
-// 풀이(solveCore)는 원근 변환으로 다듬은 답이면 변환을 정하는 대응 4쌍만큼 빼서(식별에 쓴 별이 3개여도 4개)
-// 이 답을 10⁻¹⁶·⁸로 기록한다. 데모는 화면에 보이는 "식별에 쓴 별 3 + 그 밖에 26"과 맞춰 3개를 빼고 10⁻¹⁷·⁸로 보인다.
+// 풀이(solveCore)는 원근 변환으로 다듬은 답이면 변환을 정하는 대응 4쌍만큼 빼서(짝지은 별이 3개여도 4개)
+// 이 답을 10⁻¹⁶·⁸로 기록한다. 데모는 화면에 보이는 "짝지은 별 3 + 그 밖에 26"과 맞춰 3개를 빼고 10⁻¹⁷·⁸로 보인다.
 // 어느 쪽이든 기준 10⁻⁹보다 한참 작아 판정은 같다.
 // 자료: public/learn/candidates-seoul.json (scripts/learn/buildDemoData.ts)
 
@@ -23,7 +23,7 @@ const SRC = "/samples/20220607-berry-seoul.jpg";
 interface Answer {
   TP: Mat3;
   photo: Point2D[];
-  seeds: number[]; // 식별에 쓴 별 (사진 별 번호)
+  seeds: number[]; // 짝지은 별 (사진 별 번호)
   matched: number[];
   count: number;
   expected: number;
@@ -162,7 +162,7 @@ export default function ChanceRatioDemo() {
       context.fill();
     }
 
-    // 답대로 놓았을 때 식별에 쓴 별: 빨간 원과 점선 외곽선 (아무 데나 뿌릴 때는 없다)
+    // 답대로 놓았을 때 짝지은 별: 빨간 원과 점선 외곽선 (아무 데나 뿌릴 때는 없다)
     const seeds = mode === "answer" ? data.real.seeds : [];
 
     if (seeds.length >= 3) {
@@ -181,7 +181,7 @@ export default function ChanceRatioDemo() {
       context.setLineDash([]);
     }
 
-    // 겹친 별: 그 밖에 겹친 별은 초록 원, 식별에 쓴 별은 빨간 원
+    // 겹친 별: 그 밖에 겹친 별은 초록 원, 짝지은 별은 빨간 원
     context.lineWidth = 4;
 
     for (const i of matched) {
@@ -200,7 +200,7 @@ export default function ChanceRatioDemo() {
   const { real, tol, W, H } = data;
   const average =
     hits.length > 0 ? hits.reduce((a, b) => a + b, 0) / hits.length : null;
-  // 지금 그린 배치(답대로 또는 이번에 뿌린 것)를 같은 기준으로 판정한다. 답대로 놓을 때는 식별에 쓴 별을 뺀다
+  // 지금 그린 배치(답대로 또는 이번에 뿌린 것)를 같은 기준으로 판정한다. 답대로 놓을 때는 짝지은 별을 뺀다
   const seedCount = mode === "answer" ? real.seeds.length : 0;
   const shown =
     (mode === "answer" ? real.count : (hits.at(-1) ?? 0)) - seedCount;
@@ -234,7 +234,7 @@ export default function ChanceRatioDemo() {
             <span className="opacity-50">◯</span> 겹쳤다고 보는 범위
           </li>
           <li>
-            <span className="text-red-500">◯</span> 식별에 쓴 별
+            <span className="text-red-500">◯</span> 짝지은 별
           </li>
           <li>
             <span className="text-green-400">◯</span> 그 밖에 겹친 별
@@ -269,7 +269,7 @@ export default function ChanceRatioDemo() {
               답대로 놓으면 겹친 별 <b className="text-lg">{real.count}개</b>
             </div>
             <div className="text-sm opacity-80">
-              = 식별에 쓴 별{" "}
+              = 짝지은 별{" "}
               <span className="text-red-400">{real.seeds.length}</span> + 그
               밖에 <b className="text-green-400">{shown}</b>
             </div>

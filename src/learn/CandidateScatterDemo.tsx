@@ -5,9 +5,9 @@ import { ACCEPT } from "@/search/solvers/candidates";
 import { poissonTailNegLog10 } from "@/search/utils/stats";
 
 // 후보 전부를 한 그래프에: 서울 누각 사진 한 장을 풀며 실제로 검증한 후보 1만여 개를
-// 가로 = 우연히 겹칠 기대치(로그 눈금), 세로 = 겹친 별 수로 찍는다. 녹색이 별을 맞게 식별한 진짜 답, 나머지가 가짜다.
+// 가로 = 우연히 겹칠 기대치(로그 눈금), 세로 = 겹친 별 수로 찍는다. 녹색이 별을 맞게 짝지은 진짜 답, 나머지가 가짜다.
 //   ① 규칙 ①(필연): 겹친 수 ÷ 기대치 ≥ 5
-//   ② 식별에 쓴 별 빼기: 답을 만들 때 쓴 별은 당연히 겹치니 세지 않는다
+//   ② 짝지은 별 빼기: 답을 만들 때 쓴 별은 당연히 겹치니 세지 않는다
 //   ③ 우연일 확률로: 기대치가 λ일 때 우연히 k개 넘게 겹칠 확률이 10억 분의 1보다 작아야 한다
 // "라운드 진행"은 풀이처럼 사진 별 15·25·40·60개 라운드를 차례로 돈다.
 //   ①②(옛 풀이): 라운드마다 필연 중 겹친 별이 가장 많은 답을 고르고, 네 라운드를 다 돈 뒤 배수가 가장 높은 답을 낸다
@@ -25,7 +25,7 @@ type Step = "ratio" | "noSeeds" | "chance";
 
 const STEPS: { key: Step; label: string }[] = [
   { key: "ratio", label: "① 우연의 5배를 넘으면 필연" },
-  { key: "noSeeds", label: "② 식별에 쓴 별 빼기" },
+  { key: "noSeeds", label: "② 짝지은 별 빼기" },
   { key: "chance", label: "③ 우연일 확률로 (10억 분의 1)" },
 ];
 const ROUNDS = [15, 25, 40, 60];
@@ -467,7 +467,7 @@ export default function CandidateScatterDemo() {
         </div>
         <div className="text-sm opacity-70">
           확인한 후보 <b>{data.points.length.toLocaleString("ko-KR")}개</b> ·{" "}
-          <span className="text-green-400">●</span> 맞게 식별한 후보 {realCount}
+          <span className="text-green-400">●</span> 맞게 짝지은 후보 {realCount}
           개 · <span className="text-red-400">●</span> {verdict}에 든 가짜
         </div>
         <div className="text-sm">
@@ -550,7 +550,7 @@ export default function CandidateScatterDemo() {
           <div className="bg-base-300/60 rounded-box flex flex-col gap-1 p-3 text-sm">
             <div className="text-sm font-bold">누른 후보 — {kind(picked)}</div>
             <div>
-              겹친 별 {info[0]}개 = 식별에 쓴 별 {info[1]} + 그 밖에{" "}
+              겹친 별 {info[0]}개 = 짝지은 별 {info[1]} + 그 밖에{" "}
               {info[0] - info[1]}
             </div>
             <div>
@@ -560,7 +560,7 @@ export default function CandidateScatterDemo() {
             <div>
               몇 배: {(info[0] / info[2]).toFixed(0)}배
               {step !== "ratio" &&
-                ` → 식별에 쓴 별 빼면 ${((info[0] - info[1]) / info[2]).toFixed(0)}배`}
+                ` → 짝지은 별 빼면 ${((info[0] - info[1]) / info[2]).toFixed(0)}배`}
             </div>
             <div>
               우연일 확률: 10<sup>-{info[3].toFixed(1)}</sup>
