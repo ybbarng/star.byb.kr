@@ -530,6 +530,8 @@ export default function PlateSolvingStep() {
     !busy && (fisheyeCamera || horizonTP || outcome?.found),
   );
   const failed = !busy && !confident && outcome !== null;
+  // 별만으로(시각·장소 없이) 확신한 사진
+  const blindSolved = confident && !horizonTP && Boolean(outcome?.found);
 
   return (
     <div className="flex w-full max-w-[1400px] flex-col gap-4 lg:flex-row lg:items-start">
@@ -740,53 +742,65 @@ export default function PlateSolvingStep() {
         {!busy && !fisheyeCamera && (
           <Section
             title="별이 적은 사진이라면"
-            summary="촬영 시각·장소와 지평선으로 풀기"
+            summary={
+              blindSolved
+                ? "별만으로 이미 풀렸어요"
+                : "촬영 시각·장소와 지평선으로 풀기"
+            }
             defaultOpen={failed}
           >
-            <div className="flex flex-col gap-2">
+            {blindSolved ? (
+              // 이미 확신한 사진에 돌리면 오히려 "확신하지 못했어요"가 나와 헷갈린다
               <p className="opacity-70">
-                언제 어디서 찍었는지 알면, 지평선만으로 하늘의 방향이 거의
-                정해져서 별이 열 개 남짓이어도 풀 수 있어요.
+                별만으로 이미 풀렸어요. 이 방법은 별이 적어 자동으로 못 푼
+                사진에 써요.
               </p>
-              <ul className="flex flex-col gap-1">
-                <li>
-                  {shot?.observer ? "✓" : "○"} 촬영 시각·장소{" "}
-                  {!shot?.observer && (
-                    <span className="opacity-60">(위에서 위도·경도까지)</span>
-                  )}
-                </li>
-                <li className="flex items-center gap-2">
-                  {marks.horizon.length === 2 ? "✓" : "○"} 지평선{" "}
-                  <span className="opacity-60">
-                    {marks.horizon.length === 2
-                      ? marks.horizonAuto
-                        ? "(자동으로 찾음)"
-                        : "(직접 찍음)"
-                      : "(아직 없음)"}
-                  </span>
-                  <button
-                    className="btn btn-xs btn-ghost"
-                    onClick={() => goTo("edit", "horizon")}
-                  >
-                    {marks.horizon.length === 2 ? "고치기" : "찍기"}
-                  </button>
-                </li>
-              </ul>
-              <button
-                className="btn btn-sm btn-primary self-start"
-                disabled={
-                  !shot?.observer ||
-                  marks.horizon.length < 2 ||
-                  horizonRun.running
-                }
-                onClick={runHorizonSolve}
-              >
-                {horizonRun.running ? "푸는 중…" : "시각·장소로 풀기"}
-              </button>
-              {horizonRun.message && !horizonTP && (
-                <p className="text-xs">{horizonRun.message}</p>
-              )}
-            </div>
+            ) : (
+              <div className="flex flex-col gap-2">
+                <p className="opacity-70">
+                  언제 어디서 찍었는지 알면, 지평선만으로 하늘의 방향이 거의
+                  정해져서 별이 열 개 남짓이어도 풀 수 있어요.
+                </p>
+                <ul className="flex flex-col gap-1">
+                  <li>
+                    {shot?.observer ? "✓" : "○"} 촬영 시각·장소{" "}
+                    {!shot?.observer && (
+                      <span className="opacity-60">(위에서 위도·경도까지)</span>
+                    )}
+                  </li>
+                  <li className="flex items-center gap-2">
+                    {marks.horizon.length === 2 ? "✓" : "○"} 지평선{" "}
+                    <span className="opacity-60">
+                      {marks.horizon.length === 2
+                        ? marks.horizonAuto
+                          ? "(자동으로 찾음)"
+                          : "(직접 찍음)"
+                        : "(아직 없음)"}
+                    </span>
+                    <button
+                      className="btn btn-xs btn-ghost"
+                      onClick={() => goTo("edit", "horizon")}
+                    >
+                      {marks.horizon.length === 2 ? "고치기" : "찍기"}
+                    </button>
+                  </li>
+                </ul>
+                <button
+                  className="btn btn-sm btn-primary self-start"
+                  disabled={
+                    !shot?.observer ||
+                    marks.horizon.length < 2 ||
+                    horizonRun.running
+                  }
+                  onClick={runHorizonSolve}
+                >
+                  {horizonRun.running ? "푸는 중…" : "시각·장소로 풀기"}
+                </button>
+                {horizonRun.message && !horizonTP && (
+                  <p className="text-xs">{horizonRun.message}</p>
+                )}
+              </div>
+            )}
           </Section>
         )}
 
