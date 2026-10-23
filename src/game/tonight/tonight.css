@@ -1,0 +1,153 @@
+/* 오늘 밤 내 하늘 (src/game/tonight): 밤하늘 일기장 같은 리포트 — 손글씨 느낌 제목, 테이프 붙인 스티커 카드, 떠다니는 낙서 */
+
+.tn-page {
+  --tn-sun: #ffb38a;
+  --tn-moon: #ffe08a;
+  --tn-planet: #8ef0c8;
+  --tn-const: #b9a6ff;
+  --tn-story: #ff9ecb;
+  --tn-chart: #8fd3ff;
+}
+
+/* 손글씨 느낌: 기울이고, 굵기·자간을 바꾸고, 물결 밑줄을 긋는다 (글꼴은 사이트 글꼴 그대로) */
+.tn-hand {
+  display: inline-block;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  transform: rotate(-2deg);
+  font-style: italic;
+}
+
+.tn-wavy {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='8' viewBox='0 0 40 8'%3E%3Cpath d='M0 4 Q5 0 10 4 T20 4 T30 4 T40 4' fill='none' stroke='%23ffe08a' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: repeat-x;
+  background-position: 0 100%;
+  background-size: 20px 6px;
+  padding-bottom: 0.3em;
+}
+
+/* 스티커 카드: 살짝 기울어 붙어 있다가, 손을 올리면 반듯해진다 */
+.tn-sticker {
+  position: relative;
+  border-radius: 1.4rem;
+  background:
+    radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--tn-accent, #fff) 14%, transparent), transparent 55%),
+    linear-gradient(165deg, rgba(32, 38, 78, 0.94), rgba(18, 21, 46, 0.94));
+  border: 1.5px solid color-mix(in srgb, var(--tn-accent, #fff) 35%, transparent);
+  box-shadow:
+    0 14px 34px rgba(0, 0, 0, 0.38),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  transform: rotate(var(--tn-tilt, 0deg));
+  transition: transform 0.35s cubic-bezier(0.2, 1.4, 0.4, 1);
+}
+
+@media (min-width: 768px) {
+  .tn-sticker:hover {
+    transform: rotate(0deg) translateY(-3px);
+  }
+}
+
+/* 카드 위 마스킹테이프 */
+.tn-tape {
+  position: absolute;
+  top: -11px;
+  left: 50%;
+  width: 92px;
+  height: 22px;
+  margin-left: -46px;
+  background: color-mix(in srgb, var(--tn-accent, #fff) 55%, transparent);
+  transform: rotate(-4deg);
+  border-radius: 2px;
+  opacity: 0.85;
+  mask-image: linear-gradient(90deg, transparent 0, #000 6%, #000 94%, transparent 100%);
+}
+
+/* 동그란 번호 배지 */
+.tn-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 9999px;
+  font-weight: 900;
+  color: #141833;
+  background: var(--tn-accent, #fff);
+  transform: rotate(-8deg);
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.25);
+}
+
+/* 작은 표 이름표 */
+.tn-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  border-radius: 9999px;
+  padding: 0.15rem 0.65rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  background: color-mix(in srgb, var(--tn-accent, #fff) 18%, transparent);
+  color: color-mix(in srgb, var(--tn-accent, #fff) 85%, white);
+}
+
+/* 떠다니는 낙서 */
+.tn-float {
+  animation: tn-float 6s ease-in-out infinite;
+}
+
+@keyframes tn-float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(var(--tn-rot, 0deg));
+  }
+  50% {
+    transform: translateY(-10px) rotate(calc(var(--tn-rot, 0deg) + 6deg));
+  }
+}
+
+.tn-twinkle {
+  animation: tn-twinkle 2.6s ease-in-out infinite;
+}
+
+@keyframes tn-twinkle {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.85);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+}
+
+/* 별점이 하나씩 톡톡 */
+.tn-star-pop {
+  display: inline-block;
+  animation: fx-pop 0.5s cubic-bezier(0.2, 1.6, 0.4, 1) both;
+}
+
+/* 시간 막대의 별 보기 좋은 구간: 반짝이는 테두리 */
+.tn-good {
+  animation: tn-good 2.4s ease-in-out infinite alternate;
+}
+
+@keyframes tn-good {
+  from {
+    box-shadow: 0 0 0 2px rgba(142, 240, 200, 0.6);
+  }
+  to {
+    box-shadow:
+      0 0 0 2px rgba(142, 240, 200, 1),
+      0 0 18px rgba(142, 240, 200, 0.55);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tn-float,
+  .tn-twinkle,
+  .tn-good,
+  .tn-star-pop {
+    animation: none;
+  }
+}

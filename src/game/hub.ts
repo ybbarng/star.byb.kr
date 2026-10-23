@@ -90,6 +90,17 @@ export const GAMES: GameEntry[] = [
     accent: "from-cyan-300/40 to-blue-500/10",
   },
   {
+    href: "/games/tonight",
+    kind: "explore",
+    title: "오늘 밤 내 하늘",
+    summary:
+      "장소와 날짜를 넣으면 그날 밤 볼 만한 것을 하늘 일기장처럼 정리해 줘요. 해·달·행성·별자리·유성우까지!",
+    learn: "해 지는 시각과 박명, 달의 모양과 뜨는 시각, 행성 찾기",
+    ready: true,
+    icon: "🌙",
+    accent: "from-yellow-200/40 to-indigo-500/10",
+  },
+  {
     href: "/games/human-vs-computer",
     kind: "game",
     title: "사람 계산원 vs 컴퓨터",
