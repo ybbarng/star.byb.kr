@@ -16,8 +16,15 @@ export type Mark =
   | { kind: "constellation"; label: string }
   | { kind: "star"; hr: string }
   | { kind: "deepSky"; id: string }
-  // from에서 to를 지나, to 너머로 from–to 거리의 times배만큼 더 늘인 화살표 (별 징검다리). lands는 화살표가 닿는 곳
-  | { kind: "hop"; from: string; to: string; times: number; lands?: TapTarget }
+  // from에서 to를 지나, to 너머로 from–to 거리의 times배만큼 더 늘인 화살표 (별 징검다리). lands는 화살표가 닿는 곳.
+  // from이 { meet: [a, b, c, d] }이면 a→b, c→d 두 선을 늘여 만나는 점에서 출발한다 (카시오페이아 W의 바깥 두 변)
+  | {
+      kind: "hop";
+      from: string | { meet: [string, string, string, string] };
+      to: string;
+      times: number;
+      lands?: TapTarget;
+    }
   // 별들을 차례로 잇는 점선 화살표 (휘어진 길)
   | { kind: "path"; hrs: string[] }
   | { kind: "pole"; south: boolean }
@@ -104,6 +111,14 @@ export const stepBasics = (step: LessonStep): string[] => {
 
 export const SEASON_LESSONS = ["spring", "summer", "autumn", "winter"];
 
+// 카시오페이아 W의 바깥 두 변: 카프 → 셰다르, 세긴 → 루크바
+export const CASSIOPEIA_SIDES: [string, string, string, string] = [
+  "21",
+  "168",
+  "542",
+  "403",
+];
+
 export const LESSONS: Lesson[] = [
   {
     id: "polaris",
@@ -146,9 +161,16 @@ export const LESSONS: Lesson[] = [
         },
       },
       {
-        say: "북두칠성이 낮을 때는 반대편의 카시오페이아 W를 써요. W의 바깥 두 변을 늘여 만나는 점과 가운데 별을 잇고 다섯 배쯤 늘이면 북극성이에요.",
+        say: "북두칠성이 낮을 때는 반대편의 카시오페이아 W를 써요. W의 바깥 두 변을 늘여 만나는 점에서 가운데 별(나비)까지 잇고, 그 거리의 다섯 배쯤 더 가면 북극성이에요.",
         marks: [
           { kind: "asterism", id: "cassiopeia-w" },
+          {
+            kind: "hop",
+            from: { meet: CASSIOPEIA_SIDES },
+            to: "264",
+            times: 5,
+            lands: { hr: "424" },
+          },
           { kind: "star", hr: "424" },
         ],
       },

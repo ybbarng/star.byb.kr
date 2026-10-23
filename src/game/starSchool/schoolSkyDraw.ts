@@ -6,7 +6,12 @@ import { constellationParts, STARS } from "@/game/sky/catalog";
 import { drawSky } from "@/game/sky/drawSky";
 import { asterismById } from "@/game/starSchool/asterisms";
 import { deepSkyById } from "@/game/starSchool/deepSky";
-import { hopPath, hopTip, poleVector } from "@/game/starSchool/lessonGeometry";
+import {
+  hopPath,
+  hopStart,
+  hopTip,
+  poleVector,
+} from "@/game/starSchool/lessonGeometry";
 import { eclipticPoints, milkyWayPatches } from "@/game/starSchool/milkyWay";
 import {
   centerOf,
@@ -315,8 +320,16 @@ export const drawSchoolSky = (
       }
 
       case "hop": {
-        const from = hrVector(m.from);
+        const from = hopStart(m);
         const to = hrVector(m.to);
+
+        // 두 선을 늘여 만나는 점에서 출발하면, 늘인 두 선을 가는 점선으로 먼저 그린다
+        if (typeof m.from !== "string") {
+          const [a, , c] = m.from.meet.map(hrVector);
+          polyline(hopPath(a, from, 1, 16), COLORS.hop, 1.2, [3, 4]);
+          polyline(hopPath(c, from, 1, 16), COLORS.hop, 1.2, [3, 4]);
+        }
+
         const path = hopPath(from, to, 1 + m.times, 40);
         polyline(path, COLORS.hop, 2.5, [8, 6]);
         arrowHead(path[path.length - 2], hopTip(m), COLORS.hop);

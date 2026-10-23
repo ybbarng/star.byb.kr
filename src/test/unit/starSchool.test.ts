@@ -13,12 +13,19 @@ import {
 import { asterismFigure, constellationFigure } from "@/game/starSchool/figure";
 import {
   aimFallback,
+  hopEnd,
+  hopStart,
   hopTip,
+  meetPoint,
   stepDate,
   stepVectors,
   tapVector,
 } from "@/game/starSchool/lessonGeometry";
-import { LESSONS, SEASON_LESSONS } from "@/game/starSchool/lessons";
+import {
+  CASSIOPEIA_SIDES,
+  LESSONS,
+  SEASON_LESSONS,
+} from "@/game/starSchool/lessons";
 import { galacticVector, milkyWayPatches } from "@/game/starSchool/milkyWay";
 import {
   altAzAt,
@@ -81,6 +88,33 @@ describe("길잡이 모양", () => {
     ["pointers", ["Rigil Kentaurus", "Hadar"]],
   ] as const)("%s의 별은 %j", (id, names) => {
     expect(asterismById(id).vertices.map(latinOf)).toEqual(names);
+  });
+
+  it("북두칠성: 메라크 → 두베를 다섯 배 남짓(5.3배) 늘이면 북극성 2° 안", () => {
+    const [merak, dubhe, polaris] = ["4295", "4301", "424"].map(hrVector);
+
+    expect(separationDeg(hopEnd(merak, dubhe, 1 + 5.3), polaris)).toBeLessThan(
+      2,
+    );
+  });
+
+  it("카시오페이아: 바깥 두 변이 만나는 점 → 나비를 다섯 배 늘이면 북극성 1° 안 (네 배·여섯 배면 5° 넘게 빗나간다)", () => {
+    const [caph, schedar, segin, ruchbah] = CASSIOPEIA_SIDES.map(hrVector);
+    const meet = meetPoint(caph, schedar, segin, ruchbah);
+    const navi = hrVector("264");
+    const polaris = hrVector("424");
+    const miss = (times: number) =>
+      separationDeg(hopEnd(meet, navi, 1 + times), polaris);
+
+    // 만나는 점은 나비에서 약 6°, 북극성 반대쪽 (만나는 점 → 나비 → 북극성 순서로 한 줄)
+    expect(separationDeg(meet, navi)).toBeCloseTo(5.7, 0);
+    expect(separationDeg(meet, polaris)).toBeGreaterThan(
+      separationDeg(navi, polaris),
+    );
+    expect(miss(5)).toBeLessThan(1);
+    expect(miss(4)).toBeGreaterThan(5);
+    expect(miss(6)).toBeGreaterThan(5);
+    expect(hopStart({ from: { meet: CASSIOPEIA_SIDES } })).toEqual(meet);
   });
 
   it("남십자는 아크룩스·미모사·가크룩스와 델타별(적경 12h15m, 적위 −58.7°)", () => {
@@ -256,7 +290,7 @@ describe("수업 시각·장소", () => {
         for (const step of lesson.steps) {
           for (const m of step.marks) {
             if (m.kind === "hop" && m.lands) {
-              const length = separationDeg(hrVector(m.from), hopTip(m));
+              const length = separationDeg(hopStart(m), hopTip(m));
 
               expect(separationDeg(hopTip(m), tapVector(m.lands))).toBeLessThan(
                 Math.max(3, length * 0.25),

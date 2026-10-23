@@ -7,6 +7,7 @@ import { findTargets } from "@/game/findConstellation/targets";
 import { constellationCenter, constellationParts } from "@/game/sky/catalog";
 import { ASTERISMS, asterismById } from "@/game/starSchool/asterisms";
 import { markVectors, tapVector } from "@/game/starSchool/lessonGeometry";
+import { CASSIOPEIA_SIDES } from "@/game/starSchool/lessons";
 import {
   altAzAt,
   dateAt,
@@ -366,9 +367,17 @@ const HOPS: {
     marks: [{ kind: "asterism", id: "cassiopeia-w" }],
     target: { hr: "424" },
     tolDeg: 3,
-    reveal: [{ kind: "star", hr: "424" }],
+    reveal: [
+      {
+        kind: "hop",
+        from: { meet: CASSIOPEIA_SIDES },
+        to: "264",
+        times: 5,
+      },
+      { kind: "star", hr: "424" },
+    ],
     explain:
-      "W의 바깥 두 변을 늘여 만나는 점과 가운데 별을 이어 다섯 배쯤 가면 북극성이에요.",
+      "W의 바깥 두 변을 늘여 만나는 점에서 가운데 별까지 잇고, 그 거리의 다섯 배쯤 더 가면 북극성이에요.",
   },
   {
     key: "h:m31",

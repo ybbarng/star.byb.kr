@@ -36,9 +36,35 @@ export const hopPath = (a: Point3D, b: Point3D, times: number, steps = 24) =>
     hopEnd(a, b, (times * i) / steps),
   );
 
+const cross = (a: Point3D, b: Point3D): Point3D => [
+  a[1] * b[2] - a[2] * b[1],
+  a[2] * b[0] - a[0] * b[2],
+  a[0] * b[1] - a[1] * b[0],
+];
+
+// a→b, c→d 두 큰 원을 늘여 만나는 점 (두 점 중 b 쪽)
+export const meetPoint = (a: Point3D, b: Point3D, c: Point3D, d: Point3D) => {
+  const x = normalize(cross(cross(a, b), cross(c, d)));
+  const toward = x[0] * b[0] + x[1] * b[1] + x[2] * b[2];
+
+  return toward >= 0 ? x : (x.map((v) => -v) as Point3D);
+};
+
+type HopMark = Extract<Mark, { kind: "hop" }>;
+
+// 징검다리 화살표의 출발점: 별, 또는 두 선이 만나는 점
+export const hopStart = (m: Pick<HopMark, "from">): Point3D =>
+  typeof m.from === "string"
+    ? hrVector(m.from)
+    : (() => {
+        const [a, b, c, d] = m.from.meet.map(hrVector);
+
+        return meetPoint(a, b, c, d);
+      })();
+
 // 징검다리 화살표의 끝: from → to를 지나 to 너머로 times배 더
-export const hopTip = (m: { from: string; to: string; times: number }) =>
-  hopEnd(hrVector(m.from), hrVector(m.to), 1 + m.times);
+export const hopTip = (m: Pick<HopMark, "from" | "to" | "times">) =>
+  hopEnd(hopStart(m), hrVector(m.to), 1 + m.times);
 
 export const poleVector = (south: boolean): Point3D => [0, 0, south ? -1 : 1];
 
@@ -71,7 +97,7 @@ export const markVectors = (m: Mark): Point3D[] => {
     }
 
     case "hop":
-      return [hrVector(m.from), hopTip(m)];
+      return [hopStart(m), hopTip(m)];
     case "path":
       return m.hrs.map(hrVector);
     case "pole":
