@@ -1,10 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { GAMES } from "@/game/hub";
 import { STARS } from "@/game/sky/catalog";
+import { REFERENCE_PAIRS } from "@/learn/basics/references";
 import {
   altAzAt,
   angleBetweenDeg,
+  arcPoints,
   clockLabel,
+  dayLengthHours,
+  fistsLabel,
   DAILY_EARLIER_SECONDS,
   GALACTIC_CENTER,
   GALACTIC_TILT_DEG,
@@ -13,6 +17,8 @@ import {
   kmPerDegLon,
   maxAltitudeDeg,
   meanSolarNoonMinutes,
+  moonAngularDiameterDeg,
+  offLineDeg,
   noonSunAltitudeDeg,
   raDecToVector,
   SEOUL,
@@ -190,5 +196,100 @@ describe("하루 4분", () => {
     // 1월 1일 자정 무렵, 7월 1일에는 낮(정오 무렵)에 남중
     expect(Math.min(m[0], 1440 - m[0])).toBeLessThan(30);
     expect(Math.abs(m[6] - 12 * 60)).toBeLessThan(60);
+  });
+});
+
+describe("계절", () => {
+  it("서울의 낮: 하지 14시간 46분, 춘분 12시간 8분, 동지 9시간 34분 (대기 굴절 포함)", () => {
+    expect(dayLengthHours(SEOUL.latDeg, 23.44) * 60).toBeCloseTo(
+      14 * 60 + 46,
+      -1,
+    );
+    expect(dayLengthHours(SEOUL.latDeg, 0) * 60).toBeCloseTo(12 * 60 + 8, -1);
+    expect(dayLengthHours(SEOUL.latDeg, -23.44) * 60).toBeCloseTo(
+      9 * 60 + 34,
+      -1,
+    );
+  });
+
+  it("극권 안에서는 해가 지지 않거나 뜨지 않는다", () => {
+    expect(dayLengthHours(70, 23.44)).toBe(24);
+    expect(dayLengthHours(70, -23.44)).toBe(0);
+  });
+
+  it("서울의 춘분 정오 해 높이는 52°", () => {
+    expect(noonSunAltitudeDeg(SEOUL.latDeg, 0)).toBeCloseTo(52.4, 1);
+  });
+});
+
+describe("손 각도와 스타 호핑", () => {
+  const deg = (label: string) =>
+    REFERENCE_PAIRS.find((p) => p.label.includes(label))!.deg;
+
+  it("기준 쌍의 각거리 (별 지도로 계산)", () => {
+    expect(deg("지시별 (두베")).toBeCloseTo(5.4, 1);
+    expect(deg("허리띠")).toBeCloseTo(2.7, 1);
+    expect(deg("카스토르")).toBeCloseTo(4.5, 1);
+    expect(deg("베텔게우스")).toBeCloseTo(18.6, 1);
+    expect(deg("북두칠성 전체")).toBeCloseTo(25.7, 1);
+    expect(deg("북극성")).toBeCloseTo(28.7, 1);
+  });
+
+  it("두베→북극성은 지시별 간격의 약 5배", () => {
+    expect(deg("북극성") / deg("지시별 (두베")).toBeCloseTo(5.3, 1);
+  });
+
+  it("달의 지름은 0.49°~0.56°", () => {
+    const sizes = Array.from({ length: 365 }, (_, d) =>
+      moonAngularDiameterDeg(new Date(Date.UTC(2026, 0, 1 + d))),
+    );
+    expect(Math.min(...sizes)).toBeGreaterThan(0.48);
+    expect(Math.max(...sizes)).toBeLessThan(0.57);
+  });
+
+  it("지시별을 이은 선에서 북극성은 2° 비켜나 있다", () => {
+    expect(
+      offLineDeg(
+        byLatin("Merak").vector,
+        byLatin("Dubhe").vector,
+        byLatin("Polaris").vector,
+      ),
+    ).toBeCloseTo(1.9, 1);
+  });
+
+  it("허리띠 선에서 시리우스는 2.6°, 알데바란·플레이아데스는 약 5° 비켜나 있다", () => {
+    const a = byLatin("Mintaka").vector;
+    const b = byLatin("Alnitak").vector;
+    expect(offLineDeg(a, b, byLatin("Sirius").vector)).toBeCloseTo(2.6, 1);
+    expect(offLineDeg(a, b, byLatin("Aldebaran").vector)).toBeCloseTo(5.2, 1);
+    expect(offLineDeg(a, b, byLatin("Alcyone").vector)).toBeCloseTo(5.1, 1);
+  });
+
+  it("미라크·안드로메다 뮤·M31은 한 줄에 약 3.9° 간격", () => {
+    const mirach = byLatin("Mirach").vector;
+    const mu = STARS.find((s) => s.hr === "269")!.vector;
+    const m31 = raDecToVector(10.6847, 41.269);
+    expect(offLineDeg(mirach, mu, m31)).toBeLessThan(0.1);
+    expect(angleBetweenDeg(mirach, mu)).toBeCloseTo(3.9, 1);
+    expect(angleBetweenDeg(mu, m31)).toBeCloseTo(3.9, 1);
+  });
+
+  it("arcPoints는 큰 원을 따라 늘인 끝점에 닿는다", () => {
+    const a = byLatin("Merak").vector;
+    const b = byLatin("Dubhe").vector;
+    const pts = arcPoints(a, b, 3);
+    expect(angleBetweenDeg(pts[0], a)).toBeLessThan(1e-9);
+    expect(angleBetweenDeg(a, pts[pts.length - 1])).toBeCloseTo(
+      3 * angleBetweenDeg(a, b),
+      4,
+    );
+  });
+
+  it("손 각도 문구", () => {
+    expect(fistsLabel(1)).toBe("새끼손가락 1개 폭쯤");
+    expect(fistsLabel(5.4)).toBe("손가락 세 개 폭쯤");
+    expect(fistsLabel(9)).toBe("주먹 1개쯤");
+    expect(fistsLabel(25.7)).toBe("주먹 2개 반쯤");
+    expect(fistsLabel(28.7)).toBe("주먹 3개쯤");
   });
 });

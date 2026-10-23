@@ -4,6 +4,7 @@ import {
   gmstDeg,
   horizontalFrameJ2000,
   julianDay,
+  moonPosition,
   sunVector,
 } from "@/search/utils/ephemeris";
 
@@ -417,4 +418,33 @@ export const offLineDeg = (a: Point3D, b: Point3D, v: Point3D) => {
   const len = Math.hypot(n[0], n[1], n[2]);
 
   return Math.abs(Math.asin(dot(n, v) / len)) / D;
+};
+
+// 달의 겉보기 지름 (도): 달 반지름 1,737.4km, 지구 반지름 6,378.14km
+export const moonAngularDiameterDeg = (date: Date) => {
+  const km = moonPosition(julianDay(date)).distanceEarthRadii * 6378.14;
+
+  return (2 * Math.asin(1737.4 / km)) / D;
+};
+
+// 각도를 팔 뻗은 손으로: 새끼손가락 약 1°, 손가락 세 개 약 5°, 주먹 약 10°
+export const fistsLabel = (deg: number) => {
+  if (deg < 3.5) {
+    return `새끼손가락 ${Math.max(1, Math.round(deg))}개 폭쯤`;
+  }
+
+  if (deg < 7.5) {
+    return "손가락 세 개 폭쯤";
+  }
+
+  const n = Math.floor(deg / 10);
+  const r = deg - n * 10;
+
+  return r < 2.5
+    ? `주먹 ${n}개쯤`
+    : r < 7.5
+      ? n
+        ? `주먹 ${n}개 반쯤`
+        : "주먹 반 개쯤"
+      : `주먹 ${n + 1}개쯤`;
 };
