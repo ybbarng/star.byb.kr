@@ -16,24 +16,6 @@
       transform: none;
     }
   }
-
-  /* 같은 줄을 두 번 이어 붙이고 절반만큼 옮기면 끊김 없이 돈다 */
-  --animate-marquee: marquee 40s linear infinite;
-
-  @keyframes marquee {
-    from {
-      transform: translateX(0);
-    }
-    to {
-      transform: translateX(-50%);
-    }
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .animate-marquee {
-    animation: none;
-  }
 }
 
 /*

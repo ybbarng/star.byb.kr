@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { GAMES } from "@/game/hub";
 import { LEARN_STEPS, learnHref } from "@/learn/steps";
+import GameCarousel from "@/ui/GameCarousel";
 import SiteShell from "@/ui/SiteShell";
 
 // 첫 화면: 무엇을 하는 곳인지 풀린 사진 한 장으로 보여 주고, 찾는 원리 세 단계와 별 놀이터를 소개한다.
@@ -74,39 +75,23 @@ export default function Page() {
           </div>
         </section>
 
-        <Link
-          href="/games"
-          className="fx-rise fx-card rounded-box flex flex-col items-center gap-4 bg-gradient-to-br from-indigo-500/25 to-fuchsia-500/10 p-6 text-center ring-1 ring-white/10 md:flex-row md:text-left"
+        <section
+          className="fx-rise flex flex-col gap-4"
           style={{ animationDelay: "350ms" }}
         >
-          {/* 아이콘이 늘어도 카드 밖으로 나가지 않게, 가운데 창으로만 보이며 한 줄로 왼쪽으로 흐른다 (양 끝은 흐리게) */}
-          <span
-            aria-hidden
-            className="w-full max-w-[16rem] overflow-hidden text-3xl md:shrink-0"
-            style={{
-              maskImage:
-                "linear-gradient(to right, transparent, black 25%, black 75%, transparent)",
-            }}
-          >
-            <span className="animate-marquee flex w-max">
-              {[...games, ...games].map((g, i) => (
-                <span key={i} className="px-1">
-                  {g.icon}
-                </span>
-              ))}
-            </span>
-          </span>
-          <span className="flex flex-1 flex-col gap-1">
-            <span className="text-xl font-black">별 놀이터</span>
-            <span className="text-sm opacity-75">
-              하늘 맞추기, SkyGuessr, 생일 별자리… 게임{" "}
-              {games.filter((g) => g.kind === "game").length}개와 둘러보기{" "}
-              {games.filter((g) => g.kind === "explore").length}개로 놀면서
-              별자리와 하늘의 움직임을 배워요.
-            </span>
-          </span>
-          <span className="btn btn-sm">놀러 가기 →</span>
-        </Link>
+          <div className="flex items-end justify-between gap-2">
+            <h2 className="text-2xl font-black">별 놀이터</h2>
+            <Link href="/games" className="link link-hover text-sm opacity-70">
+              전체 보기 →
+            </Link>
+          </div>
+          <p className="-mt-2 text-sm opacity-75">
+            게임 {games.filter((g) => g.kind === "game").length}개와 둘러보기{" "}
+            {games.filter((g) => g.kind === "explore").length}개로 놀면서
+            별자리와 하늘의 움직임을 배워요.
+          </p>
+          <GameCarousel games={games} />
+        </section>
 
         <footer className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs opacity-50">
           <span>
