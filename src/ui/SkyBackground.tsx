@@ -2,12 +2,21 @@
 
 import type { Point3D } from "@/scripts/hash/types";
 import { useEffect, useRef } from "react";
-import { horizontalFrameJ2000, julianDay } from "@/search/utils/ephemeris";
+import {
+  horizontalFrameJ2000,
+  julianDay,
+  moonVectorFrom,
+  ofDateToJ2000,
+  sunVector,
+} from "@/search/utils/ephemeris";
+import { type EffectStar, startSkyEffects } from "@/ui/skyEffects";
 import sky from "@build/database/background-sky.json";
 
-// 사이트 배경: 페이지에 들어온 순간의 실제 서울 하늘을 올려다본 모습 (천정이 화면 가운데, 북쪽이 위, 동쪽이 왼쪽).
-// 낮이어도 해 없이 밤하늘처럼 별을 그린다. 별은 밝을수록 크게, 표면 온도에 따라 색을 달리하고,
-// 별자리선은 흐리게만 그린다. 별을 두 층으로 나눠 CSS로 번갈아 밝기를 바꿔 반짝이게 한다.
+// 사이트 배경: 지금 실제 서울 하늘을 올려다본 모습 (천정이 화면 가운데, 북쪽이 위, 동쪽이 왼쪽).
+// 1분마다 그 시각의 하늘로 다시 그린다. 낮이어도 하늘을 밝히지 않고 밤하늘처럼 별을 그리며,
+// 지평선 위에 있는 해는 자리만 작은 표식으로, 달은 실제 모양(빛나는 비율·해 쪽 방향)으로 그린다.
+// 별은 밝을수록 크게, 표면 온도에 따라 색을 달리하고, 별자리선은 흐리게만 그린다.
+// 별의 반짝임과 유성은 위층 캔버스에 따로 그린다 (ui/skyEffects).
 
 const SEOUL = { latDeg: 37.57, lonDeg: 126.98 };
 
@@ -29,12 +38,12 @@ interface Projected {
   y: number;
 }
 
+const dot = (a: Point3D, v: Point3D) => a[0] * v[0] + a[1] * v[1] + a[2] * v[2];
+
 // 천정 중심 평사 투영. 지평선이 화면 모서리에 닿게 크기를 맞춘다. 지평선 아래면 null
-const makeProjector = (width: number, height: number) => {
-  const frame = horizontalFrameJ2000(julianDay(new Date()), SEOUL);
+const makeProjector = (width: number, height: number, jd: number) => {
+  const frame = horizontalFrameJ2000(jd, SEOUL);
   const scale = Math.hypot(width, height) / 2 / 2;
-  const dot = (a: Point3D, v: Point3D) =>
-    a[0] * v[0] + a[1] * v[1] + a[2] * v[2];
 
   return (v: Point3D): Projected | null => {
     const up = dot(frame.zenith, v);
@@ -53,58 +62,180 @@ const makeProjector = (width: number, height: number) => {
   };
 };
 
-const draw = (layers: HTMLCanvasElement[]) => {
+// 해: 자리만 알려 주는 작은 표식 (테두리 원 + 가운데 점 + 짧은 빛살 여덟 개). 하늘은 밝히지 않는다
+const drawSun = (context: CanvasRenderingContext2D, p: Projected) => {
+  context.strokeStyle = "rgba(255,200,110,0.85)";
+  context.fillStyle = "rgba(255,200,110,0.9)";
+  context.lineWidth = 1.2;
+  context.beginPath();
+  context.arc(p.x, p.y, 5, 0, 2 * Math.PI);
+  context.stroke();
+  context.beginPath();
+  context.arc(p.x, p.y, 1.6, 0, 2 * Math.PI);
+  context.fill();
+  context.lineWidth = 1;
+  context.beginPath();
+
+  for (let i = 0; i < 8; i++) {
+    const a = (i * Math.PI) / 4;
+    context.moveTo(p.x + 7.5 * Math.cos(a), p.y + 7.5 * Math.sin(a));
+    context.lineTo(p.x + 10 * Math.cos(a), p.y + 10 * Math.sin(a));
+  }
+
+  context.stroke();
+};
+
+// 달: 어두운 원판 위에 빛나는 부분만 밝게. 해 쪽 반원에서 경계 타원을 빼면 빛나는 부분이다
+// (learn/MoonDateDemo와 같은 방법, 그믐달은 경계가 해 쪽으로 휜다)
+const drawMoon = (
+  context: CanvasRenderingContext2D,
+  p: Projected,
+  lit: number,
+  angle: number,
+) => {
+  const r = 7;
+  context.fillStyle = "rgba(40,50,75,0.9)";
+  context.strokeStyle = "rgba(253,230,138,0.3)";
+  context.lineWidth = 0.8;
+  context.beginPath();
+  context.arc(p.x, p.y, r, 0, 2 * Math.PI);
+  context.fill();
+  context.stroke();
+
+  context.save();
+  context.translate(p.x, p.y);
+  context.rotate(angle);
+  context.fillStyle = "rgba(253,236,170,0.95)";
+  context.beginPath();
+  context.arc(0, 0, r, -Math.PI / 2, Math.PI / 2);
+  context.ellipse(
+    0,
+    0,
+    r * Math.abs(1 - 2 * lit),
+    r,
+    0,
+    Math.PI / 2,
+    -Math.PI / 2,
+    lit < 0.5,
+  );
+  context.fill();
+  context.restore();
+};
+
+// 해·달을 그린다. 지평선 아래면 그리지 않는다
+const drawSunAndMoon = (
+  context: CanvasRenderingContext2D,
+  project: (v: Point3D) => Projected | null,
+  jd: number,
+) => {
+  const sun = ofDateToJ2000(sunVector(jd), jd);
+  const moon = ofDateToJ2000(moonVectorFrom(jd, SEOUL), jd);
+  const sunPoint = project(sun);
+  const moonPoint = project(moon);
+
+  if (sunPoint) {
+    drawSun(context, sunPoint);
+  }
+
+  if (!moonPoint) {
+    return;
+  }
+
+  // 빛나는 비율: 해와 달이 벌어진 각 E에 대해 (1 - cos E) / 2
+  const cosE = dot(sun, moon);
+  const lit = (1 - cosE) / 2;
+  // 화면에서 해 쪽 방향: 달에서 해 쪽으로 조금 옮긴 점을 투영해 잰다 (평사 투영은 각을 보존한다)
+  const toward = sun.map((c, i) => c - cosE * moon[i]);
+  const length = Math.hypot(toward[0], toward[1], toward[2]) || 1;
+
+  const step = (sign: number) => {
+    const v = moon.map((c, i) => c + (sign * 0.01 * toward[i]) / length);
+    const n = Math.hypot(v[0], v[1], v[2]);
+
+    return project([v[0] / n, v[1] / n, v[2] / n]);
+  };
+
+  const ahead = step(1);
+  const behind = step(-1);
+  const angle = ahead
+    ? Math.atan2(ahead.y - moonPoint.y, ahead.x - moonPoint.x)
+    : behind
+      ? Math.atan2(moonPoint.y - behind.y, moonPoint.x - behind.x)
+      : 0;
+
+  drawMoon(context, moonPoint, lit, angle);
+};
+
+const sizeCanvas = (
+  canvas: HTMLCanvasElement,
+  width: number,
+  height: number,
+  dpr: number,
+) => {
+  canvas.width = Math.round(width * dpr);
+  canvas.height = Math.round(height * dpr);
+  const context = canvas.getContext("2d")!;
+  context.setTransform(dpr, 0, 0, dpr, 0, 0);
+  context.clearRect(0, 0, width, height);
+
+  return context;
+};
+
+// 지금 하늘을 그리고, 반짝일 수 있는 (화면에 보이는) 별 목록을 돌려준다
+const draw = (
+  skyCanvas: HTMLCanvasElement,
+  effectCanvas: HTMLCanvasElement,
+): EffectStar[] => {
   const width = window.innerWidth;
   const height = window.innerHeight;
   const dpr = Math.min(2, window.devicePixelRatio || 1);
-  const project = makeProjector(width, height);
-  const contexts = layers.map((canvas) => {
-    canvas.width = Math.round(width * dpr);
-    canvas.height = Math.round(height * dpr);
-    const context = canvas.getContext("2d")!;
-    context.setTransform(dpr, 0, 0, dpr, 0, 0);
-    context.clearRect(0, 0, width, height);
+  const jd = julianDay(new Date());
+  const project = makeProjector(width, height, jd);
+  const context = sizeCanvas(skyCanvas, width, height, dpr);
 
-    return context;
-  });
+  // 효과 캔버스는 크기가 바뀔 때만 다시 잡는다 (크기를 다시 잡으면 그리던 효과가 지워진다)
+  if (
+    effectCanvas.width !== Math.round(width * dpr) ||
+    effectCanvas.height !== Math.round(height * dpr)
+  ) {
+    sizeCanvas(effectCanvas, width, height, dpr);
+  }
 
-  // 별자리선은 아래층에 흐리게
-  const lineContext = contexts[0];
-  lineContext.strokeStyle = "rgba(150,170,255,0.14)";
-  lineContext.lineWidth = 1;
+  // 별자리선은 흐리게
+  context.strokeStyle = "rgba(150,170,255,0.14)";
+  context.lineWidth = 1;
 
   for (const line of sky.lines) {
     let previous: Projected | null = null;
-    lineContext.beginPath();
+    context.beginPath();
 
     for (let i = 0; i < line.length; i += 3) {
       const p = project([line[i], line[i + 1], line[i + 2]]);
 
       if (p && previous) {
-        lineContext.moveTo(previous.x, previous.y);
-        lineContext.lineTo(p.x, p.y);
+        context.moveTo(previous.x, previous.y);
+        context.lineTo(p.x, p.y);
       }
 
       previous = p;
     }
 
-    lineContext.stroke();
+    context.stroke();
   }
 
   const { stars } = sky;
+  const visible: EffectStar[] = [];
 
   for (let i = 0; i < stars.length; i += 5) {
     const p = project([stars[i], stars[i + 1], stars[i + 2]]);
 
-    if (!p) {
+    if (!p || p.x < 0 || p.y < 0 || p.x > width || p.y > height) {
       continue;
     }
 
     const mag = stars[i + 3];
     const color = COLORS[stars[i + 4]];
     const r = radiusOf(mag);
-    // 별마다 두 층 중 하나에 그려, 두 층이 번갈아 밝아지며 반짝인다
-    const context = contexts[(i / 5) % 2];
 
     // 밝은 별은 빛무리를 두른다
     if (mag < 2) {
@@ -121,40 +252,74 @@ const draw = (layers: HTMLCanvasElement[]) => {
     context.beginPath();
     context.arc(p.x, p.y, r, 0, 2 * Math.PI);
     context.fill();
+    visible.push({ x: p.x, y: p.y, r, mag, color });
   }
+
+  drawSunAndMoon(context, project, jd);
+
+  return visible;
 };
 
 export default function SkyBackground() {
-  const lower = useRef<HTMLCanvasElement>(null);
-  const upper = useRef<HTMLCanvasElement>(null);
+  const skyRef = useRef<HTMLCanvasElement>(null);
+  const effectRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
-    if (!lower.current || !upper.current) {
+    const skyCanvas = skyRef.current;
+    const effectCanvas = effectRef.current;
+
+    if (!skyCanvas || !effectCanvas) {
       return;
     }
 
-    const layers = [lower.current, upper.current];
-    let timer = 0;
+    let stars = draw(skyCanvas, effectCanvas);
+    let resizeTimer = 0;
 
-    // 들어온 순간의 하늘을 그리고, 창 크기가 바뀌면 다시 그린다
     const redraw = () => {
-      window.clearTimeout(timer);
-      timer = window.setTimeout(() => draw(layers), 150);
+      stars = draw(skyCanvas, effectCanvas);
     };
 
-    draw(layers);
-    window.addEventListener("resize", redraw);
+    // 창 크기가 바뀌면 다시 그린다
+    const onResize = () => {
+      window.clearTimeout(resizeTimer);
+      resizeTimer = window.setTimeout(redraw, 150);
+    };
+
+    // 하늘(별·해·달)은 1분마다 지금 시각으로. 탭이 안 보이면 건너뛰고, 다시 보이면 바로 맞춘다
+    const minute = window.setInterval(() => {
+      if (!document.hidden) {
+        redraw();
+      }
+    }, 60_000);
+
+    const onVisibility = () => {
+      if (!document.hidden) {
+        redraw();
+      }
+    };
+
+    window.addEventListener("resize", onResize);
+    document.addEventListener("visibilitychange", onVisibility);
+
+    // 움직임을 줄이도록 설정했으면 반짝임·유성은 끈다
+    const effects = window.matchMedia("(prefers-reduced-motion: reduce)")
+      .matches
+      ? null
+      : startSkyEffects(effectCanvas, () => stars);
 
     return () => {
-      window.clearTimeout(timer);
-      window.removeEventListener("resize", redraw);
+      effects?.stop();
+      window.clearTimeout(resizeTimer);
+      window.clearInterval(minute);
+      window.removeEventListener("resize", onResize);
+      document.removeEventListener("visibilitychange", onVisibility);
     };
   }, []);
 
   return (
     <div className="fx-sky" aria-hidden>
-      <canvas ref={lower} className="fx-sky-layer" />
-      <canvas ref={upper} className="fx-sky-layer fx-sky-layer-alt" />
+      <canvas ref={skyRef} className="fx-sky-layer" />
+      <canvas ref={effectRef} className="fx-sky-layer" />
     </div>
   );
 }
