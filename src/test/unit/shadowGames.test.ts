@@ -193,6 +193,26 @@ describe("에라토스테네스", () => {
     expect(noonShadowAngleDeg(egypt.a, day)).toBeCloseTo(7.8, 0);
   });
 
+  it("기원전 240년의 해(자전축 23.72°)로 재면 알렉산드리아 약 7.5°, 시에네 약 0.4°", () => {
+    const [egypt] = CITY_PAIRS;
+    const day = dayOf(6, 21);
+    const then = egypt.obliquityDeg;
+
+    expect(then).toBeCloseTo(23.72, 2);
+    expect(noonShadowAngleDeg(egypt.a, day, then)).toBeCloseTo(7.48, 1);
+    expect(noonShadowAngleDeg(egypt.b, day, then)).toBeCloseTo(0.37, 1);
+    // 두 각의 차이(위도 차이)는 기울기와 상관없다
+    expect(
+      noonShadowAngleDeg(egypt.a, day, then) -
+        noonShadowAngleDeg(egypt.b, day, then),
+    ).toBeCloseTo(egypt.a.latDeg - egypt.b.latDeg, 5);
+    // 기울기가 같으면 지금 해와 같다
+    expect(noonShadowAngleDeg(egypt.a, 100, 23.436)).toBeCloseTo(
+      noonShadowAngleDeg(egypt.a, 100),
+      6,
+    );
+  });
+
   it("날짜를 바꿔도 각도 차이는 위도 차이 그대로 (같은 경도에 가까운 두 도시)", () => {
     const korea = CITY_PAIRS.find((p) => p.id === "korea")!;
     const diffs = [dayOf(3, 20), dayOf(6, 21), dayOf(12, 21)].map(

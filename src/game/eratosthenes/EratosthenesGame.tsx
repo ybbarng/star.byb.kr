@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import {
   circumferenceKm,
   CITY_PAIRS,
+  declinationDeg,
   cityLabel,
   EARTH_MERIDIAN_KM,
   lonGapDeg,
@@ -15,12 +16,7 @@ import { EarthFigure, SideFigure } from "@/game/eratosthenes/Figures";
 import { Confetti, useShake } from "@/game/fx/Fx";
 import { sfx } from "@/game/fx/sound";
 import WorldMap from "@/game/geo/WorldMap";
-import {
-  dayDate,
-  dayLabel,
-  dayOf,
-  sunDeclinationDeg,
-} from "@/game/shadow/shadow";
+import { dayDate, dayLabel, dayOf } from "@/game/shadow/shadow";
 import { cn } from "@/utils/cn";
 
 // 에라토스테네스 되어 보기 (docs/game-plans.md): 두 도시 고르기 → 두 도시의 정오 그림자 각을 각도기로 재기 →
@@ -52,6 +48,8 @@ export default function EratosthenesGame() {
   const [custom, setCustom] = useState<City[]>([]);
   const [measured, setMeasured] = useState<(number | null)[]>([null, null]);
   const [day, setDay] = useState(SOLSTICE);
+  // 그때 하늘로 잴지(기본), 지금 하늘로 잴지. 그때 값이 있는 짝(알렉산드리아·시에네)에만 고를 수 있다
+  const [ancient, setAncient] = useState(true);
 
   const pair = useMemo(() => {
     if (pairId === "custom" && custom.length === 2) {
@@ -66,8 +64,9 @@ export default function EratosthenesGame() {
     pairId !== "custom" ||
     (custom.length === 2 && Math.abs(custom[0].latDeg - custom[1].latDeg) >= 2);
   const km = northSouthKm(pair.a, pair.b);
-  const angleA = noonShadowAngleDeg(pair.a, SOLSTICE);
-  const angleB = noonShadowAngleDeg(pair.b, SOLSTICE);
+  const obliquityDeg = ancient ? pair.obliquityDeg : undefined;
+  const angleA = noonShadowAngleDeg(pair.a, SOLSTICE, obliquityDeg);
+  const angleB = noonShadowAngleDeg(pair.b, SOLSTICE, obliquityDeg);
   // 잰 값은 크기만, 방향(북·남)은 그림에서 읽은 대로 붙인다
   const signedA =
     measured[0] === null ? null : Math.sign(angleA || 1) * measured[0];
@@ -196,6 +195,33 @@ export default function EratosthenesGame() {
               {"note" in pair && pair.note && (
                 <div className="opacity-70">{pair.note}</div>
               )}
+              {"obliquityDeg" in pair && pair.obliquityDeg !== undefined && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="opacity-70">해의 위치:</span>
+                  {[
+                    { on: true, label: "그때 하늘 (기원전 240년)" },
+                    {
+                      on: false,
+                      label: "지금 하늘 (같은 두 곳에서 오늘 재면)",
+                    },
+                  ].map((o) => (
+                    <button
+                      key={o.label}
+                      className={cn(
+                        "btn btn-xs",
+                        ancient === o.on ? "btn-primary" : "btn-outline",
+                      )}
+                      onClick={() => {
+                        sfx.tap();
+                        setAncient(o.on);
+                        setMeasured([null, null]);
+                      }}
+                    >
+                      {o.label}
+                    </button>
+                  ))}
+                </div>
+              )}
               {lonGapDeg(pair) > 5 && (
                 <div className="text-amber-200">
                   경도가 {lonGapDeg(pair).toFixed(0)}° 달라서 두 곳의 정오는{" "}
@@ -233,7 +259,7 @@ export default function EratosthenesGame() {
             <EarthFigure
               a={pair.a}
               b={pair.b}
-              decDeg={sunDeclinationDeg(dayDate(SOLSTICE))}
+              decDeg={declinationDeg(dayDate(SOLSTICE), obliquityDeg)}
               showCenter={step === 5}
             />
             <MeasuredSummary
@@ -329,6 +355,7 @@ export default function EratosthenesGame() {
         <DateStep
           a={pair.a}
           b={pair.b}
+          obliquityDeg={obliquityDeg}
           day={day}
           setDay={setDay}
           onRestart={() => {
@@ -699,19 +726,21 @@ function Bar({
 function DateStep({
   a,
   b,
+  obliquityDeg,
   day,
   setDay,
   onRestart,
 }: {
   a: City;
   b: City;
+  obliquityDeg?: number;
   day: number;
   setDay: (d: number) => void;
   onRestart: () => void;
 }) {
-  const angA = noonShadowAngleDeg(a, day);
-  const angB = noonShadowAngleDeg(b, day);
-  const dec = sunDeclinationDeg(dayDate(day));
+  const angA = noonShadowAngleDeg(a, day, obliquityDeg);
+  const angB = noonShadowAngleDeg(b, day, obliquityDeg);
+  const dec = declinationDeg(dayDate(day), obliquityDeg);
 
   return (
     <div className="flex flex-col gap-3">
