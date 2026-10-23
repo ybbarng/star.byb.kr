@@ -192,6 +192,15 @@
       .card .num { font-size: 1.6em; font-weight: 900; color: #c7d2fe; }
       .card .desc { font-size: 0.6em; color: oklch(.708 0 0); }
       .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.6em; }
+      /* 슬라이드 번호: 오른쪽 아래, 진행 막대 위 */
+      .reveal .slide-number {
+        font-size: 18px;
+        right: 14px;
+        bottom: 10px;
+        background: transparent;
+        color: rgba(255, 255, 255, 0.45);
+      }
+      .reveal .slide-number a { color: inherit; }
     </style>
   </head>
   <body>
@@ -358,7 +367,7 @@
             <br>
             하늘은 구면이라, 별 지도 쪽은 그 근처 하늘을 평평하게 편 면(접선 평면)에 옮겨 놓고 같은 방식으로 지문을 만듭니다.
             <br>
-            별 지도에서는 서로 10도 안에 모인 별 4개 조합으로 quad를 8만 3천 개 미리 만들어 두고, 사진 quad의 지문과 가장 가까운 걸 KD-tree로 찾습니다. 그게 답입니다. 이 10도가 뒤에서 문제가 됩니다.
+            별 지도 쪽은 하늘을 192칸으로 나누고, 칸 중심에서 10도 안의 별로 4개 조합을 모두 만들어 quad 51만 개를 미리 만들어 둡니다. 사진 quad의 지문과 가장 가까운 걸 KD-tree로 찾습니다. 그게 답입니다.
           </aside>
         </section>
 
@@ -437,7 +446,7 @@
           <aside class="notes">
             V2 코드를 그대로 받아 샘플 16장에 사람 손 없이 돌려 봤습니다. V2는 지문이 가장 가까운 quad를 1순위 답으로 냅니다. 16장 모두 답을 냈는데, 맞은 건 북두칠성, 호주 두 장, 오리온, 네 장입니다.
             <br>
-            구글에서 찾은 사진은 우리도 정답을 모르지만, V2가 낸 답대로 별 지도를 겹치면 quad에 쓴 별 4개 말고는 하나도 겹치지 않습니다. 그래서 이것도 실패입니다.
+            구글에서 찾은 사진은 우리도 정답을 모르지만, V2가 낸 답대로 별 지도를 겹치면 quad에 쓴 별 말고 겹친 별이 2개로, 우연히 겹칠 기대치와 같습니다. 그래서 이것도 실패입니다.
             <br>
             V2 때는 사람이 별을 고치고 후보를 하나씩 눌러 보며 이걸 메웠습니다.
           </aside>
@@ -450,7 +459,7 @@
               <div class="cell"><img src="/samples/thumbs/big-dipper.webp"><span class="stamp">성공</span></div>
               <div class="cell"><img src="/samples/thumbs/20220607-berry-seoul.webp"><span class="stamp">성공</span></div>
               <div class="cell"><img src="/samples/thumbs/20220328-brice-Milky Way over Buzzvil.webp"><span class="stamp">성공</span></div>
-              <div class="cell"><img src="/samples/thumbs/20190617-jarrod-saipan.webp"><span class="stamp">성공</span></div>
+              <div class="cell"><img src="/samples/thumbs/20190617-jarrod-saipan.webp"><span class="stamp unsure">시각·장소</span></div>
               <div class="cell"><img src="/samples/thumbs/20231012-nike-aust-01.webp"><span class="stamp">성공</span></div>
               <div class="cell"><img src="/samples/thumbs/20231012-nike-aust-02.webp"><span class="stamp">성공</span></div>
               <div class="cell"><img src="/samples/thumbs/20230904-nike-jeungseun-01.webp"><span class="stamp">성공</span></div>
@@ -466,7 +475,7 @@
             </div>
           </div>
           <aside class="notes">
-            같은 16장을 지금 V3로 풀면 이렇습니다. 사람 손 없이 15장이 풀립니다. 사이판은 사진에 남은 촬영 시각과 장소를 씁니다.
+            같은 16장을 지금 V3로 풀면 이렇습니다. 사람 손 없이 14장이 풀리고, 사이판은 샘플에 적어 둔 슬랙 올린 시각과 장소를 쓰면 풀려서 15장입니다.
             <br>
             구글 사진은 "모르겠다"고 합니다. 틀린 답을 내지 않습니다. 이 차이가 어떻게 생겼는지가 오늘 이야기입니다.
           </aside>
@@ -514,14 +523,14 @@
               <tr><th></th><th>V2</th><th>V3</th></tr>
               <tr><td>별 찾기</td><td>사람이 마커를 고친다</td><td class="green">알아서, 필요할 때만 사람이</td></tr>
               <tr><td>자동으로 풀리는 샘플</td><td>16장 중 4장</td><td class="green">16장 중 14장 <span class="small">(시각·장소를 알면 15장)</span></td></tr>
-              <tr><td>1순위가 틀린 사진</td><td class="red">12장 <span class="small">(맞는지 판정 없음)</span></td><td class="green">0번</td></tr>
-              <tr><td>처음 받는 양</td><td>약 8MB</td><td class="green">약 0.68MB</td></tr>
+              <tr><td>1순위가 틀린 사진</td><td class="red">12장 <span class="small">(맞는지 판정 없음)</span></td><td class="green">0장</td></tr>
+              <tr><td>처음 받는 양</td><td>약 28MB</td><td class="green">약 0.68MB</td></tr>
             </table>
           </div>
           <aside class="notes">
             V2와 비교하면 이렇습니다.
             <br>
-            사진만 고르면 알아서 풀리고, 샘플 16장 중 14장이 사람 손 없이 풀립니다. 방금 본 것처럼 V2는 사람 손 없이 4장이었습니다.
+            사진만 고르면 알아서 풀리고, 샘플 16장 중 14장이 사람 손 없이 풀립니다. 앞에서 본 것처럼 V2는 사람 손 없이 4장이었습니다.
             <br>
             그리고 중요한 건, V2는 나머지 12장에서 1순위 후보가 틀렸는데 그게 틀린 줄 판정할 방법이 없었고, V3는 틀린 답을 낸 적이 한 번도 없다는 겁니다. 이 얘기부터 하겠습니다.
             <br>
@@ -550,7 +559,7 @@
             <br>
             프로그램은 별 4개의 모양만 봤고, 나머지 중에 맞은 별이 있는지는 사람이 후보를 하나씩 눌러 겹쳐 보고 눈으로 확인했습니다.
             <br>
-            그래서 후보 하나가 북두칠성 사진을 오리온자리로 겹쳐도 프로그램은 틀린 줄 몰랐습니다.
+            그래서 앞에서 본 오리온처럼 틀린 후보가 나와도 프로그램은 틀린 줄 몰랐습니다.
             <br>
             2023년 드림 챌린지 때도 같았습니다. 모양이 똑같이 맞는 후보가 여러 개 나왔는데, 어느 게 답인지 프로그램은 몰랐습니다.
           </aside>
@@ -574,7 +583,7 @@
             <br>
             (보라 15등) 정답 quad는 15등이었습니다. 지문 거리는 1등의 거의 두 배입니다. 그런데 겹쳐 보면 식별에 쓴 4개 말고도 15개가 더 겹칩니다. 초록 원입니다. 겹쳤다는 건 사진 대각선의 0.6%, 이 사진에서는 11픽셀 안에 들어왔다는 뜻입니다.
             <br>
-            지문이 가장 가깝다고 정답은 아닙니다. 별 지도에 quad가 8만 3천 개나 있으니, 아무 별 4개나 골라도 우연히 아주 비슷한 지문이 있습니다. V2 코드를 샘플에 그대로 돌려 봐도, 정답을 아는 14장 중 1등이 정답인 사진은 4장뿐이었습니다.
+            지문이 가장 가깝다고 정답은 아닙니다. V2 별 지도에는 quad가 51만 개나 있으니, 아무 별 4개나 골라도 우연히 아주 비슷한 지문이 있습니다. V2 코드를 샘플에 그대로 돌려 봐도, 정답을 아는 14장 중 1등이 정답인 사진은 4장뿐이었습니다.
             <br>
             그러니 답이 맞는지는 지문 거리가 아니라 "식별에 쓰지 않은 별이 얼마나 겹치나"로 봐야 합니다. 그럼 몇 개가 겹쳐야 정답이라고 할까요?
           </aside>
@@ -732,7 +741,7 @@
             </div>
           </div>
           <aside class="notes">
-            석촌호수 은하수 사진에서 겹친 별 30개를 놓고 보겠습니다. 이 사진은 V2에서는 "모름"이었지만, 세 번째 장에서 풀리는 답을 미리 가져왔습니다. 가장자리 어긋남이 가장 잘 보이는 사진이라서입니다. 흰 점이 사진의 별, 노란 점이 모델로 배치한 지도 별, 둘을 잇는 빨간 선이 어긋남입니다. 선이 길수록 크게 어긋난 겁니다. 초록 테두리는 매칭한 별, 짝입니다.
+            석촌호수 은하수 사진에서 겹친 별 30개를 놓고 보겠습니다. 이 사진은 V2에서는 틀린 답이었지만, 이 이야기 끝의 원근 변환으로 풀리는 답을 미리 가져왔습니다. 가장자리 어긋남이 가장 잘 보이는 사진이라서입니다. 흰 점이 사진의 별, 노란 점이 모델로 배치한 지도 별, 둘을 잇는 빨간 선이 어긋남입니다. 선이 길수록 크게 어긋난 겁니다. 초록 테두리는 매칭한 별, 짝입니다.
             <br>
             (①) V2처럼 짝지은 별 서너 개로만 변환을 구하면, 짝 근처는 맞는데 멀어질수록 크게 어긋납니다. 평균 35픽셀, 가장 크게 288픽셀입니다.
             <br>
@@ -923,7 +932,7 @@
 
 
         <section class="title-body-slide">
-          <h1>북두칠성 일곱 별로는 quad를 못 만든다</h1>
+          <h1>quad를 줄였더니 북두칠성이 빠졌다</h1>
           <div class="body">
             <div class="demo-frame wide" style="height: 89%;">
               <iframe src="/embed/quad-reach"></iframe>
@@ -933,15 +942,15 @@
           <aside class="notes">
             지금까지는 풀이에 어떤 별을 넣을지였고, 이제는 넣은 별로 별 지도와 어떻게 맞출지입니다.
             <br>
-            quad를 자동 풀이에 맞게 고쳤습니다. 사진 별을 칸마다 고르게 고르고, 가까운 별끼리 묶고, 겹친 별로 다시 맞춥니다. 그랬더니 5장이 풀렸는데, 하필 가장 쉬워 보이는 북두칠성 사진이 안 풀렸습니다.
+            V2의 quad DB부터 보겠습니다. (HEALPix 칸 보기) 처음에 말씀드린 HEALPix가 이 칸입니다. 하늘을 같은 넓이 192칸으로 나누고, 칸 중심에서 10도 원 안의 별로 4개 조합을 모두 만들었습니다. 그러면 원 안 양 끝, 20도까지 떨어진 별도 한 quad가 됩니다.
             <br>
-            quad DB에는 네 별이 서로 10도 안에 모인 조합만 담았습니다. 조합 수가 별 수의 네제곱으로 늘어서, 5등급 별로 칸마다 다 만들면 55만 개, 네 별이 10도 안인 것만 남기고 이웃 칸과 겹친 것을 빼면 8만 3천 개입니다.
+            문제는 조합 수입니다. 별 수의 네제곱으로 늘어서, V2 DB는 quad가 51만 개, 65MB였습니다. 압축해도 22MB라 그대로는 배포할 수 없었고, 펼쳐서 검색 나무를 쌓는 데만 몇 초가 걸렸습니다. 다섯 번째 이야기에서 다시 나오는 숫자입니다.
             <br>
-            (HEALPix 칸 보기) 처음에 말씀드린 HEALPix가 이 칸입니다. 하늘을 같은 넓이 192칸으로 나누고, 칸 중심에서 10도 원 안의 별로 quad를 만듭니다.
+            그래서 V3 초기에 quad 수부터 줄였습니다. 사진 한 장에 담기는 건 대개 가까운 별들이니, 네 별이 모두 서로 10도 안에 모인 조합만 남겼습니다. 51만 개가 8만 3천 개, 65MB가 10.8MB로 줄었습니다.
             <br>
-            (국자 네 별) 그런데 북두칠성 국자 네 별은 가장 먼 두 별이 10.4도라 아깝게 빠집니다. (다른 별을 골라 보며) 일곱 별로 만들 수 있는 4별 조합 35개 중 10도 안에 드는 건 하나도 없습니다.
+            (국자 네 별) 그런데 북두칠성 국자 네 별은 가장 먼 두 별이 10.4도라 아깝게 빠집니다. (다른 별을 골라 보며) 일곱 별로 만들 수 있는 4별 조합 35개 중 10도 안에 드는 건 하나도 없습니다. V2가 풀던 북두칠성이 이 제한 때문에 빠진 겁니다.
             <br>
-            사진에서는 밝은 별부터 quad를 만드는데, 북두칠성 사진의 밝은 별은 바로 이 일곱 개입니다. 그래서 DB에 맞는 quad가 없었습니다. (질문이 나오면) 지금은 입력 별을 60개까지 늘려, 주변의 어두운 별 넷으로 quad로도 풀립니다.
+            quad를 자동 풀이에 맞게 고쳤을 때(사진 별을 칸마다 고르게 고르고, 가까운 별끼리 묶고, 겹친 별로 다시 맞추기) 5장이 풀렸는데, 하필 가장 쉬워 보이는 북두칠성 사진이 안 풀린 이유가 이것이었습니다. 사진에서는 앞쪽 별부터 quad를 만드는데, 북두칠성 사진의 앞쪽 별이 바로 이 일곱 개라 DB에 맞는 quad가 없었습니다. (질문이 나오면) 지금은 입력 별을 60개까지 늘려, 주변의 어두운 별 넷으로 quad로도 풀립니다.
             <br>
             넓히면 조합이 폭발하니, 별 셋짜리 삼각형을 더했습니다. 셋은 조합이 세제곱으로 늘고, 넓게 보는 대신 밝은 별(3.5등급)만 써서 30도까지 넓혀도 4만 8천 개로 감당이 됩니다.
           </aside>
@@ -1048,7 +1057,7 @@
               <div class="cell"><img src="/samples/thumbs/google-unknown.webp"><span class="stamp unsure">모름</span></div>
             </div>
             <div class="fragment bars" style="margin-top: 0.6em;">
-              <div class="row"><span class="label">V2 quad</span><span class="track"><span class="fill" style="width: 7%; display: block;"></span></span><span class="value">1장</span></div>
+              <div class="row"><span class="label">V2 quad + 판정</span><span class="track"><span class="fill" style="width: 7%; display: block;"></span></span><span class="value">1장</span></div>
               <div class="row"><span class="label">고친 quad</span><span class="track"><span class="fill" style="width: 36%; display: block;"></span></span><span class="value">5장</span></div>
               <div class="row"><span class="label">+ 삼각형</span><span class="track"><span class="fill" style="width: 43%; display: block;"></span></span><span class="value">6장</span></div>
               <div class="row"><span class="label">+ 땅 가리기</span><span class="track"><span class="fill" style="width: 93%; display: block;"></span></span><span class="value">13장</span></div>
@@ -1058,7 +1067,7 @@
           <aside class="notes">
             그래서 지금은 16장 중 14장이 사람 손 없이 풀립니다. 틀린 답은 여전히 0장입니다.
             <br>
-            (막대) 같은 16장, 같은 확신 기준으로 잰 순서입니다. V2 quad에 이 판정만 붙이면 1장, quad를 고쳐서(고르게 고르기, 가까운 별끼리 묶기, 겹친 별로 다시 맞추기) 5장, 삼각형을 더해 북두칠성까지 6장, 땅 가리기로 13장, 원근 변환으로 은하수까지 14장입니다.
+            (막대) 같은 16장, 같은 확신 기준으로 잰 순서입니다. V2 quad에 이 판정만 붙이면 1장(앞에서 본 V2의 4장은 1순위를 그대로 답으로 센 것이고, 여기는 10억 분의 1 기준을 넘은 것만 셉니다), quad를 고쳐서(고르게 고르기, 가까운 별끼리 묶기, 겹친 별로 다시 맞추기) 5장, 삼각형을 더해 북두칠성까지 6장, 땅 가리기로 13장, 원근 변환으로 은하수까지 14장입니다.
             <br>
             막대는 기능을 하나씩 더해 잰 순서라 앞의 장 순서와는 다릅니다. 별다움은 막대에 없는데, 다른 길로 같은 곳에 닿았기 때문입니다. 지금은 별다운 순으로 고르면 땅을 가리지 않아도 14장이 모두 사진 전체에서 풀리고, 땅 가리기는 못 풀 때의 대비책으로 남았습니다.
             <br>
@@ -1244,7 +1253,7 @@
             </ul>
           </div>
           <aside class="notes">
-            V2를 배포하지 못한 이유는 다섯 가지였습니다.
+            V2를 배포하지 못한 이유는 네 가지였습니다.
             <br>
             정확도. 어떤 사진을 올려도 기대만큼 풀어 준다고 할 수 없었고, 맞는지 판정하는 단계가 미완이라 맞는 후보와 틀린 후보를 가려 주지 못했습니다. 공개 서비스라면 쓰는 사람이 그걸 일일이 확인할 수 없습니다.
             <br>
@@ -1344,20 +1353,20 @@
               </div>
               <div>
                 <p>quad DB</p>
-                <p class="small">JSON 10.8MB → 이진 2MB(압축하면 1.46MB) → <span class="green">0</span></p>
+                <p class="small">V2 65MB(압축 22MB) → 10° 안만 10.8MB → 이진 2MB(압축 1.46MB) → <span class="green">0</span></p>
                 <p class="fragment">별 위치 + 규칙(HEALPix 192칸)이면<br>언제든 똑같이 만들어진다</p>
-                <p class="fragment small">브라우저가 사진 고르는 동안 약 1초 (노트북 기준)</p>
+                <p class="fragment small">브라우저가 사진 고르는 동안 약 0.75초 (노트북 기준)</p>
               </div>
             </div>
           </div>
           <aside class="notes">
-            quad DB는 처음에 JSON 10.8MB였고, 이진으로 2MB까지 줄였습니다.
+            quad DB는 V2에서 65MB였고, 앞에서 본 10도 제한으로 10.8MB, 숫자를 이진으로 담아 2MB까지 줄였습니다.
             <br>
-            그러다 다시 생각해 보니, 이건 별 위치와 규칙만 있으면 언제든 똑같이 만들어집니다. V2에서 보여 드린 HEALPix 칸 나누기가 그 규칙입니다.
+            그러다 다시 생각해 보니, 이건 별 위치와 규칙만 있으면 언제든 똑같이 만들어집니다. 앞에서 본 HEALPix 칸 나누기가 그 규칙입니다.
             <br>
             (HEALPix 192칸을 켜고 칸 하나를 눌러 보며) 하늘을 같은 넓이 192칸으로 나누고, 칸마다 그 안의 별로 4개 조합을 만듭니다.
             <br>
-            그래서 받지 않고 브라우저가 만듭니다. 사진 고르는 동안 노트북에서 1초면 됩니다. 휴대폰에서는 아직 못 재 봤습니다.
+            그래서 받지 않고 브라우저가 만듭니다. 사진 고르는 동안 노트북에서 0.75초면 됩니다. 휴대폰에서는 아직 못 재 봤습니다.
             <br>
             2022년 첫 발표에서 Astrometry.net은 별 8,400만 개짜리 카탈로그를 쓴다고 소개했는데, 저는 맨눈으로 보이는 5등급까지 1,625개만 씁니다. 일반인이 찍은 사진에는 그 정도면 충분했습니다.
           </aside>
@@ -1420,42 +1429,16 @@
           <div class="body center">
             <p class="subtitle">Introduction to Plate Solving (2022-06) 마지막 장: 나만의 플레이트 솔버 만들기</p>
             <ul class="checklist" style="font-size: 1.1em;">
-              <li class="fragment done" data-fragment-index="1">PoC</li>
-              <li class="fragment done" data-fragment-index="1">밝은 별만으로</li>
-              <li class="fragment done" data-fragment-index="1">땅이나 구름이 찍힌 사진에서도</li>
-              <li class="fragment done" data-fragment-index="1">안 되면 사진 두 장만이라도 → <span class="green">샘플 16장 중 15장</span></li>
+              <li class="fragment check-on" data-fragment-index="1">PoC</li>
+              <li class="fragment check-on" data-fragment-index="1">밝은 별만으로</li>
+              <li class="fragment check-on" data-fragment-index="1">땅이나 구름이 찍힌 사진에서도</li>
+              <li class="fragment check-on" data-fragment-index="1">안 되면 사진 두 장만이라도<span class="fragment" data-fragment-index="1"> → <span class="green">샘플 16장 중 14장</span> <span class="small">(시각·장소를 쓰면 15장)</span></span></li>
             </ul>
           </div>
           <aside class="notes">
             사실 처음 세운 목표는 더 소박했습니다. 2022년 첫 발표 마지막 장에 이렇게 적었습니다. PoC, 밝은 별만으로, 땅이나 구름이 찍힌 사진에서도, 안 되면 사진 두 장만이라도.
             <br>
-            (넘기면) 4년 걸려서 다 지웠습니다. 사진 두 장이 아니라 샘플 16장 중 15장이 풀립니다. 사이판은 촬영 시각과 장소를 쓰면 풀립니다. 땅은 누각과 건물, 나무 사진으로, 구름은 구름 낀 사이판 사진으로 확인했습니다.
-          </aside>
-        </section>
-
-        <!-- ===================== 덤 ===================== -->
-        <section class="section-header-slide">
-          <h1>덤: 별 놀이터</h1>
-          <aside class="notes">
-            하다 보니 하늘 계산이 쌓여서, 그걸로 게임도 만들었습니다.
-          </aside>
-        </section>
-
-        <section class="fullscreen-slide">
-          <iframe class="site-frame" src="/games"></iframe>
-          <aside class="notes">
-            하늘 맞추기는 위도와 날짜, 시각 다이얼을 돌려 사진 속 하늘을 만드는 게임입니다. 플레이트 솔빙을 사람이 해 보는 셈입니다.
-            <br>
-            SkyGuessr는 밤하늘만 보고 지구 어디서 찍었는지 맞추는 게임입니다.
-            <br>
-            생일 별자리는 내 생일에 해가 실제로 어느 별자리에 있었는지 보여 줍니다. 점성술 별자리와 다릅니다.
-          </aside>
-        </section>
-
-        <section class="fullscreen-slide">
-          <iframe class="site-frame" src="/learn"></iframe>
-          <aside class="notes">
-            오늘 이야기한 원리는 "찾는 원리" 페이지에 데모와 함께 정리해 뒀습니다. 걸어온 길도 있습니다.
+            (넘기면) 4년 걸려서 다 지웠습니다. 사진 두 장이 아니라 샘플 16장 중 14장이 사람 손 없이 풀리고, 사이판은 촬영 시각과 장소를 쓰면 풀려서 15장입니다. 땅은 누각과 건물, 나무 사진으로, 구름은 구름 낀 사이판 사진으로 확인했습니다.
           </aside>
         </section>
 
@@ -1484,22 +1467,6 @@
             2023년 드림 챌린지 때 배운 점에 "컴퓨터를 가르치는 일은 어렵습니다"라고 적었는데, 이번에는 사람이 하는 일을 하나씩 흉내 내게 하니 가르칠 수 있었습니다.
             <br>
             (넘기면) AI는 저보다 개발을 잘합니다.
-          </aside>
-        </section>
-
-        <section class="title-body-slide">
-          <h1>남은 일</h1>
-          <div class="body center">
-            <ul class="checklist">
-              <li>풀리는 사진을 다시 압축·축소한 112장 중 8초 안에 못 푸는 4장</li>
-              <li>별 10개 남짓인 사진: 지금은 시각·장소가 있어야</li>
-              <li>처음 보는 사진 더 많이</li>
-              <li>핸드폰에서 얼마나 걸리는지 재기</li>
-              <li>어안·망원 렌즈 사진도 풀기</li>
-            </ul>
-          </div>
-          <aside class="notes">
-            그래도 남은 일이 있습니다. 다음 V4를 기대해 주세요.
           </aside>
         </section>
 
@@ -1556,6 +1523,49 @@
           </aside>
         </section>
 
+        <!-- ===================== 부록: 시간이 남으면 ===================== -->
+        <!-- ===================== 덤 ===================== -->
+        <section data-appendix class="section-header-slide">
+          <h1>덤: 별 놀이터</h1>
+          <aside class="notes">
+            하다 보니 하늘 계산이 쌓여서, 그걸로 게임도 만들었습니다.
+          </aside>
+        </section>
+
+        <section data-appendix class="fullscreen-slide">
+          <iframe class="site-frame" src="/games"></iframe>
+          <aside class="notes">
+            하늘 맞추기는 위도와 날짜, 시각 다이얼을 돌려 사진 속 하늘을 만드는 게임입니다. 플레이트 솔빙을 사람이 해 보는 셈입니다.
+            <br>
+            SkyGuessr는 밤하늘만 보고 지구 어디서 찍었는지 맞추는 게임입니다.
+            <br>
+            생일 별자리는 내 생일에 해가 실제로 어느 별자리에 있었는지 보여 줍니다. 점성술 별자리와 다릅니다.
+          </aside>
+        </section>
+
+        <section data-appendix class="fullscreen-slide">
+          <iframe class="site-frame" src="/learn"></iframe>
+          <aside class="notes">
+            오늘 이야기한 원리는 "찾는 원리" 페이지에 데모와 함께 정리해 뒀습니다. 걸어온 길도 있습니다.
+          </aside>
+        </section>
+
+        <section data-appendix class="title-body-slide">
+          <h1>V4에서 할 일</h1>
+          <div class="body center">
+            <ul class="checklist">
+              <li>풀리는 사진을 다시 압축·축소한 112장 중 8초 안에 못 푸는 4장</li>
+              <li>별 10개 남짓인 사진: 지금은 시각·장소가 있어야</li>
+              <li>처음 보는 사진 더 많이</li>
+              <li>핸드폰에서 얼마나 걸리는지 재기</li>
+              <li>어안·망원 렌즈 사진도 풀기</li>
+            </ul>
+          </div>
+          <aside class="notes">
+            (부록) 그래도 할 일이 남았습니다. 다음 V4를 기대해 주세요.
+          </aside>
+        </section>
+
       </div>
     </div>
 
@@ -1573,6 +1583,15 @@
         hash: true,
         transition: 'none',
         backgroundTransition: 'none',
+        // 현재 / 전체 (부록은 전체에 세지 않고 '부록'으로)
+        slideNumber: (slide) => {
+          slide = slide || Reveal.getCurrentSlide();
+          if (!slide) return [''];
+          if (slide.hasAttribute('data-appendix')) return ['부록'];
+          const total = Reveal.getSlides().filter((s) => !s.hasAttribute('data-appendix')).length;
+          return [Reveal.getSlidePastCount(slide) + 1, '/', total];
+        },
+        showSlideNumber: 'all',
         plugins: [ RevealMarkdown, RevealHighlight, RevealNotes ]
       });
     </script>
