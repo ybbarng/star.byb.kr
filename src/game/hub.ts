@@ -1,6 +1,18 @@
-// 게임 허브("별 놀이터")에 보여 줄 게임 목록 (docs/game-plans.md)
+// 게임 허브("별 놀이터")에 보여 줄 목록 (docs/game-plans.md).
+// 점수를 겨루는 게임과, 게임은 아니지만 하늘을 만져 보며 둘러보는 것(둘러보기)을 나눠 보여 준다
+export type GameKind = "game" | "explore";
+
+export const KIND_LABELS: Record<GameKind, { title: string; note: string }> = {
+  game: { title: "게임", note: "점수를 겨루며 하늘 읽는 법을 익혀요" },
+  explore: {
+    title: "둘러보기",
+    note: "점수 없이 하늘을 만지고 돌려 보며 신기한 걸 찾아요",
+  },
+};
+
 export interface GameEntry {
   href: string;
+  kind: GameKind;
   title: string;
   summary: string;
   learn: string; // 무엇을 배우나
@@ -12,6 +24,7 @@ export interface GameEntry {
 export const GAMES: GameEntry[] = [
   {
     href: "/games/sky-guessr",
+    kind: "game",
     title: "SkyGuessr",
     summary:
       "밤하늘을 360°로 둘러보고, 이 사진을 지구 어디서 찍었는지 세계 지도에 핀을 찍어요. 가까울수록 높은 점수!",
@@ -23,6 +36,7 @@ export const GAMES: GameEntry[] = [
   },
   {
     href: "/games/sky-match",
+    kind: "game",
     title: "하늘 맞추기",
     summary:
       "다이얼(위도·날짜·시각)을 돌려 내 하늘을 정답 사진에 겹쳐요. 같은 하늘이면 어떤 날짜든 정답!",
@@ -33,6 +47,7 @@ export const GAMES: GameEntry[] = [
   },
   {
     href: "/games/find-constellation",
+    kind: "game",
     title: "별자리 숨은그림찾기",
     summary:
       "밤하늘에서 제시한 별자리를 찾아 눌러요. 찾으면 선이 그려지고 이야기가 나와요.",
@@ -43,6 +58,7 @@ export const GAMES: GameEntry[] = [
   },
   {
     href: "/games/birthday",
+    kind: "explore",
     title: "생일 별자리",
     summary:
       "내 생일에 해가 실제로 어느 별자리에 있었는지, 점성술 별자리와 왜 다른지 천문도로 보여 줘요.",
@@ -53,6 +69,7 @@ export const GAMES: GameEntry[] = [
   },
   {
     href: "/games/draw-constellation",
+    kind: "game",
     title: "점 찍어 별자리 찾기",
     summary:
       "점을 하나씩 찍으면 지금까지의 모양과 가장 닮은 진짜 별자리를 알려 줘요.",
@@ -63,6 +80,7 @@ export const GAMES: GameEntry[] = [
   },
   {
     href: "/games/light-time-capsule",
+    kind: "explore",
     title: "빛의 타임캡슐",
     summary:
       "별을 누르면 그 빛이 언제 출발했는지, 그때 지구에서는 무슨 일이 있었는지 알려 줘요.",
@@ -73,6 +91,7 @@ export const GAMES: GameEntry[] = [
   },
   {
     href: "/games/human-vs-computer",
+    kind: "game",
     title: "사람 계산원 vs 컴퓨터",
     summary:
       "사진 속 별자리를 누가 먼저 찾을까요? 나는 눈으로, 컴퓨터는 플레이트 솔버로. 마지막 판에는 반전이 있어요!",

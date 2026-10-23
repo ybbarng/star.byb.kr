@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { GAMES } from "@/game/hub";
+import { GAMES, KIND_LABELS } from "@/game/hub";
 import HubRecord from "@/game/HubRecord";
 import { cn } from "@/utils/cn";
 
@@ -16,58 +16,68 @@ export default function Page() {
           방법을 알게 돼요.
         </p>
       </div>
-      <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
-        {GAMES.map((g, i) => {
-          const body = (
-            <div
-              className={cn(
-                "rounded-box flex h-full flex-col gap-3 bg-gradient-to-br p-[1.5px]",
-                g.accent,
-              )}
-            >
-              <div className="bg-base-200/90 rounded-box flex h-full flex-col gap-2 p-5 backdrop-blur">
-                <div className="flex items-start justify-between">
-                  <span className="text-4xl">{g.icon}</span>
+      {(["game", "explore"] as const).map((kind, k) => (
+        <section key={kind} className="flex flex-col gap-3">
+          <div className="flex flex-wrap items-baseline gap-x-3">
+            <h2 className="text-2xl font-bold">{KIND_LABELS[kind].title}</h2>
+            <span className="text-sm opacity-60">{KIND_LABELS[kind].note}</span>
+          </div>
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+            {GAMES.filter((g) => g.kind === kind).map((g, i) => {
+              const body = (
+                <div
+                  className={cn(
+                    "rounded-box flex h-full flex-col gap-3 bg-gradient-to-br p-[1.5px]",
+                    g.accent,
+                  )}
+                >
+                  <div className="bg-base-200/90 rounded-box flex h-full flex-col gap-2 p-5 backdrop-blur">
+                    <div className="flex items-start justify-between">
+                      <span className="text-4xl">{g.icon}</span>
+                      {g.ready ? (
+                        <HubRecord href={g.href} />
+                      ) : (
+                        <span className="badge badge-sm badge-ghost">
+                          준비 중
+                        </span>
+                      )}
+                    </div>
+                    <h2 className="text-xl font-bold">{g.title}</h2>
+                    <p className="text-sm">{g.summary}</p>
+                    <p className="mt-auto text-xs opacity-60">
+                      배우는 것: {g.learn}
+                    </p>
+                    {g.ready && (
+                      <span className="text-primary text-sm font-bold">
+                        {g.kind === "game" ? "플레이 →" : "둘러보기 →"}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+
+              return (
+                <div
+                  key={g.href}
+                  className="fx-rise"
+                  style={{ animationDelay: `${150 + (k * 6 + i) * 80}ms` }}
+                >
                   {g.ready ? (
-                    <HubRecord href={g.href} />
+                    <Link
+                      href={g.href}
+                      className="fx-card rounded-box block h-full"
+                    >
+                      {body}
+                    </Link>
                   ) : (
-                    <span className="badge badge-sm badge-ghost">준비 중</span>
+                    <div className="h-full opacity-50">{body}</div>
                   )}
                 </div>
-                <h2 className="text-xl font-bold">{g.title}</h2>
-                <p className="text-sm">{g.summary}</p>
-                <p className="mt-auto text-xs opacity-60">
-                  배우는 것: {g.learn}
-                </p>
-                {g.ready && (
-                  <span className="text-primary text-sm font-bold">
-                    플레이 →
-                  </span>
-                )}
-              </div>
-            </div>
-          );
-
-          return (
-            <div
-              key={g.href}
-              className="fx-rise"
-              style={{ animationDelay: `${150 + i * 80}ms` }}
-            >
-              {g.ready ? (
-                <Link
-                  href={g.href}
-                  className="fx-card rounded-box block h-full"
-                >
-                  {body}
-                </Link>
-              ) : (
-                <div className="h-full opacity-50">{body}</div>
-              )}
-            </div>
-          );
-        })}
-      </div>
+              );
+            })}
+          </div>
+        </section>
+      ))}
     </div>
   );
 }
