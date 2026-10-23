@@ -4,9 +4,9 @@ import type { Birth } from "@/game/birthday/BirthdayPicker";
 import { useEffect, useMemo, useState } from "react";
 import BirthdayChart from "@/game/birthday/BirthdayChart";
 import {
-  BirthdayCalendar,
   BirthdayField,
   birthLabel,
+  BirthdayPicker,
 } from "@/game/birthday/BirthdayPicker";
 import { BIRTH_COLOR, SIGN_COLOR } from "@/game/birthday/drawChart";
 import { birthdaySky, ZODIAC, zodiacWidthDeg } from "@/game/birthday/zodiac";
@@ -49,15 +49,15 @@ export default function BirthdayGame() {
   const [birth, setBirth] = useState<Birth | null>(null);
 
   // 지난번에 넣은 생일이 있으면 미리 골라 둔다 (이 브라우저에만 남는다)
-  // 달력은 처음 그릴 때의 달을 보여 주므로, 불러온 뒤 한 번 다시 그린다
-  const [calendarKey, setCalendarKey] = useState("empty");
+  // 불러온 날로 휠이 굴러가는 대신 바로 그 자리에 있도록, 불러온 뒤 한 번 다시 그린다
+  const [pickerKey, setPickerKey] = useState("empty");
 
   useEffect(() => {
     const saved = readSavedBirth();
 
     if (saved) {
       setDraft(saved);
-      setCalendarKey("saved");
+      setPickerKey("saved");
     }
   }, []);
 
@@ -84,11 +84,7 @@ export default function BirthdayGame() {
           점성술의 별자리와 비교하고, 왜 다른지 천문도에서 확인해 봐요.
         </p>
         <div className="bg-base-200 rounded-box p-3 shadow-lg">
-          <BirthdayCalendar
-            key={calendarKey}
-            value={draft}
-            onChange={setDraft}
-          />
+          <BirthdayPicker key={pickerKey} value={draft} onChange={setDraft} />
         </div>
         <div className="flex flex-col items-center gap-2">
           <button
@@ -98,7 +94,7 @@ export default function BirthdayGame() {
           >
             {draft
               ? `${birthLabel(draft)}로 찾기`
-              : "달력에서 생일을 골라 주세요"}
+              : "휠이나 달력에서 생일을 골라 주세요"}
           </button>
           <button
             className="link link-hover text-sm opacity-70"
@@ -147,7 +143,8 @@ function BirthdayResult({
         style={rise(0)}
         className={cn(
           "animate-rise",
-          "flex w-full max-w-[1280px] flex-wrap items-center gap-4",
+          // 날짜 팝업(휠·달력)이 아래 천문도 위로 펼쳐지게
+          "relative z-30 flex w-full max-w-[1280px] flex-wrap items-center gap-4",
         )}
       >
         <h1 className="text-2xl font-bold">생일 별자리</h1>
