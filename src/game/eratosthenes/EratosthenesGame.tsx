@@ -15,6 +15,7 @@ import {
 import { EarthFigure, SideFigure } from "@/game/eratosthenes/Figures";
 import { Confetti, useShake } from "@/game/fx/Fx";
 import { sfx } from "@/game/fx/sound";
+import GameBasicsLinks from "@/game/GameBasicsLinks";
 import WorldMap from "@/game/geo/WorldMap";
 import { dayDate, dayLabel, dayOf } from "@/game/shadow/shadow";
 import { cn } from "@/utils/cn";
@@ -687,9 +688,12 @@ function RatioStep({
             157~185m로 보면 약 39,000~46,000km — 2,200년 전에 막대와
             그림자만으로 거의 맞혔어요.
           </div>
-          <button className="btn btn-primary self-end" onClick={onNext}>
-            날짜를 바꿔 보기 →
-          </button>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <GameBasicsLinks />
+            <button className="btn btn-primary ml-auto" onClick={onNext}>
+              날짜를 바꿔 보기 →
+            </button>
+          </div>
         </div>
       )}
     </div>

@@ -3,6 +3,7 @@
 import type { CSSProperties, ReactNode } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { setMuted, sfx, useMuted } from "@/game/fx/sound";
+import GameBasicsLinks from "@/game/GameBasicsLinks";
 import { cn } from "@/utils/cn";
 
 // 별 놀이터 공용 효과: 점수 팝업·파티클·고리, 흔들기, 색종이, 숫자 올라가기, 별점, 라운드 배너,
@@ -376,6 +377,7 @@ export function GameIntro({
       >
         {startLabel}
       </button>
+      <GameBasicsLinks className="justify-center" />
     </div>
   );
 }
@@ -491,6 +493,7 @@ export function ResultCard({
       )}
       {children}
       <div className="flex flex-wrap justify-center gap-2">{actions}</div>
+      <GameBasicsLinks className="justify-center" />
     </div>
   );
 }

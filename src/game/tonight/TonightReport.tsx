@@ -5,6 +5,7 @@ import type { TonightReport as Report } from "@/game/tonight/report";
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { sfx } from "@/game/fx/sound";
+import GameBasicsLinks from "@/game/GameBasicsLinks";
 import { drawAllSky } from "@/game/tonight/drawAllSky";
 import {
   DoodleSparkle,
@@ -36,6 +37,7 @@ import {
   nightTime,
   offsetLabel,
 } from "@/game/tonight/time";
+import { BasicsTerm } from "@/learn/basics/BasicsLinks";
 import { cn } from "@/utils/cn";
 import "@/game/tonight/tonight.css";
 
@@ -260,6 +262,7 @@ export default function TonightReport() {
           장소와 날짜만 알려 주세요. 그날 밤 하늘에서 무엇을 볼 수 있는지
           계산해서 정리해 드릴게요.
         </p>
+        <GameBasicsLinks />
       </header>
 
       {/* 어디서 · 언제 */}
@@ -597,8 +600,9 @@ function ReportBody({
           </ul>
         )}
         <p className="mt-3 text-xs opacity-55">
-          팔을 쭉 뻗어 주먹을 쥐면 하늘에서 약 10°예요. 지평선에서 주먹을 몇 개
-          쌓으면 되는지로 높이를 적었어요.
+          <BasicsTerm slug="star-hopping">팔을 쭉 뻗어 주먹을 쥐면</BasicsTerm>{" "}
+          하늘에서 약 10°예요. 지평선에서 주먹을 몇 개 쌓으면 되는지로 높이를
+          적었어요.
         </p>
       </Sticker>
 

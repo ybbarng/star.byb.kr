@@ -1,0 +1,72 @@
+import { existsSync } from "node:fs";
+import { describe, expect, it } from "vitest";
+import { GAMES, gameForPath } from "@/game/hub";
+import { BASICS_TOPICS, basicsTopic } from "@/learn/basics/topics";
+
+// 세 갈래(찾는 원리·하늘 읽기 기초·별 놀이터)를 잇는 링크가 실제 있는 곳을 가리키는지,
+// 놀이터 → 기초로 건너간 사람이 기초 페이지의 "이 개념을 쓰는 곳"에서 그 게임을 다시 만나는지 확인한다
+
+// 앱 주소 → 그 주소를 그리는 page.tsx가 있는지 (정적 내보내기라 page.tsx가 곧 주소다)
+const pageExists = (href: string) => {
+  const path = href.split("#")[0].replace(/\/+$/, "");
+
+  return existsSync(`src/app${path}/page.tsx`);
+};
+
+describe("놀이터 → 하늘 읽기 기초", () => {
+  it("게임이 가리키는 기초 페이지는 목차에 있다", () => {
+    for (const g of GAMES) {
+      for (const slug of g.basics ?? []) {
+        expect(basicsTopic(slug), `${g.href}: ${slug}`).toBeDefined();
+      }
+    }
+  });
+
+  it("하늘 계산을 쓰는 게임은 모두 기초 페이지를 하나 이상 가리킨다", () => {
+    // 플레이트 솔버 자체를 다루는 게임(모양 지문·사람 대 컴퓨터·점 찍기)은 찾는 원리 쪽이라 뺀다
+    const solverGames = [
+      "/games/draw-constellation",
+      "/games/human-vs-computer",
+      "/games/quad-fingerprint",
+    ];
+
+    for (const g of GAMES) {
+      if (!solverGames.includes(g.href)) {
+        expect(g.basics?.length ?? 0, g.href).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it("기초 페이지의 '이 개념을 쓰는 곳'에도 그 게임이 있다", () => {
+    for (const g of GAMES) {
+      for (const slug of g.basics ?? []) {
+        const back = basicsTopic(slug)!.links.some(
+          (l) => gameForPath(l.href)?.href === g.href,
+        );
+        expect(back, `${slug} → ${g.href}`).toBe(true);
+      }
+    }
+  });
+});
+
+describe("하늘 읽기 기초 → 이 개념을 쓰는 곳", () => {
+  it("링크마다 그 주소의 페이지가 있다", () => {
+    for (const t of BASICS_TOPICS) {
+      for (const l of t.links) {
+        expect(pageExists(l.href), `${t.slug}: ${l.href}`).toBe(true);
+      }
+    }
+  });
+});
+
+describe("주소 → 게임", () => {
+  it("하위 주소와 끝의 /도 같은 게임으로 본다", () => {
+    expect(gameForPath("/games/star-school/lessons")?.title).toBe(
+      "별자리 익히기",
+    );
+    expect(gameForPath("/games/sky-match/")?.href).toBe("/games/sky-match");
+    expect(gameForPath("/games")).toBeUndefined();
+    // 이름이 앞부분만 같은 다른 주소는 아니다
+    expect(gameForPath("/games/star-schoolx")).toBeUndefined();
+  });
+});

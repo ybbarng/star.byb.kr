@@ -11,6 +11,7 @@ import {
 import { BIRTH_COLOR, SIGN_COLOR } from "@/game/birthday/drawChart";
 import { birthdaySky, ZODIAC, zodiacWidthDeg } from "@/game/birthday/zodiac";
 import { sfx } from "@/game/fx/sound";
+import GameBasicsLinks from "@/game/GameBasicsLinks";
 import { cn } from "@/utils/cn";
 
 // 생일 별자리 (docs/game-plans.md): 생일에 해가 실제로 있던 별자리와 점성술의 별자리를 천문도로 비교하고,
@@ -112,6 +113,7 @@ export default function BirthdayGame() {
             생일 대신 오늘로 해 보기
           </button>
         </div>
+        <GameBasicsLinks className="justify-center" />
       </div>
     );
   }

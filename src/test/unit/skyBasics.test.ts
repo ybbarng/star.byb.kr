@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { GAMES } from "@/game/hub";
+import { gameForPath } from "@/game/hub";
 import { STARS } from "@/game/sky/catalog";
 import {
   HEXAGON,
@@ -70,7 +70,6 @@ describe("목차", () => {
   });
 
   it("이 개념을 쓰는 곳의 링크는 실제 있는 페이지다", () => {
-    const games = new Set(GAMES.map((g) => g.href));
     const learn = new Set(LEARN_STEPS.map((s) => `/learn/${s.slug}`));
 
     for (const t of BASICS_TOPICS) {
@@ -79,7 +78,7 @@ describe("목차", () => {
         const ok =
           path === "/plate-solver" ||
           path === "/games" ||
-          games.has(path) ||
+          gameForPath(path) !== undefined ||
           learn.has(path);
         expect(ok, `${t.slug}: ${l.href}`).toBe(true);
       }

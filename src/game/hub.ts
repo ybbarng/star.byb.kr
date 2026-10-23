@@ -20,6 +20,9 @@ export interface GameEntry {
   title: string;
   summary: string;
   learn: string; // 무엇을 배우나
+  // 배우는 것을 더 알아볼 "하늘 읽기 기초" 페이지 (src/learn/basics/topics.ts의 slug).
+  // 기초 페이지의 "이 개념을 쓰는 곳"에도 이 게임이 있어야 한다 (테스트로 확인)
+  basics?: string[];
   ready: boolean;
   icon: string; // 카드 위 큰 기호
   accent: string; // 카드 테두리·빛 색 (tailwind 그라디언트)
@@ -34,6 +37,7 @@ export const GAMES: GameEntry[] = [
       "도감을 모으고, 카드로 모양을 익히고, 실제 하늘에서 별 징검다리를 건너요. 사계절 도장을 모으면 남반구 하늘이 열려요!",
     learn:
       "별자리 88개의 모양, 길잡이 모양(대삼각형·대사각형), 별 사이 길 찾기, 황도 13개, 남십자",
+    basics: ["star-hopping", "milky-way", "earth-tilt"],
     ready: true,
     icon: "🏫",
     accent: "from-amber-200/50 to-indigo-500/10",
@@ -46,6 +50,7 @@ export const GAMES: GameEntry[] = [
       "밤하늘을 360°로 둘러보고, 이 사진을 지구 어디서 찍었는지 세계 지도에 핀을 찍어요. 가까울수록 높은 점수!",
     learn:
       "위도는 천구의 극 높이, 경도는 하늘 시계와 세계 시계의 차이 (옛 항해사의 경도 문제)",
+    basics: ["navigation", "earth-coords"],
     ready: true,
     icon: "🌍",
     accent: "from-violet-400/40 to-sky-500/10",
@@ -57,6 +62,7 @@ export const GAMES: GameEntry[] = [
     summary:
       "다이얼(위도·날짜·시각)을 돌려 내 하늘을 정답 사진에 겹쳐요. 같은 하늘이면 어떤 날짜든 정답!",
     learn: "위도는 하늘을 기울이고, 시각·날짜는 하늘을 돌린다",
+    basics: ["sidereal-day", "sky-coords"],
     ready: true,
     icon: "🧭",
     accent: "from-sky-400/40 to-indigo-500/10",
@@ -68,6 +74,7 @@ export const GAMES: GameEntry[] = [
     summary:
       "밤하늘에서 제시한 별자리를 찾아 눌러요. 찾으면 선이 그려지고 이야기가 나와요.",
     learn: "별자리의 모양과 계절",
+    basics: ["star-hopping", "sidereal-day"],
     ready: true,
     icon: "🔭",
     accent: "from-amber-300/40 to-orange-500/10",
@@ -79,6 +86,7 @@ export const GAMES: GameEntry[] = [
     summary:
       "내 생일에 해가 실제로 어느 별자리에 있었는지, 점성술 별자리와 왜 다른지 천문도로 보여 줘요.",
     learn: "황도, 세차 운동, 13번째 별자리",
+    basics: ["earth-tilt"],
     ready: true,
     icon: "🎂",
     accent: "from-pink-400/40 to-fuchsia-500/10",
@@ -101,6 +109,7 @@ export const GAMES: GameEntry[] = [
     summary:
       "별을 누르면 그 빛이 언제 출발했는지, 그때 지구에서는 무슨 일이 있었는지 알려 줘요.",
     learn: "광년, 연주 시차, 하늘은 서로 다른 과거의 모음",
+    basics: ["brightness-distance"],
     ready: true,
     icon: "⏳",
     accent: "from-cyan-300/40 to-blue-500/10",
@@ -112,6 +121,7 @@ export const GAMES: GameEntry[] = [
     summary:
       "장소와 날짜를 넣으면 그날 밤 볼 만한 것을 하늘 일기장처럼 정리해 줘요. 해·달·행성·별자리·유성우까지!",
     learn: "해 지는 시각과 박명, 달의 모양과 뜨는 시각, 행성 찾기",
+    basics: ["sky-coords", "star-hopping", "brightness-distance"],
     ready: true,
     icon: "🌙",
     accent: "from-yellow-200/40 to-indigo-500/10",
@@ -134,6 +144,7 @@ export const GAMES: GameEntry[] = [
     summary:
       "땅에 세운 막대와 그림자만 보고 여기가 어디(위도)인지, 언제(계절·시각)인지 맞혀요.",
     learn: "정오 그림자 길이 → 해 높이 → 위도, 그림자 방향 → 시각 (해시계)",
+    basics: ["earth-tilt", "navigation"],
     ready: true,
     icon: "☀️",
     accent: "from-yellow-300/40 to-amber-600/10",
@@ -145,6 +156,7 @@ export const GAMES: GameEntry[] = [
     summary:
       "같은 날 정오, 두 도시의 막대 그림자 각도를 직접 재서 지구 둘레를 구해 봐요.",
     learn: "평행한 햇빛, 그림자 각도 차이 = 지구 중심각, 비례식으로 둘레",
+    basics: ["earth-coords", "earth-tilt"],
     ready: true,
     icon: "📐",
     accent: "from-lime-300/40 to-emerald-600/10",
@@ -156,6 +168,7 @@ export const GAMES: GameEntry[] = [
     summary:
       "위도를 북극에서 남극까지 옮기며 별이 도는 모습을 봐요. 북극에선 지평선과 나란히, 적도에선 똑바로 뜨고 져요.",
     learn: "천구의 극 높이 = 위도, 지지 않는 별, 별이 뜨는 기울기",
+    basics: ["earth-coords", "sky-coords"],
     ready: true,
     icon: "🌐",
     accent: "from-teal-300/40 to-sky-600/10",
@@ -168,6 +181,7 @@ export const GAMES: GameEntry[] = [
       "연도를 돌리면 천구의 북극이 별 사이를 돌아 북극성이 바뀌어요. 피라미드 시대엔 투반, 1만 2천 년 뒤엔 직녀성!",
     learn:
       "세차 운동(약 2만 6천 년), 북극성의 교대, 점성술 별자리가 어긋나는 이유",
+    basics: ["earth-tilt"],
     ready: true,
     icon: "🌀",
     accent: "from-purple-300/40 to-pink-500/10",
@@ -191,6 +205,7 @@ export const GAMES: GameEntry[] = [
     summary:
       "밤새 찍은 별 궤적 사진에서 별들이 도는 중심을 찾고, 어디서 몇 시간 찍었는지 맞혀요. 남반구 궤적은 아주 어려워요!",
     learn: "천구의 극 = 궤적의 중심, 극 높이 = 위도, 한 시간에 15°",
+    basics: ["sky-coords", "sidereal-day"],
     ready: true,
     icon: "💫",
     accent: "from-indigo-300/40 to-sky-600/10",
@@ -202,6 +217,7 @@ export const GAMES: GameEntry[] = [
     summary:
       "밤하늘 속 달의 모양과 자리만 보고 그해 몇 월 며칠인지 맞혀요. 모양과 자리를 합치면 날짜가 거의 하나로 정해져요.",
     learn: "달은 하루 13°씩 동쪽으로, 모양은 29.5일·자리는 27.3일 주기",
+    basics: ["sidereal-day", "earth-tilt"],
     ready: true,
     icon: "🌒",
     accent: "from-amber-200/40 to-slate-500/10",
@@ -213,6 +229,7 @@ export const GAMES: GameEntry[] = [
     summary:
       "며칠 간격으로 그린 같은 하늘을 넘겨 보며 별 사이를 떠도는 점을 찾아요. 거꾸로 가는 화성, 역사 속 실제 혜성도 나와요!",
     learn: "행성(떠돌이별)과 붙박이별의 차이, 역행과 충, 혜성 꼬리는 해 반대쪽",
+    basics: ["earth-tilt"],
     ready: true,
     icon: "🪐",
     accent: "from-sky-300/40 to-violet-500/10",
@@ -225,6 +242,7 @@ export const GAMES: GameEntry[] = [
       "한 해 달력에서 삭·망과 달의 높낮이 그래프를 보고, 일식·월식이 일어날 날을 골라요. 정답은 NASA 실제 목록!",
     learn:
       "식의 두 조건: 삭·망 + 달이 해의 길과 만나는 자리(교점) 근처, 1년에 두 번 오는 식 철",
+    basics: ["earth-tilt"],
     ready: true,
     icon: "🌘",
     accent: "from-orange-300/40 to-slate-600/10",
@@ -237,6 +255,7 @@ export const GAMES: GameEntry[] = [
       "같은 밤 같은 곳에서 찍은 하늘 사진 몇 장을 보고, 사진마다 어느 쪽 하늘을 찍었는지 둥근 하늘 지도에 찍어요.",
     learn:
       "하늘 지도 읽기(올려다본 지도는 동쪽이 왼쪽), 방위·고도, 사진 한 장 = 하늘의 한 조각",
+    basics: ["sky-coords"],
     ready: true,
     icon: "📸",
     accent: "from-sky-300/40 to-violet-500/10",
@@ -248,11 +267,19 @@ export const GAMES: GameEntry[] = [
     summary:
       "진짜 별을 이어 내 별자리를 만들고 이름을 붙여요. 그 별자리가 서울(또는 어디든) 하늘에 언제 어디 뜨는지 보고, 그림으로 간직해요.",
     learn: "별자리는 진짜 별을 사람이 이은 것, 계절·시각에 따라 뜨는 자리",
+    basics: ["star-hopping", "sky-coords"],
     ready: true,
     icon: "✨",
     accent: "from-pink-300/40 to-amber-400/10",
   },
 ];
+
+// 주소가 속한 게임 (/games/star-school/lessons → 별자리 익히기). 끝의 /는 무시한다
+export const gameForPath = (path: string | null | undefined) => {
+  const p = (path ?? "").replace(/\/+$/, "");
+
+  return GAMES.find((g) => p === g.href || p.startsWith(`${g.href}/`));
+};
 
 // 게임 페이지의 제목·설명 (공유 미리보기·브라우저 탭)
 export const gameMetadata = (href: string) => {

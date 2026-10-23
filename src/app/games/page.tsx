@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { GAMES, KIND_LABELS } from "@/game/hub";
 import HubRecord from "@/game/HubRecord";
+import BasicsLinks from "@/learn/basics/BasicsLinks";
 import { cn } from "@/utils/cn";
 
 // 별 놀이터: 플레이트 솔버로 쌓은 하늘 계산으로 만든 게임들
@@ -23,15 +24,21 @@ export default function Page() {
             <span className="text-sm opacity-60">{KIND_LABELS[kind].note}</span>
           </div>
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
-            {GAMES.filter((g) => g.kind === kind).map((g, i) => {
-              const body = (
+            {GAMES.filter((g) => g.kind === kind).map((g, i) => (
+              // 카드 전체가 게임으로 가는 링크다(제목 링크를 카드 크기로 늘림). 기초 링크는 그 위에 따로 눌린다
+              <div
+                key={g.href}
+                className="fx-rise"
+                style={{ animationDelay: `${150 + (k * 6 + i) * 80}ms` }}
+              >
                 <div
                   className={cn(
                     "rounded-box flex h-full flex-col gap-3 bg-gradient-to-br p-[1.5px]",
                     g.accent,
+                    g.ready ? "fx-card" : "opacity-50",
                   )}
                 >
-                  <div className="bg-base-200/90 rounded-box flex h-full flex-col gap-2 p-5 backdrop-blur">
+                  <div className="bg-base-200/90 rounded-box relative flex h-full flex-col gap-2 p-5 backdrop-blur">
                     <div className="flex items-start justify-between">
                       <span className="text-4xl">{g.icon}</span>
                       {g.ready ? (
@@ -42,11 +49,25 @@ export default function Page() {
                         </span>
                       )}
                     </div>
-                    <h2 className="text-xl font-bold">{g.title}</h2>
+                    <h2 className="text-xl font-bold">
+                      {g.ready ? (
+                        <Link
+                          href={g.href}
+                          className="before:rounded-box before:absolute before:inset-0"
+                        >
+                          {g.title}
+                        </Link>
+                      ) : (
+                        g.title
+                      )}
+                    </h2>
                     <p className="text-sm">{g.summary}</p>
                     <p className="mt-auto text-xs opacity-60">
                       배우는 것: {g.learn}
                     </p>
+                    {g.basics && (
+                      <BasicsLinks slugs={g.basics} className="relative z-10" />
+                    )}
                     {g.ready && (
                       <span className="text-primary text-sm font-bold">
                         {g.kind === "game"
@@ -58,27 +79,8 @@ export default function Page() {
                     )}
                   </div>
                 </div>
-              );
-
-              return (
-                <div
-                  key={g.href}
-                  className="fx-rise"
-                  style={{ animationDelay: `${150 + (k * 6 + i) * 80}ms` }}
-                >
-                  {g.ready ? (
-                    <Link
-                      href={g.href}
-                      className="fx-card rounded-box block h-full"
-                    >
-                      {body}
-                    </Link>
-                  ) : (
-                    <div className="h-full opacity-50">{body}</div>
-                  )}
-                </div>
-              );
-            })}
+              </div>
+            ))}
           </div>
         </section>
       ))}

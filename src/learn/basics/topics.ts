@@ -94,6 +94,17 @@ export const BASICS_TOPICS: BasicsTopic[] = [
       { mark: "games", label: "어느 쪽을 찍었을까", href: "/games/which-way" },
       { mark: "games", label: "하늘 맞추기", href: "/games/sky-match" },
       { mark: "games", label: "오늘 밤 내 하늘", href: "/games/tonight" },
+      {
+        mark: "games",
+        label: "극지방·적도 하늘 여행",
+        href: "/games/latitude-trip",
+      },
+      { mark: "games", label: "별 궤적 풀기", href: "/games/star-trails" },
+      {
+        mark: "games",
+        label: "나만의 별자리 (언제 어디 뜨나)",
+        href: "/games/my-constellation",
+      },
     ],
   },
   {
@@ -116,6 +127,11 @@ export const BASICS_TOPICS: BasicsTopic[] = [
         label: "별자리 숨은그림찾기",
         href: "/games/find-constellation",
       },
+      {
+        mark: "games",
+        label: "달로 날짜 맞히기 (달도 27.3일과 29.5일)",
+        href: "/games/moon-date",
+      },
     ],
   },
   {
@@ -135,6 +151,18 @@ export const BASICS_TOPICS: BasicsTopic[] = [
       { mark: "games", label: "생일 별자리", href: "/games/birthday" },
       { mark: "games", label: "세차운동 타임머신", href: "/games/precession" },
       { mark: "games", label: "식 예측하기", href: "/games/eclipse" },
+      { mark: "games", label: "떠돌이별 찾기", href: "/games/wanderers" },
+      { mark: "games", label: "달로 날짜 맞히기", href: "/games/moon-date" },
+      {
+        mark: "games",
+        label: "에라토스테네스 되어 보기 (회귀선)",
+        href: "/games/eratosthenes",
+      },
+      {
+        mark: "games",
+        label: "별자리 익히기: 해의 길, 황도 별자리 13개",
+        href: "/games/star-school/lessons",
+      },
     ],
   },
   {
@@ -150,7 +178,17 @@ export const BASICS_TOPICS: BasicsTopic[] = [
         label: "나만의 별자리 (주먹 몇 개 높이)",
         href: "/games/my-constellation",
       },
-      { mark: "games", label: "별 놀이터", href: "/games" },
+      {
+        mark: "games",
+        label: "별자리 익히기: 하늘 길잡이 수업",
+        href: "/games/star-school/lessons",
+      },
+      {
+        mark: "games",
+        label: "별자리 숨은그림찾기",
+        href: "/games/find-constellation",
+      },
+      { mark: "games", label: "오늘 밤 내 하늘", href: "/games/tonight" },
     ],
   },
   {
@@ -191,6 +229,11 @@ export const BASICS_TOPICS: BasicsTopic[] = [
         mark: "games",
         label: "별자리 숨은그림찾기 (궁수·백조자리)",
         href: "/games/find-constellation",
+      },
+      {
+        mark: "games",
+        label: "별자리 익히기: 은하수 찾기",
+        href: "/games/star-school/lessons",
       },
     ],
   },
@@ -236,6 +279,9 @@ export const BASICS_TOPICS: BasicsTopic[] = [
 ];
 
 export const basicsHref = (slug: string) => `/learn/basics/${slug}`;
+
+export const basicsTopic = (slug: string) =>
+  BASICS_TOPICS.find((t) => t.slug === slug);
 
 export const basicsMetadata = (slug: string) => {
   const topic = BASICS_TOPICS.find((t) => t.slug === slug);
