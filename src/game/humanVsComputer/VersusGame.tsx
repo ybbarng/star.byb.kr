@@ -421,7 +421,8 @@ function VersusPlay({
           {status !== "answered" ? (
             <>
               <div className="text-sm opacity-70">
-                {round + 1}번째 사진 · {target.title}
+                {/* 사진 이름(오리온·북두칠성…)은 답을 알려 주니 답한 뒤에만 */}
+                {round + 1}번째 사진
               </div>
               <div className="text-lg font-bold">이 사진에 찍힌 별자리는?</div>
               <div className="grid grid-cols-2 gap-2">
@@ -563,7 +564,11 @@ function VersusPlay({
                       ? "마지막 판"
                       : `${round + 1} / ${rounds.length}`
                   }
-                  sub={target.reversal ? "별이 아주 적은 사진" : target.title}
+                  sub={
+                    target.reversal
+                      ? "별이 아주 적은 사진"
+                      : "어떤 별자리일까요?"
+                  }
                 />
               )}
             </div>
