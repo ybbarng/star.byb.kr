@@ -17,6 +17,7 @@ import {
   getSampleShot,
   shotDate,
   shotFromExif,
+  shotFromFileName,
 } from "@/plate-solver/shotTime";
 import ShotTimeControl from "@/plate-solver/ShotTimeControl";
 import ShotTimeEstimator from "@/plate-solver/ShotTimeEstimator";
@@ -42,6 +43,7 @@ import { cn } from "@/utils/cn";
 // 못 찾거나 틀렸으면 별 고치기(별·지평선·달)로 사람이 돕는다.
 export default function PlateSolvingStep() {
   const image = useContextStore((state) => state.image);
+  const fileName = useContextStore((state) => state.fileName);
   const photoStars = useContextStore((state) => state.photoStars);
   const hiddenStars = useContextStore((state) => state.hiddenStars);
   const marks = useContextStore((state) => state.marks);
@@ -196,7 +198,7 @@ export default function PlateSolvingStep() {
     runHorizonSolve();
   }, [solving, outcome, shot, marks.horizon, runHorizonSolve]);
 
-  // 촬영 시각: 기록을 아는 샘플이면 그 기록, 아니면 사진의 EXIF. 둘 다 없으면 사람이 넣는다.
+  // 촬영 시각: 기록을 아는 샘플이면 그 기록, 아니면 사진의 EXIF, 그것도 없으면 파일 이름. 다 없으면 사람이 넣는다.
   // EXIF의 GPS는 기록이 있어도 따로 읽어 둔다 (장소는 사진의 위치 정보가 가장 믿을 만하다).
   useEffect(() => {
     if (!image) {
@@ -222,16 +224,21 @@ export default function PlateSolvingStep() {
             : null,
         );
 
+        // EXIF에 시각이 없으면 파일 이름에서 (EXIF를 덮어쓰지 않는다)
         if (!known) {
-          setShot(shotFromExif(exif));
+          setShot(shotFromExif(exif) ?? shotFromFileName(fileName));
         }
       })
-      .catch(() => {});
+      .catch(() => {
+        if (!cancelled && !known) {
+          setShot(shotFromFileName(fileName));
+        }
+      });
 
     return () => {
       cancelled = true;
     };
-  }, [image]);
+  }, [image, fileName]);
 
   // 딥스카이는 늘, 해·달·행성은 촬영 시각을 알 때만 그린다
   const objects = useMemo(() => {

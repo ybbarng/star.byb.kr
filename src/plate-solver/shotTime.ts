@@ -6,7 +6,7 @@ export interface ShotTime {
   local: string; // 현지 시각 "2022-03-27T04:30"
   offset: string; // 시간대 "+09:00"
   observer?: Observer;
-  source: "exif" | "record" | "manual";
+  source: "exif" | "record" | "manual" | "fileName";
   note?: string;
   // 시간대를 몰라 이 브라우저의 시간대로 둔 시각 (현지 시각은 맞아도 UTC 순간은 몇 시간 틀릴 수 있다)
   offsetGuessed?: boolean;
@@ -95,4 +95,67 @@ export const shotFromExif = (exif: PhotoExif | null): ShotTime | null => {
     note: exif.offset ? "사진 정보(EXIF)" : "사진 정보(EXIF), 시간대는 추정",
     ...(!exif.offset && { offsetGuessed: true }),
   };
+};
+
+// 휴대폰·메신저가 붙이는 파일 이름의 촬영 시각.
+// 숫자만 이어 쓴 꼴: 20240401_232411.jpg, IMG_20240401_232411.jpg, PXL_20240401_142411123.jpg,
+//   KakaoTalk_20240401_232411123.jpg, Screenshot_20240401-232411.png (초 뒤 밀리초는 버린다)
+// 사이를 띄운 꼴: Screenshot_2024-04-01-23-24-11.png, Photo 2024-04-01 23.24.11.jpg
+const NAME_PATTERNS = [
+  /(?<!\d)(\d{4})(\d{2})(\d{2})[_-](\d{2})(\d{2})(\d{2})/,
+  /(?<!\d)(\d{4})-(\d{2})-(\d{2})[ _T-](\d{2})[.:_ -](\d{2})[.:_ -](\d{2})(?!\d)/,
+];
+
+// 이름 속 시각이 UTC인 경우 (Pixel 카메라는 이름에 UTC를 쓴다)
+const UTC_NAME = /^PXL_/i;
+
+const pad = (n: number) => String(n).padStart(2, "0");
+
+// 파일 이름 → 촬영 시각. 이름에 시각이 없거나 있을 수 없는 날짜(2월 30일 등)면 null.
+// 시간대는 이름에 없으니 이 브라우저의 시간대로 둔다 (Pixel만 UTC로 안다).
+export const shotFromFileName = (
+  name: string | undefined,
+  offsetOf: (local: string) => string = (local) =>
+    browserOffset(new Date(local)),
+): ShotTime | null => {
+  if (!name) {
+    return null;
+  }
+
+  for (const pattern of NAME_PATTERNS) {
+    const m = name.match(pattern);
+
+    if (!m) {
+      continue;
+    }
+
+    const [y, mo, d, h, mi, s] = m.slice(1).map(Number);
+    const check = new Date(Date.UTC(y, mo - 1, d, h, mi, s));
+    const valid =
+      y >= 1990 &&
+      y <= 2100 &&
+      check.getUTCFullYear() === y &&
+      check.getUTCMonth() === mo - 1 &&
+      check.getUTCDate() === d &&
+      h < 24 &&
+      mi < 60 &&
+      s < 60;
+
+    if (!valid) {
+      return null;
+    }
+
+    const local = `${y}-${pad(mo)}-${pad(d)}T${pad(h)}:${pad(mi)}`;
+    const utc = UTC_NAME.test(name);
+
+    return {
+      local,
+      offset: utc ? "+00:00" : offsetOf(local),
+      source: "fileName",
+      note: utc ? "파일 이름에서 (UTC)" : "파일 이름에서 (시간대는 추정)",
+      ...(!utc && { offsetGuessed: true }),
+    };
+  }
+
+  return null;
 };

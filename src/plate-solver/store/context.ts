@@ -10,6 +10,8 @@ import { NO_MARKS } from "@/plate-solver/types";
 
 interface ContextState {
   image?: HTMLImageElement;
+  // 올린 파일의 이름 (EXIF에 시각이 없을 때 이름에서 촬영 시각을 읽는다). 샘플이면 없다.
+  fileName?: string;
   view: SolverView;
   editTool: EditTool; // 별 고치기 화면을 열 때 고를 도구
   photoStars: PhotoStars[]; // 화면에 표시한(사람이 고친) 별
@@ -19,7 +21,7 @@ interface ContextState {
   // 자동 검출 전체(풀이 순서). 별 고치기에서 영역 다시 찾기·되돌리기에 쓴다. 비어 있으면 아직 검출 전이다.
   detections: DetectedStar[];
   marks: EstimateMarks;
-  setImage: (image: HTMLImageElement) => void;
+  setImage: (image: HTMLImageElement, fileName?: string) => void;
   setPhotoStars: (photoStars: PhotoStars[], hiddenStars?: PhotoStars[]) => void;
   setDetections: (detections: DetectedStar[]) => void;
   setMarks: (marks: EstimateMarks) => void;
@@ -34,9 +36,10 @@ export const useContextStore = create<ContextState>((set) => ({
   detections: [],
   marks: NO_MARKS,
   // 사진이 바뀌면 별·찍은 점을 모두 지운다
-  setImage: (image: HTMLImageElement) =>
+  setImage: (image: HTMLImageElement, fileName?: string) =>
     set({
       image,
+      fileName,
       photoStars: [],
       hiddenStars: [],
       detections: [],

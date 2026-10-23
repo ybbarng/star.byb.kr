@@ -12,7 +12,7 @@ export default function SelectPhotoStep() {
   const [dragOver, setDragOver] = useState(false);
 
   // 다음 화면(검출)은 사진의 실제 크기가 필요해, 사진을 다 불러온 뒤에 넘어간다.
-  const open = async (src: string, key: string) => {
+  const open = async (src: string, key: string, fileName?: string) => {
     setLoading(key);
     setError(null);
 
@@ -28,7 +28,7 @@ export default function SelectPhotoStep() {
 
       image.src = src;
       await loaded;
-      setImage(image);
+      setImage(image, fileName);
       goTo("solve");
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -42,7 +42,8 @@ export default function SelectPhotoStep() {
     }
 
     // 업로드한 사진은 이 페이지에서만 쓰는 주소로 연다 (서버로 보내지 않는다)
-    open(URL.createObjectURL(file), "upload");
+    // 파일 이름도 넘긴다 (휴대폰은 이름에 촬영 시각을 쓴다)
+    open(URL.createObjectURL(file), "upload", file.name);
   };
 
   return (
