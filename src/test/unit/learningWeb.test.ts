@@ -2,6 +2,8 @@ import { existsSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { GAMES, gameForPath } from "@/game/hub";
 import { LESSONS, lessonById, stepBasics } from "@/game/starSchool/lessons";
+import { fingersLabel } from "@/game/tonight/report";
+import { fistsLabel } from "@/learn/basics/skyMath";
 import { BASICS_TOPICS, basicsTopic } from "@/learn/basics/topics";
 
 // 세 갈래(찾는 원리·하늘 읽기 기초·별 놀이터)를 잇는 링크가 실제 있는 곳을 가리키는지,
@@ -97,6 +99,17 @@ describe("별자리 익히기 수업 → 하늘 읽기 기초", () => {
         expect(back, `${l.id} → ${slug}`).toBe(true);
       }
     }
+  });
+});
+
+describe("같은 개념은 같은 값으로", () => {
+  it("놀이터의 손 각도는 하늘 읽기 기초와 같다 (새끼손가락 1°, 손가락 세 개 5°, 주먹 10°)", () => {
+    expect(fingersLabel(1.5)).toBe("새끼손가락 2개 너비");
+    expect(fistsLabel(1.5)).toBe("새끼손가락 2개 폭쯤");
+    expect(fingersLabel(5)).toBe("손가락 세 개 너비");
+    expect(fistsLabel(5)).toBe("손가락 세 개 폭쯤");
+    expect(fingersLabel(10)).toBe("주먹 하나 너비");
+    expect(fistsLabel(10)).toBe("주먹 1개쯤");
   });
 });
 

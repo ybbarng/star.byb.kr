@@ -132,12 +132,16 @@ export const fistsLabel = (altDeg: number) => {
   return n <= 0 ? "주먹 반 개 높이" : `주먹 ${n}개 높이`;
 };
 
-// 각거리 → 손으로 재는 말 (팔 뻗은 손가락 하나 약 2°)
-export const fingersLabel = (deg: number) => {
-  const n = Math.max(1, Math.round(deg / 2));
-
-  return deg < 1.2 ? "손가락 하나로 둘 다 가릴 만큼" : `손가락 ${n}개 너비`;
-};
+// 각거리 → 손으로 재는 말. 하늘 읽기 기초(별 건너뛰기)와 같은 값을 쓴다:
+// 팔 뻗은 새끼손가락 약 1°, 손가락 세 개 약 5°, 주먹 약 10°
+export const fingersLabel = (deg: number) =>
+  deg < 1.2
+    ? "새끼손가락 하나로 둘 다 가릴 만큼"
+    : deg < 3.5
+      ? `새끼손가락 ${Math.round(deg)}개 너비`
+      : deg < 7.5
+        ? "손가락 세 개 너비"
+        : "주먹 하나 너비";
 
 // ── 고도를 따라가며 지평선 넘는 시각 찾기 ─────────────────────────────
 

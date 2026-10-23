@@ -412,7 +412,7 @@ export const heightWord = (altDeg: number) =>
           ? "낮게"
           : "지평선 가까이";
 
-// 각거리를 팔 뻗은 손으로 (손가락 하나 2°, 주먹 하나 10°)
+// 각거리를 팔 뻗은 손으로 (새끼손가락 약 1°, 손가락 세 개 약 5°, 주먹 약 10° — 하늘 읽기 기초와 같은 값)
 export const handSpan = (deg: number) =>
   deg < 12
     ? fingersLabel(deg)

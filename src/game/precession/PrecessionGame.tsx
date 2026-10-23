@@ -282,7 +282,7 @@ function PrecessionPlay() {
         </summary>
         <div className="mt-2 flex flex-col gap-1">
           <p>
-            지구 자전축은 23.44° 기운 채 황도의 북극을 가운데 두고 팽이처럼
+            지구 자전축은 23.4° 기운 채 황도의 북극을 가운데 두고 팽이처럼
             돌아요. 춘분점이 1년에 50.29″씩 밀린다는 IAU 2006 세차 식의 첫째
             항만 써서, 한 바퀴를 약{" "}
             {Math.round(PRECESSION_PERIOD_YEARS / 100) * 100}년으로 일정하게
