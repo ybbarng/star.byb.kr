@@ -58,9 +58,12 @@ export default function Page() {
           />
           <Stat
             value="8초"
-            label="풀이 시간 상한. 샘플은 대부분 1~2초 안에 끝나요"
+            label="풀이 시간 상한. 풀리는 샘플은 보통 0.2초 안, 가장 오래 걸려도 4초 안이에요"
           />
-          <Stat value="14 / 16" label="사람 손 없이 풀리는 실제 샘플 사진" />
+          <Stat
+            value="14 / 16"
+            label="별만으로 풀리는 실제 샘플 사진 (사이판은 촬영 시각·장소로 풀려요)"
+          />
           <Stat
             value="108 / 112"
             label="재압축·축소·WebP로 바꾼 사진도 풀리는 경우"
