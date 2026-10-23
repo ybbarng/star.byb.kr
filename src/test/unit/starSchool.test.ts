@@ -12,6 +12,7 @@ import {
 } from "@/game/starSchool/dex";
 import { asterismFigure, constellationFigure } from "@/game/starSchool/figure";
 import {
+  aimFallback,
   hopTip,
   stepDate,
   stepVectors,
@@ -446,5 +447,28 @@ describe("도감", () => {
     expect(orion.highest?.altDeg).toBeGreaterThan(45);
     expect(orion.highest?.direction).toBe("남");
     expect(crux.neverUp).toBe(true);
+  });
+});
+
+describe("수업 화면이 보는 쪽", () => {
+  it("표시가 없는 단계는 이웃 단계가 보는 쪽을 본다 — 북극성 찾기 첫 단계는 북쪽 하늘", () => {
+    const lesson = LESSONS.find((l) => l.id === "polaris")!;
+    const aim = aimFallback(lesson, 0)!;
+
+    expect(aim.length).toBeGreaterThan(0);
+    const date = stepDate(lesson, lesson.steps[0]);
+    const az = altAzAt(aim[0], date, observerOf(lesson.place)).azDeg;
+    // 북쪽(0°)에서 60° 안
+    expect(Math.min(az, 360 - az)).toBeLessThan(60);
+  });
+
+  it("표시가 있는 단계는 따로 정하지 않는다 (그 단계의 표시를 본다)", () => {
+    for (const lesson of LESSONS) {
+      lesson.steps.forEach((step, i) => {
+        if (stepVectors(step).length > 0) {
+          expect(aimFallback(lesson, i)).toBeUndefined();
+        }
+      });
+    }
   });
 });

@@ -86,5 +86,24 @@ export const stepVectors = (step: LessonStep): Point3D[] => [
   ...(step.tap ? [tapVector(step.tap.target)] : []),
 ];
 
+// 표시가 없는 단계(여는 말 등)는 가장 가까운 뒤 단계(없으면 앞 단계)가 보는 쪽을 본다.
+// 기본 방향(남쪽)을 보면 "북쪽 하늘이에요"라는 말과 화면이 어긋난다
+export const aimFallback = (
+  lesson: Lesson,
+  idx: number,
+): Point3D[] | undefined => {
+  if (stepVectors(lesson.steps[idx]).length > 0) {
+    return undefined;
+  }
+
+  const order = [
+    ...lesson.steps.slice(idx + 1),
+    ...lesson.steps.slice(0, idx).reverse(),
+  ];
+  const near = order.find((s) => stepVectors(s).length > 0);
+
+  return near ? stepVectors(near) : undefined;
+};
+
 export const stepDate = (lesson: Lesson, step: LessonStep) =>
   dateAt(lesson.place, step.time ?? lesson.time);

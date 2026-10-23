@@ -7,7 +7,11 @@ import { useEffect, useMemo, useState } from "react";
 import { Confetti, FxLayer, useFx, useShake } from "@/game/fx/Fx";
 import { sfx } from "@/game/fx/sound";
 import { dexEntry } from "@/game/starSchool/dex";
-import { stepDate, tapVector } from "@/game/starSchool/lessonGeometry";
+import {
+  aimFallback,
+  stepDate,
+  tapVector,
+} from "@/game/starSchool/lessonGeometry";
 import {
   lessonById,
   SEASON_LESSONS,
@@ -323,8 +327,13 @@ function LessonPlayer({
                 picked !== null && i === q.answer && "btn-success",
                 picked === i && i !== q.answer && "btn-error",
               )}
-              disabled={picked !== null}
+              // disabled로 막으면 회색이 정답·오답 색을 덮어서, 누르기만 막는다
+              aria-disabled={picked !== null}
               onClick={() => {
+                if (picked !== null) {
+                  return;
+                }
+
                 setPicked(i);
 
                 if (i === q.answer) {
@@ -384,7 +393,7 @@ function LessonPlayer({
             magLimit={step.sky?.magLimit ?? lesson.magLimit}
             lightPollution={step.sky?.lightPollution ?? lesson.lightPollution}
             marks={marks}
-            aim={undefined}
+            aim={aimFallback(lesson, stepIdx)}
             aimKey={`${lesson.id}-${stepIdx}`}
             targets={
               tap
