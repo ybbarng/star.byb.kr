@@ -1,5 +1,8 @@
 @import 'tailwindcss';
-@plugin "daisyui";
+/* 배경이 늘 밤하늘이라 어두운 테마 하나만 쓴다. 운영체제가 밝은 모드면 light 테마가 골라져 메뉴 글씨가 검게 묻혔다 */
+@plugin "daisyui" {
+  themes: dark --default;
+}
 
 @theme {
   --color-background: var(--background);
@@ -37,15 +40,9 @@
 }
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  color-scheme: dark;
+  --background: #0a0a0a;
+  --foreground: #ededed;
 }
 
 body {
