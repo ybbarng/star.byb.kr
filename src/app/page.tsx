@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { GAMES } from "@/game/hub";
 import { LEARN_STEPS, learnHref } from "@/learn/steps";
+import { UMAMI_WEBSITE_ID } from "@/ui/Analytics";
 import GameCarousel from "@/ui/GameCarousel";
 import SiteShell from "@/ui/SiteShell";
 
@@ -148,6 +149,7 @@ export default function Page() {
               Astrometry.net
             </a>
           </span>
+          {UMAMI_WEBSITE_ID && <span>방문 수만 쿠키 없이 익명으로 셉니다</span>}
         </footer>
       </div>
     </SiteShell>
