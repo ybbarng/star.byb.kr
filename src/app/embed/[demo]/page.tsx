@@ -5,6 +5,7 @@ import ChanceRatioDemo from "@/learn/ChanceRatioDemo";
 import DetectPipelineDemo from "@/learn/DetectPipelineDemo";
 import FindStarsDemo from "@/learn/FindStarsDemo";
 import MoonDateDemo from "@/learn/MoonDateDemo";
+import { NorthSkyFlowDemo, OrionSkyFlowDemo } from "@/learn/NightSkyFlowDemo";
 import PoleHeightDemo from "@/learn/PoleHeightDemo";
 import ProjectionDemo from "@/learn/ProjectionDemo";
 import QuadHashDemo from "@/learn/QuadHashDemo";
@@ -43,6 +44,9 @@ const DEMOS = {
   "same-sky-orbit": SameSkyOrbitDemo,
   "zenith-clock": ZenithClockDemo,
   "moon-date": MoonDateDemo,
+  // 테크 블로그 도입부: 거제에서 본 밤하늘이 저절로 흘러간다
+  "north-sky-flow": NorthSkyFlowDemo,
+  "orion-sky-flow": OrionSkyFlowDemo,
 };
 
 export const dynamicParams = false;
