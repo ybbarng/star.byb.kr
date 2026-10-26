@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { SampleCreditList } from "@/plate-solver/SampleCredits";
 import { useContextStore } from "@/plate-solver/store/context";
 import samples from "@/services/samples";
 import { cn } from "@/utils/cn";
@@ -131,6 +132,7 @@ export default function SelectPhotoStep() {
             </button>
           ))}
         </div>
+        <SampleCreditList />
       </div>
     </div>
   );

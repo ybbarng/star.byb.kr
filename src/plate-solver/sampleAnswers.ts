@@ -126,6 +126,92 @@ const byFilename: Record<string, SampleAnswer> = {
     fovDeg: 16.8,
     name: "오리온자리",
   },
+  // 아래 열둘은 위키미디어 공용의 자유 이용 샘플(samples.ts의 credit). 앱과 같은 풀이(8초)로
+  // 확신한 해(log-odds 17~80)이고, 겹친 별 이름이 사진 속 별자리와 맞는지 눈으로 확인했다.
+  // 오리온 삼태성·베텔게우스·리겔, 토끼자리 (망루와 논)
+  "iau-watchtower-orion.jpg": {
+    centerRaDeg: 84.1,
+    centerDecDeg: -14,
+    fovDeg: 46.9,
+    name: "오리온자리",
+  },
+  // 북두칠성 7별 (달빛 아래 보트 창고)
+  "wikimedia-holma-big-dipper.jpg": {
+    centerRaDeg: 180.8,
+    centerDecDeg: 42.5,
+    fovDeg: 45.8,
+    name: "큰곰자리 (북두칠성)",
+  },
+  // 안타레스·전갈 꼬리, 리길 켄타우루스·하다르, 이리자리
+  "iau-nindiri-scorpius.jpg": {
+    centerRaDeg: 228,
+    centerDecDeg: -47.4,
+    fovDeg: 51.4,
+    name: "전갈·센타우루스·이리",
+  },
+  // 데네브·직녀성·견우성 (해 진 뒤 서쪽으로 지는 여름의 대삼각형)
+  "iau-snow-tree-summer-triangle.jpg": {
+    centerRaDeg: 292.4,
+    centerDecDeg: 26.9,
+    fovDeg: 51.5,
+    name: "여름의 대삼각형 (백조·거문고·독수리)",
+  },
+  // 남십자(아크룩스·미모사·가크룩스)·용골자리 성운·켄타우루스
+  "eso-southern-cross.jpg": {
+    centerRaDeg: 178.7,
+    centerDecDeg: -45.9,
+    fovDeg: 36.8,
+    name: "남십자·켄타우루스 (남반구)",
+  },
+  // 카시오페이아 W·페르세우스 (번개 치는 마을)
+  "wikimedia-lightning-cassiopeia.jpg": {
+    centerRaDeg: 28.1,
+    centerDecDeg: 60.9,
+    fovDeg: 33.8,
+    name: "카시오페이아·페르세우스",
+  },
+  // 오리온·바너드 고리 (에트나 화산 위)
+  "iau-etna-orion.jpg": {
+    centerRaDeg: 86.7,
+    centerDecDeg: 5.8,
+    fovDeg: 28.6,
+    name: "오리온자리",
+  },
+  // 은하수 중심: 궁수 주전자·전갈 꼬리·석호 성운 (모래 언덕)
+  "nps-medano-milky-way.jpg": {
+    centerRaDeg: 262.9,
+    centerDecDeg: -32.3,
+    fovDeg: 45.9,
+    name: "은하수 중심 (궁수·전갈)",
+  },
+  // 북두칠성 7별 (풍력 발전기 불빛)
+  "wikimedia-windfarm-big-dipper.jpg": {
+    centerRaDeg: 172.8,
+    centerDecDeg: 64.5,
+    fovDeg: 36.2,
+    name: "큰곰자리 (북두칠성)",
+  },
+  // 오리온·에리다누스·리겔 (교회 폐허)
+  "iau-baigorri-orion.jpg": {
+    centerRaDeg: 71.8,
+    centerDecDeg: -14,
+    fovDeg: 59,
+    name: "오리온·에리다누스",
+  },
+  // 여름 은하수: 방패·뱀·독수리·궁수 (섬마을 집, 넓은 화각이라 2~3초)
+  "nps-manitou-milky-way.jpg": {
+    centerRaDeg: 275.6,
+    centerDecDeg: -1.3,
+    fovDeg: 65.4,
+    name: "여름 은하수 (방패·독수리·궁수)",
+  },
+  // 전갈 꼬리·M6·M7·석호 성운·제단자리 (바위 옆 텐트)
+  "wikimedia-tents-sagittarius.jpg": {
+    centerRaDeg: 249.5,
+    centerDecDeg: -53.5,
+    fovDeg: 48.6,
+    name: "전갈·제단 (남쪽 은하수)",
+  },
 };
 
 // image.src(URL)에서 파일명을 뽑아 알려진 정답을 찾는다. 업로드 사진은 정답이 없다.

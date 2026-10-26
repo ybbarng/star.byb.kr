@@ -77,3 +77,24 @@ npm run remote   # (선택) 휴대폰 발표 노트·다음 장 미리보기·�
 - [외부 사진 200장 검증](docs/external-validation-2026-10.md)
 - [별 놀이터 기획](docs/game-plans.md)
 - [배포](docs/deployment.md): main에 push하면 이미지를 빌드해 star.byb.kr에 배포합니다
+
+## 샘플 사진 출처
+
+샘플 사진 중 일부는 [위키미디어 공용](https://commons.wikimedia.org)의 자유 이용 사진을 긴 변 2000px로 줄여 실었습니다.
+작가·라이선스·원본 링크는 `src/services/samples.ts`의 `credit`에 있고, 사이트의 사진 고르는 화면 아래 "샘플 사진 출처"와
+풀이 결과 화면에도 보입니다. 나머지 샘플은 버즈빌 동료들이 찍은 사진입니다.
+
+| 사진 | 작가 | 라이선스 |
+|---|---|---|
+| 망루와 논 | Likai Lin/IAU OAE | CC BY 4.0 |
+| 보트 창고 | W.carter | CC0 |
+| 니카라과 마을 | René Antonio Urroz Álvarez/IAU OAE | CC BY 4.0 |
+| 눈밭의 나무 | Kouij Ohnishi/IAU OAE | CC BY 4.0 |
+| 천문대 돔 | ESO/B. Tafreshi | CC BY 4.0 |
+| 번개 치는 마을 | Kevin M. Gill | CC BY 2.0 |
+| 에트나 화산 | Dario Giannobile/IAU OAE | CC BY 4.0 |
+| 모래 언덕 | Great Sand Dunes National Park and Preserve | 퍼블릭 도메인 |
+| 풍력 발전기 | nanamori | CC BY 3.0 |
+| 교회 폐허 | Carlos Zudaire/IAU OAE | CC BY 4.0 |
+| 섬마을 집 | NPS Photo | 퍼블릭 도메인 |
+| 바위 옆 텐트 | Văn Ngọc Tăng | CC0 |

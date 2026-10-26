@@ -12,6 +12,7 @@ import { autoHorizon } from "@/plate-solver/autoHorizon";
 import { detectPhotoStars } from "@/plate-solver/detectPhotoStars";
 import MiniSkyMap from "@/plate-solver/MiniSkyMap";
 import { getSampleAnswer, matchesAnswer } from "@/plate-solver/sampleAnswers";
+import { SampleCreditLine } from "@/plate-solver/SampleCredits";
 import {
   ESTIMATED_SHOT_NOTE,
   exactShotUtc,
@@ -38,6 +39,7 @@ import { DEFAULT_DISPLAY_STARS } from "@/search/utils/selectStars";
 import { photoToSky, projectVecToPhoto } from "@/search/utils/wcs";
 import { whereShot } from "@/search/whereShot";
 import { readExif } from "@/services/exif";
+import { getSampleCredit } from "@/services/samples";
 import { cn } from "@/utils/cn";
 
 // 별자리 찾기: 사진을 고르면 별 찾기 → 풀이까지 자동으로 하고 결과를 보여 준다.
@@ -529,6 +531,7 @@ export default function PlateSolvingStep() {
 
   const candidates = outcome?.candidates ?? [];
   const answer = getSampleAnswer(image.src);
+  const credit = getSampleCredit(image.src);
   const selectedTransform = transformForWhere;
   // 별을 찾은 뒤 풀이가 시작되기 전 잠깐도 진행 중으로 본다
   const busy =
@@ -705,6 +708,7 @@ export default function PlateSolvingStep() {
           {answer && !busy && (
             <KnownAnswerNote answer={answer} found={confident} />
           )}
+          {credit && <SampleCreditLine credit={credit} />}
           <div className="flex flex-wrap gap-2">
             <button
               className={cn("btn btn-sm", failed && "btn-primary")}
