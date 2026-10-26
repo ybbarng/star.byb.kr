@@ -17,7 +17,7 @@ import { cn } from "@/utils/cn";
 const PHOTOS = [
   { key: "aust", label: "호주" },
   { key: "seoul", label: "누각" },
-  { key: "jeungseun", label: "증선" },
+  { key: "jeungseun", label: "정선" },
 ] as const;
 
 type Model = "seed" | "similarity" | "radial" | "fisheye" | "perspective";
