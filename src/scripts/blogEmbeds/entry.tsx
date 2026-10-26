@@ -15,7 +15,7 @@ import TriangleSearchDemo from "@/learn/TriangleSearchDemo";
 export const BLOG_DEMOS = {
   "north-sky-flow": NorthSkyFlowDemo,
   "orion-sky-flow": OrionSkyFlowDemo,
-  "quad-hash": () => <QuadHashDemo hint={false} />,
+  "quad-hash": () => <QuadHashDemo hint={false} compact />,
   "same-sky-orbit": SameSkyOrbitDemo,
   "triangle-search": TriangleSearchDemo,
   "detect-pipeline": DetectPipelineDemo,

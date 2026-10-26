@@ -34,7 +34,14 @@ const transform = (
 };
 
 // hint: 끌 수 있다는 안내. 발표에서는 발표자가 직접 움직여 보이려고 끈다 (embed)
-export default function QuadHashDemo({ hint = true }: { hint?: boolean }) {
+// compact: 테크 블로그용. 지문 네 숫자를 한 줄로 강조하고 C·D 좌표는 작게, 아래 설명 문장은 뺀다 (본문이 설명한다)
+export default function QuadHashDemo({
+  hint = true,
+  compact = false,
+}: {
+  hint?: boolean;
+  compact?: boolean;
+}) {
   const [base, setBase] = useState<P[]>([
     [60, 180],
     [130, 70],
@@ -73,7 +80,9 @@ export default function QuadHashDemo({ hint = true }: { hint?: boolean }) {
   const coord = ([x, y]: P) => `(${x.toFixed(2)}, ${y.toFixed(2)})`;
 
   return (
-    <div className="grid items-start gap-4 md:grid-cols-[1.15fr_1fr_0.75fr]">
+    <div
+      className={`grid items-start gap-4 ${compact ? "md:grid-cols-[1fr_0.9fr_1fr]" : "md:grid-cols-[1.15fr_1fr_0.75fr]"}`}
+    >
       <div className="flex flex-col gap-1">
         <div className="text-sm opacity-70">
           ① 사진 속 별 4개{hint && " (움직여 보세요)"}
@@ -235,25 +244,31 @@ export default function QuadHashDemo({ hint = true }: { hint?: boolean }) {
       <div className="flex flex-col gap-2">
         <div className="text-sm opacity-70">③ quad 값 = C·D의 좌표 = 지문</div>
         <div className="bg-base-300/60 rounded-box flex flex-col gap-2 p-3 font-mono">
-          <div>
+          <div className={compact ? "text-sm opacity-80" : undefined}>
             <span className="text-indigo-300">C</span>{" "}
-            <span className="text-lg">{coord(C)}</span>
+            <span className={compact ? undefined : "text-lg"}>{coord(C)}</span>
           </div>
-          <div>
+          <div className={compact ? "text-sm opacity-80" : undefined}>
             <span className="text-indigo-300">D</span>{" "}
-            <span className="text-lg">{coord(D)}</span>
+            <span className={compact ? undefined : "text-lg"}>{coord(D)}</span>
           </div>
-          <div className="border-base-content/10 border-t pt-2 text-sm text-indigo-200">
+          <div
+            className={`border-base-content/10 border-t pt-2 ${compact ? "text-base font-bold whitespace-nowrap text-amber-200" : "text-sm text-indigo-200"}`}
+          >
             ({hash.map((v) => v.toFixed(2)).join(", ")})
           </div>
         </div>
-        <div className="text-sm opacity-70">
-          별 지도의 quad 8만 3천 개 중 지문이 가까운 것들을 찾아, 나머지 별까지
-          맞는지 확인한다.
-        </div>
-        <div className="text-sm opacity-50">
-          Astrometry.net 논문에서 제시한 방식
-        </div>
+        {!compact && (
+          <>
+            <div className="text-sm opacity-70">
+              별 지도의 quad 8만 3천 개 중 지문이 가까운 것들을 찾아, 나머지
+              별까지 맞는지 확인한다.
+            </div>
+            <div className="text-sm opacity-50">
+              Astrometry.net 논문에서 제시한 방식
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
