@@ -35,8 +35,8 @@ import {
 // 발표·원리 데모 자료 (public/learn/): 실제 풀이를 돌려 검증한 후보를 모은다.
 //   candidates-seoul.json  서울 누각 사진에서 검증한 후보 전부 (겹친 수·짝 수·기대치·정답 여부)
 //                          + V2가 고른 답(지문 거리 1등), 옛 점수(몇 배) 1등 가짜, 진짜 답의 겹침 그림
-//   refine-<사진>.json     시야가 넓은 사진 네 장에서 같은 짝으로 맞춘 모델 다섯 가지(V2 짝만·닮음·방사 왜곡·어안·원근)의 별 자리와 격자
-//   triangle-dipper.json   북두칠성 사진에서 일곱 별의 자리와 실제 화각 (삼각형 크기 거르기 데모)
+//   refine-<사진>.json     시야가 넓은 사진 세 장에서 같은 짝으로 맞춘 모델 다섯 가지(V2 짝만·닮음·방사 왜곡·어안·원근)의 별 자리와 격자
+//   triangle-dipper.json   오로라 속 북두칠성 사진에서 일곱 별의 자리와 실제 화각 (삼각형 크기 거르기 데모)
 //   zenith-seoul.json      누각 사진의 정답 자세와 먼 능선 두 점 (지평선 → 천정 → 하늘 시계 데모)
 //
 //   npx tsx src/scripts/learn/buildDemoData.ts
@@ -309,7 +309,6 @@ const buildSeoul = async () => {
 //   fisheye      등거리 어안 렌즈 (광학중심·초점·왜곡을 맞춘다, search/utils/fisheye.ts)
 //   perspective  원근 변환 (V3)
 const REFINE_PHOTOS = [
-  { key: "milky", file: "20220328-brice-Milky Way over Buzzvil.jpg" },
   { key: "seoul", file: SEOUL },
   { key: "aust", file: "20231012-nike-aust-01.jpg" },
   { key: "jeungseun", file: "20230904-nike-jeungseun-03.png" },
@@ -529,8 +528,11 @@ const DIPPER = [
   ["알카이드", "5191"],
 ];
 
+// 북두칠성 일곱 별이 모두 들어온 직원 사진 (별하늘지기 카페 사진 big-dipper.jpg는 예시로 쓰지 않는다)
+const DIPPER_PHOTO = "20250117-carl-aurora-02.jpg";
+
 const buildDipper = async () => {
-  const { W, H, out } = await solveCollecting("big-dipper.jpg");
+  const { W, H, out } = await solveCollecting(DIPPER_PHOTO);
 
   if (!out.found || !out.transform) throw new Error("북두칠성을 풀지 못했다");
 

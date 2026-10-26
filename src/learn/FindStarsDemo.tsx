@@ -16,11 +16,6 @@ const DEMO_PHOTOS = [
   { src: "/samples/20220607-berry-seoul.jpg", title: "누각 (지붕·불빛)" },
   // 1 → 22: 조명 받은 나무 줄기
   { src: "/samples/20250117-carl-aurora-03.jpg", title: "오로라 (나무 줄기)" },
-  // 2 → 17
-  {
-    src: "/samples/20220328-brice-Milky Way over Buzzvil.jpg",
-    title: "은하수 (건물 창문)",
-  },
   // 2 → 21
   { src: "/samples/20250117-carl-aurora-01.jpg", title: "오로라 (집 불빛)" },
   // 0 → 24

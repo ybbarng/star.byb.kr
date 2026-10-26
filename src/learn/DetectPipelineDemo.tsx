@@ -9,9 +9,13 @@ import { cn } from "@/utils/cn";
 // 사진 옆에는 가로줄 하나의 밝기 단면을 단계마다 그린다: 원본 RGB → 흑백 → 배경(느린 변화만) → 빼기(바닥이 평평)
 // → 꼭대기와 문턱 선. 사진을 누르면 그 높이로 줄을 옮긴다. 그래프 칸과 사진 칸(4:3)은 단계가 바뀌어도 크기가 같다.
 
-// 고를 수 있는 사진: 나무 사이 북두칠성, 불빛 많은 누각
+// 고를 수 있는 사진: 오로라와 나무 사이 북두칠성, 불빛 많은 누각
 const PHOTOS = [
-  { key: "dipper", label: "북두칠성 (나무)", src: "/samples/big-dipper.jpg" },
+  {
+    key: "dipper",
+    label: "북두칠성 (오로라·나무)",
+    src: "/samples/20250117-carl-aurora-02.jpg",
+  },
   {
     key: "seoul",
     label: "누각 (불빛)",

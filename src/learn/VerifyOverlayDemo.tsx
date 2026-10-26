@@ -11,12 +11,12 @@ import { ACCEPT } from "@/search/solvers/candidates";
 import { poissonTailNegLog10 } from "@/search/utils/stats";
 import { projectVecToPhoto } from "@/search/utils/wcs";
 
-// 확인 데모: 북두칠성 샘플을 실제로 풀고, 찾은 변환으로 별 지도를 사진 위에 겹친다.
+// 확인 데모: 호주 ① 샘플을 실제로 풀고, 찾은 변환으로 별 지도를 사진 위에 겹친다.
 // 슬라이더로 답을 일부러 조금 돌리거나 옮기면, 겹치는 별 수와 '우연일 확률'이 어떻게 무너지는지 본다.
 // 겹침 판정·우연 계산은 풀이(solveCore)와 같은 식이다: 허용 반경 max(5, 대각선×0.006),
 // 우연 기대 λ = 사진 별 × 화면 안 지도 별 × 허용 원 넓이 ÷ 사진 넓이, 짝 3개는 빼고 푸아송 꼬리.
 
-const SRC = "/samples/big-dipper.jpg";
+const SRC = "/samples/20231012-nike-aust-01.jpg";
 const PHOTO_STARS = 60;
 const SEED = 3;
 const D = Math.PI / 180;

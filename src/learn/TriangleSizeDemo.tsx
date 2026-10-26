@@ -9,7 +9,7 @@ import {
   shapeOfSides,
 } from "@/learn/brightTriangles";
 
-// 삼각형 크기 거르기 데모: 북두칠성 사진에서 별 셋을 고르면, 밝은 별 삼각형 4만여 개 중 모양이 닮은 것을
+// 삼각형 크기 거르기 데모: 오로라 속 북두칠성 사진에서 별 셋을 고르면, 밝은 별 삼각형 4만여 개 중 모양이 닮은 것을
 // 가로 = 모양 차이, 세로 = 하늘에서의 크기(가장 긴 변, 로그 눈금)로 찍는다. 사진만으로는 픽셀이 몇 도인지 몰라
 // 크기를 비교할 수 없다. 화각을 하나 짐작하면 사진 삼각형의 크기가 정해지고, 그 절반~두 배 밖은 버린다.
 // 풀이(search/solvers/triangle.ts)와 같은 화각 후보·크기 허용 배율(2)·순서다: 모양이 가장 가까운 8개를 먼저
@@ -17,7 +17,7 @@ import {
 // 줄여 빠르게 할 뿐, 8개 밖의 정답을 끌어올리지는 않는다.
 // 자료: public/learn/triangle-dipper.json (scripts/learn/buildDemoData.ts)
 
-const SRC = "/samples/big-dipper.jpg";
+const SRC = "/samples/20250117-carl-aurora-02.jpg";
 const FOV_CANDIDATES = [10, 14, 18, 23, 29, 37, 47, 60, 75];
 const SIZE_TOLERANCE = 2;
 const K = 8;
@@ -48,7 +48,7 @@ export default function TriangleSizeDemo() {
   const [data, setData] = useState<Dipper | null>(null);
   const [image, setImage] = useState<HTMLImageElement | null>(null);
   const [triangles, setTriangles] = useState<CatalogTriangle[] | null>(null);
-  const [picked, setPicked] = useState<number[]>([1, 2, 3]);
+  const [picked, setPicked] = useState<number[]>([2, 4, 5]); // 페크다·알리오트·미자르;
   const [fov, setFov] = useState<number | null>(null);
   const photo = useRef<HTMLCanvasElement>(null);
   const plot = useRef<HTMLCanvasElement>(null);

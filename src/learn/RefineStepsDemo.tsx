@@ -14,9 +14,8 @@ import { cn } from "@/utils/cn";
 // 자료: public/learn/refine-<사진>.json (scripts/learn/buildDemoData.ts가 모델마다 별 자리와 격자를 미리 계산)
 
 const PHOTOS = [
-  { key: "milky", label: "은하수 (원근 보정)" },
-  { key: "seoul", label: "누각" },
   { key: "aust", label: "호주" },
+  { key: "seoul", label: "누각" },
   { key: "jeungseun", label: "증선" },
 ] as const;
 
@@ -60,7 +59,7 @@ const MODELS: { key: Model; label: string; note: string }[] = [
 ];
 
 export default function RefineStepsDemo() {
-  const [photo, setPhoto] = useState<(typeof PHOTOS)[number]["key"]>("milky");
+  const [photo, setPhoto] = useState<(typeof PHOTOS)[number]["key"]>("aust");
   const [data, setData] = useState<Data | null>(null);
   const [image, setImage] = useState<HTMLImageElement | null>(null);
   const [model, setModel] = useState<Model>("seed");
