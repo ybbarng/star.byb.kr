@@ -24,29 +24,23 @@ const sample = (
   height,
 });
 
+// 북두칠성(big-dipper.jpg)·석촌호수 은하수 사진은 별하늘지기 카페에서 가져온 외부 사진이라 예시로 보이지 않는다
+// (회귀 테스트는 public/samples의 파일을 그대로 읽는다). 맨 앞은 빨리(약 0.1초) 풀리는 호주 ①
 const samples: Sample[] = [
-  sample("big-dipper.jpg", "북두칠성", "연습용으로 좋은 사진", 1152, 819),
-  sample("20220607-berry-seoul.jpg", "서울 근처 산", "2021년 10월", 1440, 1080),
-  sample(
-    "20220328-brice-Milky Way over Buzzvil.jpg",
-    "석촌호수 은하수",
-    "2022년 3월 · 원근 보정",
-    1200,
-    801,
-  ),
-  sample(
-    "20190617-jarrod-saipan.jpg",
-    "사이판 바다",
-    "2019년 6월 · 별이 적은 사진",
-    1440,
-    1920,
-  ),
   sample(
     "20231012-nike-aust-01.jpg",
     "호주 ①",
     "2023년 10월 · 남반구",
     4000,
     3000,
+  ),
+  sample("20220607-berry-seoul.jpg", "서울 근처 산", "2021년 10월", 1440, 1080),
+  sample(
+    "20190617-jarrod-saipan.jpg",
+    "사이판 바다",
+    "2019년 6월 · 별이 적은 사진",
+    1440,
+    1920,
   ),
   sample(
     "20231012-nike-aust-02.jpg",

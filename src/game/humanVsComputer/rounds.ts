@@ -36,11 +36,11 @@ export interface ReversalClues {
 // 첫 두 판: 별자리 모양이 또렷한 사진
 export const EASY_ROUNDS: VersusRound[] = [
   {
-    file: "big-dipper.jpg",
-    title: "북두칠성",
+    file: "20250117-carl-aurora-02.jpg",
+    title: "오로라",
     answer: "큰곰자리",
-    inPhoto: ["큰곰자리", "작은곰자리", "용자리"],
-    hint: "국자 모양 일곱 별(북두칠성)이 큰곰의 등과 꼬리예요.",
+    inPhoto: ["큰곰자리", "목동자리", "사자자리"],
+    hint: "오로라 사이로 국자 모양 일곱 별(북두칠성)이 보여요. 큰곰의 등과 꼬리예요.",
   },
   {
     file: "cafe-orion.jpg",
@@ -58,7 +58,7 @@ export const EASY_ROUNDS: VersusRound[] = [
   },
 ];
 
-// 다음 두 판: 오로라·은하수·남반구처럼 사람이 찾기 어려운 사진
+// 다음 두 판: 오로라처럼 사람이 찾기 어려운 사진
 export const HARD_ROUNDS: VersusRound[] = [
   {
     file: "20230904-nike-jeungseun-03.png",
@@ -87,13 +87,6 @@ export const HARD_ROUNDS: VersusRound[] = [
       "용자리",
     ],
     hint: "오로라 너머로 W 모양 다섯 별이 보여요.",
-  },
-  {
-    file: "20220328-brice-Milky Way over Buzzvil.jpg",
-    title: "석촌호수 은하수",
-    answer: "궁수자리",
-    inPhoto: ["궁수자리", "전갈자리", "독수리자리"],
-    hint: "은하수 가운데의 주전자 모양이 궁수자리예요. 은하의 중심이 그 너머에 있어요.",
   },
   {
     file: "20250117-carl-aurora-01.jpg",
