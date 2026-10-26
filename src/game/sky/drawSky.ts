@@ -37,6 +37,7 @@ export interface DrawSkyOptions {
   groundSeed: number; // 능선·마을 불빛 모양
   stars: DrawStar[];
   constellations?: DrawConstellation[]; // 주면 별자리선을 그린다 (풀이 화면)
+  linesBelowHorizon?: boolean; // 한쪽 끝 별만 떠도 선을 긋는다 (지평선 아래는 땅이 가린다)
   compass?: boolean; // 지평선에 동서남북 표시 (쉬움)
   // 달빛이 어두운 별을 지우게 할지 (기본 true). 별을 눌러 보는 게 목적이면 끈다.
   moonlightDimsStars?: boolean;
@@ -284,15 +285,21 @@ export const drawSky = (
     const labels = new Map<string, { shown: number; sx: number; sy: number }>();
 
     for (const c of o.constellations) {
-      const pts = c.stars.map((v) => (altOf(v) > 0 ? project(v) : null));
+      const pts = c.stars.map(project);
+      const up = c.stars.map((v) => altOf(v) > 0);
       const label = labels.get(c.label) ?? { shown: 0, sx: 0, sy: 0 };
       labels.set(c.label, label);
 
+      // 기본은 양 끝이 다 떠야 긋는다. linesBelowHorizon이면 한쪽 끝만 떠도 긋고 지평선 아래 부분은 뒤에 그리는
+      // 땅이 가린다 (하늘이 흘러가는 데모에서 별이 뜨는 순간 선이 툭 생기지 않게)
       for (let i = 0; i < pts.length - 1; i++) {
         const a = pts[i];
         const b = pts[i + 1];
+        const drawn = o.linesBelowHorizon
+          ? up[i] || up[i + 1]
+          : up[i] && up[i + 1];
 
-        if (!a || !b || Math.hypot(a[0] - b[0], a[1] - b[1]) > W) {
+        if (!a || !b || !drawn || Math.hypot(a[0] - b[0], a[1] - b[1]) > W) {
           continue;
         }
 
@@ -302,8 +309,8 @@ export const drawSky = (
         ctx.stroke();
       }
 
-      for (const p of pts) {
-        if (p && p[0] >= 0 && p[0] < W && p[1] >= 0 && p[1] < H) {
+      for (const [i, p] of pts.entries()) {
+        if (up[i] && p && p[0] >= 0 && p[0] < W && p[1] >= 0 && p[1] < H) {
           label.shown++;
           label.sx += p[0];
           label.sy += p[1];

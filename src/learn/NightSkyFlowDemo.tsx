@@ -328,7 +328,9 @@ function NightSkyFlow({ view }: { view: FlowView }) {
       lightPollution: 0.25,
       groundSeed: view.groundSeed,
       stars: STARS,
-      constellations: view.constellations,
+      // 이름은 아래에서 따로 쓴다 (drawSky는 별들 가운데에 써서 선과 어두운 별을 덮는다)
+      constellations: view.constellations.map((c) => ({ ...c, label: "" })),
+      linesBelowHorizon: true,
       compass: !view.foreground,
       mountains: view.mountains,
       ridgeScale: view.ridgeScale,
@@ -345,6 +347,35 @@ function NightSkyFlow({ view }: { view: FlowView }) {
       if (horizon) view.foreground(ctx, horizon[1]);
     }
 
+    // 별자리 이름: 지평선 위에 보이는 별들을 감싼 상자의 위쪽 바깥에 (선과 별을 덮지 않게)
+    const jd = julianDay(date);
+    const boxes = new Map<string, [number, number, number]>(); // 이름 → [왼쪽, 오른쪽, 위]
+
+    for (const c of view.constellations) {
+      for (const v of c.stars) {
+        const p = projectVecToPhoto(TP, v);
+
+        if (!p || altAzOf(v, jd, GEOJE).altDeg <= 0) continue;
+        if (p[0] < 0 || p[0] > W || p[1] < 0 || p[1] > H) continue;
+
+        const [l, r, t] = boxes.get(c.label) ?? [p[0], p[0], p[1]];
+        boxes.set(c.label, [
+          Math.min(l, p[0]),
+          Math.max(r, p[0]),
+          Math.min(t, p[1]),
+        ]);
+      }
+    }
+
+    ctx.font = "bold 16px Arial";
+    ctx.fillStyle = "rgba(250,220,80,0.95)";
+    ctx.textAlign = "center";
+
+    for (const [text, [l, r, t]] of boxes) {
+      ctx.fillText(text, (l + r) / 2, Math.max(18, t - 14));
+    }
+
+    ctx.textAlign = "start";
     ctx.font = "bold 15px Arial";
     ctx.fillStyle = "rgba(190,220,255,0.95)";
 
