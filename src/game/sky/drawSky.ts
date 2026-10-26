@@ -42,6 +42,8 @@ export interface DrawSkyOptions {
   moonlightDimsStars?: boolean;
   // 산: 그 방위 둘레로 땅이 솟아 별을 가린다 (SkyGuessr에서 극을 가리는 데 쓴다)
   mountains?: Mountain[];
+  // 들쭉날쭉한 능선의 높이 배율 (기본 1). 낮추면 먼 지평선이 평평해진다
+  ridgeScale?: number;
   // 구름: 하늘의 그 자리(고도·방위)를 덮어 별을 가린다
   clouds?: Cloud[];
   // 별보다 먼저(하늘 바탕 위에) 그릴 것: 은하수처럼 별 뒤에 깔리는 빛. 하늘 밝기(달빛·박명·광해, 0~1)를 받아 그만큼 흐리게 그린다
@@ -361,10 +363,11 @@ export const drawSky = (
   const ridge = (az: number) =>
     0.3 +
     mountain(az) +
-    waves.reduce(
-      (s, w) => s + w.amp * (1 + Math.sin(w.freq * az * D + w.phase)) * 0.5,
-      0,
-    );
+    (o.ridgeScale ?? 1) *
+      waves.reduce(
+        (s, w) => s + w.amp * (1 + Math.sin(w.freq * az * D + w.phase)) * 0.5,
+        0,
+      );
   const ground: Point2D[] = [];
 
   for (let az = o.azimuthDeg - 110; az <= o.azimuthDeg + 110; az += 0.5) {

@@ -4,7 +4,6 @@ import CandidateScatterDemo from "@/learn/CandidateScatterDemo";
 import ChanceRatioDemo from "@/learn/ChanceRatioDemo";
 import DetectPipelineDemo from "@/learn/DetectPipelineDemo";
 import FindStarsDemo from "@/learn/FindStarsDemo";
-import HorizonIllusionDemo from "@/learn/HorizonIllusionDemo";
 import MoonDateDemo from "@/learn/MoonDateDemo";
 import { NorthSkyFlowDemo, OrionSkyFlowDemo } from "@/learn/NightSkyFlowDemo";
 import PoleHeightDemo from "@/learn/PoleHeightDemo";
@@ -48,7 +47,6 @@ const DEMOS = {
   // 테크 블로그 도입부: 거제에서 본 밤하늘이 저절로 흘러간다
   "north-sky-flow": NorthSkyFlowDemo,
   "orion-sky-flow": OrionSkyFlowDemo,
-  "horizon-illusion": HorizonIllusionDemo,
 };
 
 export const dynamicParams = false;

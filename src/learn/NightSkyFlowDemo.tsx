@@ -10,12 +10,19 @@ import {
 } from "@/game/sky/catalog";
 import { drawSky } from "@/game/sky/drawSky";
 import { horizonCameraTP } from "@/search/horizonSolve";
-import { altAzOf, julianDay, sunVector } from "@/search/utils/ephemeris";
+import {
+  altAzOf,
+  fromAltAzJ2000,
+  horizontalFrameJ2000,
+  julianDay,
+  sunVector,
+} from "@/search/utils/ephemeris";
 import { projectVecToPhoto } from "@/search/utils/wcs";
 
 // 거제에서 본 밤하늘이 저절로 흘러간다 (테크 블로그 도입부용). 낮은 건너뛰고, 밤이 끝나면 며칠 뒤 밤으로 넘어가
 // 계절에 따라 같은 시각의 하늘이 달라지는 것도 보인다.
-// - 북쪽 하늘: 북쪽에 고정. 북두칠성·카시오페이아자리가 북극성을 사이에 두고 돈다
+// - 북쪽 하늘: 북쪽에 고정. 북두칠성·카시오페이아자리가 북극성을 사이에 두고 돈다.
+//   땅에 원근 단서(멀어지는 길·나무, 지평선의 작은 집)를 두어 지평선 근처 별자리가 커 보이는 착시도 느끼게 한다
 // - 오리온자리: 카메라가 오리온을 따라 동 → 남 → 서로 돈다. 오리온이 진 밤 시간은 건너뛴다
 
 const GEOJE = { latDeg: 34.88, lonDeg: 128.62 };
@@ -62,22 +69,136 @@ interface FlowView {
   // 이 별(방향)이 지평선 위에 있을 때만 보여 준다
   mustBeUp?: Point3D;
   labels?: { text: string; vector: Point3D }[];
+  ridgeScale?: number;
+  // 땅 위 앞쪽 풍경 (화면 좌표). 주면 동서남북 표시 대신 이것을 그린다
+  foreground?: (ctx: CanvasRenderingContext2D, horizonY: number) => void;
 }
+
+// 나무 한 그루 (원뿔 세 겹). (x, y)는 밑동
+const drawTree = (
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  h: number,
+) => {
+  ctx.fillStyle = "rgb(5,6,8)";
+  ctx.fillRect(x - h * 0.04, y - h * 0.3, h * 0.08, h * 0.3);
+
+  for (let k = 0; k < 3; k++) {
+    const w = h * (0.42 - k * 0.1);
+    const top = y - h * (0.6 + k * 0.25);
+    ctx.beginPath();
+    ctx.moveTo(x - w / 2, top + h * 0.35);
+    ctx.lineTo(x, top);
+    ctx.lineTo(x + w / 2, top + h * 0.35);
+    ctx.closePath();
+    ctx.fill();
+  }
+};
+
+// 아주 작은 집 (창문 하나에 불). (x, y)는 바닥 가운데
+const drawHouse = (
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  lit: boolean,
+) => {
+  const h = w * 0.7;
+  ctx.fillStyle = "rgb(8,9,12)";
+  ctx.beginPath();
+  ctx.moveTo(x - w / 2, y);
+  ctx.lineTo(x - w / 2, y - h);
+  ctx.lineTo(x, y - h - w * 0.4);
+  ctx.lineTo(x + w / 2, y - h);
+  ctx.lineTo(x + w / 2, y);
+  ctx.closePath();
+  ctx.fill();
+
+  if (lit) {
+    ctx.fillStyle = "rgba(255,210,130,0.95)";
+    ctx.fillRect(x - w * 0.2, y - h * 0.65, Math.max(1, w * 0.18), w * 0.18);
+  }
+};
+
+// 북쪽 지평선으로 멀어지는 길, 멀어질수록 작아지는 나무, 지평선의 아주 작은 집.
+// 지평선 근처 별자리가 커 보이는 착시를 화면에서도 느끼게 하는 원근 단서다 (달이 지평선에서 커 보이는 것과 같다).
+const northForeground = (ctx: CanvasRenderingContext2D, hy: number) => {
+  const W = 800;
+  const H = 600;
+  const cx = W / 2;
+  const depth = H - hy;
+
+  // 지평선의 작은 마을 (길 양옆에도 두어 그 위 별자리와 크기를 견주게)
+  let seed = 3;
+  const rnd = () => ((seed = (seed * 16807) % 2147483647) - 1) / 2147483646;
+
+  for (const x0 of [90, 170, 300, 345, 455, 500, 640, 720]) {
+    for (let k = 0; k < 3; k++) {
+      drawHouse(
+        ctx,
+        x0 + (rnd() - 0.5) * 30,
+        hy + 1,
+        4 + rnd() * 3,
+        rnd() > 0.3,
+      );
+    }
+  }
+
+  // 길
+  ctx.fillStyle = "rgb(22,24,28)";
+  ctx.beginPath();
+  ctx.moveTo(cx - 2, hy);
+  ctx.lineTo(cx + 2, hy);
+  ctx.lineTo(cx + 260, H);
+  ctx.lineTo(cx - 260, H);
+  ctx.closePath();
+  ctx.fill();
+
+  // 가운데 점선: 멀수록 짧고 가늘게
+  ctx.strokeStyle = "rgba(230,220,170,0.5)";
+
+  for (let t = 0.04; t < 1; t *= 1.45) {
+    ctx.lineWidth = Math.max(0.5, 4 * t);
+    ctx.beginPath();
+    ctx.moveTo(cx, hy + depth * t);
+    ctx.lineTo(cx, hy + depth * Math.min(1, t * 1.2));
+    ctx.stroke();
+  }
+
+  // 길가의 나무: 멀어질수록 작게
+  for (let t = 0.06; t < 1.2; t *= 1.45) {
+    const y = hy + depth * t;
+    const side = 260 * t + 14;
+    const h = 170 * t + 4;
+    drawTree(ctx, cx - side, y, h);
+    drawTree(ctx, cx + side, y, h);
+  }
+
+  ctx.font = "bold 20px Arial";
+  ctx.fillStyle = "rgba(255,255,255,0.8)";
+  ctx.textAlign = "center";
+  ctx.fillText("북", cx, H - 14);
+  ctx.textAlign = "start";
+};
 
 const NORTH: FlowView = {
   width: 800,
   height: 600,
   fovDeg: 90,
-  altitudeDeg: 40,
+  // 땅이 화면 아래 1/5쯤 보이게. 북두칠성이 가장 높이 떠도(고도 약 76°) 화면 안에 든다
+  altitudeDeg: 30,
   constellations: [...BIG_DIPPER, ...CASSIOPEIA],
+  // 산이 북두칠성을 가리지 않게 먼 능선은 낮게
   mountains: [
-    { azDeg: -35, widthDeg: 22, heightDeg: 6 },
-    { azDeg: 15, widthDeg: 30, heightDeg: 8 },
-    { azDeg: 50, widthDeg: 18, heightDeg: 4 },
+    { azDeg: -40, widthDeg: 25, heightDeg: 2.5 },
+    { azDeg: 45, widthDeg: 20, heightDeg: 2 },
   ],
+  ridgeScale: 0.3,
   groundSeed: 11,
   startKst: [2026, 1, 10, 19],
   labels: [{ text: "북극성", vector: POLARIS }],
+  foreground: northForeground,
 };
 
 const ORION_VIEW: FlowView = {
@@ -208,9 +329,21 @@ function NightSkyFlow({ view }: { view: FlowView }) {
       groundSeed: view.groundSeed,
       stars: STARS,
       constellations: view.constellations,
-      compass: true,
+      compass: !view.foreground,
       mountains: view.mountains,
+      ridgeScale: view.ridgeScale,
     });
+
+    if (view.foreground) {
+      const north = fromAltAzJ2000(
+        horizontalFrameJ2000(julianDay(date), GEOJE),
+        0,
+        azimuthDeg,
+      );
+      const horizon = projectVecToPhoto(TP, north);
+
+      if (horizon) view.foreground(ctx, horizon[1]);
+    }
 
     ctx.font = "bold 15px Arial";
     ctx.fillStyle = "rgba(190,220,255,0.95)";
