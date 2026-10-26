@@ -43,10 +43,11 @@ export const EASY_ROUNDS: VersusRound[] = [
     hint: "오로라 사이로 국자 모양 일곱 별(북두칠성)이 보여요. 큰곰의 등과 꼬리예요.",
   },
   {
-    file: "cafe-orion.jpg",
-    title: "오리온",
+    // 위키미디어 공용 사진(Likai Lin/IAU OAE, CC BY 4.0). 정답 자세로 센 별: 오리온 21·큰개 11·황소 3 (2026-10-26)
+    file: "iau-watchtower-orion.jpg",
+    title: "망루와 논",
     answer: "오리온자리",
-    inPhoto: ["오리온자리"],
+    inPhoto: ["오리온자리", "큰개자리", "황소자리"],
     hint: "나란한 세 별(삼태성) 위아래로 붉은 베텔게우스와 푸른 리겔.",
   },
   {

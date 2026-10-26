@@ -14,4 +14,6 @@ export const SOLVED_SAMPLES = [
   "20250117-carl-aurora-02.jpg",
   "20250117-carl-aurora-03.jpg",
   "20250117-carl-aurora-04.jpg",
+  // 위키미디어 공용 샘플: 사람 계산원 게임의 오리온 판 (자세는 이 사진만 덧붙였다)
+  "iau-watchtower-orion.jpg",
 ];

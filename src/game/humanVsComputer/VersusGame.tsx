@@ -31,7 +31,9 @@ import {
 import ShapeCard from "@/game/humanVsComputer/ShapeCard";
 import SolveSteps from "@/game/humanVsComputer/SolveSteps";
 import TeamUp from "@/game/humanVsComputer/TeamUp";
+import { SampleCreditLine } from "@/plate-solver/SampleCredits";
 import { preloadSolver } from "@/search/solverClient";
+import { getSampleCredit } from "@/services/samples";
 import { cn } from "@/utils/cn";
 
 // 사람 계산원 vs 컴퓨터 (docs/game-plans.md 3절). 사진 한 장마다 사람은 찍힌 별자리를 보기에서 고르고,
@@ -215,6 +217,8 @@ function VersusPlay({
   const rounds = useMemo(() => planGame(gameSeed), [gameSeed]);
   const [round, setRound] = useState(0);
   const target = rounds[round];
+  // 바깥에서 가져온 샘플은 사진 아래에 출처를 밝힌다 (CC BY)
+  const credit = getSampleCredit(`/samples/${target.file}`);
   const [image, setImage] = useState<HTMLImageElement | null>(null);
   const [status, setStatus] = useState<Status>("loading");
   const [startedAt, setStartedAt] = useState(0);
@@ -570,6 +574,11 @@ function VersusPlay({
                       : "어떤 별자리일까요?"
                   }
                 />
+              )}
+              {credit && (
+                <div className="mt-1">
+                  <SampleCreditLine credit={credit} />
+                </div>
               )}
             </div>
           ) : (
