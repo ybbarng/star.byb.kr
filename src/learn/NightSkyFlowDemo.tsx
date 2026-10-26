@@ -22,7 +22,7 @@ import { projectVecToPhoto } from "@/search/utils/wcs";
 // 거제에서 본 밤하늘이 저절로 흘러간다 (테크 블로그 도입부용). 낮은 건너뛰고, 밤이 끝나면 며칠 뒤 밤으로 넘어가
 // 계절에 따라 같은 시각의 하늘이 달라지는 것도 보인다.
 // - 북쪽 하늘: 북쪽에 고정. 북두칠성·카시오페이아자리가 북극성을 사이에 두고 돈다.
-//   땅에 원근 단서(멀어지는 길·나무, 지평선의 작은 집)를 두어 지평선 근처 별자리가 커 보이는 착시도 느끼게 한다
+//   지평선의 먼 도시 스카이라인과 멀어지는 길을 두어 지평선 근처 별자리가 커 보이는 느낌도 주게 한다
 // - 오리온자리: 카메라가 오리온을 따라 동 → 남 → 서로 돈다. 오리온이 진 밤 시간은 건너뛴다
 
 const GEOJE = { latDeg: 34.88, lonDeg: 128.62 };
@@ -74,76 +74,62 @@ interface FlowView {
   foreground?: (ctx: CanvasRenderingContext2D, horizonY: number) => void;
 }
 
-// 나무 한 그루 (원뿔 세 겹). (x, y)는 밑동
-const drawTree = (
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  h: number,
-) => {
-  ctx.fillStyle = "rgb(5,6,8)";
-  ctx.fillRect(x - h * 0.04, y - h * 0.3, h * 0.08, h * 0.3);
-
-  for (let k = 0; k < 3; k++) {
-    const w = h * (0.42 - k * 0.1);
-    const top = y - h * (0.6 + k * 0.25);
-    ctx.beginPath();
-    ctx.moveTo(x - w / 2, top + h * 0.35);
-    ctx.lineTo(x, top);
-    ctx.lineTo(x + w / 2, top + h * 0.35);
-    ctx.closePath();
-    ctx.fill();
-  }
-};
-
-// 아주 작은 집 (창문 하나에 불). (x, y)는 바닥 가운데
-const drawHouse = (
+// 먼 건물 한 동: 실루엣과 불 켜진 창문 몇 개. (x, y)는 바닥 왼쪽
+const drawBuilding = (
   ctx: CanvasRenderingContext2D,
   x: number,
   y: number,
   w: number,
-  lit: boolean,
+  h: number,
+  rnd: () => number,
 ) => {
-  const h = w * 0.7;
-  ctx.fillStyle = "rgb(8,9,12)";
-  ctx.beginPath();
-  ctx.moveTo(x - w / 2, y);
-  ctx.lineTo(x - w / 2, y - h);
-  ctx.lineTo(x, y - h - w * 0.4);
-  ctx.lineTo(x + w / 2, y - h);
-  ctx.lineTo(x + w / 2, y);
-  ctx.closePath();
-  ctx.fill();
+  ctx.fillStyle = "rgb(9,10,14)";
+  ctx.fillRect(x, y - h, w, h);
 
-  if (lit) {
-    ctx.fillStyle = "rgba(255,210,130,0.95)";
-    ctx.fillRect(x - w * 0.2, y - h * 0.65, Math.max(1, w * 0.18), w * 0.18);
+  for (let wy = y - h + 3; wy < y - 2; wy += 3) {
+    for (let wx = x + 2; wx < x + w - 2; wx += 3) {
+      if (rnd() < 0.22) {
+        ctx.fillStyle = `rgba(255,${195 + Math.floor(rnd() * 45)},130,${0.55 + rnd() * 0.4})`;
+        ctx.fillRect(wx, wy, 1.4, 1.2);
+      }
+    }
   }
 };
 
-// 북쪽 지평선으로 멀어지는 길, 멀어질수록 작아지는 나무, 지평선의 아주 작은 집.
-// 지평선 근처 별자리가 커 보이는 착시를 화면에서도 느끼게 하는 원근 단서다 (달이 지평선에서 커 보이는 것과 같다).
+// 북쪽 지평선의 먼 도시 스카이라인과 그쪽으로 멀어지는 길.
+// 크기를 아는 건물이 별자리 바로 아래 아주 작게 있어서, 지평선 근처의 북두칠성이 커 보이게 하는 단서다
+// (망원으로 찍은 "도시 위 거대한 달"과 같은 원리. 하늘 높이 뜨면 견줄 것이 없다).
 const northForeground = (ctx: CanvasRenderingContext2D, hy: number) => {
   const W = 800;
   const H = 600;
   const cx = W / 2;
   const depth = H - hy;
-
-  // 지평선의 작은 마을 (길 양옆에도 두어 그 위 별자리와 크기를 견주게)
-  let seed = 3;
+  let seed = 7;
   const rnd = () => ((seed = (seed * 16807) % 2147483647) - 1) / 2147483646;
 
-  for (const x0 of [90, 170, 300, 345, 455, 500, 640, 720]) {
-    for (let k = 0; k < 3; k++) {
-      drawHouse(
-        ctx,
-        x0 + (rnd() - 0.5) * 30,
-        hy + 1,
-        4 + rnd() * 3,
-        rnd() > 0.3,
-      );
+  // 도시 불빛이 지평선 위로 은은하게 번진다
+  const glow = ctx.createLinearGradient(0, hy - 60, 0, hy);
+  glow.addColorStop(0, "rgba(255,170,100,0)");
+  glow.addColorStop(1, "rgba(255,170,100,0.16)");
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, hy - 60, W, 60);
+
+  // 스카이라인: 띄엄띄엄 모인 건물 무리 (아파트 단지·시내). 낮은 건물이 많고 가끔 높은 동
+  for (let x = 0; x < W; ) {
+    if (rnd() < 0.12) {
+      x += 10 + rnd() * 40;
+      continue;
     }
+
+    const w = 8 + rnd() * 18;
+    const h = rnd() < 0.2 ? 22 + rnd() * 16 : 6 + rnd() * 14;
+    drawBuilding(ctx, x, hy + 2, w, h, rnd);
+    x += w + rnd() * 3;
   }
+
+  // 땅 (스카이라인 아래)
+  ctx.fillStyle = "rgb(8,9,11)";
+  ctx.fillRect(0, hy + 2, W, H - hy - 2);
 
   // 길
   ctx.fillStyle = "rgb(22,24,28)";
@@ -164,15 +150,6 @@ const northForeground = (ctx: CanvasRenderingContext2D, hy: number) => {
     ctx.moveTo(cx, hy + depth * t);
     ctx.lineTo(cx, hy + depth * Math.min(1, t * 1.2));
     ctx.stroke();
-  }
-
-  // 길가의 나무: 멀어질수록 작게
-  for (let t = 0.06; t < 1.2; t *= 1.45) {
-    const y = hy + depth * t;
-    const side = 260 * t + 14;
-    const h = 170 * t + 4;
-    drawTree(ctx, cx - side, y, h);
-    drawTree(ctx, cx + side, y, h);
   }
 
   ctx.font = "bold 20px Arial";
