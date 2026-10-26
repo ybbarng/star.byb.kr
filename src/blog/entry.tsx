@@ -1,11 +1,13 @@
 import { createRoot } from "react-dom/client";
 import FitToFrame from "@/app/embed/FitToFrame";
+import GroundMaskDemo from "@/blog/GroundMaskDemo";
 import { NorthSkyFlowDemo, OrionSkyFlowDemo } from "@/blog/NightSkyFlowDemo";
 import QuadHashDemo from "@/blog/QuadHashDemo";
 import AnswerCheckDemo from "@/learn/AnswerCheckDemo";
 import ChanceRatioDemo from "@/learn/ChanceRatioDemo";
 import FindStarsDemo from "@/learn/FindStarsDemo";
 import SameSkyOrbitDemo from "@/learn/SameSkyOrbitDemo";
+import TriangleSizeDemo from "@/learn/TriangleSizeDemo";
 
 // 테크 블로그 글에 넣는 데모 묶음의 입구. HTML의 <div id="root" data-demo="이름">을 보고 그 데모 하나를 띄운다.
 // 화면은 /embed/<이름>과 같다 (app/embed/layout.tsx의 틀과 FitToFrame).
@@ -18,6 +20,8 @@ export const BLOG_DEMOS = {
   "answer-check": AnswerCheckDemo,
   "chance-ratio": ChanceRatioDemo,
   "find-stars": () => <FindStarsDemo score />,
+  "ground-mask": GroundMaskDemo,
+  "triangle-size": TriangleSizeDemo,
 };
 
 const root = document.getElementById("root");

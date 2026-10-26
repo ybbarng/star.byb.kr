@@ -22,6 +22,8 @@ const DEMOS: Record<string, string> = {
   "answer-check": "가장 가까운 지문이 답일까",
   "chance-ratio": "우연일 확률",
   "find-stars": "별다움으로 별 고르기",
+  "ground-mask": "땅을 가리고 하늘만 보기",
+  "triangle-size": "화각으로 삼각형 크기 거르기",
 };
 
 // 데모가 불러오는 파일 (public 기준)
@@ -31,6 +33,12 @@ const ASSETS = [
   "samples/20250117-carl-aurora-01.jpg",
   "samples/20250117-carl-aurora-03.jpg",
   "learn/candidates-seoul.json",
+  "learn/triangle-dipper.json",
+  "samples/20250117-carl-aurora-02.jpg",
+  "presentation/resources/ground-full.svg",
+  "presentation/resources/ground-75.svg",
+  "presentation/resources/ground-55.svg",
+  "presentation/resources/ground-45.svg",
 ];
 
 const relativizeAssets = (code: string) =>
