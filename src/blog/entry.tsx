@@ -4,10 +4,8 @@ import { NorthSkyFlowDemo, OrionSkyFlowDemo } from "@/blog/NightSkyFlowDemo";
 import QuadHashDemo from "@/blog/QuadHashDemo";
 import AnswerCheckDemo from "@/learn/AnswerCheckDemo";
 import ChanceRatioDemo from "@/learn/ChanceRatioDemo";
-import DetectPipelineDemo from "@/learn/DetectPipelineDemo";
 import FindStarsDemo from "@/learn/FindStarsDemo";
 import SameSkyOrbitDemo from "@/learn/SameSkyOrbitDemo";
-import TriangleSearchDemo from "@/learn/TriangleSearchDemo";
 
 // 테크 블로그 글에 넣는 데모 묶음의 입구. HTML의 <div id="root" data-demo="이름">을 보고 그 데모 하나를 띄운다.
 // 화면은 /embed/<이름>과 같다 (app/embed/layout.tsx의 틀과 FitToFrame).
@@ -17,8 +15,6 @@ export const BLOG_DEMOS = {
   "orion-sky-flow": OrionSkyFlowDemo,
   "quad-hash": QuadHashDemo,
   "same-sky-orbit": SameSkyOrbitDemo,
-  "triangle-search": TriangleSearchDemo,
-  "detect-pipeline": DetectPipelineDemo,
   "answer-check": AnswerCheckDemo,
   "chance-ratio": ChanceRatioDemo,
   "find-stars": () => <FindStarsDemo score />,

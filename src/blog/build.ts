@@ -19,8 +19,6 @@ const DEMOS: Record<string, string> = {
   "orion-sky-flow": "거제에서 본 오리온자리",
   "quad-hash": "quad 지문",
   "same-sky-orbit": "같은 하늘은 한 달에 2시간씩 일찍 온다",
-  "triangle-search": "닮은 삼각형 찾기",
-  "detect-pipeline": "별 찾기 과정",
   "answer-check": "가장 가까운 지문이 답일까",
   "chance-ratio": "우연일 확률",
   "find-stars": "별다움으로 별 고르기",
@@ -31,7 +29,6 @@ const ASSETS = [
   "samples/20220607-berry-seoul.jpg",
   "samples/20230904-nike-jeungseun-01.png",
   "samples/20250117-carl-aurora-01.jpg",
-  "samples/20250117-carl-aurora-02.jpg",
   "samples/20250117-carl-aurora-03.jpg",
   "learn/candidates-seoul.json",
 ];
