@@ -5,12 +5,12 @@ import { build } from "esbuild";
 import postcss from "postcss";
 
 // 테크 블로그 글에 넣을 데모를 star.byb.kr 서버 없이 돌아가는 정적 파일로 묶는다.
-//   npx tsx src/scripts/blogEmbeds/build.ts <출력 폴더>
+//   npx tsx src/blog/build.ts <출력 폴더>
 // 출력: embeds.js·embeds.css(공용) + 데모마다 <이름>.html + 데모가 쓰는 사진(samples/)·데이터(learn/).
 // 블로그의 public/blog/<글>/embed/에 그대로 넣고 iframe src를 /blog/<글>/embed/<이름>.html로 쓴다.
 // 데모 코드의 절대 주소("/samples/…", "/learn/…")는 HTML 옆 상대 주소로 바꿔 묶는다.
 
-const ROOT = path.resolve(__dirname, "../../..");
+const ROOT = path.resolve(__dirname, "../..");
 const out = path.resolve(process.argv[2] ?? "out-blog-embeds");
 
 // entry.tsx의 BLOG_DEMOS와 같은 이름들 (HTML 제목)
@@ -44,7 +44,7 @@ const main = async () => {
 
   const result = await build({
     absWorkingDir: ROOT,
-    entryPoints: [path.join(ROOT, "src/scripts/blogEmbeds/entry.tsx")],
+    entryPoints: [path.join(ROOT, "src/blog/entry.tsx")],
     bundle: true,
     minify: true,
     format: "iife",
@@ -59,10 +59,13 @@ const main = async () => {
       {
         name: "relative-assets",
         setup(b) {
-          b.onLoad({ filter: /src[\\/]learn[\\/].*\.tsx?$/ }, async (args) => ({
-            contents: relativizeAssets(await readFile(args.path, "utf8")),
-            loader: args.path.endsWith("x") ? "tsx" : "ts",
-          }));
+          b.onLoad(
+            { filter: /src[\\/](learn|blog)[\\/].*\.tsx?$/ },
+            async (args) => ({
+              contents: relativizeAssets(await readFile(args.path, "utf8")),
+              loader: args.path.endsWith("x") ? "tsx" : "ts",
+            }),
+          );
           // 별 검출 Worker는 따로 묶은 detect-worker.js를 HTML 옆에서 띄운다
           b.onLoad(
             { filter: /src[\\/]search[\\/]detectClient\.ts$/ },

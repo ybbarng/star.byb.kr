@@ -1,11 +1,11 @@
 import { createRoot } from "react-dom/client";
 import FitToFrame from "@/app/embed/FitToFrame";
+import { NorthSkyFlowDemo, OrionSkyFlowDemo } from "@/blog/NightSkyFlowDemo";
+import QuadHashDemo from "@/blog/QuadHashDemo";
 import AnswerCheckDemo from "@/learn/AnswerCheckDemo";
 import ChanceRatioDemo from "@/learn/ChanceRatioDemo";
 import DetectPipelineDemo from "@/learn/DetectPipelineDemo";
 import FindStarsDemo from "@/learn/FindStarsDemo";
-import { NorthSkyFlowDemo, OrionSkyFlowDemo } from "@/learn/NightSkyFlowDemo";
-import QuadHashDemo from "@/learn/QuadHashDemo";
 import SameSkyOrbitDemo from "@/learn/SameSkyOrbitDemo";
 import TriangleSearchDemo from "@/learn/TriangleSearchDemo";
 
@@ -15,7 +15,7 @@ import TriangleSearchDemo from "@/learn/TriangleSearchDemo";
 export const BLOG_DEMOS = {
   "north-sky-flow": NorthSkyFlowDemo,
   "orion-sky-flow": OrionSkyFlowDemo,
-  "quad-hash": () => <QuadHashDemo hint={false} compact />,
+  "quad-hash": QuadHashDemo,
   "same-sky-orbit": SameSkyOrbitDemo,
   "triangle-search": TriangleSearchDemo,
   "detect-pipeline": DetectPipelineDemo,

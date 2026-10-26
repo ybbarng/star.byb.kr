@@ -68,6 +68,8 @@ src/
 │   ├── hash/                  # quad 해시 생성 알고리즘
 │   └── search/                # 검색 테스트/벤치마크
 ├── services/                  # 샘플 사진 목록, EXIF
+├── blog/                      # 테크 블로그 전용 (사이트 빌드에 안 들어간다): 글에 넣는 데모 사본·전용 데모와 묶음 스크립트
+│                              # npm run build:blog-embeds → docs/tech-blog-draft/images/embed (블로그 public/blog/<글>/embed/)
 
 data/                          # 원본 카탈로그 및 입력 데이터
 build/                         # 빌드된 데이터베이스 (gitignore 대상)

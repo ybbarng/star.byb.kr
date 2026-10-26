@@ -1,0 +1,257 @@
+"use client";
+
+import { useRef, useState } from "react";
+import { calculateHash } from "@/scripts/hash/hash";
+
+// 테크 블로그 전용: 찾는 원리의 quad 지문 데모(learn/QuadHashDemo)를 글에 맞게 고친 사본. 사이트에는 쓰지 않는다.
+// 다른 점: 지문 네 숫자를 한 줄로 강조하고 C·D 좌표는 "점 C의 좌표: …"로 작게, 아래 설명 문장은 뺐다 (본문이 설명한다).
+// ① 별 넷을 끌면, ② 가장 먼 두 별 A·B를 (0,0)·(1,1)에 놓도록 옮기고·돌리고·늘린 모습과
+// ③ 나머지 두 별 C·D의 좌표(quad 값 네 숫자)를 차례로 보여 준다. 숫자는 풀이가 쓰는 calculateHash 그대로다.
+
+type P = [number, number];
+
+const LABELS = ["가", "나", "다", "라"];
+const CENTER: P = [160, 130];
+// ② 그림에서 C·D가 올 수 있는 렌즈의 두 끝 ((0.5∓√0.75, 0.5±√0.75)를 그림 좌표로)과 반지름 (√2)
+const LENS = ["26.1 26.1", "233.9 233.9"];
+const LENS_R = 169.7;
+
+// 화면 가운데를 중심으로 돌리고 키운다 (inverse면 거꾸로)
+const transform = (
+  p: P,
+  angleDeg: number,
+  scale: number,
+  inverse = false,
+): P => {
+  const t = ((inverse ? -angleDeg : angleDeg) * Math.PI) / 180;
+  const k = inverse ? 1 / scale : scale;
+  const dx = p[0] - CENTER[0];
+  const dy = p[1] - CENTER[1];
+
+  return [
+    CENTER[0] + k * (dx * Math.cos(t) - dy * Math.sin(t)),
+    CENTER[1] + k * (dx * Math.sin(t) + dy * Math.cos(t)),
+  ];
+};
+
+export default function QuadHashDemo() {
+  const [base, setBase] = useState<P[]>([
+    [60, 180],
+    [130, 70],
+    [230, 120],
+    [270, 210],
+  ]);
+  const [angle, setAngle] = useState(0);
+  const [scale, setScale] = useState(1);
+  const points = base.map((p) => transform(p, angle, scale));
+  const dragging = useRef<number | null>(null);
+  const svg = useRef<SVGSVGElement>(null);
+
+  // 화면 y는 아래로 커지니, 계산에는 위로 커지게 뒤집어 넣는다
+  const { labels, hash } = calculateHash(
+    points.map((p, i) => ({
+      label: LABELS[i],
+      vector: [p[0], -p[1]] as P,
+    })) as [
+      { label: string; vector: P },
+      { label: string; vector: P },
+      { label: string; vector: P },
+      { label: string; vector: P },
+    ],
+  );
+  const byLabel = (l: string) => points[LABELS.indexOf(l)];
+  const [A, B] = [byLabel(labels[0]), byLabel(labels[1])];
+  const normalized: P[] = [
+    [0, 0],
+    [1, 1],
+    [hash[0], hash[1]],
+    [hash[2], hash[3]],
+  ];
+  // 정규화 평면을 가운데 그림 좌표로 (0~1 → 70~190, 상자 밖 -0.58~1.58까지 보인다)
+  const toBox = ([x, y]: P): P => [70 + x * 120, 190 - y * 120];
+  const [C, D] = [normalized[2], normalized[3]];
+  const coord = ([x, y]: P) => `(${x.toFixed(2)}, ${y.toFixed(2)})`;
+
+  return (
+    <div className="grid items-start gap-4 md:grid-cols-[1fr_0.9fr_1fr]">
+      <div className="flex flex-col gap-1">
+        <div className="text-sm opacity-70">① 사진 속 별 4개</div>
+        <svg
+          ref={svg}
+          viewBox="0 0 320 260"
+          className="rounded-box w-full touch-none bg-[#0b0f22]"
+          onPointerMove={(e) => {
+            if (dragging.current === null) return;
+
+            const rect = svg.current!.getBoundingClientRect();
+            const p: P = [
+              ((e.clientX - rect.left) / rect.width) * 320,
+              ((e.clientY - rect.top) / rect.height) * 260,
+            ];
+            const q = transform(p, angle, scale, true);
+            setBase((ps) => ps.map((r, i) => (i === dragging.current ? q : r)));
+          }}
+          onPointerUp={() => (dragging.current = null)}
+          onPointerLeave={() => (dragging.current = null)}
+        >
+          <line
+            x1={A[0]}
+            y1={A[1]}
+            x2={B[0]}
+            y2={B[1]}
+            stroke="#fde68a"
+            strokeDasharray="4 3"
+          />
+          {points.map(([x, y], i) => {
+            const role = labels.indexOf(LABELS[i]);
+
+            return (
+              <g key={i}>
+                <circle
+                  cx={x}
+                  cy={y}
+                  r={11}
+                  fill={role < 2 ? "#fde68a" : "#a5b4fc"}
+                  className="cursor-grab"
+                  onPointerDown={(e) => {
+                    dragging.current = i;
+                    (e.target as Element).setPointerCapture?.(e.pointerId);
+                  }}
+                />
+                <text x={x + 14} y={y + 4} fontSize="12" fill="white">
+                  {["A", "B", "C", "D"][role]}
+                </text>
+              </g>
+            );
+          })}
+        </svg>
+        <label className="flex items-center gap-2 text-sm">
+          <span className="w-16 shrink-0">회전</span>
+          <input
+            type="range"
+            className="range range-xs"
+            min={-180}
+            max={180}
+            value={angle}
+            onChange={(e) => setAngle(Number(e.target.value))}
+          />
+          <span className="w-12 text-right font-mono">{angle}°</span>
+        </label>
+        <label className="flex items-center gap-2 text-sm">
+          <span className="w-16 shrink-0">크기</span>
+          <input
+            type="range"
+            className="range range-xs"
+            min={50}
+            max={140}
+            value={Math.round(scale * 100)}
+            onChange={(e) => setScale(Number(e.target.value) / 100)}
+          />
+          <span className="w-12 text-right font-mono">×{scale.toFixed(2)}</span>
+        </label>
+      </div>
+      <div className="flex flex-col gap-1">
+        <div className="text-sm opacity-70">
+          ② 가장 먼 A·B를 (0,0)·(1,1)에 놓으면
+        </div>
+        <svg viewBox="0 0 260 260" className="rounded-box w-full bg-[#0b0f22]">
+          {/* C·D가 올 수 있는 곳: A·B가 가장 먼 쌍이니 A에서도 B에서도 √2 안 (두 원이 겹친 렌즈, -0.41~1.41) */}
+          <path
+            d={`M ${LENS[0]} A ${LENS_R} ${LENS_R} 0 0 1 ${LENS[1]} A ${LENS_R} ${LENS_R} 0 0 1 ${LENS[0]} Z`}
+            fill="rgba(165,180,252,0.08)"
+            stroke="rgba(165,180,252,0.3)"
+          />
+          <path
+            d="M 8 190 L 252 190 M 70 252 L 70 8"
+            stroke="rgba(255,255,255,0.35)"
+          />
+          <rect
+            x="70"
+            y="70"
+            width="120"
+            height="120"
+            fill="none"
+            stroke="rgba(160,180,255,0.2)"
+            strokeDasharray="4 4"
+          />
+          <text x="240" y="203" fontSize="10" fill="white" opacity="0.6">
+            x
+          </text>
+          <text x="58" y="16" fontSize="10" fill="white" opacity="0.6">
+            y
+          </text>
+          <text x="118" y="222" fontSize="9" fill="#a5b4fc" opacity="0.8">
+            C·D가 올 수 있는 곳
+          </text>
+          <line
+            x1="70"
+            y1="190"
+            x2="190"
+            y2="70"
+            stroke="#fde68a"
+            strokeDasharray="4 3"
+          />
+          {/* C·D의 좌표를 읽는 보조선 */}
+          {[C, D].map((p, i) => {
+            const [x, y] = toBox(p);
+
+            return (
+              <path
+                key={i}
+                d={`M ${x} ${y} L ${x} 190 M ${x} ${y} L 70 ${y}`}
+                stroke="rgba(165,180,252,0.45)"
+                strokeDasharray="2 3"
+                fill="none"
+              />
+            );
+          })}
+          {normalized.map((p, i) => {
+            const [x, y] = toBox(p);
+
+            return (
+              <g key={i}>
+                <circle
+                  cx={x}
+                  cy={y}
+                  r={6}
+                  fill={i < 2 ? "#fde68a" : "#a5b4fc"}
+                />
+                <text x={x + 9} y={y + 4} fontSize="11" fill="white">
+                  {["A", "B", "C", "D"][i]}
+                </text>
+              </g>
+            );
+          })}
+          <text x="56" y="206" fontSize="10" fill="white" opacity="0.6">
+            (0,0)
+          </text>
+          <text x="176" y="62" fontSize="10" fill="white" opacity="0.6">
+            (1,1)
+          </text>
+        </svg>
+      </div>
+      <div className="flex flex-col gap-2">
+        <div className="text-sm opacity-70">③ quad 값 = C·D의 좌표 = 지문</div>
+        <div className="bg-base-300/60 rounded-box flex flex-col gap-2 p-3 font-mono">
+          {(
+            [
+              ["C", C],
+              ["D", D],
+            ] as const
+          ).map(([name, p]) => (
+            <div key={name} className="text-sm opacity-80">
+              점 <span className="text-indigo-300">{name}</span>의 좌표:{" "}
+              {coord(p)}
+            </div>
+          ))}
+          <div className="border-base-content/10 border-t pt-2">
+            <div className="font-sans text-xs text-amber-200/80">지문</div>
+            <div className="text-base font-bold whitespace-nowrap text-amber-200">
+              ({hash.map((v) => v.toFixed(2)).join(", ")})
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
