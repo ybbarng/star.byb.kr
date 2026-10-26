@@ -24,6 +24,7 @@ const DEMOS: Record<string, string> = {
   "find-stars": "별다움으로 별 고르기",
   "ground-mask": "땅을 가리고 하늘만 보기",
   "triangle-size": "화각으로 삼각형 크기 거르기",
+  "refine-steps": "주변 별 표시의 오차 보정",
 };
 
 // 데모가 불러오는 파일 (public 기준)
@@ -34,6 +35,11 @@ const ASSETS = [
   "samples/20250117-carl-aurora-03.jpg",
   "learn/candidates-seoul.json",
   "learn/triangle-dipper.json",
+  "learn/refine-aust.json",
+  "learn/refine-seoul.json",
+  "learn/refine-jeungseun.json",
+  "samples/20231012-nike-aust-01.jpg",
+  "samples/20230904-nike-jeungseun-03.png",
   "samples/20250117-carl-aurora-02.jpg",
   "presentation/resources/ground-full.svg",
   "presentation/resources/ground-75.svg",

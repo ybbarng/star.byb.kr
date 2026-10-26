@@ -1,10 +1,11 @@
 import { createRoot } from "react-dom/client";
 import FitToFrame from "@/app/embed/FitToFrame";
+import AnswerCheckDemo from "@/blog/AnswerCheckDemo";
 import GroundMaskDemo from "@/blog/GroundMaskDemo";
 import { NorthSkyFlowDemo, OrionSkyFlowDemo } from "@/blog/NightSkyFlowDemo";
 import QuadHashDemo from "@/blog/QuadHashDemo";
+import RefineStepsDemo from "@/blog/RefineStepsDemo";
 import TriangleSizeDemo from "@/blog/TriangleSizeDemo";
-import AnswerCheckDemo from "@/learn/AnswerCheckDemo";
 import ChanceRatioDemo from "@/learn/ChanceRatioDemo";
 import FindStarsDemo from "@/learn/FindStarsDemo";
 import SameSkyOrbitDemo from "@/learn/SameSkyOrbitDemo";
@@ -22,6 +23,7 @@ export const BLOG_DEMOS = {
   "find-stars": () => <FindStarsDemo score />,
   "ground-mask": GroundMaskDemo,
   "triangle-size": TriangleSizeDemo,
+  "refine-steps": RefineStepsDemo,
 };
 
 const root = document.getElementById("root");
