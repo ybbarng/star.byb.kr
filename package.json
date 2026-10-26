@@ -8,6 +8,7 @@
     "start": "next start",
     "present": "tsx src/scripts/presentation/serve.ts",
     "remote": "tsx src/scripts/presentation/remote.ts",
+    "build:blog-embeds": "tsx src/scripts/blogEmbeds/build.ts docs/tech-blog-draft/images/embed",
     "lint": "next lint",
     "test": "vitest run",
     "test:watch": "vitest",
