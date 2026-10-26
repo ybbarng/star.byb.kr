@@ -308,6 +308,8 @@ function NightSkyFlow({ view }: { view: FlowView }) {
       // 이름은 아래에서 따로 쓴다 (drawSky는 별들 가운데에 써서 선과 어두운 별을 덮는다)
       constellations: view.constellations.map((c) => ({ ...c, label: "" })),
       linesBelowHorizon: true,
+      // 날짜가 흘러 달 밝은 밤도 오는데, 그때 별이 다 지워지면 별자리 주변이 텅 빈다
+      moonlightDimsStars: false,
       compass: !view.foreground,
       mountains: view.mountains,
       ridgeScale: view.ridgeScale,
@@ -368,15 +370,15 @@ function NightSkyFlow({ view }: { view: FlowView }) {
       <div className="flex items-center justify-between gap-2">
         <div className="text-lg font-bold">
           {kstLabel(time)}{" "}
-          <span className="text-sm font-normal opacity-70">
-            경남 거제 (북위 34.9°) ·{" "}
-            {directionOf(
-              view.follow
-                ? altAzOf(view.follow, julianDay(new Date(time)), GEOJE).azDeg
-                : 0,
-            )}
-            쪽 하늘
-          </span>
+          {/* 카메라가 따라 돌 때만 지금 어느 쪽을 보는지 (북쪽 고정은 땅에 "북"이 있다) */}
+          {view.follow && (
+            <span className="text-sm font-normal opacity-70">
+              {directionOf(
+                altAzOf(view.follow, julianDay(new Date(time)), GEOJE).azDeg,
+              )}
+              쪽 하늘
+            </span>
+          )}
         </div>
         <button className="btn btn-sm" onClick={() => setPlaying((p) => !p)}>
           {playing ? "❚❚ 멈춤" : "▶ 재생"}
@@ -384,7 +386,8 @@ function NightSkyFlow({ view }: { view: FlowView }) {
       </div>
       <canvas
         ref={canvas}
-        style={{ maxHeight: "80vh" }}
+        // 높이 제한 없이 폭에 맞춘다 (블로그 iframe 높이를 폭 × 0.75 + 48px로 딱 맞춘다. 넘치면 FitToFrame이 줄인다)
+        style={{ maxHeight: "none" }}
         className="rounded-box h-auto w-full"
       />
     </div>
