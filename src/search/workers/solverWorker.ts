@@ -112,7 +112,10 @@ onmessage = async function (e) {
         break;
       }
 
+      // 모르는 요청에도 답해, 화면 쪽 요청이 끝나지 않고 남지 않게 한다.
+      // 던지지 않는다: 아래 catch는 만들어 둔 DB를 비운다
       default:
+        postMessage({ fn: "onError", id, payload: `모르는 요청: ${fn}` });
         break;
     }
   } catch (error) {
