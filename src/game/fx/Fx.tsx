@@ -398,8 +398,12 @@ export function ChoiceCards<T extends string>({
     <div
       className={cn(
         "grid w-full gap-2",
-        // 넷이면 넓은 화면에서 한 줄, 좁은 화면에서 두 줄
-        options.length === 4 ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-3",
+        // 넷이면 넓은 화면에서 한 줄, 좁은 화면에서 두 줄. 둘이면 두 칸 (세 칸에 두 장을 두면 폭의 2/3만 썼다)
+        options.length === 4
+          ? "grid-cols-2 sm:grid-cols-4"
+          : options.length === 2
+            ? "grid-cols-2"
+            : "grid-cols-3",
       )}
     >
       {options.map((o) => (

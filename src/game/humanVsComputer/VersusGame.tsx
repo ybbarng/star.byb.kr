@@ -537,7 +537,11 @@ function VersusPlay({
           )}
         </div>
 
-        <div ref={shake.ref} className="relative grow">
+        {/* 휴대폰에서는 사진을 보기보다 먼저 (보기 넷을 다 보고 내려가야 사진이 나왔다) */}
+        <div
+          ref={shake.ref}
+          className="relative order-first grow md:order-none"
+        >
           {image ? (
             <div className="relative mx-auto w-fit">
               <canvas
@@ -545,7 +549,7 @@ function VersusPlay({
                 width={image.width}
                 height={image.height}
                 className={cn(
-                  "rounded-box block h-auto max-h-[75vh] w-auto max-w-full bg-black",
+                  "rounded-box block h-auto max-h-[50vh] w-auto max-w-full bg-black md:max-h-[75vh]",
                   picker && "cursor-crosshair",
                 )}
                 onClick={handleClick}

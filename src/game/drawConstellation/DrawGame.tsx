@@ -24,8 +24,9 @@ import { createRng } from "@/utils/rng";
 // 점 찍어 별자리 찾기 (docs/game-plans.md 4): 점을 찍을 때마다 지금까지의 모양과 가장 닮은 진짜 별자리를
 // 알려 준다. "기억으로 그리기"는 별자리 다섯 개를 차례로 그리고, 얼마나 닮았는지 점수를 받는 게임이다.
 
-const W = 960;
-const H = 600;
+// 점을 찍는 빈 하늘. 휴대폰(좁은 화면)에서는 세로로 길게 (가로로 긴 하늘은 폭에 맞추면 너무 낮았다)
+const LANDSCAPE = { width: 960, height: 600 };
+const PORTRAIT = { width: 600, height: 840 };
 const QUIZ = [
   "오리온자리",
   "카시오페이아자리",
@@ -179,6 +180,12 @@ function DrawPlay({
   onFinish: (total: number) => void;
   onBack: () => void;
 }) {
+  const [{ width: W, height: H }] = useState(() =>
+    typeof window !== "undefined" &&
+    window.matchMedia("(max-width: 767px)").matches
+      ? PORTRAIT
+      : LANDSCAPE,
+  );
   const [points, setPoints] = useState<Point2D[]>([]);
   const [round, setRound] = useState(0);
   const [graded, setGraded] = useState<Graded | null>(null);
@@ -263,7 +270,7 @@ function DrawPlay({
       ctx.fillStyle = "white";
       ctx.fill();
     }
-  }, [points, overlay]);
+  }, [points, overlay, W, H]);
 
   const add = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (graded) {

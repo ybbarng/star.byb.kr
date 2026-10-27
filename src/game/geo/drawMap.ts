@@ -177,7 +177,9 @@ export const drawWorldMap = (
     ctx.setLineDash([]);
   }
 
-  // 핀
+  // 핀. 이름은 핀 위에, 앞서 쓴 이름과 겹치면 핀 아래에 (가까운 두 도시: 알렉산드리아·시에네)
+  const placed: { x0: number; x1: number; y0: number; y1: number }[] = [];
+
   for (const pin of opts.pins) {
     for (const o of offsets) {
       const x = P.x(pin.lonDeg + o);
@@ -207,7 +209,20 @@ export const drawWorldMap = (
         ctx.fillStyle = "white";
         ctx.shadowColor = "rgba(0,0,0,0.9)";
         ctx.shadowBlur = 4;
-        ctx.fillText(pin.label, x, y - 32);
+        const half = ctx.measureText(pin.label).width / 2;
+        const box = (baseline: number) => ({
+          x0: x - half,
+          x1: x + half,
+          y0: baseline - 13,
+          y1: baseline + 3,
+        });
+        const overlaps = (b: ReturnType<typeof box>) =>
+          placed.some(
+            (q) => b.x0 < q.x1 && q.x0 < b.x1 && b.y0 < q.y1 && q.y0 < b.y1,
+          );
+        const baseline = overlaps(box(y - 32)) ? y + 16 : y - 32;
+        placed.push(box(baseline));
+        ctx.fillText(pin.label, x, baseline);
         ctx.shadowBlur = 0;
       }
     }
