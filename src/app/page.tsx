@@ -118,37 +118,9 @@ export default function Page() {
           <a className="link link-hover" href="/presentation/v3.html">
             발표 자료 V3
           </a>
-          <span>
-            별 자료:{" "}
-            <a
-              className="link link-hover"
-              href="https://cdsarc.cds.unistra.fr/viz-bin/cat/V/50"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              예일 밝은 별 목록(BSC5)
-            </a>
-            {" · "}
-            <a
-              className="link link-hover"
-              href="https://github.com/ofrohn/d3-celestial"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              별자리선·경계(IAU, d3-celestial, BSD)
-            </a>
-          </span>
-          <span>
-            아이디어:{" "}
-            <a
-              className="link link-hover"
-              href="https://astrometry.net"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Astrometry.net
-            </a>
-          </span>
+          <Link href="/credits" className="link link-hover">
+            출처와 참고 자료
+          </Link>
           {UMAMI_WEBSITE_ID && <span>방문 수만 쿠키 없이 익명으로 셉니다</span>}
         </footer>
       </div>

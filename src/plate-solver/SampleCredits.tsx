@@ -3,7 +3,7 @@ import samples from "@/services/samples";
 
 const linkClass = "link link-hover";
 
-function License({ credit }: { credit: SampleCredit }) {
+export function License({ credit }: { credit: SampleCredit }) {
   return credit.licenseUrl ? (
     <a
       className={linkClass}
@@ -65,8 +65,12 @@ export function SampleCreditList() {
           </li>
         ))}
         <li className="opacity-80">
-          모두 크기를 줄여 실었어요. 나머지 샘플은 버즈빌 동료들이 찍은
-          사진이에요.
+          모두 크기를 줄여 실었어요. 나머지 샘플은 만든 사람과 버즈빌 동료들이
+          찍은 사진이에요. 참고한 논문·자료까지 모은{" "}
+          <a className={linkClass} href="/credits">
+            출처와 참고 자료
+          </a>
+          도 있어요.
         </li>
       </ul>
     </details>

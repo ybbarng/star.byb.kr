@@ -85,6 +85,13 @@ export default function Page() {
           직접 해 보기
         </Link>
       </div>
+      <p className="-mt-8 text-center text-sm opacity-60">
+        참고한 논문과 자료는{" "}
+        <Link href="/credits" className="link link-hover">
+          출처와 참고 자료
+        </Link>
+        에 모아 두었어요.
+      </p>
 
       <section
         id="basics"
