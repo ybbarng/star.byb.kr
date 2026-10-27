@@ -1,10 +1,11 @@
 import type { SampleAnswer } from "@/plate-solver/sampleAnswers";
 import type { ShotTime } from "@/plate-solver/shotTime";
-import type { Point3D } from "@/scripts/hash/types";
+import type { Point2D, Point3D } from "@/scripts/hash/types";
 import type { CompassMark } from "@/search/compass";
 import type { HorizonSolveResult } from "@/search/horizonSolve";
 import type { SolvePhase } from "@/search/solvePhoto";
 import type { SolveCandidateResult } from "@/search/solvers";
+import type { Mat3 } from "@/search/utils/similarity";
 import type { LatLon } from "@/search/whereShot";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BasicsTerm } from "@/learn/basics/BasicsLinks";
@@ -33,6 +34,7 @@ import { zenithFromHorizon } from "@/search/shotTimeEstimate";
 import { DEEP_SKY_OBJECTS, solarSystemObjects } from "@/search/skyObjects";
 import { horizonSolveInWorker } from "@/search/solverClient";
 import { ACCEPT } from "@/search/solvers/candidates";
+import { constellationAt } from "@/search/utils/constellationBounds";
 import { horizontalFrameJ2000, julianDay } from "@/search/utils/ephemeris";
 import { projectFisheye } from "@/search/utils/fisheye";
 import { DEFAULT_DISPLAY_STARS } from "@/search/utils/selectStars";
@@ -76,6 +78,10 @@ export default function PlateSolvingStep() {
   // 별자리 구역(IAU 경계). 켜면 경계선과 구역 이름을, 끄면 별자리선 이름을 쓴다
   const [showRegions, setShowRegions] = useState(true);
   const [showCompass, setShowCompass] = useState(true);
+  // 풀이 결과(별·별자리·천체) 표시. 끄면 원본 사진만 보여 번갈아 비교할 수 있다
+  const [showSolution, setShowSolution] = useState(true);
+  // "사진에 담긴 별자리 구역"에서 누른 별자리. 사진과 작은 천문도에서 강조한다
+  const [highlight, setHighlight] = useState<string | null>(null);
   // 시각·장소·지평선 풀이 결과 (확신했을 때만 result가 있다)
   const [horizonRun, setHorizonRun] = useState<{
     running: boolean;
@@ -283,6 +289,7 @@ export default function PlateSolvingStep() {
   // 결과가 오면 최상위 후보 선택
   useEffect(() => {
     setSelected(0);
+    setHighlight(null);
   }, [outcome]);
 
   // 어안이면 어안 카메라로, 아니면 선택 후보의 변환으로 별/별자리를 그린다
@@ -462,6 +469,15 @@ export default function PlateSolvingStep() {
     shot,
   ]);
 
+  // 강조한 별자리 구역이 사진에서 차지하는 칸 (직선투영으로 되돌릴 수 있을 때만)
+  const highlightArea = useMemo(
+    () =>
+      image && highlight && transformForWhere
+        ? regionCells(transformForWhere, image.width, image.height, highlight)
+        : null,
+    [image, highlight, transformForWhere],
+  );
+
   // 사진 위에 그리기
   useEffect(() => {
     if (!canvasElement.current || !image) {
@@ -477,15 +493,25 @@ export default function PlateSolvingStep() {
     context.drawImage(image, 0, 0, image.width, image.height);
     drawOverlay(context, image, {
       photoStars: showDetected || detecting ? photoStars : [],
-      skyStars,
-      skyConstellations,
-      skyObjects,
-      boundaries: showRegions ? skyBoundaries : [],
-      regions: showRegions ? skyRegions : [],
-      horizon: horizonTP ? marks.horizon : [],
-      compass: showCompass && compass ? compass : [],
+      ...(showSolution
+        ? {
+            skyStars,
+            skyConstellations,
+            skyObjects,
+            boundaries: showRegions ? skyBoundaries : [],
+            regions: showRegions ? skyRegions : [],
+            horizon: horizonTP ? marks.horizon : [],
+            compass: showCompass && compass ? compass : [],
+            highlight: highlight
+              ? { label: highlight, area: highlightArea }
+              : null,
+          }
+        : NO_SOLUTION_LAYERS),
     });
   }, [
+    showSolution,
+    highlight,
+    highlightArea,
     showCompass,
     compass,
     image,
@@ -546,6 +572,18 @@ export default function PlateSolvingStep() {
   // 별만으로(시각·장소 없이) 확신한 사진
   const blindSolved = confident && !horizonTP && Boolean(outcome?.found);
 
+  // 별자리 칩: 누르면 강조, 다시 누르면 끈다. 풀이 표시를 꺼 두었으면 다시 켠다
+  const toggleHighlight = (label: string) => {
+    setShowSolution(true);
+    setHighlight((h) => (h === label ? null : label));
+  };
+
+  const chipClass = (label: string) =>
+    cn(
+      "badge badge-outline cursor-pointer border-yellow-300/50 text-yellow-200",
+      highlight === label && "border-yellow-300 bg-yellow-300/25",
+    );
+
   return (
     <div className="flex w-full max-w-[1400px] flex-col gap-4 lg:flex-row lg:items-start">
       <div className="flex min-w-0 flex-col gap-2 lg:flex-1">
@@ -557,6 +595,15 @@ export default function PlateSolvingStep() {
             height={image.height}
             style={{ aspectRatio: image.width / image.height }}
           />
+          {!busy && skyStars.length + skyConstellations.length > 0 && (
+            <button
+              className="btn btn-sm absolute top-2 right-2 border-white/20 bg-black/60 text-white backdrop-blur hover:bg-black/80"
+              aria-pressed={!showSolution}
+              onClick={() => setShowSolution((v) => !v)}
+            >
+              {showSolution ? "원본 사진 보기" : "풀이 결과 보기"}
+            </button>
+          )}
           {busy && !error && !detectError && (
             <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-4 pt-10">
               <SolveProgress
@@ -643,28 +690,35 @@ export default function PlateSolvingStep() {
                       .filter((r) => r.share >= 0.01)
                       .slice(0, 8)
                       .map((r) => (
-                        <span
+                        <button
                           key={r.label}
-                          className="badge badge-outline border-yellow-300/50 text-yellow-200"
+                          className={chipClass(r.label)}
+                          aria-pressed={highlight === r.label}
+                          onClick={() => toggleHighlight(r.label)}
                         >
                           {r.label}{" "}
                           <span className="opacity-60">
                             {Math.round(r.share * 100)}%
                           </span>
-                        </span>
+                        </button>
                       ))}
+                  </div>
+                  <div className="text-xs opacity-50">
+                    누르면 사진과 별자리표에서 그 별자리를 강조해요
                   </div>
                 </div>
               ) : (
                 visibleConstellations.length > 0 && (
                   <div className="flex flex-wrap gap-1">
                     {visibleConstellations.slice(0, 8).map((name) => (
-                      <span
+                      <button
                         key={name}
-                        className="badge badge-outline border-yellow-300/50 text-yellow-200"
+                        className={chipClass(name)}
+                        aria-pressed={highlight === name}
+                        onClick={() => toggleHighlight(name)}
                       >
                         {name}
-                      </span>
+                      </button>
                     ))}
                   </div>
                 )
@@ -682,6 +736,7 @@ export default function PlateSolvingStep() {
                   width={image.width}
                   height={image.height}
                   photoStars={photoStars}
+                  highlight={highlight}
                 />
               )}
             </>
@@ -739,6 +794,8 @@ export default function PlateSolvingStep() {
               candidates={candidates}
               selected={selected}
               answer={answer}
+              width={image.width}
+              height={image.height}
               onSelect={setSelected}
             />
           </Section>
@@ -856,6 +913,48 @@ export default function PlateSolvingStep() {
 
 const NO_HORIZON_RUN = { running: false, result: null, message: null };
 
+// 풀이 결과를 끈 사진: 찾은 별 표시만 남기고 나머지는 그리지 않는다
+const NO_SOLUTION_LAYERS = {
+  skyStars: [],
+  skyConstellations: [],
+  skyObjects: [],
+  boundaries: [],
+  regions: [],
+  horizon: [],
+  compass: [],
+  highlight: null,
+};
+
+// 강조할 구역이 사진에서 차지하는 칸들. 사진을 긴 변 64칸으로 나눠 칸 가운데가 그 구역인지 본다
+const HIGHLIGHT_GRID = 64;
+
+interface HighlightArea {
+  step: number;
+  cells: Point2D[]; // 칸 왼쪽 위
+}
+
+const regionCells = (
+  T: Mat3,
+  width: number,
+  height: number,
+  label: string,
+): HighlightArea => {
+  const step = Math.max(width, height) / HIGHLIGHT_GRID;
+  const cells: Point2D[] = [];
+
+  for (let x = 0; x < width; x += step) {
+    for (let y = 0; y < height; y += step) {
+      if (
+        constellationAt(photoToSky(T, [x + step / 2, y + step / 2])) === label
+      ) {
+        cells.push([x, y]);
+      }
+    }
+  }
+
+  return { step, cells };
+};
+
 // 접었다 펼 수 있는 곁 패널 칸
 function Section({
   title,
@@ -910,6 +1009,7 @@ const drawOverlay = (
     regions: Overlay["regions"];
     horizon: [number, number][];
     compass: CompassMark[];
+    highlight: { label: string; area: HighlightArea | null } | null;
   },
 ) => {
   // 사진 크기와 무관하게 비슷한 크기로 보이도록 표시 크기를 대각선 길이에 맞춘다
@@ -934,6 +1034,21 @@ const drawOverlay = (
     context.lineWidth = 2 * unit;
     context.stroke();
   });
+
+  // 강조한 구역: 칸들을 한 경로로 모아 한 번에 칠한다 (겹친 칸이 더 진해지지 않게)
+  const highlighted = layers.highlight?.label ?? null;
+  const area = layers.highlight?.area;
+
+  if (area) {
+    const path = new Path2D();
+
+    for (const [x, y] of area.cells) {
+      path.rect(x, y, area.step + 1, area.step + 1);
+    }
+
+    context.fillStyle = "oklch(0.905 0.182 98.111 / 0.16)";
+    context.fill(path);
+  }
 
   // 별자리 구역 경계 (점선)와 구역 이름
   const REGION_COLOR = "oklch(0.8 0.09 230 / 0.55)";
@@ -968,12 +1083,25 @@ const drawOverlay = (
   for (const r of layers.regions) {
     if (r.share < 0.04) continue;
 
-    label(r.label, r.x, r.y, "oklch(0.85 0.08 230)");
+    label(
+      r.label,
+      r.x,
+      r.y,
+      r.label === highlighted
+        ? "oklch(0.905 0.182 98.111)"
+        : "oklch(0.85 0.08 230)",
+    );
   }
 
-  layers.skyConstellations.forEach(({ lines }) => {
-    context.strokeStyle = "oklch(0.905 0.182 98.111 / 0.85)";
-    context.lineWidth = 1.5 * unit;
+  // 강조한 별자리가 있으면 그 선만 굵고 진하게, 나머지는 흐리게
+  layers.skyConstellations.forEach(({ label: name, lines }) => {
+    const on = name === highlighted;
+    context.strokeStyle = highlighted
+      ? on
+        ? "oklch(0.905 0.182 98.111)"
+        : "oklch(0.905 0.182 98.111 / 0.35)"
+      : "oklch(0.905 0.182 98.111 / 0.85)";
+    context.lineWidth = (on ? 3.5 : 1.5) * unit;
 
     for (let i = 0; i < lines.length - 1; i++) {
       const a = lines[i];
@@ -1168,13 +1296,26 @@ function CandidateList({
   candidates,
   selected,
   answer,
+  width,
+  height,
   onSelect,
 }: {
   candidates: SolveCandidateResult[];
   selected: number;
   answer: SampleAnswer | null;
+  width: number;
+  height: number;
   onSelect: (index: number) => void;
 }) {
+  // 후보마다 사진 가운데가 놓인 별자리 구역 ("○○자리 주변")
+  const regions = useMemo(
+    () =>
+      candidates.map((c) =>
+        constellationAt(photoToSky(c.transform, [width / 2, height / 2])),
+      ),
+    [candidates, width, height],
+  );
+
   return (
     <ul
       className="flex max-h-64 flex-col gap-1 overflow-y-auto"
@@ -1199,8 +1340,13 @@ function CandidateList({
               onClick={() => onSelect(i)}
             >
               <span className="w-5 opacity-60">{i + 1}</span>
-              <span className="flex-1">
-                맞는 별 {c.inlierCount}개 · 화각 {c.fovDeg.toFixed(0)}°
+              <span className="flex min-w-0 flex-1 flex-col">
+                {regions[i] && (
+                  <span className="truncate">{regions[i]} 주변</span>
+                )}
+                <span className="text-xs font-normal opacity-70">
+                  맞는 별 {c.inlierCount}개 · 화각 {c.fovDeg.toFixed(0)}°
+                </span>
               </span>
               <span className="text-xs opacity-60">
                 신뢰도 {c.confidence.toFixed(0)}

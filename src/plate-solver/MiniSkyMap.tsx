@@ -9,11 +9,15 @@ import {
   CONSTELLATIONS,
   STARS,
 } from "@/game/sky/catalog";
-import { boundaryEdges } from "@/search/utils/constellationBounds";
+import {
+  boundaryEdges,
+  boundaryRings,
+} from "@/search/utils/constellationBounds";
 import { photoToSky, projectVecToPhoto } from "@/search/utils/wcs";
 
 // 작은 천문도: 하늘 전체 지도 위에 사진이 담은 범위(초록 테두리)와 사진에서 찾은 별(빨간 원)을 겹친다.
 // 빨간 원이 지도의 별 위에 앉으면 맞는 답이다. 끌어서 옮기고, 휠·버튼으로 확대한다.
+// 별자리 이름은 좁은 지도에서 서로 겹쳐 쓰지 않고, 강조한 별자리(highlight)만 구역을 칠하고 이름을 쓴다.
 // 지도는 적경·적위 평면(적경은 왼쪽으로 커진다, 하늘을 올려다본 방향). 가로는 보고 있는 적위의
 // cos만큼 줄여, 화면 가운데에서는 모양이 사진과 비슷하게 보인다.
 
@@ -35,23 +39,21 @@ const raDecOf = (v: Point3D): [number, number] => [
 const wrap = (deg: number) => ((((deg + 180) % 360) + 360) % 360) - 180;
 
 // 별자리 이름 자리 (선 그림의 가운데)
-const LABELS = [...new Set(CONSTELLATIONS.map((c) => c.label))].map(
-  (label) => ({
-    label,
-    at: raDecOf(constellationCenter(constellationParts(label))),
-  }),
-);
+const labelAt = (label: string) =>
+  raDecOf(constellationCenter(constellationParts(label)));
 
 export default function MiniSkyMap({
   transform,
   width,
   height,
   photoStars,
+  highlight,
 }: {
   transform: Mat3;
   width: number;
   height: number;
   photoStars: { x: number; y: number }[];
+  highlight?: string | null;
 }) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const box = useRef<HTMLDivElement>(null);
@@ -196,6 +198,31 @@ export default function MiniSkyMap({
       );
     }
 
+    // 강조한 구역은 옅게 칠하고 테두리를 실선으로. 적경은 보고 있는 가운데 기준으로 이어 붙인다
+    // (0h를 넘는 구역도 끊기지 않게). 극을 감싸는 구역은 평면에서 닫히지 않아 칠하지 않는다
+    const ring = highlight
+      ? boundaryRings().find((r) => r.label === highlight)
+      : undefined;
+
+    if (ring) {
+      context.beginPath();
+      ring.points.map(raDecOf).forEach((p, i) => {
+        const [x, y] = toXY(p);
+
+        if (i) context.lineTo(x, y);
+        else context.moveTo(x, y);
+      });
+
+      if (ring.pole === 0) {
+        context.fillStyle = "rgba(253,230,138,0.14)";
+        context.fill();
+      }
+
+      context.strokeStyle = "rgba(253,230,138,0.8)";
+      context.lineWidth = 1.2;
+      context.stroke();
+    }
+
     // 별자리 경계 (점선)
     context.setLineDash([3, 3]);
     context.strokeStyle = "rgba(140,190,255,0.3)";
@@ -206,12 +233,17 @@ export default function MiniSkyMap({
 
     context.setLineDash([]);
 
-    // 별자리선
-    context.strokeStyle = "rgba(253,230,138,0.45)";
-
+    // 별자리선 (강조한 별자리는 굵고 진하게)
     for (const c of CONSTELLATIONS) {
+      const on = c.label === highlight;
+      context.strokeStyle = on
+        ? "rgba(253,230,138,1)"
+        : "rgba(253,230,138,0.45)";
+      context.lineWidth = on ? 2 : 1;
       polyline(c.stars.map(raDecOf));
     }
+
+    context.lineWidth = 1;
 
     // 별 (밝을수록 크게)
     for (const s of STARS) {
@@ -235,19 +267,18 @@ export default function MiniSkyMap({
       }
     }
 
-    // 별자리 이름
-    if (view.scale > 1.5) {
-      context.fillStyle = "rgba(253,230,138,0.7)";
-      context.font = "11px sans-serif";
+    // 강조한 별자리 이름만
+    if (highlight) {
+      const [x, y] = toXY(labelAt(highlight));
+      context.font = "bold 12px sans-serif";
       context.textAlign = "center";
-
-      for (const { label, at } of LABELS) {
-        const [x, y] = toXY(at);
-
-        if (x > 0 && x < W && y > 0 && y < H) context.fillText(label, x, y);
-      }
-
+      context.strokeStyle = "rgba(11,15,34,0.9)";
+      context.lineWidth = 3;
+      context.strokeText(highlight, x, y);
+      context.fillStyle = "rgba(253,230,138,1)";
+      context.fillText(highlight, x, y);
       context.textAlign = "start";
+      context.lineWidth = 1;
     }
 
     // 사진이 담은 범위와 사진에서 찾은 별
@@ -285,7 +316,7 @@ export default function MiniSkyMap({
         context.fillRect(x - 1, y - 1, 2, 2);
       }
     }
-  }, [view, mapWidth, footprint, photoSky]);
+  }, [view, mapWidth, footprint, photoSky, highlight]);
 
   const zoom = (factor: number) =>
     setView((v) => ({
