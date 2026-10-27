@@ -10,7 +10,12 @@ import {
   readRecent,
   rememberTarget,
 } from "@/game/findConstellation/recent";
-import { isHit, makeFindSceneRetry } from "@/game/findConstellation/scene";
+import {
+  isHit,
+  LANDSCAPE,
+  makeFindSceneRetry,
+  PORTRAIT,
+} from "@/game/findConstellation/scene";
 import { findTargets } from "@/game/findConstellation/targets";
 import {
   ChoiceCards,
@@ -206,10 +211,17 @@ function FindPlay({
   const fx = useFx();
   const shake = useShake();
 
+  // 휴대폰(좁은 화면)에서는 세로로 긴 하늘. 가로로 긴 하늘은 폭에 맞추면 너무 낮아져 찾기 어려웠다
+  const [size] = useState(() =>
+    typeof window !== "undefined" &&
+    window.matchMedia("(max-width: 767px)").matches
+      ? PORTRAIT
+      : LANDSCAPE,
+  );
   const target = order[round % order.length];
   const scene = useMemo(
-    () => makeFindSceneRetry(target.label, gameSeed + round, difficulty),
-    [target, gameSeed, round, difficulty],
+    () => makeFindSceneRetry(target.label, gameSeed + round, difficulty, size),
+    [target, gameSeed, round, difficulty, size],
   );
 
   // 낸 별자리를 기억해 다음 판에는 덜 낸다 (난이도마다 따로)
@@ -401,24 +413,31 @@ function FindPlay({
       <div className="flex flex-col gap-3 md:flex-row">
         <div
           className={cn(
-            "bg-base-200/80 rounded-box flex w-full shrink-0 flex-col gap-3 p-4 backdrop-blur md:w-64 md:self-start",
+            "bg-base-200/80 rounded-box flex w-full shrink-0 flex-col gap-2 p-3 backdrop-blur md:w-64 md:gap-3 md:self-start md:p-4",
             status === "found" && "fx-glow",
           )}
         >
-          <div className="text-sm opacity-70">
-            {round + 1}번째 별자리를 찾아보세요
+          {/* 휴대폰에서는 이름 옆에 작은 모양 카드를 두어 하늘을 크게 보인다 */}
+          <div className="flex items-center gap-3 md:flex-col md:items-stretch">
+            <div className="flex min-w-0 flex-1 flex-col gap-1">
+              <div className="text-sm opacity-70">
+                {round + 1}번째 별자리를 찾아보세요
+              </div>
+              <div key={round} className="fx-pop text-2xl font-bold">
+                {target.label}
+              </div>
+            </div>
+            {scene && difficulty !== "hard" && (
+              <div className="w-28 shrink-0 md:w-full">
+                <ShapeCard
+                  scene={scene}
+                  rotate={
+                    difficulty === "normal" ? (gameSeed % 360) + round * 77 : 0
+                  }
+                />
+              </div>
+            )}
           </div>
-          <div key={round} className="fx-pop text-2xl font-bold">
-            {target.label}
-          </div>
-          {scene && difficulty !== "hard" && (
-            <ShapeCard
-              scene={scene}
-              rotate={
-                difficulty === "normal" ? (gameSeed % 360) + round * 77 : 0
-              }
-            />
-          )}
           {status === "playing" ? (
             <div className="flex flex-col gap-1">
               <div className="flex justify-between text-xs opacity-70">

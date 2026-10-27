@@ -3,8 +3,10 @@ import { describe, expect, it } from "vitest";
 import { orderTargets, pushRecent } from "@/game/findConstellation/recent";
 import {
   isHit,
+  LANDSCAPE,
   makeFindScene,
   makeFindSceneRetry,
+  PORTRAIT,
   targetPoints,
 } from "@/game/findConstellation/scene";
 import { findTargets } from "@/game/findConstellation/targets";
@@ -52,15 +54,20 @@ describe("난이도별 낼 별자리 목록", () => {
 
 // 숨은그림찾기: 낼 별자리마다 별자리 전체가 사진 안에 들어오는 밤하늘을 만들 수 있어야 한다.
 describe("별자리 숨은그림찾기 문제", () => {
-  const cases = DIFFICULTIES.flatMap((d) =>
-    labelsOf(d).map((label) => [d, label] as const),
+  // 넓은 화면은 가로로 긴 하늘, 휴대폰은 세로로 긴 하늘
+  const cases = (["가로", "세로"] as const).flatMap((shape) =>
+    DIFFICULTIES.flatMap((d) =>
+      labelsOf(d).map((label) => [shape, d, label] as const),
+    ),
   );
 
   it.each(cases)(
-    "%s %s: 밤이고 별자리선 전체가 사진 안에 있는 문제를 만든다",
-    (difficulty, label) => {
+    "%s %s %s: 밤이고 별자리선 전체가 사진 안에 있는 문제를 만든다",
+    (shape, difficulty, label) => {
+      const size = shape === "가로" ? LANDSCAPE : PORTRAIT;
+
       for (const seed of [1, 2]) {
-        const scene = makeFindSceneRetry(label, seed, difficulty)!;
+        const scene = makeFindSceneRetry(label, seed, difficulty, size)!;
 
         expect(scene).not.toBeNull();
 

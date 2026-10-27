@@ -24,6 +24,7 @@ import { createRng } from "@/utils/rng";
 
 // 숨은그림찾기 문제: 찾을 별자리가 고도 25° 이상 떠 있는 밤의 하늘. 카메라는 별자리 근처로 조금 비켜서
 // 향해 별자리가 사진 가운데에만 있지 않게 한다. 별자리 전체가 사진 안에 들어와야 한다.
+// 사진 크기는 고를 수 있다: 휴대폰에서는 세로로 긴 사진 (화각은 짧은 변 기준이라 별 크기는 그대로)
 
 export interface FindScene {
   target: DrawConstellation[]; // 선 묶음들
@@ -45,11 +46,24 @@ const LOOK = {
   hard: { magLimit: 5, lightPollution: 0.5, fov: [80, 95] },
 } as const;
 
+export interface SceneSize {
+  width: number;
+  height: number;
+}
+
+export const LANDSCAPE: SceneSize = {
+  width: SCENE_WIDTH,
+  height: SCENE_HEIGHT,
+};
+export const PORTRAIT: SceneSize = { width: 800, height: 1120 };
+
 export const makeFindScene = (
   label: string,
   seed: number,
   difficulty: Difficulty,
+  size: SceneSize = LANDSCAPE,
 ): FindScene | null => {
+  const { width: W, height: H } = size;
   const target = constellationParts(label);
 
   if (target.length === 0) {
@@ -117,16 +131,12 @@ export const makeFindScene = (
       rollDeg: (rng() - 0.5) * 6,
       fovDeg,
     };
-    const TP = horizonCameraTP(date, observer, view, SCENE_WIDTH, SCENE_HEIGHT);
+    const TP = horizonCameraTP(date, observer, view, W, H);
     const inside = stars.every((v) => {
       const p = projectVecToPhoto(TP, v);
 
       return (
-        p !== null &&
-        p[0] > 40 &&
-        p[0] < SCENE_WIDTH - 40 &&
-        p[1] > 40 &&
-        p[1] < SCENE_HEIGHT - 40
+        p !== null && p[0] > 40 && p[0] < W - 40 && p[1] > 40 && p[1] < H - 40
       );
     });
 
@@ -137,8 +147,8 @@ export const makeFindScene = (
         observer,
         view,
         TP,
-        width: SCENE_WIDTH,
-        height: SCENE_HEIGHT,
+        width: W,
+        height: H,
         magLimit: look.magLimit,
         lightPollution: look.lightPollution,
         seed,
@@ -175,14 +185,18 @@ export const makeFindSceneRetry = (
   label: string,
   seed: number,
   difficulty: Difficulty,
+  size: SceneSize = LANDSCAPE,
 ): FindScene | null => {
   for (let i = 0; i < 6; i++) {
-    const scene = makeFindScene(label, seed + i * 104729, difficulty);
+    const scene = makeFindScene(label, seed + i * 104729, difficulty, size);
 
     if (scene) {
       return scene;
     }
   }
 
-  return null;
+  // 세로 하늘에 다 들어가지 않는 긴 별자리(바다뱀자리)는 가로 하늘로
+  return size === LANDSCAPE
+    ? null
+    : makeFindSceneRetry(label, seed, difficulty, LANDSCAPE);
 };
