@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { GAMES } from "@/game/hub";
 import { LEARN_STEPS, learnHref } from "@/learn/steps";
-import { UMAMI_WEBSITE_ID } from "@/ui/Analytics";
 import GameCarousel from "@/ui/GameCarousel";
 import SiteShell from "@/ui/SiteShell";
+import SkyNowNote from "@/ui/SkyNowNote";
 
 // 첫 화면: 무엇을 하는 곳인지 풀린 사진 한 장으로 보여 주고, 찾는 원리 세 단계와 별 놀이터를 소개한다.
-// 위쪽 길잡이와 겹치지 않게 버튼은 "내 사진으로 찾기" 하나만 둔다.
+// 위쪽 길잡이와 겹치지 않게 버튼은 "별 찾으러 가기" 하나만 둔다.
 export default function Page() {
   const games = GAMES.filter((g) => g.ready);
   const steps = LEARN_STEPS.filter((s) => s.core);
@@ -16,16 +16,15 @@ export default function Page() {
       <div className="flex w-full max-w-5xl flex-col gap-12 pb-16">
         <section className="fx-rise mt-4 flex flex-col items-center gap-4 text-center md:mt-10">
           <h1 className="bg-gradient-to-b from-white via-indigo-100 to-indigo-300 bg-clip-text text-4xl leading-tight font-black text-transparent md:text-6xl">
-            사진 한 장으로
+            어떤 별이 찍혔는지
             <br />
-            별자리를 찾아요
+            궁금하세요?
           </h1>
           <p className="max-w-xl opacity-75 md:text-lg">
-            밤하늘 사진을 올리면, 컴퓨터가 별들의 배치만 보고 하늘 어디를
-            찍었는지 찾아 별자리와 별 이름을 그려 줘요.
+            여러분의 추억과 함께한 그 별이 무엇인지, 지금 바로 찾아보세요.
           </p>
           <Link href="/plate-solver" className="btn btn-primary btn-lg mt-2">
-            내 사진으로 찾기
+            별 찾으러 가기
           </Link>
         </section>
 
@@ -94,34 +93,36 @@ export default function Page() {
           <GameCarousel games={games} />
         </section>
 
-        <footer className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs opacity-50">
-          <span>
-            만든 이{" "}
-            <a
-              className="link link-hover"
-              href="https://github.com/ybbarng"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              ybbarng
-            </a>{" "}
-            with{" "}
-            <a
-              className="link link-hover"
-              href="https://www.claude.com/product/claude-code"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Claude Code
+        <footer className="flex flex-col items-center gap-2 text-center text-xs opacity-50">
+          <SkyNowNote />
+          <div className="flex flex-wrap justify-center gap-x-4 gap-y-1">
+            <span>
+              만든 이{" "}
+              <a
+                className="link link-hover"
+                href="https://github.com/ybbarng"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                ybbarng
+              </a>{" "}
+              with{" "}
+              <a
+                className="link link-hover"
+                href="https://www.claude.com/product/claude-code"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Claude Code
+              </a>
+            </span>
+            <a className="link link-hover" href="/presentation/v3.html">
+              발표 자료 V3
             </a>
-          </span>
-          <a className="link link-hover" href="/presentation/v3.html">
-            발표 자료 V3
-          </a>
-          <Link href="/credits" className="link link-hover">
-            출처와 참고 자료
-          </Link>
-          {UMAMI_WEBSITE_ID && <span>방문 수만 쿠키 없이 익명으로 셉니다</span>}
+            <Link href="/credits" className="link link-hover">
+              출처와 참고 자료
+            </Link>
+          </div>
         </footer>
       </div>
     </SiteShell>
