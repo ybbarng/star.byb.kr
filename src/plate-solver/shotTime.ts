@@ -66,6 +66,15 @@ const SAMPLE_SHOTS: Record<string, ShotTime> = {
     source: "record",
     note: "슬랙에 올린 시각 (사이판)",
   },
+  // 원본 EXIF: 2024-04-01 23:24:15, 시간대 -06:00 (옐로나이프 서머타임). 공개 샘플이라 GPS는 지우고
+  // 장소는 0.1° 단위로만 적는다 (옐로나이프 동쪽 오로라 관측지)
+  "20240401-brice-yellowknife-aurora.jpg": {
+    local: "2024-04-01T23:24",
+    offset: "-06:00",
+    observer: { latDeg: 62.5, lonDeg: -114.2 },
+    source: "record",
+    note: "촬영 기록 (캐나다 옐로나이프)",
+  },
 };
 
 export const getSampleShot = (src?: string): ShotTime | null => {

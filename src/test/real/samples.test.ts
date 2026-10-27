@@ -45,6 +45,7 @@ const MUST_SOLVE = [
   "20250117-carl-aurora-02.jpg",
   "20250117-carl-aurora-03.jpg",
   "20250117-carl-aurora-04.jpg",
+  "20240401-brice-yellowknife-aurora.jpg",
 ];
 
 // 정답은 알지만 아직 자동으로는 못 푸는 샘플. 풀지 못해도 되지만 틀린 해를 확신하면 안 된다.

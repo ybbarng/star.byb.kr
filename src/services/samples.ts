@@ -52,8 +52,16 @@ const commons = (file: string) =>
 // 북두칠성(big-dipper.jpg)·석촌호수 은하수·오리온(cafe-orion.jpg)·출처 모를 사진(google-unknown.jpg)은
 // 바깥에서 출처를 밝히지 않고 가져온 사진이라 예시로 보이지 않는다 (회귀 테스트는 public/samples의 파일을 그대로 읽는다).
 // 빈자리는 위키미디어 공용의 자유 이용 사진으로 채웠다: 사이트에서 확신으로 풀리고, 땅 위 물체가 함께 찍힌 사진.
-// 맨 앞은 가장 빨리(약 0.03초) 확신하는 망루와 논.
+// 맨 앞은 만든 사람(Brice)이 2024년 버즈홀리데이 때 캐나다 옐로나이프에서 찍은 오로라 (0.2초에 확신, 첫 화면 그림과 같은 사진).
+// EXIF(GPS 포함)는 jpegtran -copy none으로 지웠다. 촬영 시각·장소는 shotTime.ts에 대략으로 적었다.
 const samples: Sample[] = [
+  sample(
+    "20240401-brice-yellowknife-aurora.jpg",
+    "옐로나이프 오로라",
+    "2024년 4월",
+    4000,
+    1848,
+  ),
   sample(
     "iau-watchtower-orion.jpg",
     "망루와 논",

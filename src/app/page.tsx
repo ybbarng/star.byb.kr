@@ -35,15 +35,15 @@ export default function Page() {
         >
           {/* eslint-disable-next-line @next/next/no-img-element -- 정적 내보내기라 next/image 최적화를 쓰지 않는다 */}
           <img
-            src="/home/solved-milky-way.webp"
-            alt="석촌호수 위 여름 은하수 사진에 궁수자리·전갈자리·독수리자리 선과 별 이름이 그려진 모습"
-            width={1200}
-            height={801}
+            src="/home/solved-aurora.webp"
+            alt="캐나다 옐로나이프의 오로라 사진에 카시오페이아자리·안드로메다자리·백조자리 선과 별 이름이 그려진 모습"
+            width={1600}
+            height={738}
             className="block h-auto w-full"
           />
           <figcaption className="bg-base-200/80 px-4 py-2 text-xs opacity-80">
-            서울 석촌호수에서 찍은 여름 은하수. 건물 사이로 궁수자리·전갈자리가
-            보여요.
+            캐나다 옐로나이프에서 찍은 오로라. 카시오페이아자리와 안드로메다
+            은하, 백조자리가 보여요.
           </figcaption>
         </figure>
 

@@ -126,6 +126,14 @@ const byFilename: Record<string, SampleAnswer> = {
     fovDeg: 16.8,
     name: "오리온자리",
   },
+  // 옐로나이프 오로라: 카시오페이아·세페우스·안드로메다(M31)·백조(데네브·사드르), 가운데 도마뱀자리.
+  // 앱과 같은 풀이(8초)로 0.2초에 확신 (log-odds 44, 2026-10-27)
+  "20240401-brice-yellowknife-aurora.jpg": {
+    centerRaDeg: 335.3,
+    centerDecDeg: 47.2,
+    fovDeg: 37.6,
+    name: "카시오페이아·안드로메다·백조자리",
+  },
   // 아래 열둘은 위키미디어 공용의 자유 이용 샘플(samples.ts의 credit). 앱과 같은 풀이(8초)로
   // 확신한 해(log-odds 17~80)이고, 겹친 별 이름이 사진 속 별자리와 맞는지 눈으로 확인했다.
   // 오리온 삼태성·베텔게우스·리겔, 토끼자리 (망루와 논)
