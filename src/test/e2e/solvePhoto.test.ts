@@ -143,5 +143,6 @@ describe.skipIf(!ready)("solvePhoto: 앱의 풀이 흐름", () => {
     const last = phases[phases.length - 1];
 
     expect(last.kind === "linear" && last.region).not.toBe("사진 전체");
-  });
+    // 혼자 돌면 약 9초인데 전체 테스트와 함께 돌면 CPU를 나눠 30초를 넘겨, 기본 시간 제한에 걸렸다 (2026-10-26~27)
+  }, 90_000);
 });

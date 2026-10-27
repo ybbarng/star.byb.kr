@@ -18,7 +18,7 @@ import sky from "@build/database/background-sky.json";
 // 별은 밝을수록 크게, 표면 온도에 따라 색을 달리하고, 별자리선은 흐리게만 그린다.
 // 별의 반짝임과 유성은 위층 캔버스에 따로 그린다 (ui/skyEffects).
 
-const SEOUL = { latDeg: 37.57, lonDeg: 126.98 };
+export const SEOUL = { latDeg: 37.57, lonDeg: 126.98 };
 
 // 색 번호(0 붉은 별 ~ 4 푸른 별) → RGB (game/sky/drawSky.ts의 starColor와 같은 색)
 const COLORS = [
@@ -182,12 +182,17 @@ const sizeCanvas = (
 };
 
 // 지금 하늘을 그리고, 반짝일 수 있는 (화면에 보이는) 별 목록을 돌려준다
+// 배경 상자(.fx-sky, 높이 100lvh)의 크기. 주소창이 숨어도 변하지 않는다
+const boxSize = (box: HTMLElement) => ({
+  width: box.clientWidth || window.innerWidth,
+  height: box.clientHeight || window.innerHeight,
+});
+
 const draw = (
   skyCanvas: HTMLCanvasElement,
   effectCanvas: HTMLCanvasElement,
 ): EffectStar[] => {
-  const width = window.innerWidth;
-  const height = window.innerHeight;
+  const { width, height } = boxSize(skyCanvas.parentElement!);
   const dpr = Math.min(2, window.devicePixelRatio || 1);
   const jd = julianDay(new Date());
   const project = makeProjector(width, height, jd);
@@ -274,15 +279,24 @@ export default function SkyBackground() {
 
     let stars = draw(skyCanvas, effectCanvas);
     let resizeTimer = 0;
+    let drawn = boxSize(skyCanvas.parentElement!);
 
     const redraw = () => {
       stars = draw(skyCanvas, effectCanvas);
+      drawn = boxSize(skyCanvas.parentElement!);
     };
 
-    // 창 크기가 바뀌면 다시 그린다
+    // 배경 상자 크기가 실제로 바뀔 때만(창 크기·화면 돌리기) 다시 그린다.
+    // 휴대폰에서 스크롤로 주소창이 숨을 때도 resize가 오지만, 상자(100lvh)는 그대로라 건너뛴다
     const onResize = () => {
       window.clearTimeout(resizeTimer);
-      resizeTimer = window.setTimeout(redraw, 150);
+      resizeTimer = window.setTimeout(() => {
+        const now = boxSize(skyCanvas.parentElement!);
+
+        if (now.width !== drawn.width || now.height !== drawn.height) {
+          redraw();
+        }
+      }, 150);
     };
 
     // 하늘(별·해·달)은 1분마다 지금 시각으로. 탭이 안 보이면 건너뛰고, 다시 보이면 바로 맞춘다

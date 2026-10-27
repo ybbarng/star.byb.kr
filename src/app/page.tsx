@@ -42,7 +42,7 @@ export default function Page() {
           />
           <figcaption className="bg-base-200/80 px-4 py-2 text-xs opacity-80">
             캐나다 옐로나이프에서 찍은 오로라. 카시오페이아자리와 안드로메다
-            은하, 백조자리가 보여요.
+            은하, 백조자리가 함께 했어요.
           </figcaption>
         </figure>
 

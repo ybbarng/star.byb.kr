@@ -217,9 +217,15 @@
 }
 
 /* 사이트 배경: 실제 서울 하늘 (ui/SkyBackground). 아래층은 별·해·달, 위층은 반짝임·유성 (ui/skyEffects) */
+/* 높이는 휴대폰 주소창이 숨거나 나타나도 변하지 않는 가장 큰 화면 높이(lvh)로. 화면 높이(100%)를 따르면
+   스크롤할 때마다 캔버스가 늘었다 줄었다 하고 하늘을 다시 그려 별이 움직여 보였다 */
 .fx-sky {
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 100vh;
+  height: 100lvh;
   z-index: 0;
   pointer-events: none;
   background: radial-gradient(
