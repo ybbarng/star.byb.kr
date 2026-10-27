@@ -21,7 +21,8 @@ export default function Page() {
             궁금하세요?
           </h1>
           <p className="max-w-xl opacity-75 md:text-lg">
-            여러분의 추억과 함께한 그 별이 무엇인지, 지금 바로 찾아보세요.
+            여러분의 추억과 함께한 그 별이 무엇인지,
+            <br className="md:hidden" /> 지금 바로 찾아보세요.
           </p>
           <Link href="/plate-solver" className="btn btn-primary btn-lg mt-2">
             별 찾으러 가기
