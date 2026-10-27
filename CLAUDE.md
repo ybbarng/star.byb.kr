@@ -26,7 +26,7 @@
 npm install           # 의존성 설치
 ./build_database.sh   # 데이터베이스 파일 생성 (최초 1회, 빌드 전에 필요 — 앱이 build/의 JSON을 코드에 싣는다)
 npm run dev           # 개발 서버 (http://localhost:5025)
-npm run build         # 프로덕션 빌드 (정적 내보내기 → out/, 배포는 docs/deployment.md)
+npm run build         # 프로덕션 빌드 (정적 내보내기 → out/, 뒤이어 sw.js·sitemap.xml. 배포는 docs/deployment.md)
 npm run lint          # ESLint
 npm test              # vitest (합성·실제 샘플 회귀 포함, 약 90초)
 npm run benchmark:update  # 알고리즘 비교 결과를 docs/benchmark-results.json에 갱신
@@ -68,6 +68,7 @@ src/
 │   ├── hash/                  # quad 해시 생성 알고리즘
 │   └── search/                # 검색 테스트/벤치마크
 ├── services/                  # 샘플 사진 목록, EXIF
+├── pwa/                       # 서비스 워커 틀 sw.js (빌드 뒤 src/scripts/pwa가 out/sw.js·sitemap.xml로, docs/pwa.md)
 ├── blog/                      # 테크 블로그 전용 (사이트 빌드에 안 들어간다): 글에 넣는 데모 사본·전용 데모와 묶음 스크립트
 │                              # npm run build:blog-embeds → docs/tech-blog-draft/images/embed (블로그 public/blog/<글>/embed/)
 

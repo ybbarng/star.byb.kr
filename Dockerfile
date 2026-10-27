@@ -13,4 +13,6 @@ RUN ./build_database.sh && npm run build
 FROM nginx:1.27-alpine AS runner
 COPY ops/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/out /usr/share/nginx/html
+# 설정이 틀리면 여기서 이미지 빌드가 멈춰 서버까지 가지 않는다
+RUN nginx -t
 EXPOSE 80
