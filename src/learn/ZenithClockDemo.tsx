@@ -4,6 +4,7 @@ import type { Point2D, Point3D } from "@/scripts/hash/types";
 import type { Mat3 } from "@/search/utils/similarity";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CONSTELLATIONS, STARS } from "@/game/sky/catalog";
+import { fetchJson, LOAD_FAILED, loadImage } from "@/learn/demoAssets";
 import {
   estimateShotTimes,
   skyClockOf,
@@ -71,6 +72,7 @@ const chartXY = ([ra, dec]: [number, number]): Point2D => [
 export default function ZenithClockDemo() {
   const [data, setData] = useState<Data | null>(null);
   const [image, setImage] = useState<HTMLImageElement | null>(null);
+  const [failed, setFailed] = useState(false);
   const [step, setStep] = useState<Step>(1);
   // 지평선 두 점 (사진 좌표). 처음엔 자료의 먼 능선 두 점, ②부터 사람이 끌어서 옮길 수 있다
   const [horizon, setHorizon] = useState<[Point2D, Point2D] | null>(null);
@@ -81,17 +83,16 @@ export default function ZenithClockDemo() {
   useEffect(() => {
     let alive = true;
 
-    fetch("/learn/zenith-seoul.json")
-      .then((r) => r.json())
-      .then((d: Data) => {
+    // 받지 못하면 "불러오는 중"에 머물지 않고 실패를 알린다
+    Promise.all([fetchJson<Data>("/learn/zenith-seoul.json"), loadImage(SRC)])
+      .then(([d, img]) => {
         if (!alive) return;
 
         setData(d);
         setHorizon(d.horizon);
-      });
-    const img = new Image();
-    img.onload = () => alive && setImage(img);
-    img.src = SRC;
+        setImage(img);
+      })
+      .catch(() => alive && setFailed(true));
 
     return () => {
       alive = false;
@@ -460,7 +461,11 @@ export default function ZenithClockDemo() {
   };
 
   if (!data || !sky || !horizon) {
-    return <div className="text-sm opacity-60">자료를 불러오는 중…</div>;
+    return (
+      <div className="text-sm opacity-60" role={failed ? "alert" : undefined}>
+        {failed ? LOAD_FAILED : "자료를 불러오는 중…"}
+      </div>
+    );
   }
 
   const moved =

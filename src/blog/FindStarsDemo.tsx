@@ -2,6 +2,7 @@
 
 import type { DetectedStar } from "@/plate-solver/detectPhotoStars";
 import { useEffect, useRef, useState } from "react";
+import { loadImage } from "@/learn/demoAssets";
 import RingInspector from "@/learn/RingInspector";
 import { detectPhotoStars } from "@/plate-solver/detectPhotoStars";
 import { STARLIKE_RING_CONTRAST } from "@/search/utils/selectStars";
@@ -44,28 +45,25 @@ export default function FindStarsDemo({ score = false }: { score?: boolean }) {
   const [inspect, setInspect] = useState<DetectedStar | null>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
 
-  // 사진을 바꾸면 불러오고 바로 별을 찾는다
+  // 사진을 바꾸면 불러오고 바로 별을 찾는다. 사진을 못 받거나 별 찾기가 실패하면 실패를 알린다
   useEffect(() => {
     let alive = true;
-    const img = new Image();
 
     setStars(null);
     setInspect(null);
     setFailed(false);
     setRunning(true);
 
-    img.onload = () => {
-      if (!alive) return;
+    loadImage(photo.src)
+      .then((img) => {
+        if (!alive) return;
 
-      setImage(img);
-      // 워커가 실패하면 찾는 중 표시만 사라지지 않게 실패를 알린다
-      detectPhotoStars(img)
-        .then((found) => alive && setStars(found))
-        .catch(() => alive && setFailed(true))
-        .finally(() => alive && setRunning(false));
-    };
+        setImage(img);
 
-    img.src = photo.src;
+        return detectPhotoStars(img).then((found) => alive && setStars(found));
+      })
+      .catch(() => alive && setFailed(true))
+      .finally(() => alive && setRunning(false));
 
     return () => {
       alive = false;
@@ -187,7 +185,10 @@ export default function FindStarsDemo({ score = false }: { score?: boolean }) {
               </div>
             )}
             {failed && (
-              <div className="absolute inset-0 grid place-items-center bg-black/60 p-4 text-center text-sm">
+              <div
+                role="alert"
+                className="absolute inset-0 grid place-items-center bg-black/60 p-4 text-center text-sm"
+              >
                 이 사진에서 별을 찾지 못했어요. 다른 사진을 골라 보세요.
               </div>
             )}

@@ -4,6 +4,7 @@ import type { Point2D, Point3D } from "@/scripts/hash/types";
 import type { Mat3 } from "@/search/utils/similarity";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { STARS } from "@/game/sky/catalog";
+import { fetchJson, LOAD_FAILED, loadImage } from "@/learn/demoAssets";
 import { ACCEPT } from "@/search/solvers/candidates";
 import { poissonTailNegLog10 } from "@/search/utils/stats";
 import { projectVecToPhoto } from "@/search/utils/wcs";
@@ -50,6 +51,7 @@ const overlapsOf = (photo: Point2D[], map: Point2D[], tol: number) =>
 export default function ChanceRatioDemo() {
   const [data, setData] = useState<Data | null>(null);
   const [image, setImage] = useState<HTMLImageElement | null>(null);
+  const [failed, setFailed] = useState(false);
   const [mode, setMode] = useState<Mode>("answer");
   const [scatter, setScatter] = useState<Point2D[]>([]);
   const [hits, setHits] = useState<number[]>([]);
@@ -58,12 +60,18 @@ export default function ChanceRatioDemo() {
   useEffect(() => {
     let alive = true;
 
-    fetch("/learn/candidates-seoul.json")
-      .then((r) => r.json())
-      .then((d: Data) => alive && setData(d));
-    const img = new Image();
-    img.onload = () => alive && setImage(img);
-    img.src = SRC;
+    // 받지 못하면 "불러오는 중"에 머물지 않고 실패를 알린다
+    Promise.all([
+      fetchJson<Data>("/learn/candidates-seoul.json"),
+      loadImage(SRC),
+    ])
+      .then(([d, img]) => {
+        if (!alive) return;
+
+        setData(d);
+        setImage(img);
+      })
+      .catch(() => alive && setFailed(true));
 
     return () => {
       alive = false;
@@ -194,7 +202,11 @@ export default function ChanceRatioDemo() {
   }, [data, image, map, matched, mode]);
 
   if (!data) {
-    return <div className="text-sm opacity-60">자료를 불러오는 중…</div>;
+    return (
+      <div className="text-sm opacity-60" role={failed ? "alert" : undefined}>
+        {failed ? LOAD_FAILED : "자료를 불러오는 중…"}
+      </div>
+    );
   }
 
   const { real, tol, W, H } = data;

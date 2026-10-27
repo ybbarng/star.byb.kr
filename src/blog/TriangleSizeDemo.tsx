@@ -8,6 +8,7 @@ import {
   buildBrightTriangles,
   shapeOfSides,
 } from "@/learn/brightTriangles";
+import { fetchJson, LOAD_FAILED, loadImage } from "@/learn/demoAssets";
 
 // 테크 블로그 전용 사본 (사이트에는 쓰지 않는다): 찾는 원리의 learn/TriangleSizeDemo에서 결과 칸만 세 줄로 고정했다.
 // 삼각형 크기 거르기 데모: 오로라 속 북두칠성 사진에서 별 셋을 고르면, 밝은 별 삼각형 4만여 개 중 모양이 닮은 것을
@@ -48,6 +49,7 @@ const toY = (deg: number) =>
 export default function TriangleSizeDemo() {
   const [data, setData] = useState<Dipper | null>(null);
   const [image, setImage] = useState<HTMLImageElement | null>(null);
+  const [failed, setFailed] = useState(false);
   const [triangles, setTriangles] = useState<CatalogTriangle[] | null>(null);
   const [picked, setPicked] = useState<number[]>([2, 4, 5]); // 페크다·알리오트·미자르;
   const [fov, setFov] = useState<number | null>(null);
@@ -57,12 +59,18 @@ export default function TriangleSizeDemo() {
   useEffect(() => {
     let alive = true;
 
-    fetch("/learn/triangle-dipper.json")
-      .then((r) => r.json())
-      .then((d: Dipper) => alive && setData(d));
-    const img = new Image();
-    img.onload = () => alive && setImage(img);
-    img.src = SRC;
+    // 받지 못하면 "불러오는 중"에 머물지 않고 실패를 알린다
+    Promise.all([
+      fetchJson<Dipper>("/learn/triangle-dipper.json"),
+      loadImage(SRC),
+    ])
+      .then(([d, img]) => {
+        if (!alive) return;
+
+        setData(d);
+        setImage(img);
+      })
+      .catch(() => alive && setFailed(true));
     // 색인 만들기는 화면을 그린 뒤에
     const id = window.setTimeout(
       () => alive && setTriangles(buildBrightTriangles()),
@@ -295,6 +303,11 @@ export default function TriangleSizeDemo() {
 
   return (
     <div className="flex flex-col gap-3">
+      {failed && (
+        <p role="alert" className="text-warning text-sm">
+          {LOAD_FAILED}
+        </p>
+      )}
       <div className="grid gap-3 md:grid-cols-2">
         <div className="flex flex-col gap-1">
           <div className="text-sm opacity-70">

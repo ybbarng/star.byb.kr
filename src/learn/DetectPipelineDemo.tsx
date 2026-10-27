@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { LOAD_FAILED, loadImage } from "@/learn/demoAssets";
 import { gaussianBlurApprox, toGray } from "@/search/detectImage";
 import { cn } from "@/utils/cn";
 
@@ -128,6 +129,7 @@ const prepare = (image: HTMLImageElement): Work => {
 
 export default function DetectPipelineDemo() {
   const [work, setWork] = useState<Work | null>(null);
+  const [failed, setFailed] = useState(false);
   const [stage, setStage] = useState<Stage>("photo");
   const [k, setK] = useState(3);
   const [photo, setPhoto] = useState<(typeof PHOTOS)[number]>(PHOTOS[0]);
@@ -136,17 +138,18 @@ export default function DetectPipelineDemo() {
 
   useEffect(() => {
     let alive = true;
-    const image = new Image();
 
-    image.onload = () => {
-      if (!alive) return;
+    setFailed(false);
+    // 사진을 받지 못하면 실패를 알린다
+    loadImage(photo.src)
+      .then((image) => {
+        if (!alive) return;
 
-      const next = prepare(image);
-      setWork(next);
-      setRow(defaultRow(next));
-    };
-
-    image.src = photo.src;
+        const next = prepare(image);
+        setWork(next);
+        setRow(defaultRow(next));
+      })
+      .catch(() => alive && setFailed(true));
 
     return () => {
       alive = false;
@@ -337,6 +340,11 @@ export default function DetectPipelineDemo() {
 
   return (
     <div className="flex flex-col gap-3">
+      {failed && (
+        <p role="alert" className="text-warning text-sm">
+          {LOAD_FAILED}
+        </p>
+      )}
       <div className="flex flex-wrap gap-1">
         {PHOTOS.map((p) => (
           <button

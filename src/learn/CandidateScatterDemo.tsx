@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { fetchJson, LOAD_FAILED } from "@/learn/demoAssets";
 import { ACCEPT } from "@/search/solvers/candidates";
 import { poissonTailNegLog10 } from "@/search/utils/stats";
 
@@ -64,6 +65,7 @@ interface RoundResult {
 
 export default function CandidateScatterDemo() {
   const [data, setData] = useState<Data | null>(null);
+  const [failed, setFailed] = useState(false);
   const [step, setStep] = useState<Step>("ratio");
   const [picked, setPicked] = useState<number | null>(null);
   // 진행한 라운드 (-1이면 라운드 없이 전체를 본다)
@@ -74,9 +76,10 @@ export default function CandidateScatterDemo() {
   useEffect(() => {
     let alive = true;
 
-    fetch("/learn/candidates-seoul.json")
-      .then((r) => r.json())
-      .then((d: Data) => alive && setData(d));
+    // 받지 못하면 "불러오는 중"에 머물지 않고 실패를 알린다
+    fetchJson<Data>("/learn/candidates-seoul.json")
+      .then((d) => alive && setData(d))
+      .catch(() => alive && setFailed(true));
 
     return () => {
       alive = false;
@@ -401,7 +404,11 @@ export default function CandidateScatterDemo() {
   }, [data, view, step, picked, shownRounds, done]);
 
   if (!data || !view) {
-    return <div className="text-sm opacity-60">자료를 불러오는 중…</div>;
+    return (
+      <div className="text-sm opacity-60" role={failed ? "alert" : undefined}>
+        {failed ? LOAD_FAILED : "자료를 불러오는 중…"}
+      </div>
+    );
   }
 
   const realCount = data.points.filter((p) => p[4] === 1).length;

@@ -5,6 +5,7 @@ import type { Point3D } from "@/scripts/hash/types";
 import type { Mat3 } from "@/search/utils/similarity";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CONSTELLATIONS, STARS } from "@/game/sky/catalog";
+import { loadImage } from "@/learn/demoAssets";
 import { detectPhotoStars } from "@/plate-solver/detectPhotoStars";
 import { preloadSolver, solveInWorker } from "@/search/solverClient";
 import { ACCEPT } from "@/search/solvers/candidates";
@@ -51,15 +52,19 @@ export default function VerifyOverlayDemo() {
     center: Point3D;
   } | null>(null);
   const [status, setStatus] = useState("사진을 불러오는 중…");
+  // 끝났는데 답이 없을 때(못 풀었거나 실패) 도는 표시를 끈다
+  const [stopped, setStopped] = useState(false);
   const [spin, setSpin] = useState(0);
   const [shift, setShift] = useState(0);
   const canvas = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     let alive = true;
-    const img = new Image();
 
-    img.onload = async () => {
+    // 사진 불러오기·별 찾기·풀이 중 어디서 실패해도 "…중"에 머물지 않고 알린다
+    const run = async () => {
+      const img = await loadImage(SRC);
+
       if (!alive) return;
 
       setImage(img);
@@ -89,10 +94,16 @@ export default function VerifyOverlayDemo() {
         setStatus("");
       } else {
         setStatus("이번에는 풀지 못했어요.");
+        setStopped(true);
       }
     };
 
-    img.src = SRC;
+    run().catch(() => {
+      if (!alive) return;
+
+      setStatus("데모를 준비하지 못했어요. 새로고침해 보세요.");
+      setStopped(true);
+    });
 
     return () => {
       alive = false;
@@ -220,8 +231,13 @@ export default function VerifyOverlayDemo() {
         />
         {status && (
           <div className="absolute inset-0 grid place-items-center bg-black/50 text-sm">
-            <span className="flex items-center gap-2">
-              <span className="loading loading-spinner loading-sm" />
+            <span
+              className="flex items-center gap-2"
+              role={stopped ? "alert" : undefined}
+            >
+              {!stopped && (
+                <span className="loading loading-spinner loading-sm" />
+              )}
               {status}
             </span>
           </div>

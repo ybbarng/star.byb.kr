@@ -4,6 +4,7 @@ import type { Point2D, Point3D } from "@/scripts/hash/types";
 import type { Mat3 } from "@/search/utils/similarity";
 import { useEffect, useRef, useState } from "react";
 import { STARS } from "@/game/sky/catalog";
+import { fetchJson, LOAD_FAILED, loadImage } from "@/learn/demoAssets";
 import { projectVecToPhoto } from "@/search/utils/wcs";
 
 // 답 확인 데모: 서울 누각 사진의 진짜 별만 남기고(V2에서 사람이 별을 고친 것처럼) V2 방식으로 quad를 찾는다.
@@ -52,18 +53,25 @@ const mapStarsOf = (TP: Mat3, W: number, H: number) =>
 export default function AnswerCheckDemo() {
   const [data, setData] = useState<Data | null>(null);
   const [image, setImage] = useState<HTMLImageElement | null>(null);
+  const [failed, setFailed] = useState(false);
   const [selected, setSelected] = useState(1);
   const canvas = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     let alive = true;
 
-    fetch("/learn/candidates-seoul.json")
-      .then((r) => r.json())
-      .then((d: Data) => alive && setData(d));
-    const img = new Image();
-    img.onload = () => alive && setImage(img);
-    img.src = SRC;
+    // 받지 못하면 "불러오는 중"에 머물지 않고 실패를 알린다
+    Promise.all([
+      fetchJson<Data>("/learn/candidates-seoul.json"),
+      loadImage(SRC),
+    ])
+      .then(([d, img]) => {
+        if (!alive) return;
+
+        setData(d);
+        setImage(img);
+      })
+      .catch(() => alive && setFailed(true));
 
     return () => {
       alive = false;
@@ -152,7 +160,11 @@ export default function AnswerCheckDemo() {
   }, [data, image, pick]);
 
   if (!data || !pick) {
-    return <div className="text-sm opacity-60">자료를 불러오는 중…</div>;
+    return (
+      <div className="text-sm opacity-60" role={failed ? "alert" : undefined}>
+        {failed ? LOAD_FAILED : "자료를 불러오는 중…"}
+      </div>
+    );
   }
 
   const { list, right, quads } = data.v2;

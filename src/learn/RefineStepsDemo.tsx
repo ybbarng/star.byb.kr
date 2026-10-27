@@ -2,6 +2,7 @@
 
 import type { Point2D } from "@/scripts/hash/types";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { fetchJson, LOAD_FAILED, loadImage } from "@/learn/demoAssets";
 import { cn } from "@/utils/cn";
 
 // 오차 보정 데모: 시야가 넓은 사진에서 같은 짝(겹친 별)으로 여러 모델을 맞춰, 지도 별이 어디에 놓이는지 본다.
@@ -62,22 +63,24 @@ export default function RefineStepsDemo() {
   const [photo, setPhoto] = useState<(typeof PHOTOS)[number]["key"]>("aust");
   const [data, setData] = useState<Data | null>(null);
   const [image, setImage] = useState<HTMLImageElement | null>(null);
+  const [failed, setFailed] = useState(false);
   const [model, setModel] = useState<Model>("seed");
   const canvas = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     let alive = true;
 
-    fetch(`/learn/refine-${photo}.json`)
-      .then((r) => r.json())
-      .then((d: Data) => {
+    setFailed(false);
+    // 받지 못하면 실패를 알린다
+    fetchJson<Data>(`/learn/refine-${photo}.json`)
+      .then((d) => {
         if (!alive) return;
 
         setData(d);
-        const img = new Image();
-        img.onload = () => alive && setImage(img);
-        img.src = d.src;
-      });
+
+        return loadImage(d.src).then((img) => alive && setImage(img));
+      })
+      .catch(() => alive && setFailed(true));
 
     return () => {
       alive = false;
@@ -204,6 +207,11 @@ export default function RefineStepsDemo() {
 
   return (
     <div className="flex flex-col gap-3">
+      {failed && (
+        <p role="alert" className="text-warning text-sm">
+          {LOAD_FAILED}
+        </p>
+      )}
       <div className="flex flex-wrap gap-1">
         {PHOTOS.map((p) => (
           <button

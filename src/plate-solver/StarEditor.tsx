@@ -122,6 +122,8 @@ export default function StarEditor() {
     x2: number;
     y2: number;
   } | null>(null);
+  // 영역 다시 찾기가 실패했다 (별 찾기 Worker를 못 띄우는 등)
+  const [redetectFailed, setRedetectFailed] = useState(false);
 
   const markEdited = () => setEdited(true);
 
@@ -252,9 +254,20 @@ export default function StarEditor() {
   const redetectInBox = async () => {
     if (!lastBox) return;
 
-    markEdited();
+    setRedetectFailed(false);
     const { x1, y1, x2, y2 } = lastBox;
-    const inBox = (await allDetections()).filter(
+    let found: DetectedStar[];
+
+    try {
+      found = await allDetections();
+    } catch {
+      setRedetectFailed(true);
+
+      return;
+    }
+
+    markEdited();
+    const inBox = found.filter(
       (star) => star.x >= x1 && star.x <= x2 && star.y >= y1 && star.y <= y2,
     );
     setCanvasStars(inBox.slice(0, 120).map(toCanvasStar));
@@ -560,6 +573,11 @@ export default function StarEditor() {
             >
               고른 영역에서만 다시 찾기
             </button>
+            {redetectFailed && (
+              <span role="alert" className="text-error text-xs">
+                별을 다시 찾지 못했어요
+              </span>
+            )}
             <button className="btn btn-sm btn-ghost" onClick={resetToAuto}>
               처음 상태로
             </button>
