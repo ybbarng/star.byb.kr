@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- 사이트 아이콘: 머리글의 ✦ 표시를 밤하늘 위에. 작은 별 셋과 이어 quad(별 네 개 모양)를 이룬다 -->
+  <defs>
+    <radialGradient id="sky" cx="30%" cy="15%" r="95%">
+      <stop offset="0" stop-color="#26306b"/>
+      <stop offset="1" stop-color="#0a0e1c"/>
+    </radialGradient>
+    <linearGradient id="star" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#a5b4fc"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="url(#sky)"/>
+  <path d="M30 31 L13 15 L50 13 L47 49 Z" fill="none" stroke="#fde68a" stroke-opacity="0.45" stroke-width="1.6" stroke-linejoin="round"/>
+  <circle cx="13" cy="15" r="2.6" fill="#e0e7ff"/>
+  <circle cx="50" cy="13" r="2.2" fill="#e0e7ff"/>
+  <circle cx="47" cy="49" r="2.8" fill="#e0e7ff"/>
+  <path d="M30 13 C31.5 26 34 28.5 47 30 C34 31.5 31.5 34 30 47 C28.5 34 26 31.5 13 30 C26 28.5 28.5 26 30 13 Z" fill="url(#star)" transform="translate(0 1)"/>
+</svg>
