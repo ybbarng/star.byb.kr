@@ -7,6 +7,7 @@ import type {
   Solver,
   SolverContext,
 } from "@/search/solvers";
+import type { Mat3 } from "@/search/utils/similarity";
 import { blindSolveFisheye } from "@/search/fisheyeSolve";
 import { refineSolution, scorePose } from "@/search/solveCore";
 // 비교용 전체 목록(solvers/index)은 mathjs를 쓰는 원본(baseline)까지 싣기 때문에, 앱이 쓰는 둘만 직접 불러온다
@@ -14,6 +15,7 @@ import { ACCEPT, dedupeBySky, isConfident } from "@/search/solvers/candidates";
 import { improvedSolver } from "@/search/solvers/improved";
 import { triangleSolver } from "@/search/solvers/triangle";
 import { rankForSolving } from "@/search/utils/selectStars";
+import { mat3Mul } from "@/search/utils/wcs";
 
 // 사진 한 장의 검출 별 목록을 받아 앱과 똑같은 흐름으로 푼다.
 // Worker(solverWorker)는 이 함수를 감싸기만 하고, Node 테스트도 이 함수를 그대로 쓴다.
@@ -75,6 +77,7 @@ export type SolvePhase =
 export interface SolvePhotoOptions {
   timeBudgetMs?: number;
   onPhase?: (phase: SolvePhase) => void;
+  skipCircular?: boolean; // 원형 어안 펴기를 하지 않는다 (편 가상 사진을 풀 때)
 }
 
 export interface SolvePhotoResult extends SolveOutcome {
@@ -306,6 +309,109 @@ const promoteCandidates = (
   return null;
 };
 
+// ─── 원형 어안(전천) 사진 (journey 44장) ───────────────────────────────────
+// 검출이 사진 가운데 원 안에만 있으면(원 밖은 검은 테두리) 원형 어안으로 보고, 등거리 어안(r = f·θ, 원 테두리가
+// 광축에서 CIRCULAR_EDGE_DEG)으로 펴서 광축 CIRCULAR_KEEP_DEG 안의 검출을 직선투영 가상 사진에 놓고 푼다.
+// 풀리면 그 변환을 어안 카메라(utils/fisheye)로 되돌린다: 앱은 어안 카메라로 별자리를 그린다.
+const CIRCULAR_MIN_STARS = 50;
+// 검출 99.5%가 들어가는 반지름이 반대각선의 이 비율보다 작으면 원형으로 본다 (보통 사진은 모서리까지 검출이 있다)
+const CIRCULAR_MAX_RADIUS_RATIO = 0.85;
+const CIRCULAR_EDGE_DEG = 90;
+// 편 가상 사진의 시야가 직선 풀이가 다루는 범위(FOV 후보 75°, 판정 80°) 안에 들도록 광축 35°까지만 편다.
+// 60°까지 펴면 시야 120°라 합성 어안도 풀리지 않았다. 등입체각 모델(r = 2f·sin(θ/2))도 재 봤지만 숫자로 오답이 늘었다 (journey 44장)
+const CIRCULAR_KEEP_DEG = 35;
+// 원형으로 보여도 먼저 시간의 CIRCULAR_LINEAR_FIRST만큼 직선 풀이를 해 본다: 모서리가 어두운 보통 사진도
+// 원형으로 보일 수 있다 (발리 별밭 234가 직선 log-odds 82.6 대신 어안 12.4로 풀렸다). 못 풀면 CIRCULAR_BUDGET_SHARE만큼 편 사진을 푼다
+const CIRCULAR_LINEAR_FIRST = 0.15;
+const CIRCULAR_BUDGET_SHARE = 0.5;
+
+const circularFisheye = (
+  stars: InputStar[],
+  size: ImageSize,
+): { cx: number; cy: number; radius: number } | null => {
+  const points = stars.filter((s) => !s.trail);
+
+  if (points.length < CIRCULAR_MIN_STARS) {
+    return null;
+  }
+
+  const cx = size.width / 2;
+  const cy = size.height / 2;
+  const d = points
+    .map((s) => Math.hypot(s.x - cx, s.y - cy))
+    .sort((a, b) => a - b);
+  const radius = d[Math.floor(d.length * 0.995)];
+
+  return radius <
+    (Math.hypot(size.width, size.height) / 2) * CIRCULAR_MAX_RADIUS_RATIO
+    ? { cx, cy, radius }
+    : null;
+};
+
+const solveCircular = (
+  stars: InputStar[],
+  circle: { cx: number; cy: number; radius: number },
+  ctx: SolverContext,
+  solvers: Solver[],
+  options: SolvePhotoOptions,
+): SolvePhotoResult | null => {
+  // 등거리 어안 r = f·θ
+  const f = circle.radius / ((CIRCULAR_EDGE_DEG * Math.PI) / 180);
+  const keep = (CIRCULAR_KEEP_DEG * Math.PI) / 180;
+  const half = f * Math.tan(keep);
+  const virtual: InputStar[] = [];
+
+  for (const s of stars) {
+    if (s.trail) {
+      continue;
+    }
+
+    const dx = s.x - circle.cx;
+    const dy = s.y - circle.cy;
+    const r = Math.hypot(dx, dy);
+    const theta = r / f;
+
+    if (theta >= keep) {
+      continue;
+    }
+
+    const k = r > 1e-9 ? (f * Math.tan(theta)) / r : 1;
+    virtual.push({ ...s, x: half + dx * k, y: half + dy * k });
+  }
+
+  const out = solvePhoto(
+    virtual,
+    { width: 2 * half, height: 2 * half },
+    ctx,
+    solvers,
+    { ...options, skipCircular: true },
+  );
+
+  if (!out.found || !out.transform) {
+    return null;
+  }
+
+  // 가상 사진 픽셀 = half + f·(직선투영 등가 좌표). 어안 카메라의 TP는 등가 좌표로 보낸다
+  const toRectified: Mat3 = [
+    [1 / f, 0, -half / f],
+    [0, 1 / f, -half / f],
+    [0, 0, 1],
+  ];
+
+  return {
+    ...out,
+    transform: null,
+    candidates: [],
+    fisheyeCamera: {
+      TP: mat3Mul(toRectified, out.transform),
+      pcx: circle.cx,
+      pcy: circle.cy,
+      ffish: f,
+      k1: 0,
+    },
+  };
+};
+
 // stars는 검출 전체를 넣어도 된다. 영역마다 우선순위(별다움 → 밝기) 순으로 필요한 만큼만 쓴다.
 export const solvePhoto = (
   stars: InputStar[],
@@ -315,7 +421,31 @@ export const solvePhoto = (
   options: SolvePhotoOptions = {},
 ): SolvePhotoResult => {
   const t0 = performance.now();
-  const deadline = t0 + (options.timeBudgetMs ?? DEFAULT_TIME_BUDGET_MS);
+  const budget = options.timeBudgetMs ?? DEFAULT_TIME_BUDGET_MS;
+  const circle = options.skipCircular ? null : circularFisheye(stars, size);
+
+  if (circle) {
+    const quick = solvePhoto(stars, size, ctx, solvers, {
+      ...options,
+      skipCircular: true,
+      timeBudgetMs: budget * CIRCULAR_LINEAR_FIRST,
+    });
+
+    if (quick.found) {
+      return { ...quick, timeMs: performance.now() - t0 };
+    }
+
+    const circular = solveCircular(stars, circle, ctx, solvers, {
+      ...options,
+      timeBudgetMs: budget * CIRCULAR_BUDGET_SHARE,
+    });
+
+    if (circular) {
+      return { ...circular, timeMs: performance.now() - t0 };
+    }
+  }
+
+  const deadline = t0 + budget;
   const sorted = rankForSolving(stars, size.width, size.height);
   const regionInputs = SEARCH_REGIONS.map((region) => ({
     label: region.label,

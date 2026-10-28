@@ -83,6 +83,7 @@ const run = () => {
       timedOut: out.timedOut,
       phase,
       fisheye: Boolean(out.fisheyeCamera),
+      fisheyeCamera: out.fisheyeCamera ?? null,
     };
     appendFileSync(path, `${JSON.stringify(record)}\n`);
   }

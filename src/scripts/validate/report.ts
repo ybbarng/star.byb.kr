@@ -34,8 +34,12 @@ const judgeRun = (set: string, records: RunRecord[]): Judged[] =>
     return {
       ...r,
       overlap:
-        det && r.transform
-          ? judge(det, r.transform, r.phase.includes("별 궤적"))
+        det && (r.fisheyeCamera ?? r.transform)
+          ? judge(
+              det,
+              (r.fisheyeCamera ?? r.transform)!,
+              r.phase.includes("별 궤적"),
+            )
           : null,
     };
   });

@@ -1,8 +1,10 @@
 import type { Point3D } from "@/scripts/hash/types";
 import type { InputStar } from "@/search/solvers";
+import type { FisheyeCamera } from "@/search/utils/fisheye";
 import type { Mat3 } from "@/search/utils/similarity";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { projectFisheye } from "@/search/utils/fisheye";
 import { rankForSolving } from "@/search/utils/selectStars";
 import { projectVecToPhoto } from "@/search/utils/wcs";
 import { loadCatalog } from "@/test/synthetic/loadCatalog";
@@ -118,6 +120,7 @@ export interface RunRecord {
   timedOut: boolean;
   phase: string; // 확신한 단계 (solver·영역·입력 크기)
   fisheye: boolean;
+  fisheyeCamera?: FisheyeCamera | null; // 원형 어안 펴기·어안 blind로 풀렸으면
 }
 
 // ─── 판정: 겹친 별 (3장) ───────────────────────────────────────────────
@@ -186,7 +189,7 @@ const countOverlap = (
 // trail이면 별 궤적 점만으로 센다 (궤적 영역에서 풀린 사진). 아니면 점 검출만
 export const judge = (
   det: Detected,
-  transform: Mat3,
+  transform: Mat3 | FisheyeCamera,
   trail = false,
 ): Overlap => {
   const { width, height } = det;
@@ -194,7 +197,10 @@ export const judge = (
   const projected: [number, number][] = [];
 
   for (const s of catalog()) {
-    const p = projectVecToPhoto(transform, s.vector);
+    const p =
+      "ffish" in transform
+        ? projectFisheye(transform, s.vector)
+        : projectVecToPhoto(transform, s.vector);
 
     if (p && p[0] >= 0 && p[0] < width && p[1] >= 0 && p[1] < height) {
       projected.push([p[0], p[1]]);

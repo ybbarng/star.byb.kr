@@ -4,6 +4,8 @@ import type { SolverContext } from "@/search/solvers";
 import { beforeAll, describe, expect, it } from "vitest";
 import { DEFAULT_SOLVERS, solvePhoto } from "@/search/solvePhoto";
 import { buildSolverContext } from "@/search/solverContext";
+import { projectFisheye } from "@/search/utils/fisheye";
+import { mat3MulVec, projectionMatrix } from "@/search/utils/wcs";
 import { generateSyntheticImage } from "@/test/synthetic/generateSyntheticImage";
 import {
   catalogExists,
@@ -116,6 +118,38 @@ describe.skipIf(!ready)("solvePhoto: 앱의 풀이 흐름", () => {
       expect(seen.has(key)).toBe(false);
       seen.add(key);
     }
+  });
+
+  it("원형 어안(등거리, 원 테두리 = 광축 90°) 사진을 펴서 풀고 어안 카메라로 돌려준다", () => {
+    const FW = 1920;
+    const FH = 1280;
+    const f = 600 / (Math.PI / 2);
+    const axis = skyVector(80, 40);
+    const P = projectionMatrix(axis);
+    const stars = loadCatalog().flatMap((s) => {
+      const q = mat3MulVec(P, s.vector);
+      const theta = Math.acos(Math.max(-1, Math.min(1, q[2])));
+      const phi = Math.atan2(q[1], q[0]);
+
+      return theta > Math.PI / 2
+        ? []
+        : [
+            {
+              x: FW / 2 + f * theta * Math.cos(phi),
+              y: FH / 2 + f * theta * Math.sin(phi),
+              brightness: 10 ** ((6 - s.v) / 2.5),
+            },
+          ];
+    });
+    const out = solvePhoto(stars, { width: FW, height: FH }, ctx);
+
+    expect(out.found).toBe(true);
+    expect(out.transform).toBeNull();
+    expect(out.fisheyeCamera).toBeTruthy();
+    // 광축이 사진 가운데(원 중심)에 놓인다
+    const at = projectFisheye(out.fisheyeCamera!, axis)!;
+
+    expect(Math.hypot(at[0] - FW / 2, at[1] - FH / 2)).toBeLessThan(3);
   });
 
   it("별 궤적 점(trail)은 일반 영역에 끼어들지 않는다", () => {

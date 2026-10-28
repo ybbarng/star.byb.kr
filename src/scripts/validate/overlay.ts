@@ -8,6 +8,7 @@ import {
   photoDir,
 } from "@/scripts/validate/common";
 import { loadRun } from "@/scripts/validate/report";
+import { projectFisheye } from "@/search/utils/fisheye";
 import { rankForSolving } from "@/search/utils/selectStars";
 import { projectVecToPhoto } from "@/search/utils/wcs";
 import { loadCatalog } from "@/test/synthetic/loadCatalog";
@@ -29,7 +30,9 @@ const run = async () => {
     const r = rows.get(file);
     const det = loadDetected(set, file);
 
-    if (!r?.transform || !det) {
+    const pose = r?.fisheyeCamera ?? r?.transform;
+
+    if (!pose || !det) {
       continue;
     }
 
@@ -37,7 +40,10 @@ const run = async () => {
     const marks: string[] = [];
 
     for (const s of catalog) {
-      const p = projectVecToPhoto(r.transform, s.vector);
+      const p =
+        "ffish" in pose
+          ? projectFisheye(pose, s.vector)
+          : projectVecToPhoto(pose, s.vector);
 
       if (p && p[0] >= 0 && p[1] >= 0 && p[0] < W && p[1] < H) {
         marks.push(
@@ -53,9 +59,9 @@ const run = async () => {
       );
     }
 
-    const j = judge(det, r.transform);
+    const j = judge(det, pose);
     marks.push(
-      `<text x="10" y="${H * 0.04}" font-size="${H * 0.035}" fill="#f0f" font-family="sans-serif">${file} ${r.found ? "확신" : "후보"} lo ${r.confidence.toFixed(1)} 꼬리 ${j.tail.toFixed(1)} ${j.verdict} fov ${r.fovDeg?.toFixed(0)}</text>`,
+      `<text x="10" y="${H * 0.04}" font-size="${H * 0.035}" fill="#f0f" font-family="sans-serif">${file} ${r!.found ? "확신" : "후보"} lo ${r!.confidence.toFixed(1)} 꼬리 ${j.tail.toFixed(1)} ${j.verdict} fov ${r!.fovDeg?.toFixed(0)}</text>`,
     );
     const drawn = await sharp(resolve(photoDir(set), file))
       .composite([
