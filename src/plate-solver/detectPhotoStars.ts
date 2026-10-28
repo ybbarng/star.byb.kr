@@ -1,6 +1,6 @@
 import { detectStars as detectStarsInWorker } from "@/search/detectClient";
 import {
-  mergeCloseStars,
+  mergeDetections,
   mergeDistancePx,
   rankForSolving,
 } from "@/search/utils/selectStars";
@@ -15,6 +15,7 @@ export interface DetectedStar {
   radius?: number; // 유효 반경(px, detectCore). 별다움 고리 크기에 쓴다
   fwhm: number; // 퍼짐 크기
   ringContrast?: number; // 별다움 (detectCore.ringContrast)
+  trail?: boolean; // 별 궤적 점 (detectCore.findTrails)
 }
 
 export const imageDataOf = (image: HTMLImageElement): ImageData => {
@@ -38,7 +39,7 @@ export const detectPhotoStars = async (
   const imageData = imageDataOf(image);
   const raw = await detectStarsInWorker(imageData);
   // 너무 가까운 중복 검출은 밝은 것만 남긴다(거의 같은 위치의 별쌍 정리).
-  const all = mergeCloseStars(
+  const all = mergeDetections(
     raw.map((star) => ({
       x: star.cx,
       y: star.cy,
@@ -46,6 +47,7 @@ export const detectPhotoStars = async (
       radius: star.radius,
       fwhm: star.fwhm ?? 0,
       ringContrast: star.ringContrast,
+      ...(star.trail ? { trail: true } : {}),
     })),
     mergeDistancePx(imageData.width, imageData.height),
   );

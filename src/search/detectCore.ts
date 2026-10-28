@@ -6,6 +6,7 @@ export interface DetectedStar {
   elongation: number; // 1=원형, 클수록 길쭉 (물결 반사광/궤적은 큼)
   fwhm: number; // 밝기 분포 크기(px)
   ringContrast?: number; // 별다움 (ringContrast, 회색조 영상을 줄 때만)
+  trail?: boolean; // 별 궤적 덩어리에서 고른 점 (findTrails). 선이 고리를 지나 별다움을 재지 않는다
 }
 
 // 별 검출의 핵심 (예전 브라우저 cv.worker.js의 findStars에서 옮겨 왔다).
@@ -146,7 +147,7 @@ export const detectStarsFromDiff = (
   }
 
   // 3단계: weighted centroid (서브픽셀) + 2차 모멘트로 모양(elongation/fwhm)
-  return merged.map((star) => {
+  const stars = merged.map((star) => {
     const centroidRadius = Math.max(2, Math.ceil(star.effectiveRadius));
     let sumW = 0;
     let sumWx = 0;
@@ -198,6 +199,132 @@ export const detectStarsFromDiff = (
       fwhm,
     };
   });
+
+  // 별 궤적 점은 따로 표시해 덧붙인다. 점 검출은 그대로 두어 일반 사진의 입력이 바뀌지 않는다
+  return [...stars, ...findTrails(diff, cols, rows, threshold)];
+};
+
+// 별 궤적: 문턱을 넘는 픽셀을 8방향으로 이은 덩어리 중 가늘고 긴 것. 덩어리마다 무게 중심에 가장 가까운 픽셀 하나를 별로 둔다. 원호의 무게 중심에 가장 가까운 점은 원호의 가운데,
+// 곧 노출 중간 순간의 별 자리라 모든 궤적이 같은 순간의 하늘을 가리킨다.
+export const findTrails = (
+  diff: Float32Array | Uint8Array | Uint8ClampedArray,
+  cols: number,
+  rows: number,
+  threshold: number,
+): DetectedStar[] => {
+  const unit = Math.max(1, Math.hypot(cols, rows) / 1400);
+  const minLength = Math.max(14, 10 * unit);
+  const maxWidth = Math.max(4, 3 * unit);
+  const maxLength = Math.hypot(cols, rows) * 0.5;
+  const labels = new Int32Array(cols * rows);
+  const stack = new Int32Array(cols * rows);
+  const stars: DetectedStar[] = [];
+  let next = 1;
+
+  for (let start = 0; start < cols * rows; start++) {
+    if (labels[start] !== 0 || diff[start] < threshold) {
+      continue;
+    }
+
+    const label = next++;
+    let top = 0;
+    stack[top++] = start;
+    labels[start] = label;
+    const pixels: number[] = [];
+    let sw = 0;
+    let sx = 0;
+    let sy = 0;
+    let sxx = 0;
+    let syy = 0;
+    let sxy = 0;
+    let minX = cols;
+    let maxX = 0;
+    let minY = rows;
+    let maxY = 0;
+
+    while (top > 0) {
+      const i = stack[--top];
+      const x = i % cols;
+      const y = (i - x) / cols;
+      const w = diff[i];
+      pixels.push(i);
+      sw += w;
+      sx += w * x;
+      sy += w * y;
+      sxx += w * x * x;
+      syy += w * y * y;
+      sxy += w * x * y;
+      minX = Math.min(minX, x);
+      maxX = Math.max(maxX, x);
+      minY = Math.min(minY, y);
+      maxY = Math.max(maxY, y);
+
+      for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          const nx = x + dx;
+          const ny = y + dy;
+
+          if (nx < 0 || ny < 0 || nx >= cols || ny >= rows) {
+            continue;
+          }
+
+          const j = ny * cols + nx;
+
+          if (labels[j] === 0 && diff[j] >= threshold) {
+            labels[j] = label;
+            stack[top++] = j;
+          }
+        }
+      }
+    }
+
+    const length = Math.hypot(maxX - minX + 1, maxY - minY + 1);
+    const cx = sx / sw;
+    const cy = sy / sw;
+    const mu20 = sxx / sw - cx * cx;
+    const mu02 = syy / sw - cy * cy;
+    const mu11 = sxy / sw - cx * cy;
+    const half = (mu20 + mu02) / 2;
+    const common = Math.sqrt(((mu20 - mu02) / 2) ** 2 + mu11 * mu11);
+    const elongation = Math.sqrt(
+      (half + common) / Math.max(1e-6, half - common),
+    );
+
+    if (
+      length < minLength ||
+      length > maxLength ||
+      pixels.length / length > maxWidth ||
+      elongation < 3
+    ) {
+      continue;
+    }
+
+    let best = pixels[0];
+    let bestD = Infinity;
+
+    for (const i of pixels) {
+      const x = i % cols;
+      const d = (x - cx) ** 2 + ((i - x) / cols - cy) ** 2;
+
+      if (d < bestD) {
+        bestD = d;
+        best = i;
+      }
+    }
+
+    const bx = best % cols;
+    stars.push({
+      cx: bx,
+      cy: (best - bx) / cols,
+      brightness: sw,
+      radius: pixels.length / length / 2,
+      elongation,
+      fwhm: 0,
+      trail: true,
+    });
+  }
+
+  return stars;
 };
 
 // 고리(반지름 r1~r2) 안 픽셀의 (dx, dy, 부채꼴 번호) 목록. 반지름 쌍마다 한 번만 만든다.

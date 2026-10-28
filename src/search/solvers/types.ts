@@ -16,6 +16,8 @@ export interface InputStar {
   ringContrast?: number;
   // 다른 검출 여럿과 한 직선 위에 줄지어 있다 (비행기 점선·창문 줄, utils/alignment)
   aligned?: boolean;
+  // 별 궤적 덩어리에서 고른 점(detectCore.findTrails). 일반 영역에서는 빼고 "별 궤적" 영역에서만 쓴다
+  trail?: boolean;
 }
 
 export interface ImageSize {

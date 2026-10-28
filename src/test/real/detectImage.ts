@@ -2,7 +2,7 @@ import type { DetectedStar } from "@/search/detectCore";
 import type { InputStar } from "@/search/solvers";
 import sharp from "sharp";
 import { detectStarsInImage } from "@/search/detectImage";
-import { mergeCloseStars, mergeDistancePx } from "@/search/utils/selectStars";
+import { mergeDetections, mergeDistancePx } from "@/search/utils/selectStars";
 
 // node에서 실제 사진(JPG/PNG)을 읽어 별을 검출한다. sharp로 픽셀만 풀고, 검출은 브라우저 Worker와
 // 같은 순수 JS(detectImage.ts: 회색조 → 흐림 → 차영상 → detectCore)를 쓴다.
@@ -35,12 +35,13 @@ export const detectLikeApp = async (
   path: string | Buffer,
 ): Promise<{ stars: InputStar[]; width: number; height: number }> => {
   const { stars, width, height } = await detectStarsFromFile(path);
-  const merged = mergeCloseStars(
+  const merged = mergeDetections(
     stars.map((s) => ({
       x: s.cx,
       y: s.cy,
       brightness: s.brightness,
       ringContrast: s.ringContrast,
+      ...(s.trail ? { trail: true } : {}),
     })),
     mergeDistancePx(width, height),
   );

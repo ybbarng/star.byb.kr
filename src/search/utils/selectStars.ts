@@ -39,6 +39,23 @@ export const mergeCloseStars = <
 };
 
 // 검출 단계에서 가까운 중복을 합치는 거리. 매칭 tolerance(대각선×0.006)보다 살짝 작다.
+// 검출 전체를 합친다: 별 궤적 점과 점 검출은 따로 합친다 (빛 총량이 큰 궤적 점이 궤적 위 점 검출을 지우지 않게)
+export const mergeDetections = <
+  T extends { x: number; y: number; brightness: number; trail?: boolean },
+>(
+  stars: T[],
+  minDistPx: number,
+): T[] => [
+  ...mergeCloseStars(
+    stars.filter((s) => !s.trail),
+    minDistPx,
+  ),
+  ...mergeCloseStars(
+    stars.filter((s) => s.trail),
+    minDistPx,
+  ),
+];
+
 export const mergeDistancePx = (width: number, height: number): number =>
   Math.max(6, Math.hypot(width, height) * 0.005);
 
@@ -59,10 +76,14 @@ type Prioritized = {
   brightness: number;
   ringContrast?: number;
   aligned?: boolean;
+  trail?: boolean;
 };
 
+// 별 궤적 점은 맨 뒤 (일반 영역은 쓰지 않는다)
 export const byStarPriority = (a: Prioritized, b: Prioritized): number =>
-  Number(isStarlike(b)) - Number(isStarlike(a)) || b.brightness - a.brightness;
+  Number(Boolean(a.trail)) - Number(Boolean(b.trail)) ||
+  Number(isStarlike(b)) - Number(isStarlike(a)) ||
+  b.brightness - a.brightness;
 
 // 우선순위 상위 검출 중 한 직선에 줄지은 것을 표시하고(aligned), 다시 우선순위 순으로 정렬한다.
 // 점 하나는 별처럼 생겨도 줄지어 있으면 비행기 불빛·창문 줄일 가능성이 높아 뒤로 민다.

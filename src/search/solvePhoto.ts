@@ -38,10 +38,12 @@ export const DEFAULT_SOLVERS: Solver[] = [improvedSolver, triangleSolver];
 // 점점 더 빼 본다. 이 가정이 틀린 사진은 확신 기준(log-odds)이 오답을 막고, 사람이 영역을 고를 수 있다.
 // border를 주면 네 가장자리를 그 비율만큼 뺀다: 광각 렌즈는 가장자리가 직선투영에서 벗어나 거기 별이
 // 매칭을 흐린다 (인터넷 사진 391장에서 가장자리 15%를 빼는 영역으로 7장이 더 풀렸다, journey 40장).
+// trail이면 별 궤적 점(노출 중간 순간의 별 자리)만 쓴다. 다른 영역은 궤적 점을 쓰지 않는다 (journey 41장).
 export const SEARCH_REGIONS: {
   label: string;
   keepTop: number;
   border?: number;
+  trail?: boolean;
 }[] = [
   { label: "사진 전체", keepTop: 1 },
   { label: "위쪽 75%", keepTop: 0.75 },
@@ -49,6 +51,10 @@ export const SEARCH_REGIONS: {
   // 하늘이 사진 위쪽 절반 남짓인 사진(서울 누각, 오로라 아래 나무·산)
   { label: "위쪽 45%", keepTop: 0.45 },
   { label: "가운데", keepTop: 1, border: 0.15 },
+  { label: "별 궤적", keepTop: 1, trail: true },
+  ...(process.env.EXP_CORE
+    ? [{ label: "한가운데", keepTop: 1, border: Number(process.env.EXP_CORE) }]
+    : []),
 ];
 // 영역 안 별이 이보다 적으면 그 영역은 건너뛴다
 const MIN_REGION_STARS = 8;
@@ -318,6 +324,7 @@ export const solvePhoto = (
     label: region.label,
     stars: sorted.filter(
       (s) =>
+        Boolean(s.trail) === Boolean(region.trail) &&
         s.y < size.height * region.keepTop &&
         (!region.border ||
           (s.x > size.width * region.border &&
@@ -419,7 +426,10 @@ export const solvePhoto = (
     options.onPhase?.({ kind: "fisheye" });
 
     const fe = blindSolveFisheye(
-      sorted.slice(0, FISHEYE_INPUT_STARS).map((s): Point2D => [s.x, s.y]),
+      sorted
+        .filter((s) => !s.trail)
+        .slice(0, FISHEYE_INPUT_STARS)
+        .map((s): Point2D => [s.x, s.y]),
       ctx.index,
       ctx.byHrVec,
       size.width,

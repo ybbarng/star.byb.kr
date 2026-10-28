@@ -18,10 +18,15 @@ export const outDir = (set: string) =>
 export const detPath = (set: string, file: string) =>
   resolve(outDir(set), `det${process.env.DET ?? ""}`, `${file}.json`);
 
-export const listPhotos = (set: string): string[] =>
-  readdirSync(photoDir(set))
+// CLASS를 주면 그 분류(출처표 class 첫 단어)의 사진만
+export const listPhotos = (set: string): string[] => {
+  const classes = process.env.CLASS ? loadClasses(set) : null;
+
+  return readdirSync(photoDir(set))
     .filter((f) => /\.(jpe?g|png|webp)$/i.test(f))
+    .filter((f) => !classes || classes.get(f) === process.env.CLASS)
     .sort();
+};
 
 // "0/4" → 네 조각 중 첫째 조각만
 export const shardOf = <T>(items: T[], spec?: string): T[] => {
@@ -178,7 +183,12 @@ const countOverlap = (
   return { m, e, tail: poissonTail(m, e) };
 };
 
-export const judge = (det: Detected, transform: Mat3): Overlap => {
+// trail이면 별 궤적 점만으로 센다 (궤적 영역에서 풀린 사진). 아니면 점 검출만
+export const judge = (
+  det: Detected,
+  transform: Mat3,
+  trail = false,
+): Overlap => {
   const { width, height } = det;
   const r = Math.hypot(width, height) * 0.006;
   const projected: [number, number][] = [];
@@ -191,7 +201,11 @@ export const judge = (det: Detected, transform: Mat3): Overlap => {
     }
   }
 
-  const ranked = rankForSolving(det.stars, width, height);
+  const ranked = rankForSolving(
+    det.stars.filter((s) => Boolean(s.trail) === trail),
+    width,
+    height,
+  );
   const top = countOverlap(projected, ranked.slice(0, 100), r, width * height);
   const late = countOverlap(
     projected,

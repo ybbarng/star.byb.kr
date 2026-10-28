@@ -113,8 +113,7 @@ export const detectStarsInImage = (
     diff[i] = v > 0 ? v : 0;
   }
 
-  return detectStarsFromDiff(diff, width, height).map((s) => ({
-    ...s,
-    ringContrast: ringContrast(gray, width, height, s),
-  }));
+  return detectStarsFromDiff(diff, width, height).map((s) =>
+    s.trail ? s : { ...s, ringContrast: ringContrast(gray, width, height, s) },
+  );
 };
