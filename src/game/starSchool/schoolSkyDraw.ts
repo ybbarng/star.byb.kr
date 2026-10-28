@@ -48,6 +48,7 @@ const COLORS = {
   star: "rgba(255,255,255,0.95)",
   pole: "rgba(140,255,170,0.95)",
   ecliptic: "rgba(255,200,80,0.8)",
+  constellation: "rgba(250,220,80,0.95)", // drawSky의 별자리선 색
 };
 
 // 다룰 방향들이 다 들어오는 카메라 (가운데 방향과 시야각)
@@ -168,7 +169,10 @@ export const drawSchoolSky = (
     groundSeed: 7,
     stars: STARS,
     compass: true,
-    constellations: lines.length ? lines : undefined,
+    // 별자리 이름은 아래 이름표와 함께 자리를 찾아 단다 (drawSky는 보이는 별 가운데에 그대로 써서 겹쳤다)
+    constellations: lines.length
+      ? lines.map((c) => ({ ...c, label: "" }))
+      : undefined,
     underlay: showMilkyWay
       ? (c, proj, glow) => {
           c.save();
@@ -231,8 +235,14 @@ export const drawSchoolSky = (
   });
   const labeled = new Set<string>();
 
-  const label = (p: Point2D, text: string, color: string, dy = -10) => {
-    if (quiet || !text || labeled.has(text)) return;
+  const label = (
+    p: Point2D,
+    text: string,
+    color: string,
+    dy = -10,
+    evenQuiet = false,
+  ) => {
+    if ((quiet && !evenQuiet) || !text || labeled.has(text)) return;
 
     const w = ctx.measureText(text).width + 6;
     const spots: [number, number][] = [
@@ -459,6 +469,29 @@ export const drawSchoolSky = (
     ctx.setLineDash([]);
 
     if (r.label) label(p, r.label, r.color, -26);
+  }
+
+  // 별자리 이름은 맨 나중에, 보이는 별들의 가운데 둘레 빈자리에 단다 (수업이 가리키는 별 이름이 먼저다).
+  // "사자자리"가 "알기에바"를 덮던 일. 찾기 문제를 푸는 동안에도 보인다 (예전 drawSky처럼)
+  for (const m of marks) {
+    if (m.kind !== "constellation") continue;
+
+    const pts = constellationParts(m.label)
+      .flatMap((c) => c.stars)
+      .filter((v) => up(v) > 0)
+      .flatMap((v) => {
+        const p = project(v);
+
+        return p && p[0] >= 0 && p[0] < W && p[1] >= 0 && p[1] < H ? [p] : [];
+      });
+
+    if (!pts.length) continue;
+
+    const mid: Point2D = [
+      pts.reduce((s, p) => s + p[0], 0) / pts.length,
+      pts.reduce((s, p) => s + p[1], 0) / pts.length,
+    ];
+    label(mid, m.label, COLORS.constellation, -10, true);
   }
 
   ctx.restore();
