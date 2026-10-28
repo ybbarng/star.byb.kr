@@ -52,9 +52,6 @@ export const SEARCH_REGIONS: {
   { label: "위쪽 45%", keepTop: 0.45 },
   { label: "가운데", keepTop: 1, border: 0.15 },
   { label: "별 궤적", keepTop: 1, trail: true },
-  ...(process.env.EXP_CORE
-    ? [{ label: "한가운데", keepTop: 1, border: Number(process.env.EXP_CORE) }]
-    : []),
 ];
 // 영역 안 별이 이보다 적으면 그 영역은 건너뛴다
 const MIN_REGION_STARS = 8;

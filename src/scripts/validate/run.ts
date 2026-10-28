@@ -7,6 +7,7 @@ import {
   outDir,
   shardOf,
 } from "@/scripts/validate/common";
+import { loadRun } from "@/scripts/validate/report";
 import { DEFAULT_SOLVERS, solvePhoto } from "@/search/solvePhoto";
 import { buildSolverContext } from "@/search/solverContext";
 import {
@@ -30,7 +31,18 @@ const run = () => {
   mkdirSync(dir, { recursive: true });
   writeFileSync(path, "");
 
-  for (const file of shardOf(listPhotos(set), shard)) {
+  // UNSOLVED=<이름>: 그 풀이 기록에서 확신 못 한 사진만 (시간 상한을 늘려 다시 볼 때)
+  const skip = process.env.UNSOLVED
+    ? new Set(
+        loadRun(set, process.env.UNSOLVED)
+          .filter((r) => r.found)
+          .map((r) => r.file),
+      )
+    : new Set<string>();
+
+  for (const file of shardOf(listPhotos(set), shard).filter(
+    (f) => !skip.has(f),
+  )) {
     const det = loadDetected(set, file);
 
     if (!det) {
