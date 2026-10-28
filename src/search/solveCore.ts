@@ -94,9 +94,10 @@ interface Correspondence {
 }
 
 // 카탈로그를 z(적위의 sin) 순으로 정렬해 둔다. 같은 카탈로그는 한 번만 정렬한다.
+// xyz는 같은 순서의 좌표를 이어 담은 배열 (대응 수집이 별 객체를 따라가지 않고 바로 읽는다)
 const byZCache = new WeakMap<
   SolveStar[],
-  { stars: SolveStar[]; zs: Float64Array }
+  { stars: SolveStar[]; zs: Float64Array; xyz: Float64Array }
 >();
 
 const sortedByZ = (catalog: SolveStar[]) => {
@@ -104,7 +105,11 @@ const sortedByZ = (catalog: SolveStar[]) => {
 
   if (!cached) {
     const stars = [...catalog].sort((a, b) => a.vector[2] - b.vector[2]);
-    cached = { stars, zs: Float64Array.from(stars, (s) => s.vector[2]) };
+    cached = {
+      stars,
+      zs: Float64Array.from(stars, (s) => s.vector[2]),
+      xyz: Float64Array.from(stars.flatMap((s) => s.vector)),
+    };
     byZCache.set(catalog, cached);
   }
 
@@ -399,30 +404,33 @@ const solveFrom = (
     // 이 반복은 후보 하나에 몇 번씩, 사진 한 장에 수십만 번 돈다(8초의 절반 넘게). 별마다 객체·배열을 만들지 않고
     // 다시 쓰는 타입 배열에 담는다. 계산은 toPlane·applyHomography와 같은 순서라 결과가 같다.
     const buf = predBuffers(byZ.stars.length);
+    const { zs, xyz } = byZ;
     const [p0, p1, p2] = Pcur;
     const [t0, t1, t2] = Tcur;
     let count = 0;
 
-    for (let n = lowerBound(byZ.zs, zLo); n < byZ.zs.length; n++) {
-      if (byZ.zs[n] > zHi) {
+    for (let n = lowerBound(zs, zLo); n < zs.length; n++) {
+      if (zs[n] > zHi) {
         break;
       }
 
-      const v = byZ.stars[n].vector;
+      const vx = xyz[3 * n];
+      const vy = xyz[3 * n + 1];
+      const vz = xyz[3 * n + 2];
 
       // 사진에 들어올 수 없는 먼 별은 광축과의 내적만으로 먼저 거른다 (대부분이 여기서 빠진다)
-      if (ax * v[0] + ay * v[1] + az * v[2] < cosMax) {
+      if (ax * vx + ay * vy + az * vz < cosMax) {
         continue;
       }
 
-      const qz = p2[0] * v[0] + p2[1] * v[1] + p2[2] * v[2];
+      const qz = p2[0] * vx + p2[1] * vy + p2[2] * vz;
 
       if (qz <= 0) {
         continue;
       }
 
-      const plx = (p0[0] * v[0] + p0[1] * v[1] + p0[2] * v[2]) / qz;
-      const ply = (p1[0] * v[0] + p1[1] * v[1] + p1[2] * v[2]) / qz;
+      const plx = (p0[0] * vx + p0[1] * vy + p0[2] * vz) / qz;
+      const ply = (p1[0] * vx + p1[1] * vy + p1[2] * vz) / qz;
       const w = t2[0] * plx + t2[1] * ply + t2[2];
 
       if (w <= 1e-12) {
