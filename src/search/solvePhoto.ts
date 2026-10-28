@@ -23,7 +23,7 @@ import { rankForSolving } from "@/search/utils/selectStars";
 //    (검출 노이즈 비율을 모르므로 노이즈가 적은 크기에서 정답이 나오길 기대한다.)
 //    확신할 해가 나오면 바로 멈춘다.
 //    입력은 사진 전체에서 고른 뒤, 지면 불빛 같은 노이즈가 아래쪽에 몰린 사진을 위해
-//    위쪽 영역에서만 다시 고른다 (사람이 지면을 가리는 일을 흉내, journey 14장).
+//    위쪽 영역에서만 다시 고른다 (사람이 지면을 가리는 일을 흉내, journey 14장). 광각 가장자리를 뺀 가운데도 본다.
 // 2) 직선투영으로 확신하지 못하면 어안(초광각) blind 풀이를 시도한다.
 // 3) 확신하지 못해도 서로 다른 하늘 위치의 후보들을 모아 사람이 고를 수 있게 돌려준다.
 
@@ -36,12 +36,19 @@ export const DEFAULT_TIME_BUDGET_MS = 8000;
 export const DEFAULT_SOLVERS: Solver[] = [improvedSolver, triangleSolver];
 // 입력을 고르는 영역. 사진 위쪽이 하늘이라고 보고(대부분의 사진), 지면이 섞인 아래쪽을
 // 점점 더 빼 본다. 이 가정이 틀린 사진은 확신 기준(log-odds)이 오답을 막고, 사람이 영역을 고를 수 있다.
-export const SEARCH_REGIONS = [
+// border를 주면 네 가장자리를 그 비율만큼 뺀다: 광각 렌즈는 가장자리가 직선투영에서 벗어나 거기 별이
+// 매칭을 흐린다 (인터넷 사진 391장에서 가장자리 15%를 빼는 영역으로 7장이 더 풀렸다, journey 40장).
+export const SEARCH_REGIONS: {
+  label: string;
+  keepTop: number;
+  border?: number;
+}[] = [
   { label: "사진 전체", keepTop: 1 },
   { label: "위쪽 75%", keepTop: 0.75 },
   { label: "위쪽 55%", keepTop: 0.55 },
   // 하늘이 사진 위쪽 절반 남짓인 사진(서울 누각, 오로라 아래 나무·산)
   { label: "위쪽 45%", keepTop: 0.45 },
+  { label: "가운데", keepTop: 1, border: 0.15 },
 ];
 // 영역 안 별이 이보다 적으면 그 영역은 건너뛴다
 const MIN_REGION_STARS = 8;
@@ -309,19 +316,26 @@ export const solvePhoto = (
   const sorted = rankForSolving(stars, size.width, size.height);
   const regionInputs = SEARCH_REGIONS.map((region) => ({
     label: region.label,
-    stars: sorted.filter((s) => s.y < size.height * region.keepTop),
+    stars: sorted.filter(
+      (s) =>
+        s.y < size.height * region.keepTop &&
+        (!region.border ||
+          (s.x > size.width * region.border &&
+            s.x < size.width * (1 - region.border) &&
+            s.y > size.height * region.border &&
+            s.y < size.height * (1 - region.border))),
+    ),
   })).filter(
     (region, i, all) =>
       region.stars.length >= MIN_REGION_STARS &&
       // 앞 영역과 실제로 쓰는 별이 같으면(아래쪽에 별이 없던 사진) 되풀이하지 않는다
       (i === 0 || !sameTopStars(region.stars, all[i - 1].stars)),
   );
-  // 1차: 사진 전체를 모든 solver로 (빠른 solver부터, 입력 크기 순). 별다움 순으로 고른 입력이면
-  // 지면이 섞여도 대부분 여기서 풀린다.
-  // 2차: 못 풀면 지면을 빼는 영역으로. 한 solver 안에서는 입력 크기 순으로 영역을 번갈아 본다
-  // (15개: 위쪽 75% → 55% → 45%, 그다음 25개 …). 큰 입력은 비싸서 작은 입력을 먼저 본다.
-  const stepsFor = (regions: typeof regionInputs) =>
-    solvers.flatMap((solver) => {
+  // solver 하나 안에서: 사진 전체를 입력 크기 순으로 보고(별다움 순으로 고른 입력이면 지면이 섞여도 대부분
+  // 여기서 풀린다), 못 풀면 지면·가장자리를 빼는 영역들을 입력 크기 순으로 번갈아 본다
+  // (15개: 위쪽 75% → 55% → 45% → 가운데, 그다음 25개 …). 큰 입력은 비싸서 작은 입력을 먼저 본다.
+  const stepsFor = (regions: typeof regionInputs, list: Solver[] = solvers) =>
+    list.flatMap((solver) => {
       const perRegion = regions.map((region) =>
         inputSizesFor(region.stars.length, solver.inputSizes).map(
           (inputSize) => ({
@@ -337,10 +351,13 @@ export const solvePhoto = (
         perRegion.flatMap((list) => (k < list.length ? [list[k]] : [])),
       ).flat();
     });
-  const steps = [
-    ...stepsFor(regionInputs.slice(0, 1)),
-    ...stepsFor(regionInputs.slice(1)),
-  ];
+  // solver마다 사진 전체를 먼저, 그다음 영역들. 빠른 solver(개선 quad, 단계당 수십~수백 ms)로 영역까지 다
+  // 본 뒤 느린 solver(삼각형, 60개 단계는 수 초)로 넘어간다. 예전에는 두 solver로 사진 전체를 다 본 뒤에야
+  // 영역으로 갔는데, 그때쯤이면 대개 8초가 지나 영역 단계는 391장 중 5장만 풀었다 (journey 40장).
+  const steps = solvers.flatMap((solver) => [
+    ...stepsFor(regionInputs.slice(0, 1), [solver]),
+    ...stepsFor(regionInputs.slice(1), [solver]),
+  ]);
 
   const allCandidates: SolveCandidateResult[] = [];
   let best: SolveOutcome | null = null;
