@@ -29,7 +29,7 @@ const makeImage = (background: (x: number, y: number) => number) => {
   return gray;
 };
 
-const star = { cx: 50, cy: 50, brightness: 2 };
+const star = { cx: 50, cy: 50, radius: 2 };
 
 describe("ringContrast", () => {
   it("고른 하늘 위의 별은 작다", () => {

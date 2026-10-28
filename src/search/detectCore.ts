@@ -1,7 +1,8 @@
 export interface DetectedStar {
   cx: number;
   cy: number;
-  brightness: number; // 유효 반경 (밝은 별일수록 큼)
+  brightness: number; // 밝을수록 큰 값
+  radius: number; // 유효 반경(px): 문턱을 넘는 영역의 반지름
   elongation: number; // 1=원형, 클수록 길쭉 (물결 반사광/궤적은 큼)
   fwhm: number; // 밝기 분포 크기(px)
   ringContrast?: number; // 별다움 (ringContrast, 회색조 영상을 줄 때만)
@@ -10,7 +11,7 @@ export interface DetectedStar {
 // 별 검출의 핵심 (예전 브라우저 cv.worker.js의 findStars에서 옮겨 왔다).
 // 입력은 차영상 diff = grayscale - blur (음수 클램프, 1채널). 회색조·흐림·빼기는 detectImage.ts가 만든다
 // (브라우저 Worker와 node 테스트가 같은 코드).
-// 적응적 threshold(mean+3σ) → local maxima → 유효 반경 → NMS → weighted centroid.
+// 적응적 threshold(mean+3σ) → local maxima → 유효 반경 → NMS → weighted centroid·빛 총량.
 export const detectStarsFromDiff = (
   diff: Float32Array | Uint8Array | Uint8ClampedArray,
   cols: number,
@@ -189,7 +190,10 @@ export const detectStarsFromDiff = (
     return {
       cx,
       cy,
-      brightness: star.effectiveRadius,
+      // 밝기는 차영상의 빛 총량(중심 둘레 창의 합)이다. 예전에는 유효 반경을 썼는데, 1920px 사진에서는
+      // 대부분 0~3px에 몰려 직녀성(0.03등급)이 832위로 밀리기도 했다 (journey 39장)
+      brightness: sumW,
+      radius: star.effectiveRadius,
       elongation,
       fwhm,
     };
@@ -238,13 +242,13 @@ export const ringContrast = (
   gray: Uint8Array | Uint8ClampedArray,
   cols: number,
   rows: number,
-  star: { cx: number; cy: number; brightness: number },
+  star: { cx: number; cy: number; radius: number },
   channels = 1,
 ): number => {
   const unit = Math.max(1, Math.hypot(cols, rows) / 1400);
   // 반지름은 0.5px 단위로 맞춰 고리 목록을 재사용한다
-  const r1 = Math.round((3 * unit + star.brightness) * 2) / 2;
-  const r2 = Math.round((6 * unit + star.brightness * 1.5) * 2) / 2;
+  const r1 = Math.round((3 * unit + star.radius) * 2) / 2;
+  const r2 = Math.round((6 * unit + star.radius * 1.5) * 2) / 2;
   const offsets = ringOffsets(r1, r2, r2 > 12 ? 2 : 1);
 
   const at = (x: number, y: number) => {

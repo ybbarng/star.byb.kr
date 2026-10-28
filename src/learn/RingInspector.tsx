@@ -15,8 +15,9 @@ const ZOOM_PX = 220;
 // 고리 반지름과 부채꼴 8개의 평균 밝기, 점의 꼭대기 밝기(안쪽 원의 최댓값, ringContrast와 같은 식)
 const measure = (image: HTMLImageElement, star: DetectedStar) => {
   const unit = Math.max(1, Math.hypot(image.width, image.height) / 1400);
-  const r1 = Math.round((3 * unit + star.brightness) * 2) / 2;
-  const r2 = Math.round((6 * unit + star.brightness * 1.5) * 2) / 2;
+  const radius = star.radius ?? 0;
+  const r1 = Math.round((3 * unit + radius) * 2) / 2;
+  const r2 = Math.round((6 * unit + radius * 1.5) * 2) / 2;
   const half = Math.ceil(r2 * 1.6);
   const size = half * 2 + 1;
   const c = document.createElement("canvas");

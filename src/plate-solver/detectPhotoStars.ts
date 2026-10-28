@@ -12,6 +12,7 @@ export interface DetectedStar {
   x: number;
   y: number;
   brightness: number;
+  radius?: number; // 유효 반경(px, detectCore). 별다움 고리 크기에 쓴다
   fwhm: number; // 퍼짐 크기
   ringContrast?: number; // 별다움 (detectCore.ringContrast)
 }
@@ -42,6 +43,7 @@ export const detectPhotoStars = async (
       x: star.cx,
       y: star.cy,
       brightness: star.brightness,
+      radius: star.radius,
       fwhm: star.fwhm ?? 0,
       ringContrast: star.ringContrast,
     })),

@@ -16,7 +16,7 @@ export const photoDir = (set: string) =>
 export const outDir = (set: string) =>
   resolve(process.cwd(), "build/validate", set);
 export const detPath = (set: string, file: string) =>
-  resolve(outDir(set), "det", `${file}.json`);
+  resolve(outDir(set), `det${process.env.DET ?? ""}`, `${file}.json`);
 
 export const listPhotos = (set: string): string[] =>
   readdirSync(photoDir(set))
