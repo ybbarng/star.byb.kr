@@ -20,5 +20,11 @@ for (const f of process.argv.slice(3)) {
     DEFAULT_SOLVERS,
     { timeBudgetMs: Number(process.env.BUDGET ?? 8000) },
   );
-  console.log(f, out.found, out.confidence.toFixed(1), Math.round(out.timeMs));
+  console.log(
+    f,
+    out.found,
+    out.confidence.toFixed(1),
+    Math.round(out.timeMs),
+    `후보 ${out.candidatesEvaluated}`,
+  );
 }

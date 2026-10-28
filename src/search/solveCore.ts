@@ -111,6 +111,29 @@ const sortedByZ = (catalog: SolveStar[]) => {
   return cached;
 };
 
+// 대응 수집이 투영한 카탈로그 별을 담는 버퍼 (한 번에 하나의 수집만 쓴다: 풀이는 동기 실행이다)
+let predBuf = {
+  n: new Int32Array(0),
+  plx: new Float64Array(0),
+  ply: new Float64Array(0),
+  x: new Float64Array(0),
+  y: new Float64Array(0),
+};
+
+const predBuffers = (size: number) => {
+  if (predBuf.n.length < size) {
+    predBuf = {
+      n: new Int32Array(size),
+      plx: new Float64Array(size),
+      ply: new Float64Array(size),
+      x: new Float64Array(size),
+      y: new Float64Array(size),
+    };
+  }
+
+  return predBuf;
+};
+
 // 정렬된 배열에서 value 이상이 처음 나오는 위치
 const lowerBound = (xs: Float64Array, value: number): number => {
   let lo = 0;
@@ -361,9 +384,8 @@ const solveFrom = (
   ): {
     matches: Correspondence[];
     projectedInFov: number;
-    projected: Point2D[];
+    projected: () => Point2D[];
   } => {
-    const pred: { vec: Point3D; plane: Point2D; xy: Point2D }[] = [];
     const [ax, ay, az] = Pcur[2];
     const cosMax = minCosInView(Tcur);
 
@@ -374,35 +396,54 @@ const solveFrom = (
     const zLo = Math.sin(Math.max(-Math.PI / 2, dec - rho));
     const zHi = Math.sin(Math.min(Math.PI / 2, dec + rho));
 
+    // 이 반복은 후보 하나에 몇 번씩, 사진 한 장에 수십만 번 돈다(8초의 절반 넘게). 별마다 객체·배열을 만들지 않고
+    // 다시 쓰는 타입 배열에 담는다. 계산은 toPlane·applyHomography와 같은 순서라 결과가 같다.
+    const buf = predBuffers(byZ.stars.length);
+    const [p0, p1, p2] = Pcur;
+    const [t0, t1, t2] = Tcur;
+    let count = 0;
+
     for (let n = lowerBound(byZ.zs, zLo); n < byZ.zs.length; n++) {
       if (byZ.zs[n] > zHi) {
         break;
       }
 
-      const s = byZ.stars[n];
-      const v = s.vector;
+      const v = byZ.stars[n].vector;
 
       // 사진에 들어올 수 없는 먼 별은 광축과의 내적만으로 먼저 거른다 (대부분이 여기서 빠진다)
       if (ax * v[0] + ay * v[1] + az * v[2] < cosMax) {
         continue;
       }
 
-      const plane = toPlane(Pcur, v);
+      const qz = p2[0] * v[0] + p2[1] * v[1] + p2[2] * v[2];
 
-      if (!plane) {
+      if (qz <= 0) {
         continue;
       }
 
-      const xy = applyHomography(Tcur, plane);
+      const plx = (p0[0] * v[0] + p0[1] * v[1] + p0[2] * v[2]) / qz;
+      const ply = (p1[0] * v[0] + p1[1] * v[1] + p1[2] * v[2]) / qz;
+      const w = t2[0] * plx + t2[1] * ply + t2[2];
+
+      if (w <= 1e-12) {
+        continue;
+      }
+
+      const x = (t0[0] * plx + t0[1] * ply + t0[2]) / w;
+      const y = (t1[0] * plx + t1[1] * ply + t1[2]) / w;
 
       if (
-        xy &&
-        xy[0] >= -tolerancePx &&
-        xy[0] < W + tolerancePx &&
-        xy[1] >= -tolerancePx &&
-        xy[1] < H + tolerancePx
+        x >= -tolerancePx &&
+        x < W + tolerancePx &&
+        y >= -tolerancePx &&
+        y < H + tolerancePx
       ) {
-        pred.push({ vec: s.vector, plane, xy });
+        buf.n[count] = n;
+        buf.plx[count] = plx;
+        buf.ply[count] = ply;
+        buf.x[count] = x;
+        buf.y[count] = y;
+        count++;
       }
     }
 
@@ -410,10 +451,11 @@ const solveFrom = (
     // 허용오차 안에 있으므로, 전체 쌍을 다 보는 것과 결과가 같다.
     const photoBest = new Float64Array(photoStars.length).fill(Infinity);
     const photoBestK = new Int32Array(photoStars.length).fill(-1);
-    const predBestI = new Int32Array(pred.length).fill(-1);
+    const predBestI = new Int32Array(count).fill(-1);
 
-    for (let k = 0; k < pred.length; k++) {
-      const [px, py] = pred[k].xy;
+    for (let k = 0; k < count; k++) {
+      const px = buf.x[k];
+      const py = buf.y[k];
       const center = cellOf(px, py);
       let bestD = Infinity;
 
@@ -452,8 +494,8 @@ const solveFrom = (
 
       if (k >= 0 && predBestI[k] === i) {
         matches.push({
-          vec: pred[k].vec,
-          plane: pred[k].plane,
+          vec: byZ.stars[buf.n[k]].vector,
+          plane: [buf.plx[k], buf.ply[k]],
           photo: photoStars[i],
           dist: Math.sqrt(photoBest[i]),
         });
@@ -462,8 +504,10 @@ const solveFrom = (
 
     return {
       matches,
-      projectedInFov: pred.length,
-      projected: pred.map((q) => q.xy),
+      projectedInFov: count,
+      // 다음 대응 수집 전에만 쓸 수 있다 (버퍼를 다시 쓴다)
+      projected: () =>
+        Array.from({ length: count }, (_, k): Point2D => [buf.x[k], buf.y[k]]),
     };
   };
 
@@ -716,7 +760,7 @@ const solveFrom = (
   const expectedRandom = Math.max(
     photoStars.length * projectedInFov * areaRatio,
     // 변환을 고정해 채점할 때는 검출이 한곳에 몰린 사진(지면 불빛 띠)도 따진다
-    start.kind === "fixed" ? localExpected(final.projected) : 0,
+    start.kind === "fixed" ? localExpected(final.projected()) : 0,
   );
   const significance = inlierCount / Math.max(1e-6, expectedRandom);
   // 시드 별(photoQuad)은 대응이 정해진 채 들어오므로 우연 비교에서 뺀다.
