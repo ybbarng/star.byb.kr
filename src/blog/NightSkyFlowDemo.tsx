@@ -307,7 +307,6 @@ function NightSkyFlow({ view }: { view: FlowView }) {
       stars: STARS,
       // 이름은 아래에서 따로 쓴다 (drawSky는 별들 가운데에 써서 선과 어두운 별을 덮는다)
       constellations: view.constellations.map((c) => ({ ...c, label: "" })),
-      linesBelowHorizon: true,
       // 날짜가 흘러 달 밝은 밤도 오는데, 그때 별이 다 지워지면 별자리 주변이 텅 빈다
       moonlightDimsStars: false,
       compass: !view.foreground,

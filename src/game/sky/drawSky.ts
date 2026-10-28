@@ -37,7 +37,6 @@ export interface DrawSkyOptions {
   groundSeed: number; // 능선·마을 불빛 모양
   stars: DrawStar[];
   constellations?: DrawConstellation[]; // 주면 별자리선을 그린다 (풀이 화면)
-  linesBelowHorizon?: boolean; // 한쪽 끝 별만 떠도 선을 긋는다 (지평선 아래는 땅이 가린다)
   compass?: boolean; // 지평선에 동서남북 표시 (쉬움)
   // 달빛이 어두운 별을 지우게 할지 (기본 true). 별을 눌러 보는 게 목적이면 끈다.
   moonlightDimsStars?: boolean;
@@ -131,6 +130,33 @@ export const drawSky = (
     return z > 1e-6
       ? [dot(TP[0] as Point3D, v) / z, dot(TP[1] as Point3D, v) / z]
       : null;
+  };
+
+  // 선분을 카메라 앞쪽(광축에서 약 87° 안)으로 잘라 투영한다. 한쪽 끝 별이 카메라 뒤나 화면 밖 멀리 있어도
+  // 보이는 부분은 긋는다. 두 별을 이은 현은 같은 대원 평면에 있어 투영하면 대원 호와 같은 직선이 된다
+  const near = 0.05 * Math.hypot(TP[2][0], TP[2][1], TP[2][2]);
+
+  const projectSegment = (
+    a: Point3D,
+    b: Point3D,
+  ): [Point2D, Point2D] | null => {
+    const za = dot(TP[2] as Point3D, a);
+    const zb = dot(TP[2] as Point3D, b);
+
+    if (za < near && zb < near) {
+      return null;
+    }
+
+    const cut = (p: Point3D, q: Point3D, zp: number, zq: number) => {
+      const t = (near - zp) / (zq - zp);
+
+      return p.map((c, i) => c + t * (q[i] - c)) as Point3D;
+    };
+
+    const pa = project(za < near ? cut(a, b, za, zb) : a);
+    const pb = project(zb < near ? cut(b, a, zb, za) : b);
+
+    return pa && pb ? [pa, pb] : null;
   };
 
   const pxPerDeg = Math.hypot(TP[0][0], TP[0][1], TP[0][2]) * D;
@@ -290,19 +316,19 @@ export const drawSky = (
       const label = labels.get(c.label) ?? { shown: 0, sx: 0, sy: 0 };
       labels.set(c.label, label);
 
-      // 기본은 양 끝이 다 떠야 긋는다. linesBelowHorizon이면 한쪽 끝만 떠도 긋고 지평선 아래 부분은 뒤에 그리는
-      // 땅이 가린다 (하늘이 흘러가는 데모에서 별이 뜨는 순간 선이 툭 생기지 않게)
-      for (let i = 0; i < pts.length - 1; i++) {
-        const a = pts[i];
-        const b = pts[i + 1];
-        const drawn = o.linesBelowHorizon
-          ? up[i] || up[i + 1]
-          : up[i] && up[i + 1];
+      // 한쪽 끝만 떠도 긋고 지평선 아래 부분은 뒤에 그리는 땅이 가린다 (별이 뜨는 순간 선이 툭 생기지 않게).
+      // 둘 다 졌으면 선은 통째로 지평선 아래다 (현의 고도 sin 값이 두 끝 사이에서 곧게 변한다)
+      for (let i = 0; i < c.stars.length - 1; i++) {
+        const seg =
+          up[i] || up[i + 1]
+            ? projectSegment(c.stars[i], c.stars[i + 1])
+            : null;
 
-        if (!a || !b || !drawn || Math.hypot(a[0] - b[0], a[1] - b[1]) > W) {
+        if (!seg) {
           continue;
         }
 
+        const [a, b] = seg;
         ctx.beginPath();
         ctx.moveTo(a[0], a[1]);
         ctx.lineTo(b[0], b[1]);
