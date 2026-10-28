@@ -277,6 +277,11 @@ export default function SkyBackground() {
       return;
     }
 
+    // 안드로이드(Chrome은 주소창이 위)는 배경을 화면 아래에 붙인다 (fx.css의 .fx-sky 설명)
+    if (/Android/i.test(navigator.userAgent)) {
+      skyCanvas.parentElement!.dataset.anchor = "bottom";
+    }
+
     let stars = draw(skyCanvas, effectCanvas);
     let resizeTimer = 0;
     let drawn = boxSize(skyCanvas.parentElement!);

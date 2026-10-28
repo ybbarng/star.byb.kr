@@ -228,6 +228,9 @@
   height: 100lvh;
   z-index: 0;
   pointer-events: none;
+  /* 위에 붙인 배경은 주소창이 숨거나 나타날 때 화면의 위쪽 끝과 함께 움직인다. 주소창이 위에 있으면
+     (안드로이드 Chrome) 아래쪽 끝이 그대로라 아래에 붙이면 멈춰 있고, 가장 큰 높이라 위쪽은 주소창 뒤로
+     조금 가려질 뿐이다. 주소창이 아래인 아이폰 Safari는 반대라 위에 그대로 둔다 (ui/SkyBackground가 data-anchor를 단다) */
   background: radial-gradient(
       ellipse at 20% 0%,
       rgba(70, 90, 180, 0.22),
@@ -235,6 +238,11 @@
     ),
     radial-gradient(ellipse at 90% 100%, rgba(120, 60, 160, 0.18), transparent 55%),
     #0a0e1c;
+}
+
+.fx-sky[data-anchor="bottom"] {
+  top: auto;
+  bottom: 0;
 }
 
 .fx-sky-layer {
