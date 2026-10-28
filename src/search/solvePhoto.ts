@@ -1,4 +1,4 @@
-import type { Point2D } from "@/scripts/hash/types";
+import type { Point2D, Point3D } from "@/scripts/hash/types";
 import type {
   ImageSize,
   InputStar,
@@ -8,9 +8,9 @@ import type {
   SolverContext,
 } from "@/search/solvers";
 import { blindSolveFisheye } from "@/search/fisheyeSolve";
-import { refineSolution } from "@/search/solveCore";
+import { refineSolution, scorePose } from "@/search/solveCore";
 // 비교용 전체 목록(solvers/index)은 mathjs를 쓰는 원본(baseline)까지 싣기 때문에, 앱이 쓰는 둘만 직접 불러온다
-import { dedupeBySky } from "@/search/solvers/candidates";
+import { ACCEPT, dedupeBySky, isConfident } from "@/search/solvers/candidates";
 import { improvedSolver } from "@/search/solvers/improved";
 import { triangleSolver } from "@/search/solvers/triangle";
 import { rankForSolving } from "@/search/utils/selectStars";
@@ -115,7 +115,7 @@ const inputSizesFor = (
 const POLISH_INPUT_STARS = [60, 100, 150];
 const POLISH_WIDEN = [1, 1.5, 2, 3];
 
-const polish = (
+export const polish = (
   out: SolveOutcome,
   stars: InputStar[],
   size: ImageSize,
@@ -179,6 +179,123 @@ const polish = (
   };
 };
 
+// 정밀화해 볼 만큼 유망한 후보의 log-odds 하한과 단계마다 볼 후보 수. 오답 후보는 대개 4~5.5에 몰려 있고
+// 정밀화해도 8.6을 넘지 않았다(200장). 정밀화는 한 번에 10ms 안팎이라 단계마다 몇 개는 싸다.
+const PROMOTE_MIN_LOG_ODDS = 5;
+const PROMOTE_PER_STEP = 2;
+// 이미 정밀화해 본 하늘 위치(광축 1° 안)는 다시 하지 않는다
+const PROMOTE_SAME_SKY_COS = Math.cos(Math.PI / 180);
+
+// 교차 검증: 우선순위 짝수 번째 별로만 정밀화하고, 그 변환을 고정한 채 홀수 번째 별로 채점한다.
+// 정밀화는 허용오차를 넓혀 가며 변환을 여러 번 다시 맞추므로, 맞춘 별로 다시 채점하면 오답도 점수가 부푼다
+// (합성 지면 불빛 150개 사진에서 시야 69°짜리 오답 7.2가 정밀화로 12.1이 됐다).
+const PROMOTE_MIN_HELD_OUT = 3;
+
+// 정밀화한 변환을 고정한 채, 검출이 몰린 곳을 따지는 기대치(국소 밀도)로 다시 채점한다
+const localLogOdds = (
+  out: SolveOutcome,
+  stars: InputStar[],
+  size: ImageSize,
+  ctx: SolverContext,
+): number => {
+  const n = POLISH_INPUT_STARS[POLISH_INPUT_STARS.length - 1];
+  const scored = out.transform
+    ? scorePose(
+        out.transform,
+        stars.slice(0, n).map((s): Point2D => [s.x, s.y]),
+        ctx.catalog,
+        { imageWidth: size.width, imageHeight: size.height },
+      )
+    : null;
+
+  return scored?.logOdds ?? 0;
+};
+
+export const heldOutLogOdds = (
+  c: SolveCandidateResult,
+  stars: InputStar[],
+  size: ImageSize,
+  ctx: SolverContext,
+): number => {
+  const even = stars.filter((_, i) => i % 2 === 0);
+  const odd = stars
+    .filter((_, i) => i % 2 === 1)
+    .slice(0, POLISH_INPUT_STARS[POLISH_INPUT_STARS.length - 1] / 2);
+  const fit = polish(
+    { found: false, ...c, candidatesEvaluated: 0, timeMs: 0, candidates: [] },
+    even,
+    size,
+    ctx,
+  );
+
+  if (!fit.transform) {
+    return 0;
+  }
+
+  const held = scorePose(
+    fit.transform,
+    odd.map((s): Point2D => [s.x, s.y]),
+    ctx.catalog,
+    { imageWidth: size.width, imageHeight: size.height },
+  );
+
+  return held?.logOdds ?? 0;
+};
+
+const promoteCandidates = (
+  candidates: SolveCandidateResult[],
+  polished: Point3D[],
+  stars: InputStar[],
+  size: ImageSize,
+  ctx: SolverContext,
+): SolveOutcome | null => {
+  const fresh = candidates
+    .filter(
+      (c) =>
+        c.confidence >= PROMOTE_MIN_LOG_ODDS &&
+        !polished.some(
+          (v) =>
+            v[0] * c.centerVector[0] +
+              v[1] * c.centerVector[1] +
+              v[2] * c.centerVector[2] >=
+            PROMOTE_SAME_SKY_COS,
+        ),
+    )
+    .sort((a, b) => b.confidence - a.confidence)
+    .slice(0, PROMOTE_PER_STEP);
+
+  for (const c of fresh) {
+    polished.push(c.centerVector);
+
+    const out = polish(
+      {
+        found: false,
+        ...c,
+        candidatesEvaluated: 0,
+        timeMs: 0,
+        candidates: [],
+      },
+      stars,
+      size,
+      ctx,
+    );
+
+    if (
+      isConfident({
+        inlierCount: out.inlierCount,
+        fovDeg: out.fovDeg ?? Infinity,
+        logOdds: out.confidence,
+      }) &&
+      localLogOdds(out, stars, size, ctx) >= ACCEPT.minLogOdds &&
+      heldOutLogOdds(c, stars, size, ctx) >= PROMOTE_MIN_HELD_OUT
+    ) {
+      return out;
+    }
+  }
+
+  return null;
+};
+
 // stars는 검출 전체를 넣어도 된다. 영역마다 우선순위(별다움 → 밝기) 순으로 필요한 만큼만 쓴다.
 export const solvePhoto = (
   stars: InputStar[],
@@ -229,6 +346,7 @@ export const solvePhoto = (
   let best: SolveOutcome | null = null;
   let evaluated = 0;
   let timedOut = false;
+  const polished: Point3D[] = [];
 
   for (let i = 0; i < steps.length; i++) {
     if (performance.now() >= deadline) {
@@ -256,6 +374,23 @@ export const solvePhoto = (
     if (out.found) {
       best = polish(out, region.stars, size, ctx);
       allCandidates.push(...best.candidates);
+      break;
+    }
+
+    // 확신은 못 했지만 유망한 후보는 그 영역의 별 더 많이로 다시 맞춰 본다. 15~25개로 잰 점수는
+    // 기준 근처에서 출렁여, 정답 후보가 기준 아래(6~8.5)에 머문 채 시간 상한까지 가곤 했다
+    // (인터넷 사진 200장에서 1위 후보가 이미 정답인데 못 푼 사진 5장, journey 38장).
+    const promoted = promoteCandidates(
+      out.candidates,
+      polished,
+      region.stars,
+      size,
+      ctx,
+    );
+
+    if (promoted) {
+      best = { ...out, ...promoted, found: true };
+      allCandidates.push(...promoted.candidates);
       break;
     }
   }

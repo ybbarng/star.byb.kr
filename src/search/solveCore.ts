@@ -244,7 +244,8 @@ const PERSPECTIVE_MIN_MATCHES = 8;
 // 검증의 출발점: 매칭이 준 대응(사진 별 ↔ 카탈로그 별) 몇 쌍, 또는 이미 찾은 변환
 type SolveStart =
   | { kind: "seeds"; photoQuad: Point2D[]; databaseQuad: Point3D[] }
-  | { kind: "pose"; TP: Mat3 };
+  | { kind: "pose"; TP: Mat3 }
+  | { kind: "fixed"; TP: Mat3 };
 
 type VerifyListener = (
   result: SolveResult,
@@ -292,7 +293,19 @@ export const refineSolution = (
 ): SolveResult | null =>
   solveFrom({ kind: "pose", TP }, photoStars, catalog, options);
 
+// 변환을 그대로 두고 점수만 매긴다 (다시 맞추지 않는다). 변환을 정할 때 쓰지 않은 별로 채점하면
+// 맞춰 놓고 같은 별로 채점해 부푼 점수를 걸러 낼 수 있다 (solvePhoto의 교차 검증).
+export const scorePose = (
+  TP: Mat3,
+  photoStars: Point2D[],
+  catalog: SolveStar[],
+  options: SolveOptions,
+): SolveResult | null =>
+  solveFrom({ kind: "fixed", TP }, photoStars, catalog, options);
+
 const POSE_FIXED_MATCHES = 4;
+// 국소 밀도를 재는 반지름 (허용오차 칸 수). 사진 대각선의 약 10%
+const LOCAL_RADIUS_TOL = 16;
 
 const solveFrom = (
   start: SolveStart,
@@ -345,7 +358,11 @@ const solveFrom = (
   const collectMatches = (
     Tcur: Mat3,
     Pcur: Mat3,
-  ): { matches: Correspondence[]; projectedInFov: number } => {
+  ): {
+    matches: Correspondence[];
+    projectedInFov: number;
+    projected: Point2D[];
+  } => {
     const pred: { vec: Point3D; plane: Point2D; xy: Point2D }[] = [];
     const [ax, ay, az] = Pcur[2];
     const cosMax = minCosInView(Tcur);
@@ -443,13 +460,21 @@ const solveFrom = (
       }
     }
 
-    return { matches, projectedInFov: pred.length };
+    return {
+      matches,
+      projectedInFov: pred.length,
+      projected: pred.map((q) => q.xy),
+    };
   };
 
   // 초기 광축 P와 변환 T. 대응에서 출발하면 DB quad 중심 광축 + quad 최소제곱,
   // 변환에서 출발하면 사진 중심 광축 + 그 광축 기준으로 나눈 변환(TP = T·P).
   const seedCount =
-    start.kind === "seeds" ? start.photoQuad.length : POSE_FIXED_MATCHES;
+    start.kind === "seeds"
+      ? start.photoQuad.length
+      : start.kind === "pose"
+        ? POSE_FIXED_MATCHES
+        : 0;
   let P: Mat3;
   let T: Mat3;
 
@@ -521,6 +546,10 @@ const solveFrom = (
   // 광축을 한 번 다시 잡아 보고도 그대로일 때만 버린다.
   const minUseful = seedCount + 1;
 
+  if (best.length < minUseful && start.kind === "fixed") {
+    return null;
+  }
+
   if (best.length < minUseful) {
     const r = recenter(best, T, P);
 
@@ -534,7 +563,7 @@ const solveFrom = (
 
   // 변환에서 출발했으면(마무리 정밀화) 닮음변환으로 다시 맞추지 않는다. 그 변환에 담긴
   // 원근(키스톤)을 버리게 되어, 원근이 센 사진은 점수가 무너졌다 (journey 22장).
-  const fromPose = start.kind === "pose";
+  const fromPose = start.kind !== "seeds";
 
   // RANSAC: 2쌍으로 변환을 추정하며 최대 inlier 모델 탐색
   if (!fromPose && best.length >= 4) {
@@ -598,7 +627,7 @@ const solveFrom = (
   // 원근(키스톤) 보정된 사진은 가장자리가 닮음변환에서 어긋나 거기 별을 놓친다.
   let perspective = false;
 
-  if (best.length >= PERSPECTIVE_MIN_MATCHES) {
+  if (start.kind !== "fixed" && best.length >= PERSPECTIVE_MIN_MATCHES) {
     for (let iter = 0; iter < 3; iter++) {
       const Hm = fitHomography2D(
         best.map((c) => c.plane),
@@ -621,6 +650,50 @@ const solveFrom = (
     }
   }
 
+  // 투영 별마다 주변(반지름 LOCAL_RADIUS_TOL × 허용오차)의 검출 밀도로 우연히 맞을 기대를 더한다.
+  // 사진 전체 평균 밀도로 잰 기대는 검출이 고르게 퍼져 있다고 보는데, 지면 불빛·구름 가장자리처럼
+  // 검출이 몰린 곳에 별을 많이 투영하는 오답은 그 가정에서 점수가 부푼다.
+  const localExpected = (projected: Point2D[]): number => {
+    const reach = LOCAL_RADIUS_TOL;
+    const rho2 = (reach * tolerancePx) ** 2;
+    let sum = 0;
+
+    for (const [px, py] of projected) {
+      const center = cellOf(px, py);
+      let count = 0;
+
+      for (let dy = -reach; dy <= reach; dy++) {
+        for (let dx = -reach; dx <= reach; dx++) {
+          const c = center + dy * gridW + dx;
+
+          if (c < 0 || c >= cellStart.length - 1) {
+            continue;
+          }
+
+          for (let q = cellStart[c]; q < cellStart[c + 1]; q++) {
+            const i = cellOrder[q];
+            const ex = photoStars[i][0] - px;
+            const ey = photoStars[i][1] - py;
+
+            if (ex * ex + ey * ey <= rho2) {
+              count++;
+            }
+          }
+        }
+      }
+
+      // 원이 사진 밖으로 나간 만큼 넓이를 줄인다 (사각형 겹침으로 어림)
+      const r = reach * tolerancePx;
+      const inside =
+        ((Math.min(W, px + r) - Math.max(0, px - r)) *
+          (Math.min(H, py + r) - Math.max(0, py - r))) /
+        (4 * r * r);
+      sum += (count * tol2) / (rho2 * Math.max(0.25, inside));
+    }
+
+    return sum;
+  };
+
   // 최종 검증
   const final = collectMatches(T, P);
   const inlierCount = final.matches.length;
@@ -640,7 +713,11 @@ const solveFrom = (
 
   // 우연매칭 기대치: 화면에 투영된 카탈로그 밀도 × photoStar당 tolerance 면적
   const areaRatio = (Math.PI * tol2) / (W * H);
-  const expectedRandom = photoStars.length * projectedInFov * areaRatio;
+  const expectedRandom = Math.max(
+    photoStars.length * projectedInFov * areaRatio,
+    // 변환을 고정해 채점할 때는 검출이 한곳에 몰린 사진(지면 불빛 띠)도 따진다
+    start.kind === "fixed" ? localExpected(final.projected) : 0,
+  );
   const significance = inlierCount / Math.max(1e-6, expectedRandom);
   // 시드 별(photoQuad)은 대응이 정해진 채 들어오므로 우연 비교에서 뺀다.
   // 원근 변환은 대응 4쌍으로 정해지므로, 그때는 적어도 4개를 뺀다.
