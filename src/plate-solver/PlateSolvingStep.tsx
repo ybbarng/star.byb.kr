@@ -42,6 +42,7 @@ import { photoToSky, projectVecToPhoto } from "@/search/utils/wcs";
 import { whereShot } from "@/search/whereShot";
 import { readExif } from "@/services/exif";
 import { getSampleCredit } from "@/services/samples";
+import { secondsBucket, track } from "@/ui/track";
 import { cn } from "@/utils/cn";
 
 // 별자리 찾기: 사진을 고르면 별 찾기 → 풀이까지 자동으로 하고 결과를 보여 준다.
@@ -58,6 +59,29 @@ export default function PlateSolvingStep() {
   const goTo = useContextStore((state) => state.goTo);
   const canvasElement = useRef<HTMLCanvasElement>(null);
   const { solve, outcome, solving, ready, phase, error } = useSolve();
+  // 방문 통계: 풀이 한 번의 결과 (ui/track). 사진이 바뀔 때가 아니라 결과가 나올 때만 보낸다
+  const imageSrc = useRef(image?.src);
+  imageSrc.current = image?.src;
+
+  useEffect(() => {
+    if (!outcome && !error) return;
+
+    const source = imageSrc.current?.startsWith("blob:") ? "upload" : "sample";
+    track(
+      "photo-solve",
+      outcome
+        ? {
+            source,
+            result: outcome.found
+              ? "found"
+              : outcome.candidates.length
+                ? "candidates"
+                : "none",
+            seconds: secondsBucket(outcome.timeMs),
+          }
+        : { source, result: "error" },
+    );
+  }, [outcome, error]);
   const {
     stars: skyStars,
     constellations: skyConstellations,

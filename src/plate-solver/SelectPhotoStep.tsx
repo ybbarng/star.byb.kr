@@ -2,6 +2,7 @@ import { useState } from "react";
 import { SampleCreditList } from "@/plate-solver/SampleCredits";
 import { useContextStore } from "@/plate-solver/store/context";
 import samples from "@/services/samples";
+import { track } from "@/ui/track";
 import { cn } from "@/utils/cn";
 
 // 사진 고르기: 내 사진을 올리거나 샘플을 누르면 바로 별자리를 찾는다.
@@ -30,6 +31,13 @@ export default function SelectPhotoStep() {
       image.src = src;
       await loaded;
       setImage(image, fileName);
+      // 올린 사진은 파일 이름도 보내지 않는다 (ui/track)
+      track(
+        "photo-open",
+        key === "upload"
+          ? { source: "upload" }
+          : { source: "sample", sample: key.replace(/^.*\//, "") },
+      );
       goTo("solve");
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));

@@ -4,6 +4,7 @@ import type { CSSProperties, ReactNode } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { setMuted, sfx, useMuted } from "@/game/fx/sound";
 import GameBasicsLinks from "@/game/GameBasicsLinks";
+import { currentGame, track } from "@/ui/track";
 import { cn } from "@/utils/cn";
 
 // 별 놀이터 공용 효과: 점수 팝업·파티클·고리, 흔들기, 색종이, 숫자 올라가기, 별점, 라운드 배너,
@@ -309,6 +310,8 @@ export const saveBest = (
   value: number,
   lowerIsBetter = false,
 ): boolean => {
+  // 게임이 끝날 때 늘 부르는 곳이라 "끝까지 했다"를 여기서 센다 (ui/track)
+  track("game-finish", { game: currentGame(), record: game });
   const best = readBest(game);
   const better = best === null || (lowerIsBetter ? value < best : value > best);
 
@@ -371,6 +374,7 @@ export function GameIntro({
         disabled={!canStart || leaving}
         onClick={() => {
           sfx.whoosh();
+          track("game-start", { game: currentGame() });
           setLeaving(true);
           setTimeout(onStart, 450);
         }}

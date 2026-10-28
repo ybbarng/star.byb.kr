@@ -24,6 +24,7 @@ import SchoolSky from "@/game/starSchool/SchoolSky";
 import { timeLabel } from "@/game/starSchool/skyMath";
 import { useSave } from "@/game/starSchool/useSave";
 import BasicsLinks from "@/learn/basics/BasicsLinks";
+import { track } from "@/ui/track";
 import { cn } from "@/utils/cn";
 
 // 하늘 길잡이 수업: 목록에서 고르면, 실제 하늘에서 한 걸음씩 별 징검다리를 건너고, 끝에 짧은 퀴즈를 푼다.
@@ -226,6 +227,10 @@ function LessonPlayer({
     const hadStamp = hasStamp(before, lesson.stamp);
     const r = finishLesson(before, lesson.id, right, lesson.learns);
     writeSave(r.save);
+    track("lesson-finish", {
+      lesson: lesson.id,
+      first: !before.lessons[lesson.id]?.done,
+    });
     setResult({
       gained: r.gained,
       newStamp: !hadStamp && hasStamp(r.save, lesson.stamp),
