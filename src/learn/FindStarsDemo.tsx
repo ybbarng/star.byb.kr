@@ -20,7 +20,7 @@ const DEMO_PHOTOS = [
   // 2 → 21
   { src: "/samples/20250117-carl-aurora-01.jpg", title: "오로라 (집 불빛)" },
   // 0 → 24
-  { src: "/samples/20230904-nike-jeungseun-01.png", title: "증선 (구름·노을)" },
+  { src: "/samples/20230904-nike-jeungseun-01.png", title: "정선 (구름·노을)" },
 ];
 const TOP = 30;
 
