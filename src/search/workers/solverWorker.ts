@@ -97,9 +97,10 @@ onmessage = async function (e) {
         const { stars, width, height, horizon, dateMs, observer } = e.data
           .payload as HorizonSolveRequest;
         const result = horizonSolve({
-          photoStars: rankForSolving(stars, width, height).map(
-            (s): Point2D => [s.x, s.y],
-          ),
+          // 별 궤적 점은 노출 중간 순간의 자리라 시각을 아는 풀이에는 쓰지 않는다
+          photoStars: rankForSolving(stars, width, height)
+            .filter((s) => !s.trail)
+            .map((s): Point2D => [s.x, s.y]),
           width,
           height,
           horizon,

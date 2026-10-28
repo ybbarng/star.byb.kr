@@ -32,7 +32,10 @@ type Order = "brightness" | "priority";
 const pickTop = (stars: DetectedStar[], order: Order) =>
   order === "priority"
     ? stars.slice(0, TOP)
-    : [...stars].sort((a, b) => b.brightness - a.brightness).slice(0, TOP);
+    : stars
+        .filter((s) => !s.trail)
+        .sort((a, b) => b.brightness - a.brightness)
+        .slice(0, TOP);
 
 // score: 발표 화면은 별다움을 클수록 별다운 점수로 보여 준다 (RingInspector)
 export default function FindStarsDemo({ score = false }: { score?: boolean }) {

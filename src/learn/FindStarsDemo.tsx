@@ -26,11 +26,14 @@ const TOP = 30;
 
 type Order = "brightness" | "priority";
 
-// 밝은 순은 검출 크기(유효 반경) 순, 별다운 순은 detectPhotoStars가 돌려준 순서 그대로
+// 밝은 순은 빛 총량 순(별 궤적 점은 뺀다), 별다운 순은 detectPhotoStars가 돌려준 순서 그대로
 const pickTop = (stars: DetectedStar[], order: Order) =>
   order === "priority"
     ? stars.slice(0, TOP)
-    : [...stars].sort((a, b) => b.brightness - a.brightness).slice(0, TOP);
+    : stars
+        .filter((s) => !s.trail)
+        .sort((a, b) => b.brightness - a.brightness)
+        .slice(0, TOP);
 
 // score: 발표 화면은 별다움을 클수록 별다운 점수로 보여 준다 (RingInspector)
 export default function FindStarsDemo({ score = false }: { score?: boolean }) {

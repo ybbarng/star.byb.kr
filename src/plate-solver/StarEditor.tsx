@@ -30,6 +30,7 @@ interface CanvasStar {
   y: number;
   brightness: number;
   ringContrast?: number;
+  trail?: boolean; // 별 궤적 점 (detectCore.findTrails). 풀이가 "별 궤적" 영역에서만 쓴다
   id: string;
   isSelected: boolean;
 }
@@ -49,11 +50,13 @@ const toCanvasStar = (star: {
   y: number;
   brightness: number;
   ringContrast?: number;
+  trail?: boolean;
 }): CanvasStar => ({
   x: star.x,
   y: star.y,
   brightness: star.brightness,
   ringContrast: star.ringContrast,
+  trail: star.trail,
   id: crypto.randomUUID(),
   isSelected: false,
 });
@@ -475,11 +478,13 @@ export default function StarEditor() {
       y: number;
       brightness: number;
       ringContrast?: number;
+      trail?: boolean;
     }) => ({
       x: star.x,
       y: star.y,
       brightness: star.brightness,
       ringContrast: star.ringContrast,
+      trail: star.trail,
     });
     const sorted = [...canvasStars].sort(byStarPriority);
     // 사람이 별을 고치지 않았으면 화면에 안 띄운 나머지 검출도 넘긴다(위쪽 영역 재선택용)
