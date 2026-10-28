@@ -118,6 +118,31 @@ describe.skipIf(!ready)("solvePhoto: 앱의 풀이 흐름", () => {
     }
   });
 
+  it("별 궤적 점(trail)은 일반 영역에 끼어들지 않는다", () => {
+    // 일반 사진에서도 은하수 띠·나뭇가지가 궤적으로 잡힌다. 빛 총량이 커도 일반 영역의 입력은 그대로여야 한다
+    const img = cleanImage();
+    const rng = createRng(5);
+    const fakeTrails = Array.from({ length: 50 }, (_, i) => ({
+      x: rng() * W,
+      y: rng() * H,
+      brightness: 5000 + i,
+      trail: true,
+    }));
+    const phases: SolvePhase[] = [];
+    const out = solvePhoto(
+      [...img.stars, ...fakeTrails],
+      { width: W, height: H },
+      ctx,
+      DEFAULT_SOLVERS,
+      { onPhase: (p) => phases.push(p) },
+    );
+    const last = phases[phases.length - 1];
+
+    expect(out.found).toBe(true);
+    expect(angleDeg(out.centerVector as Point3D, center)).toBeLessThan(0.5);
+    expect(last.kind === "linear" && last.region).toBe("사진 전체");
+  });
+
   it("아래쪽에 밝은 지면 불빛이 몰려 있어도 위쪽 영역에서 찾는다", () => {
     const img = cleanImage();
     // 사진 아래 20%에 진짜 별보다 밝은 가짜 불빛 150개 (지평선 마을·가로등을 흉내).
