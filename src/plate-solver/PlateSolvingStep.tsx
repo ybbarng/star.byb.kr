@@ -96,6 +96,8 @@ export default function PlateSolvingStep() {
     constellations: skyConstellations,
     objects: skyObjects,
     boundaries: skyBoundaries,
+    milkyWay: skyMilkyWay,
+    milkyWayLabel: skyMilkyWayLabel,
     regions: skyRegions,
     update: updateSky,
     updateFisheye,
@@ -110,6 +112,7 @@ export default function PlateSolvingStep() {
   const [showDetected, setShowDetected] = useState(false);
   // 별자리 구역(IAU 경계). 켜면 경계선과 구역 이름을, 끄면 별자리선 이름을 쓴다
   const [showRegions, setShowRegions] = useState(true);
+  const [showMilkyWay, setShowMilkyWay] = useState(true);
   const [showCompass, setShowCompass] = useState(true);
   // 풀이 결과(별·별자리·천체) 표시. 끄면 원본 사진만 보여 번갈아 비교할 수 있다
   const [showSolution, setShowSolution] = useState(true);
@@ -570,6 +573,8 @@ export default function PlateSolvingStep() {
             skyConstellations,
             skyObjects,
             boundaries: showRegions ? skyBoundaries : [],
+            milkyWay: showMilkyWay ? skyMilkyWay : [],
+            milkyWayLabel: showMilkyWay ? skyMilkyWayLabel : null,
             regions: showRegions ? skyRegions : [],
             horizon: horizonTP ? marks.horizon : [],
             compass: showCompass && compass ? compass : [],
@@ -589,6 +594,9 @@ export default function PlateSolvingStep() {
     photoStars,
     showDetected,
     showRegions,
+    showMilkyWay,
+    skyMilkyWay,
+    skyMilkyWayLabel,
     detecting,
     skyStars,
     skyConstellations,
@@ -694,6 +702,15 @@ export default function PlateSolvingStep() {
               onChange={(e) => setShowRegions(e.target.checked)}
             />
             별자리 구역 경계
+          </label>
+          <label className="flex cursor-pointer items-center gap-2">
+            <input
+              type="checkbox"
+              className="toggle toggle-xs"
+              checked={showMilkyWay}
+              onChange={(e) => setShowMilkyWay(e.target.checked)}
+            />
+            은하수
           </label>
           <label className="flex cursor-pointer items-center gap-2">
             <input
@@ -1005,6 +1022,8 @@ const NO_SOLUTION_LAYERS = {
   skyConstellations: [],
   skyObjects: [],
   boundaries: [],
+  milkyWay: [],
+  milkyWayLabel: null,
   regions: [],
   horizon: [],
   compass: [],
@@ -1092,6 +1111,8 @@ const drawOverlay = (
     skyConstellations: Overlay["constellations"];
     skyObjects: Overlay["objects"];
     boundaries: Overlay["boundaries"];
+    milkyWay: Overlay["milkyWay"];
+    milkyWayLabel: Overlay["milkyWayLabel"];
     regions: Overlay["regions"];
     horizon: [number, number][];
     compass: CompassMark[];
@@ -1134,6 +1155,43 @@ const drawOverlay = (
 
     context.fillStyle = "oklch(0.905 0.182 98.111 / 0.16)";
     context.fill(path);
+  }
+
+  // 은하수: 띠 가장자리(은위 ±10°)는 옅은 실선, 가운데선(은위 0°)은 더 옅게. 별자리선을 가리지 않도록 먼저 그린다
+  for (const { latitude, points } of layers.milkyWay) {
+    context.strokeStyle =
+      latitude === 0
+        ? "oklch(0.92 0.03 250 / 0.22)"
+        : "oklch(0.92 0.03 250 / 0.4)";
+    context.lineWidth = (latitude === 0 ? 1 : 1.5) * unit;
+    context.setLineDash(latitude === 0 ? [2 * unit, 6 * unit] : []);
+    context.beginPath();
+    let drawing = false;
+
+    for (const p of points) {
+      if (!p) {
+        drawing = false;
+        continue;
+      }
+
+      if (drawing) context.lineTo(p[0], p[1]);
+      else context.moveTo(p[0], p[1]);
+
+      drawing = true;
+    }
+
+    context.stroke();
+  }
+
+  context.setLineDash([]);
+
+  if (layers.milkyWayLabel) {
+    label(
+      "은하수",
+      layers.milkyWayLabel[0] + 8 * unit,
+      layers.milkyWayLabel[1] - 8 * unit,
+      "oklch(0.92 0.03 250 / 0.85)",
+    );
   }
 
   // 별자리 구역 경계 (점선)와 구역 이름

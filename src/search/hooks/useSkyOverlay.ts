@@ -74,6 +74,9 @@ interface Overlay {
   constellations: SkyConstellation[];
   objects: SkyObjectMark[];
   boundaries: (Point2D | null)[][]; // 사진에 걸친 구역 경계 변 (뒤쪽·먼 점은 null)
+  // 은하수: 은위 0°(가운데선)와 ±MILKY_WAY_HALF_WIDTH(띠 가장자리) 선. 이름표 자리는 가운데선 중 사진 가운데에 가장 가까운 점
+  milkyWay: { latitude: number; points: (Point2D | null)[] }[];
+  milkyWayLabel: Point2D | null;
   regions: SkyRegion[]; // 사진에 담긴 구역, 넓은 순
 }
 
@@ -82,6 +85,8 @@ const EMPTY: Overlay = {
   constellations: [],
   objects: [],
   boundaries: [],
+  milkyWay: [],
+  milkyWayLabel: null,
   regions: [],
 };
 
@@ -167,6 +172,71 @@ const projectObjects = (
 };
 
 // 투영 함수로 화면에 들어오는 별/별자리를 만든다.
+// 은하 좌표 → 적도 좌표(J2000). 은하 좌표의 행렬(적도 → 은하)을 전치한 것이다
+const GALACTIC_TO_EQUATORIAL = [
+  [-0.0548755604, 0.4941094279, -0.867666149],
+  [-0.8734370902, -0.44482963, -0.1980763734],
+  [-0.4838350155, 0.7469822445, 0.4559837762],
+];
+// 맨눈에 띠로 보이는 너비의 절반 (은위)
+const MILKY_WAY_HALF_WIDTH = 10;
+
+export const galacticToEquatorial = (lDeg: number, bDeg: number): Point3D => {
+  const l = (lDeg * Math.PI) / 180;
+  const b = (bDeg * Math.PI) / 180;
+  const g = [Math.cos(b) * Math.cos(l), Math.cos(b) * Math.sin(l), Math.sin(b)];
+  const M = GALACTIC_TO_EQUATORIAL;
+
+  return [0, 1, 2].map(
+    (i) => M[i][0] * g[0] + M[i][1] * g[1] + M[i][2] * g[2],
+  ) as Point3D;
+};
+
+const milkyWayLines = (
+  project: Projector,
+  width: number,
+  height: number,
+): Pick<Overlay, "milkyWay" | "milkyWayLabel"> => {
+  const margin = Math.max(width, height);
+  const inside = (p: Point2D | null) =>
+    p !== null && p[0] >= 0 && p[0] < width && p[1] >= 0 && p[1] < height;
+  const milkyWay: Overlay["milkyWay"] = [];
+  let label: Point2D | null = null;
+  let labelD = Infinity;
+
+  for (const latitude of [-MILKY_WAY_HALF_WIDTH, 0, MILKY_WAY_HALF_WIDTH]) {
+    const points: (Point2D | null)[] = [];
+
+    for (let l = 0; l <= 360; l += 1) {
+      const p = project(galacticToEquatorial(l, latitude));
+      const near =
+        p &&
+        p[0] > -margin &&
+        p[0] < width + margin &&
+        p[1] > -margin &&
+        p[1] < height + margin
+          ? p
+          : null;
+      points.push(near);
+
+      if (latitude === 0 && inside(near)) {
+        const d = Math.hypot(near![0] - width / 2, near![1] - height / 2);
+
+        if (d < labelD) {
+          labelD = d;
+          label = near;
+        }
+      }
+    }
+
+    if (points.some(inside)) {
+      milkyWay.push({ latitude, points });
+    }
+  }
+
+  return { milkyWay, milkyWayLabel: milkyWay.length > 0 ? label : null };
+};
+
 const buildOverlay = (
   project: Projector,
   width: number,
@@ -266,6 +336,7 @@ const buildOverlay = (
     constellations: cons,
     objects: projectObjects(project, objects, width, height),
     boundaries,
+    ...milkyWayLines(project, width, height),
     regions: unproject ? regionsOf(unproject, width, height) : [],
   };
 };
