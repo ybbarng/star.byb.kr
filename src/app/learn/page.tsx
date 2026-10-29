@@ -1,4 +1,5 @@
 import Link from "next/link";
+import AstrometryComparison from "@/learn/AstrometryComparison";
 import { BasicsTopicList } from "@/learn/basics/BasicsTopicList";
 import { Stat } from "@/learn/LearnArticle";
 import { LEARN_STEPS, learnHref } from "@/learn/steps";
@@ -66,7 +67,7 @@ export default function Page() {
             label="별만으로 풀리는 실제 샘플 사진 (사이판은 촬영 시각·장소로 풀려요)"
           />
           <Stat
-            value="108 / 112"
+            value="111 / 112"
             label="재압축·축소·WebP로 바꾼 사진도 풀리는 경우"
           />
           <Stat value="0번" label="틀린 답을 확신한 횟수 (위 시험 전체)" />
@@ -75,6 +76,15 @@ export default function Page() {
           모든 계산은 브라우저에서 해요. 사진은 서버로 가지 않고, 서버는 정적
           파일만 내려줘요.
         </p>
+      </section>
+
+      <section
+        id="compare"
+        className="fx-rise flex scroll-mt-20 flex-col gap-4"
+        style={{ animationDelay: "250ms" }}
+      >
+        <h2 className="text-2xl font-black">처음 보는 사진으로 견줘 보면</h2>
+        <AstrometryComparison />
       </section>
 
       <div className="flex flex-wrap justify-center gap-3">
