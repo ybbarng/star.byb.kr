@@ -33,6 +33,7 @@ import {
 import ShotTimeControl from "@/plate-solver/ShotTimeControl";
 import ShotTimeEstimator from "@/plate-solver/ShotTimeEstimator";
 import { useContextStore } from "@/plate-solver/store/context";
+import { trailPose, trailProgress } from "@/plate-solver/trailMotion";
 import WhereShotCard, { whereSummary } from "@/plate-solver/WhereShotCard";
 import { compassMarks, frameFromZenith } from "@/search/compass";
 import useSkyOverlay from "@/search/hooks/useSkyOverlay";
@@ -354,7 +355,41 @@ export default function PlateSolvingStep() {
       return;
     }
 
-    updateSky(c.transform, image.width, image.height, objects);
+    const trailAngle = selected === 0 ? outcome?.trailAngleDeg : undefined;
+    const reduceMotion =
+      typeof window !== "undefined" &&
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+
+    if (!trailAngle || reduceMotion) {
+      updateSky(c.transform, image.width, image.height, objects);
+
+      return;
+    }
+
+    // 별 궤적: 노출 시작 → 끝으로 궤적을 따라 움직인다 (trailMotion.ts). 멈춘 동안은 다시 그리지 않는다
+    const t0 = performance.now();
+    let frame = 0;
+    let drawn = -1;
+
+    const tick = () => {
+      const progress = trailProgress(performance.now() - t0);
+
+      if (progress !== drawn) {
+        drawn = progress;
+        updateSky(
+          trailPose(c.transform, trailAngle, progress),
+          image.width,
+          image.height,
+          objects,
+        );
+      }
+
+      frame = requestAnimationFrame(tick);
+    };
+
+    tick();
+
+    return () => cancelAnimationFrame(frame);
   }, [
     image,
     objects,
