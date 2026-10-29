@@ -15,7 +15,7 @@ import { ACCEPT, dedupeBySky, isConfident } from "@/search/solvers/candidates";
 import { improvedSolver } from "@/search/solvers/improved";
 import { triangleSolver } from "@/search/solvers/triangle";
 import { rankForSolving } from "@/search/utils/selectStars";
-import { mat3Mul } from "@/search/utils/wcs";
+import { mat3Mul, photoToSky } from "@/search/utils/wcs";
 
 // 사진 한 장의 검출 별 목록을 받아 앱과 똑같은 흐름으로 푼다.
 // Worker(solverWorker)는 이 함수를 감싸기만 하고, Node 테스트도 이 함수를 그대로 쓴다.
@@ -82,6 +82,8 @@ export interface SolvePhotoOptions {
 
 export interface SolvePhotoResult extends SolveOutcome {
   timedOut: boolean; // 시간 상한에 걸려 남은 입력 크기를 못 봤는지
+  // 별 궤적 영역에서 풀렸으면 궤적이 천구 극 둘레로 돈 각도(도). transform은 궤적 한쪽 끝 순간의 하늘이다
+  trailAngleDeg?: number;
 }
 
 // 후보들을 믿을 만한 순(log-odds, 같으면 inlier)으로 정렬하고 같은 하늘 위치는 하나로 묶는다.
@@ -412,6 +414,60 @@ const solveCircular = (
   };
 };
 
+// ─── 별 궤적 끝 순간 (journey 45장) ─────────────────────────────────────────
+// 궤적마다 양 끝점을 하늘로 되돌려 천구 극(적도 좌표 z축) 둘레로 돈 각도를 잰다. 같은 별의 두 끝은 적위가 같아야 해서
+// 적위가 어긋나는 덩어리(나뭇가지·겹친 궤적)는 뺀다. 잘린 궤적이 많아 위쪽 분위수를 노출 각도로 본다.
+const TRAIL_MIN_CHORDS = 5;
+const TRAIL_ANGLE_QUANTILE = 0.75;
+
+const trailEndPose = (
+  TP: Mat3,
+  stars: InputStar[],
+): { transform: Mat3; angleDeg: number } | null => {
+  const angles: number[] = [];
+
+  for (const s of stars) {
+    if (!s.trail || !s.chord) {
+      continue;
+    }
+
+    const a = photoToSky(TP, [s.chord[0], s.chord[1]]);
+    const b = photoToSky(TP, [s.chord[2], s.chord[3]]);
+    let dRa = Math.abs(Math.atan2(a[1], a[0]) - Math.atan2(b[1], b[0]));
+
+    if (dRa > Math.PI) {
+      dRa = 2 * Math.PI - dRa;
+    }
+
+    const dec = Math.asin(Math.max(-1, Math.min(1, (a[2] + b[2]) / 2)));
+    const dDec = Math.abs(Math.asin(a[2]) - Math.asin(b[2]));
+
+    if (dDec < Math.max((0.3 * Math.PI) / 180, 0.15 * dRa * Math.cos(dec))) {
+      angles.push(dRa);
+    }
+  }
+
+  if (angles.length < TRAIL_MIN_CHORDS) {
+    return null;
+  }
+
+  angles.sort((p, q) => p - q);
+  const angle = angles[Math.floor(angles.length * TRAIL_ANGLE_QUANTILE)];
+  const c = Math.cos(angle / 2);
+  const s = Math.sin(angle / 2);
+  // 하늘을 천구 극 둘레로 angle/2 돌린 자세 (TP · Rz)
+  const Rz: Mat3 = [
+    [c, -s, 0],
+    [s, c, 0],
+    [0, 0, 1],
+  ];
+
+  return {
+    transform: mat3Mul(TP, Rz),
+    angleDeg: (angle * 180) / Math.PI,
+  };
+};
+
 // stars는 검출 전체를 넣어도 된다. 영역마다 우선순위(별다움 → 밝기) 순으로 필요한 만큼만 쓴다.
 export const solvePhoto = (
   stars: InputStar[],
@@ -495,6 +551,7 @@ export const solvePhoto = (
 
   const allCandidates: SolveCandidateResult[] = [];
   let best: SolveOutcome | null = null;
+  let bestStars: InputStar[] = [];
   let evaluated = 0;
   let timedOut = false;
   const polished: Point3D[] = [];
@@ -524,6 +581,7 @@ export const solvePhoto = (
 
     if (out.found) {
       best = polish(out, region.stars, size, ctx);
+      bestStars = region.stars;
       allCandidates.push(...best.candidates);
       break;
     }
@@ -541,9 +599,19 @@ export const solvePhoto = (
 
     if (promoted) {
       best = { ...out, ...promoted, found: true };
+      bestStars = region.stars;
       allCandidates.push(...promoted.candidates);
       break;
     }
+  }
+
+  // 별 궤적 점은 노출 중간 순간의 자리라, 답을 궤적 한쪽 끝 순간으로 돌려 사진의 궤적 끝에 별자리가 놓이게 한다
+  const trailEnd = best?.transform
+    ? trailEndPose(best.transform, bestStars)
+    : null;
+
+  if (best && trailEnd) {
+    best = { ...best, transform: trailEnd.transform };
   }
 
   // 직선투영으로 확신하지 못했으면 어안(초광각) blind 풀이를 시도한다.
@@ -578,6 +646,7 @@ export const solvePhoto = (
   if (best) {
     return {
       ...best,
+      ...(trailEnd ? { trailAngleDeg: trailEnd.angleDeg } : {}),
       candidatesEvaluated: evaluated,
       timeMs,
       candidates,

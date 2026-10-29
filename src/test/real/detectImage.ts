@@ -41,7 +41,7 @@ export const detectLikeApp = async (
       y: s.cy,
       brightness: s.brightness,
       ringContrast: s.ringContrast,
-      ...(s.trail ? { trail: true } : {}),
+      ...(s.trail ? { trail: true, chord: s.chord } : {}),
     })),
     mergeDistancePx(width, height),
   );

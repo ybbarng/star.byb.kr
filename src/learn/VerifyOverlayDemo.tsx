@@ -83,6 +83,7 @@ export default function VerifyOverlayDemo() {
           brightness: s.brightness,
           ringContrast: s.ringContrast,
           trail: s.trail,
+          chord: s.chord,
         })),
         img.width,
         img.height,

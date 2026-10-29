@@ -6,6 +6,7 @@ import {
   loadClasses,
   loadDetected,
   outDir,
+  trailMidPose,
 } from "@/scripts/validate/common";
 
 // 풀이 기록을 판정하고 요약한다. 두 번째 이름을 주면 사진별로 무엇이 바뀌었는지 비교한다.
@@ -37,7 +38,10 @@ const judgeRun = (set: string, records: RunRecord[]): Judged[] =>
         det && (r.fisheyeCamera ?? r.transform)
           ? judge(
               det,
-              (r.fisheyeCamera ?? r.transform)!,
+              r.fisheyeCamera ??
+                (r.trailAngleDeg
+                  ? trailMidPose(r.transform!, r.trailAngleDeg)
+                  : r.transform!),
               r.phase.includes("별 궤적"),
             )
           : null,

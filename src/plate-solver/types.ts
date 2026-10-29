@@ -6,6 +6,7 @@ export interface PhotoStars {
   brightness: number;
   ringContrast?: number; // 별다움 (detectCore.ringContrast)
   trail?: boolean; // 별 궤적 점 (detectCore.findTrails)
+  chord?: [number, number, number, number]; // 별 궤적 양 끝점
 }
 
 // 사진 위에 사람이(또는 자동으로) 찍은 지평선 두 점과 달

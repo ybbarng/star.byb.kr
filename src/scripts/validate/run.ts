@@ -84,6 +84,7 @@ const run = () => {
       phase,
       fisheye: Boolean(out.fisheyeCamera),
       fisheyeCamera: out.fisheyeCamera ?? null,
+      trailAngleDeg: out.trailAngleDeg,
     };
     appendFileSync(path, `${JSON.stringify(record)}\n`);
   }

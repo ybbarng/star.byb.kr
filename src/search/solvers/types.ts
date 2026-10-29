@@ -18,6 +18,8 @@ export interface InputStar {
   aligned?: boolean;
   // 별 궤적 덩어리에서 고른 점(detectCore.findTrails). 일반 영역에서는 빼고 "별 궤적" 영역에서만 쓴다
   trail?: boolean;
+  // 별 궤적 덩어리의 양 끝점 (x1, y1, x2, y2). 풀린 뒤 궤적이 돈 각도를 재는 데 쓴다
+  chord?: [number, number, number, number];
 }
 
 export interface ImageSize {

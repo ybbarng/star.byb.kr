@@ -16,6 +16,7 @@ export interface DetectedStar {
   fwhm: number; // 퍼짐 크기
   ringContrast?: number; // 별다움 (detectCore.ringContrast)
   trail?: boolean; // 별 궤적 점 (detectCore.findTrails)
+  chord?: [number, number, number, number]; // 별 궤적 양 끝점
 }
 
 export const imageDataOf = (image: HTMLImageElement): ImageData => {
@@ -47,7 +48,7 @@ export const detectPhotoStars = async (
       radius: star.radius,
       fwhm: star.fwhm ?? 0,
       ringContrast: star.ringContrast,
-      ...(star.trail ? { trail: true } : {}),
+      ...(star.trail ? { trail: true, chord: star.chord } : {}),
     })),
     mergeDistancePx(imageData.width, imageData.height),
   );

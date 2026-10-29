@@ -121,6 +121,7 @@ export interface RunRecord {
   phase: string; // 확신한 단계 (solver·영역·입력 크기)
   fisheye: boolean;
   fisheyeCamera?: FisheyeCamera | null; // 원형 어안 펴기·어안 blind로 풀렸으면
+  trailAngleDeg?: number; // 별 궤적으로 풀렸으면 궤적이 돈 각도 (transform은 궤적 끝 순간)
 }
 
 // ─── 판정: 겹친 별 (3장) ───────────────────────────────────────────────
@@ -184,6 +185,24 @@ const countOverlap = (
   const e = (dets.length * projected.length * Math.PI * r * r) / area;
 
   return { m, e, tail: poissonTail(m, e) };
+};
+
+// 궤적 끝 순간의 자세를 궤적 가운데 순간으로 되돌린다 (판정은 궤적 가운데 점으로 센다)
+export const trailMidPose = (TP: Mat3, angleDeg: number): Mat3 => {
+  const h = (-angleDeg * Math.PI) / 360;
+  const c = Math.cos(h);
+  const s = Math.sin(h);
+  const R: Mat3 = [
+    [c, -s, 0],
+    [s, c, 0],
+    [0, 0, 1],
+  ];
+
+  return TP.map((row) =>
+    [0, 1, 2].map(
+      (j) => row[0] * R[0][j] + row[1] * R[1][j] + row[2] * R[2][j],
+    ),
+  ) as Mat3;
 };
 
 // trail이면 별 궤적 점만으로 센다 (궤적 영역에서 풀린 사진). 아니면 점 검출만

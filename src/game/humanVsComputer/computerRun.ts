@@ -34,6 +34,7 @@ const inputOf = (stars: DetectedStar[]) =>
     brightness: s.brightness,
     ringContrast: s.ringContrast,
     trail: s.trail,
+    chord: s.chord,
   }));
 
 export const runComputer = async (

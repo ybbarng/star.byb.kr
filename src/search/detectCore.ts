@@ -7,6 +7,7 @@ export interface DetectedStar {
   fwhm: number; // 밝기 분포 크기(px)
   ringContrast?: number; // 별다움 (ringContrast, 회색조 영상을 줄 때만)
   trail?: boolean; // 별 궤적 덩어리에서 고른 점 (findTrails). 선이 고리를 지나 별다움을 재지 않는다
+  chord?: [number, number, number, number]; // 별 궤적 덩어리의 양 끝점 (x1, y1, x2, y2). 회전 중심을 찾는 데 쓴다
 }
 
 // 별 검출의 핵심 (예전 브라우저 cv.worker.js의 findStars에서 옮겨 왔다).
@@ -312,8 +313,29 @@ export const findTrails = (
       }
     }
 
+    // 양 끝점: 무게 중심에서 가장 먼 픽셀, 다시 그 픽셀에서 가장 먼 픽셀
+    const farthest = (fx: number, fy: number) => {
+      let far = pixels[0];
+      let farD = -1;
+
+      for (const i of pixels) {
+        const x = i % cols;
+        const d = (x - fx) ** 2 + ((i - x) / cols - fy) ** 2;
+
+        if (d > farD) {
+          farD = d;
+          far = i;
+        }
+      }
+
+      return [far % cols, Math.floor(far / cols)];
+    };
+
+    const [ax, ay] = farthest(cx, cy);
+    const [ex, ey] = farthest(ax, ay);
     const bx = best % cols;
     stars.push({
+      chord: [ax, ay, ex, ey],
       cx: bx,
       cy: (best - bx) / cols,
       brightness: sw,
