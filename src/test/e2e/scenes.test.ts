@@ -9,6 +9,7 @@ import {
   contextStars,
   hashesExist,
   loadCatalog,
+  loadDeepStars,
   loadHashes,
 } from "@/test/synthetic/loadCatalog";
 import { renderScene, type SceneClutter } from "@/test/synthetic/renderScene";
@@ -87,7 +88,12 @@ describe.skipIf(!ready)("합성 장면: 거짓 검출이 섞인 픽셀 영상", 
 
   beforeAll(() => {
     catalog = loadCatalog();
-    ctx = buildSolverContext(contextStars(catalog), loadHashes());
+    ctx = buildSolverContext(
+      contextStars(catalog),
+      loadHashes(),
+      undefined,
+      loadDeepStars(),
+    );
   });
 
   it.each(SCENES)(

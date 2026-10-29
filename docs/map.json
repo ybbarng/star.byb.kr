@@ -4,7 +4,7 @@
   "goal": "일반인이 휴대폰·카메라로 찍은 밤하늘 사진을 브라우저에서 10초 안에, 서버 없이 풀어 사진 속 별자리를 보여 준다. 찾는 원리·하늘 읽기 기초·별 놀이터로 원리를 함께 배운다",
   "baselineAt": "2026-10-19",
   "updatedAt": "2026-10-29",
-  "here": "validation-astrometry",
+  "here": "solver-milkyway",
   "regions": [
     {
       "id": "solver",
@@ -13,9 +13,18 @@
       "size": 5,
       "summary": "별 검출 → 삼각형·quad 매칭 → RANSAC 검증 → log-odds 판정. 8초 상한, 틀린 확신 0을 지킨다",
       "links": [
-        { "label": "작업 기준", "path": "docs/project-principles.md" },
-        { "label": "시도·발견 기록", "path": "docs/experiments-journey.md" },
-        { "label": "개선 계획", "path": "docs/improvement-plan.md" }
+        {
+          "label": "작업 기준",
+          "path": "docs/project-principles.md"
+        },
+        {
+          "label": "시도·발견 기록",
+          "path": "docs/experiments-journey.md"
+        },
+        {
+          "label": "개선 계획",
+          "path": "docs/improvement-plan.md"
+        }
       ]
     },
     {
@@ -36,7 +45,10 @@
       "summary": "국소 밀도·교차 검증, 영역 풀이, 빛 총량 밝기, 별 궤적 점, 원형 어안. 세 묶음 99→128·91→133·63→100, 흔들림 111/112",
       "since": "2026-10-29",
       "links": [
-        { "label": "외부 검증 보고서", "path": "docs/external-validation-2026-10.md" }
+        {
+          "label": "외부 검증 보고서",
+          "path": "docs/external-validation-2026-10.md"
+        }
       ]
     },
     {
@@ -46,20 +58,23 @@
       "status": "building",
       "size": 3,
       "summary": "띠 안의 밝은 별이 별다움에서 밀린다(밀린 것의 36%). 별 모양 본은 실패(journey 47장)",
-      "next": "띠를 찾아 가리고 나머지로 푸는 방법, 손떨림 패턴을 없앤 별 모양 비교",
+      "next": "찾기에 넣을 별 고르기: 은하수 띠 속 밝은 별 살리기 (가짜를 같이 살리지 않게)",
       "found": "2026-10-29",
       "signs": [
-        { "id": "milkyway-false-star", "type": "risk", "title": "작은 지상 불빛도 점이라 별다움 완화가 틀린 확신을 부를 수 있다" }
+        {
+          "id": "milkyway-false-star",
+          "type": "risk",
+          "title": "작은 지상 불빛도 점이라 별다움 완화가 틀린 확신을 부를 수 있다"
+        }
       ]
     },
     {
       "id": "solver-deep-verify",
       "title": "검증에만 6등급 별 쓰기 (journey 48장)",
       "parent": "solver",
-      "status": "building",
+      "status": "done",
       "size": 2,
-      "summary": "확신 기준은 그대로, 5등급으로 확신 못 한 후보만 6등급으로 다시 채점. 594장에서 +12장, 틀린 확신 0. 실험 스크립트에서만 켰다",
-      "next": "앱에 켤지와 6등급 별을 받는 방법 정하기",
+      "summary": "확신 기준은 그대로, 5등급으로 확신 못 한 후보만 6등급(추가 3,447개, gzip +34.5KB)으로 다시 채점. 555장 388→399, 카페 29→30, 틀린 확신 0",
       "found": "2026-10-29",
       "signs": [
         {
@@ -67,11 +82,17 @@
           "type": "fork",
           "title": "6등급 별(약 3,450개 추가)을 앱이 받는 방법",
           "owner": "me",
-          "options": ["처음부터 함께 받기", "확신 못 했을 때만 받기", "켜지 않기"],
+          "options": [
+            "처음부터 함께 받기",
+            "확신 못 했을 때만 받기",
+            "켜지 않기"
+          ],
           "recommend": "확신 못 했을 때만 받기 (보통 사진은 받는 양이 그대로)",
-          "status": "open"
+          "status": "decided",
+          "decided": "처음부터 함께 받기 (수십 KB면 괜찮다)"
         }
-      ]
+      ],
+      "since": "2026-10-29"
     },
     {
       "id": "solver-fisheye",
@@ -80,7 +101,12 @@
       "status": "fog",
       "size": 2,
       "summary": "원형 어안 25장 중 15장. 대각 어안·전천 사진 남음",
-      "links": [{ "label": "어안 할 일", "path": "docs/fisheye-todo.md" }]
+      "links": [
+        {
+          "label": "어안 할 일",
+          "path": "docs/fisheye-todo.md"
+        }
+      ]
     },
     {
       "id": "solver-sky-labels",
@@ -96,7 +122,12 @@
       "status": "building",
       "size": 4,
       "summary": "처음 보는 일반인 사진으로 잰다. 망원경·단망경처럼 좁은 영역은 대상이 아니다",
-      "links": [{ "label": "검증 결과 모음", "path": "docs/validation/README.md" }]
+      "links": [
+        {
+          "label": "검증 결과 모음",
+          "path": "docs/validation/README.md"
+        }
+      ]
     },
     {
       "id": "validation-astrometry",
@@ -108,11 +139,23 @@
       "next": "astrometry만 푼 17장 중 고칠 수 있는 13장(은하수 띠 속 밝은 별 밀림, 좁은 시야 확신 부족)",
       "since": "2026-10-29",
       "links": [
-        { "label": "비교 보고서", "path": "docs/validation/astrometry-comparison-2026-10-29.md" },
-        { "label": "사진별 결과표", "path": "docs/validation/results-2026-10-29.csv" }
+        {
+          "label": "비교 보고서",
+          "path": "docs/validation/astrometry-comparison-2026-10-29.md"
+        },
+        {
+          "label": "사진별 결과표",
+          "path": "docs/validation/results-2026-10-29.csv"
+        }
       ],
       "signs": [
-        { "id": "push-comparison", "type": "fork", "title": "바로잡은 비교 숫자를 사이트에 push", "owner": "me", "status": "open" }
+        {
+          "id": "push-comparison",
+          "type": "fork",
+          "title": "바로잡은 비교 숫자를 사이트에 push",
+          "owner": "me",
+          "status": "open"
+        }
       ]
     },
     {
@@ -138,7 +181,12 @@
       "status": "done",
       "size": 4,
       "summary": "찾는 원리(/learn), 하늘 읽기 기초 9쪽, 별 놀이터(게임 12·둘러보기 7), 발표용 데모 embed",
-      "links": [{ "label": "게임 계획", "path": "docs/game-plans.md" }]
+      "links": [
+        {
+          "label": "게임 계획",
+          "path": "docs/game-plans.md"
+        }
+      ]
     },
     {
       "id": "ops",
@@ -147,8 +195,14 @@
       "size": 2,
       "summary": "정적 내보내기 + Docker(byb.kr Traefik), PWA, Umami 통계, PNG 아이콘, 다운로드 0.68MB",
       "links": [
-        { "label": "배포", "path": "docs/deployment.md" },
-        { "label": "다운로드 최적화", "path": "docs/download-optimization.md" }
+        {
+          "label": "배포",
+          "path": "docs/deployment.md"
+        },
+        {
+          "label": "다운로드 최적화",
+          "path": "docs/download-optimization.md"
+        }
       ]
     },
     {
@@ -157,7 +211,12 @@
       "status": "done",
       "size": 2,
       "summary": "Dev Seminar 발표(v3), 테크 블로그 글과 글에 넣는 데모(src/blog)",
-      "links": [{ "label": "발표 점검", "path": "docs/presentation-review-2026-10-23.md" }]
+      "links": [
+        {
+          "label": "발표 점검",
+          "path": "docs/presentation-review-2026-10-23.md"
+        }
+      ]
     }
   ]
 }

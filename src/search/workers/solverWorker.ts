@@ -6,9 +6,10 @@ import type { Observer } from "@/search/utils/ephemeris";
 import { horizonSolve } from "@/search/horizonSolve";
 import { generateQuadDatabase } from "@/search/quadDatabase";
 import { solvePhoto } from "@/search/solvePhoto";
-import { buildSolverContext } from "@/search/solverContext";
+import { buildSolverContext, unpackDeepStars } from "@/search/solverContext";
 import { rankForSolving } from "@/search/utils/selectStars";
 import { koreanStarName } from "@/search/utils/starNames";
+import deepStarsData from "@build/database/deep-stars.json";
 import catalogData from "@build/database/vectors-database.json";
 
 // 검증된 풀이 코어(solvePhoto)를 브라우저에서 실행하는 Worker.
@@ -28,7 +29,7 @@ let loadPromise: Promise<SolverContext> | null = null;
 // 시각 제약 풀이(horizonSolve)는 별 밝기가 필요해 따로 들고 있는다
 let horizonCatalog: HorizonStar[] = [];
 
-// 별 카탈로그는 Worker 코드에 함께 실려 오고(따로 받지 않는다), quad 해시 DB는 여기서 만든다
+// 별 카탈로그(검증 전용 어두운 별 포함)는 Worker 코드에 함께 실려 오고(따로 받지 않는다), quad 해시 DB는 여기서 만든다
 // (예전에는 /data/hashed-database.bin 압축 1.5MB를 받았다 — quadDatabase.ts).
 const loadDatabase = (): Promise<SolverContext> => {
   if (loadPromise) {
@@ -49,7 +50,12 @@ const loadDatabase = (): Promise<SolverContext> => {
     );
     const nameOf = (hr: string) => nameMap.get(hr) ?? `HR ${hr}`;
 
-    return buildSolverContext(stars, hashes, nameOf);
+    return buildSolverContext(
+      stars,
+      hashes,
+      nameOf,
+      unpackDeepStars(deepStarsData as number[]),
+    );
   })();
 
   return loadPromise;

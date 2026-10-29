@@ -21,10 +21,13 @@ export const TRIANGLE_MAX_ANGLE_DEG = 18;
 // 찾으면 경쟁 삼각형이 1/20로 줄어 왜곡된 사진(원근 보정 등)에서도 정답이 앞에 온다.
 export const BRIGHT_TRIANGLE = { maxMag: 3.5, maxAngleDeg: 30 };
 
+// deepStars: 검증에만 쓰는 더 어두운 별의 방향 (build/database/deep-stars.json, journey 48장).
+// 주면 stars에 더해 verifyCatalog를 만든다. 찾기 인덱스에는 넣지 않는다.
 export const buildSolverContext = (
   stars: ContextStar[],
   quads: HashedQuad[],
   nameOf?: (hr: string) => string,
+  deepStars?: Point3D[],
 ): SolverContext => {
   const catalog = stars.map((s) => ({ hr: s.hr, vector: s.vector }));
   const bright = stars
@@ -40,5 +43,20 @@ export const buildSolverContext = (
       bright,
       BRIGHT_TRIANGLE.maxAngleDeg,
     ),
+    ...(deepStars
+      ? {
+          verifyCatalog: [
+            ...catalog,
+            ...deepStars.map((vector, i) => ({ hr: `deep-${i}`, vector })),
+          ],
+        }
+      : {}),
   };
 };
+
+// deep-stars.json의 [x, y, z, ...] 한 줄 배열 → 방향 목록
+export const unpackDeepStars = (flat: number[]): Point3D[] =>
+  Array.from(
+    { length: flat.length / 3 },
+    (_, i): Point3D => [flat[3 * i], flat[3 * i + 1], flat[3 * i + 2]],
+  );

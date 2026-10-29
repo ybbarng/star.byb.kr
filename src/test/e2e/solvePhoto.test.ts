@@ -11,6 +11,7 @@ import {
   catalogExists,
   hashesExist,
   loadCatalog,
+  loadDeepStars,
   loadHashes,
   contextStars,
 } from "@/test/synthetic/loadCatalog";
@@ -45,7 +46,12 @@ describe.skipIf(!ready)("solvePhoto: 앱의 풀이 흐름", () => {
 
   beforeAll(() => {
     // 앱과 같은 인덱스 설정
-    ctx = buildSolverContext(contextStars(loadCatalog()), loadHashes());
+    ctx = buildSolverContext(
+      contextStars(loadCatalog()),
+      loadHashes(),
+      undefined,
+      loadDeepStars(),
+    );
   });
 
   const center = skyVector(85, 5); // 오리온 부근

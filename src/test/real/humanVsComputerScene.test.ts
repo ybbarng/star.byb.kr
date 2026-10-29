@@ -27,6 +27,7 @@ import {
   catalogExists,
   contextStars,
   loadCatalog,
+  loadDeepStars,
   loadHashes,
 } from "@/test/synthetic/loadCatalog";
 import { yieldToEventLoop } from "@/test/yieldToEventLoop";
@@ -64,7 +65,12 @@ describe.skipIf(!ready)("사람 계산원 vs 컴퓨터: 반전 판 장면", () =
     photoStars = rankForSolving(stars, SEA_SCENE.width, SEA_SCENE.height).map(
       (s): Point2D => [s.x, s.y],
     );
-    ctx = buildSolverContext(contextStars(loadCatalog()), loadHashes());
+    ctx = buildSolverContext(
+      contextStars(loadCatalog()),
+      loadHashes(),
+      undefined,
+      loadDeepStars(),
+    );
   });
 
   const solveWithClues = (horizon: [Point2D, Point2D]) =>

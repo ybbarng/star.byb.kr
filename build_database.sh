@@ -4,6 +4,7 @@
 npx tsx src/scripts/database/reduceDatabase.ts
 # RA와 DEC 로 표기된 좌표를 3차원 벡터로 변경
 npx tsx src/scripts/database/toVector.ts
+npx tsx src/scripts/database/buildDeepStars.ts
 # quad 해시 DB(JSON, 비교용 검색 스크립트 src/scripts/search가 읽는다). 풀이는 받지 않고 카탈로그에서 직접 만든다 (search/quadDatabase.ts)
 npx tsx src/scripts/hash/createHashFromDatabase.ts
 # 별자리 표시를 위해 별자리 데이터베이스 생성

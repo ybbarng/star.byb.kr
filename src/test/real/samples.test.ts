@@ -15,6 +15,7 @@ import {
   catalogExists,
   hashesExist,
   loadCatalog,
+  loadDeepStars,
   loadHashes,
   contextStars,
 } from "@/test/synthetic/loadCatalog";
@@ -68,7 +69,12 @@ describe.skipIf(!ready)("실제 샘플: 앱 흐름 회귀", () => {
 
   beforeAll(() => {
     // 앱과 같은 인덱스 설정
-    ctx = buildSolverContext(contextStars(loadCatalog()), loadHashes());
+    ctx = buildSolverContext(
+      contextStars(loadCatalog()),
+      loadHashes(),
+      undefined,
+      loadDeepStars(),
+    );
   });
 
   // timeBudgetMs: 풀어야 하는 샘플은 상한을 끈다(무제한). 실제 시계 기준 상한은 CPU 부하에

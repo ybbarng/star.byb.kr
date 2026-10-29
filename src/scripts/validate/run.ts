@@ -13,7 +13,7 @@ import { buildSolverContext } from "@/search/solverContext";
 import {
   contextStars,
   loadCatalog,
-  loadDeepCatalog,
+  loadDeepStars,
   loadHashes,
 } from "@/test/synthetic/loadCatalog";
 
@@ -23,14 +23,13 @@ import {
 
 const run = () => {
   const [set, budget, name, shard] = process.argv.slice(2);
-  const ctx = buildSolverContext(contextStars(loadCatalog()), loadHashes());
-
-  // DEEP=<등급>: 검증에만 그 등급까지의 어두운 별을 쓴다 (journey 48장 실험)
-  if (process.env.DEEP) {
-    ctx.verifyCatalog = loadDeepCatalog(Number(process.env.DEEP)).map(
-      ({ hr, vector }) => ({ hr, vector }),
-    );
-  }
+  // 앱과 같이 검증 전용 어두운 별을 쓴다. DEEP=0이면 빼고 푼다 (비교용, journey 48장)
+  const ctx = buildSolverContext(
+    contextStars(loadCatalog()),
+    loadHashes(),
+    undefined,
+    process.env.DEEP === "0" ? undefined : loadDeepStars(),
+  );
 
   const dir = resolve(outDir(set), "runs");
   const path = resolve(

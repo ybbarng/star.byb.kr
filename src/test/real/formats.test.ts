@@ -12,6 +12,7 @@ import {
   catalogExists,
   contextStars,
   loadCatalog,
+  loadDeepStars,
   loadHashes,
 } from "@/test/synthetic/loadCatalog";
 import { yieldToEventLoop } from "@/test/yieldToEventLoop";
@@ -43,7 +44,12 @@ describe.skipIf(!ready)("사진 형식이 달라도 풀린다", () => {
   let ctx: SolverContext;
 
   beforeAll(() => {
-    ctx = buildSolverContext(contextStars(loadCatalog()), loadHashes());
+    ctx = buildSolverContext(
+      contextStars(loadCatalog()),
+      loadHashes(),
+      undefined,
+      loadDeepStars(),
+    );
   });
 
   const cases = FILES.flatMap((file) =>

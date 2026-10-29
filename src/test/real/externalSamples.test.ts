@@ -13,6 +13,7 @@ import {
   contextStars,
   hashesExist,
   loadCatalog,
+  loadDeepStars,
   loadHashes,
 } from "@/test/synthetic/loadCatalog";
 import { yieldToEventLoop } from "@/test/yieldToEventLoop";
@@ -64,7 +65,12 @@ describe.skipIf(!ready)("외부 사진 (화악산, 로컬 전용)", () => {
   let byName: Map<string, Point3D>;
 
   beforeAll(() => {
-    ctx = buildSolverContext(contextStars(loadCatalog()), loadHashes());
+    ctx = buildSolverContext(
+      contextStars(loadCatalog()),
+      loadHashes(),
+      undefined,
+      loadDeepStars(),
+    );
     const raw = JSON.parse(readFileSync(catalogPath, "utf8")) as {
       N?: string;
       x: number;
