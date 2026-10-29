@@ -17,10 +17,10 @@ import { mat3Inv, mat3MulVec, projectVecToPhoto } from "@/search/utils/wcs";
 // 모든 직선(각도 2°, 거리 1칸 간격)에 대해 "선 둘레 띠(±BAND칸)의 평균 − 그 바깥 평균"이 가장 큰 직선을 고른다.
 // 풀린 은하수 사진에서 답으로 투영한 은하면 직선과 각도·거리 차이를 잰다.
 //   npx tsx src/scripts/validate/expBandLine.ts <풀이 이름> <묶음>...
-const COLS = 96;
+export const COLS = 96;
 const BAND = 0.08; // 띠 반폭: 짧은 변의 8%
 
-const fitPlaneResidual = (
+export const fitPlaneResidual = (
   data: Uint8Array | Buffer,
   cols: number,
   rows: number,
@@ -148,7 +148,7 @@ export const findBandLine = (
 };
 
 // 답으로 투영한 은하면 직선 (칸 단위, 같은 θ·ρ 표현). 사진 안에 든 은하면 점들을 최소제곱 직선으로
-const trueLine = (
+export const trueLine = (
   pose: Mat3,
   W: number,
   H: number,
@@ -333,4 +333,5 @@ const run = async () => {
     );
 };
 
-run();
+// 다른 실험(expBandSolve)이 함수만 불러 쓸 때는 돌리지 않는다
+if (process.argv[1]?.endsWith("expBandLine.ts")) run();
