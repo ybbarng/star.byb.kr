@@ -6,15 +6,15 @@ import { Stat } from "@/learn/LearnArticle";
 
 // 분류별 [둘 다, 우리만, Astrometry만, 둘 다 못 풂]
 const BY_KIND: [string, number, number, number, number][] = [
-  ["은하수", 36, 66, 3, 58],
-  ["별자리", 48, 12, 0, 14],
-  ["별밭", 35, 6, 0, 3],
-  ["박명", 21, 9, 0, 18],
+  ["은하수", 36, 66, 8, 53],
+  ["별자리", 48, 12, 3, 11],
+  ["별밭", 35, 6, 1, 2],
+  ["박명", 21, 9, 1, 17],
   ["오로라", 19, 12, 0, 9],
-  ["별 궤적", 1, 10, 0, 21],
+  ["별 궤적", 1, 10, 2, 19],
   ["어안·전천", 0, 15, 0, 10],
   ["도시 불빛", 7, 11, 0, 8],
-  ["구름", 12, 5, 0, 5],
+  ["구름", 12, 5, 1, 4],
 ];
 
 const SEGMENTS = [
@@ -35,10 +35,10 @@ export default function AstrometryComparison() {
       </p>
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <Stat value="388장 (70%)" label="이 사이트가 푼 사진 (555장 중)" />
-        <Stat value="229장 (41%)" label="Astrometry.net이 푼 사진" />
+        <Stat value="243장 (44%)" label="Astrometry.net이 푼 사진" />
         <Stat
-          value="226장"
-          label="Astrometry.net이 푼 229장 중 이 사이트도 푼 사진"
+          value="0.07초 · 5.9초"
+          label="한 장 푸는 데 걸린 시간 (이 사이트 · Astrometry.net, 중앙값)"
         />
         <Stat value="0.11°" label="둘 다 푼 사진에서 두 답의 차이 (중앙값)" />
       </div>
@@ -88,8 +88,14 @@ export default function AstrometryComparison() {
           Astrometry.net은 원형 어안 사진을 하나도 풀지 못했어요.
         </li>
         <li>
-          Astrometry.net만 푼 사진은 3장이에요. 그중 하나는 이 사이트가 정답
-          근처까지 찾고도 확신하지 못한 사진이었어요.
+          Astrometry.net이 푼 243장 중 226장을 이 사이트도 풀었어요.
+          Astrometry.net만 푼 17장은 은하수 띠 속 밝은 별을 별로 보지 못했거나,
+          시야가 좁아 밝은 별이 몇 개 없는 사진이 많았어요. 다음에 고칠
+          곳이에요.
+        </li>
+        <li>
+          별 동호회 카페에 올라온 휴대폰 사진 37장에서는 이 사이트가 29장,
+          Astrometry.net이 23장을 풀었어요.
         </li>
         <li>
           두 답이 크게 다른 사진이 1장 있었는데, 별을 겹쳐 보니 Astrometry.net의

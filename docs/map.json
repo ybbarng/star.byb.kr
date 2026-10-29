@@ -83,8 +83,8 @@
       "parent": "validation",
       "status": "building",
       "size": 3,
-      "summary": "로컬 astrometry(인덱스 4110~4119, 한 장 2분)를 정답지로. 푼 장수·소요 시간을 지표로 쓴다",
-      "next": "빠진 133장 astrometry 결과로 숫자 바로잡기 → 보고서·사이트 숫자 고치기, 카페 묶음 넣기",
+      "summary": "로컬 astrometry(인덱스 4110~4119, 한 장 2분)를 정답지로. 555장에서 우리 388 · astrometry 243, 시간 중앙값 0.07초 · 5.9초. 카페 37장 29 · 23",
+      "next": "astrometry만 푼 17장 중 고칠 수 있는 13장(은하수 띠 속 밝은 별 밀림, 좁은 시야 확신 부족)",
       "since": "2026-10-29",
       "links": [
         { "label": "비교 보고서", "path": "docs/validation/astrometry-comparison-2026-10-29.md" },
