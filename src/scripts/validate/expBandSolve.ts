@@ -18,6 +18,12 @@ import {
   fitPlaneResidual,
   trueLine,
 } from "@/scripts/validate/expBandLine";
+import {
+  loadSkyMap,
+  photoGlow,
+  skyMaskOf,
+  templateCorr,
+} from "@/scripts/validate/expTemplate";
 import { loadRun } from "@/scripts/validate/report";
 import { galacticToEquatorial } from "@/search/hooks/useSkyOverlay";
 import { scorePose } from "@/search/solveCore";
@@ -174,6 +180,9 @@ const posesForLine = (
 
 const run = async () => {
   const [name, ...sets] = process.argv.slice(2);
+  const skyMap = process.env.MW_MAP
+    ? await loadSkyMap(process.env.MW_MAP)
+    : null;
   const ctx = buildSolverContext(
     contextStars(loadCatalog()),
     loadHashes(),
@@ -333,16 +342,47 @@ const run = async () => {
 
       voted.sort((a, b) => b.votes - a.votes);
 
-      for (const { TP } of voted.slice(
-        0,
-        Number(process.env.QUICK_TOP ?? 600),
-      )) {
+      // 두 가지로 줄 세워 상위를 함께 정밀화한다 (journey 51장): 가. 표 많은 600개를 별 점수 순으로,
+      // 나. (MW_MAP이 있으면) 표 많은 3000개를 은하수 지도 대조 상관으로 600개 고른 뒤 별 점수 + 10 × 상관 순으로
+      const byStar: { TP: Mat3; quick: number }[] = [];
+
+      for (const { TP } of voted.slice(0, 600)) {
         const q = scorePose(TP, top150, ctx.catalog, opts);
 
-        if (q) cands.push({ TP: q.TP, quick: q.logOdds });
+        if (q) byStar.push({ TP: q.TP, quick: q.logOdds });
       }
 
-      cands.sort((a, b) => b.quick - a.quick);
+      byStar.sort((x, y) => y.quick - x.quick);
+      cands.push(...byStar.slice(0, POLISH_TOP));
+
+      if (skyMap) {
+        const pool = voted.slice(0, 3000);
+        const { glow, rows: rr } = await photoGlow(set, file);
+        const m2 = skyMaskOf(d.stars, W, H, COLS, rr);
+        const corr = new Map(
+          pool.map((v) => [
+            v.TP,
+            templateCorr(skyMap, glow, COLS, rr, m2, v.TP, W, H),
+          ]),
+        );
+        const byMap: { TP: Mat3; quick: number }[] = [];
+
+        pool.sort((x, y) => (corr.get(y.TP) ?? 0) - (corr.get(x.TP) ?? 0));
+
+        for (const { TP } of pool.slice(0, 600)) {
+          const q = scorePose(TP, top150, ctx.catalog, opts);
+
+          if (q)
+            byMap.push({
+              TP: q.TP,
+              quick: q.logOdds + 10 * (corr.get(TP) ?? 0),
+            });
+        }
+
+        byMap.sort((x, y) => y.quick - x.quick);
+        cands.push(...byMap.slice(0, POLISH_TOP));
+      }
+
       let best: {
         lo: number;
         local: number;
@@ -352,7 +392,7 @@ const run = async () => {
         ok: boolean;
       } | null = null;
 
-      for (const c of cands.slice(0, POLISH_TOP)) {
+      for (const c of cands) {
         const centerVector = photoToSky(c.TP, [W / 2, H / 2]);
         const seed = {
           found: false,
