@@ -18,7 +18,8 @@ import { mat3Inv, mat3MulVec, projectVecToPhoto } from "@/search/utils/wcs";
 // 풀린 은하수 사진에서 답으로 투영한 은하면 직선과 각도·거리 차이를 잰다.
 //   npx tsx src/scripts/validate/expBandLine.ts <풀이 이름> <묶음>...
 export const COLS = 96;
-const BAND = 0.08; // 띠 반폭: 짧은 변의 8%
+// 띠 반폭: 짧은 변 비율. 암흑대로 갈라진 두 갈래를 함께 덮으려면 넓혀야 한다 (BAND=0.15 등으로 바꿔 잰다)
+const BAND = Number(process.env.BAND ?? 0.08);
 
 export const fitPlaneResidual = (
   data: Uint8Array | Buffer,

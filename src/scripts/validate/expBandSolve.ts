@@ -296,20 +296,27 @@ const run = async () => {
       const jit =
         process.env.JITTER === "0" || oracle ? [0] : [-3, -2, -1, 0, 1, 2, 3];
       const voted: { TP: Mat3; votes: number }[] = [];
+      const maxOff = Number(process.env.OFFSET_DEG ?? 8);
+      const offsets =
+        process.env.JITTER === "0" || oracle
+          ? [0]
+          : Array.from({ length: 2 * maxOff + 1 }, (_, k) => k - maxOff);
 
       for (const ln of lines) {
         for (const dt of jit) {
           const th = ((ln.theta + dt * 2) * Math.PI) / 180;
 
-          for (const dr of jit) {
-            for (const fov of FOVS) {
-              const f = Math.min(W, H) / 2 / Math.tan((fov * Math.PI) / 360);
+          // 가장 밝은 줄은 은위 0°가 아니라 대개 4° 안팎 어긋난다(암흑대가 한 갈래를 가린다, 풀린 은하수 86장 평균 단면의 최고점 −4°).
+          // 그래서 위치는 은위 각도로 흔든다: 선을 그 시야각에서 OFFSET_DEG만큼 옮긴 줄까지 은위 0°로 본다
+          for (const fov of FOVS) {
+            const f = Math.min(W, H) / 2 / Math.tan((fov * Math.PI) / 360);
 
+            for (const off of offsets) {
               for (const sign of [1, -1] as const) {
                 voted.push(
                   ...posesForLine(
                     [Math.cos(th), Math.sin(th)],
-                    (ln.rho + dr * 0.75) * cell,
+                    ln.rho * cell + f * Math.tan((off * Math.PI) / 180),
                     f,
                     sign,
                     W,
