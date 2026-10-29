@@ -1157,8 +1157,37 @@ const drawOverlay = (
     context.fill(path);
   }
 
-  // 은하수: 띠 가장자리(은위 ±10°)는 옅은 실선, 가운데선(은위 0°)은 더 옅게. 별자리선을 가리지 않도록 먼저 그린다
+  // 은하수: 은위 ±10·6·3° 띠를 아주 옅게 겹쳐 칠해 안쪽으로 갈수록 진해지게 한다 (사진의 은하수 무늬가 가려지지 않게).
+  // 같은 은경 번호의 점끼리 짝지어 칸(사각형)을 모아 한 번에 칠한다. 가장자리(±10°)는 옅은 실선. 별자리선보다 먼저 그린다
+  const byLatitude = new Map(
+    layers.milkyWay.map((m) => [m.latitude, m.points]),
+  );
+
+  for (const b of [10, 6, 3]) {
+    const lo = byLatitude.get(-b);
+    const hi = byLatitude.get(b);
+
+    if (!lo || !hi) continue;
+
+    const band = new Path2D();
+
+    for (let i = 0; i + 1 < lo.length; i++) {
+      const quad = [lo[i], lo[i + 1], hi[i + 1], hi[i]];
+
+      if (quad.some((p) => !p)) continue;
+
+      band.moveTo(quad[0]![0], quad[0]![1]);
+      quad.slice(1).forEach((p) => band.lineTo(p![0], p![1]));
+      band.closePath();
+    }
+
+    context.fillStyle = "oklch(0.85 0.06 250 / 0.06)";
+    context.fill(band, "nonzero");
+  }
+
   for (const { latitude, points } of layers.milkyWay) {
+    if (latitude !== 0 && Math.abs(latitude) !== 10) continue;
+
     context.strokeStyle =
       latitude === 0
         ? "oklch(0.92 0.03 250 / 0.22)"

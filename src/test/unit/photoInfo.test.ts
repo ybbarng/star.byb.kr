@@ -32,12 +32,9 @@ describe("사진 정보 (렌즈·화각·별 궤적 노출)", () => {
         (i) => i.label,
       ),
     ).toEqual(["렌즈", "화각", "별 궤적"]);
-    // 회전은 잰 값, 노출은 추정 값으로 나눠 쓴다 (받침에 따라 "으로/로")
+    // 잰 회전 각도 → 추정한 노출 시간
     expect(
       photoInfo({ fovDeg: 53, fisheye: false, trailAngleDeg: 3.7 })[2].value,
-    ).toBe("궤적에서 잰 회전 3.7° → 노출 약 15분으로 추정");
-    expect(
-      photoInfo({ fovDeg: 53, fisheye: false, trailAngleDeg: 0.25 })[2].value,
-    ).toBe("궤적에서 잰 회전 0.3° → 노출 약 60초로 추정");
+    ).toBe("3.7° → 노출 약 15분");
   });
 });

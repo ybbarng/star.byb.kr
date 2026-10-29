@@ -74,7 +74,7 @@ interface Overlay {
   constellations: SkyConstellation[];
   objects: SkyObjectMark[];
   boundaries: (Point2D | null)[][]; // 사진에 걸친 구역 경계 변 (뒤쪽·먼 점은 null)
-  // 은하수: 은위 0°(가운데선)와 ±MILKY_WAY_HALF_WIDTH(띠 가장자리) 선. 이름표 자리는 가운데선 중 사진 가운데에 가장 가까운 점
+  // 은하수: 은위 0°(가운데선)와 ±3·6·10°(띠) 선. 모든 선의 점은 같은 은경 순서라 같은 번호끼리 짝이 맞는다. 이름표 자리는 가운데선 중 사진 가운데에 가장 가까운 점
   milkyWay: { latitude: number; points: (Point2D | null)[] }[];
   milkyWayLabel: Point2D | null;
   regions: SkyRegion[]; // 사진에 담긴 구역, 넓은 순
@@ -178,8 +178,8 @@ const GALACTIC_TO_EQUATORIAL = [
   [-0.8734370902, -0.44482963, -0.1980763734],
   [-0.4838350155, 0.7469822445, 0.4559837762],
 ];
-// 맨눈에 띠로 보이는 너비의 절반 (은위)
-const MILKY_WAY_HALF_WIDTH = 10;
+// 띠를 안쪽으로 갈수록 진하게 칠하려고 여러 은위의 선을 만든다 (−b, +b 쌍 사이를 칠한다). ±10°는 맨눈에 띠로 보이는 너비
+const MILKY_WAY_LATITUDES = [-10, -6, -3, 0, 3, 6, 10];
 
 export const galacticToEquatorial = (lDeg: number, bDeg: number): Point3D => {
   const l = (lDeg * Math.PI) / 180;
@@ -204,7 +204,7 @@ const milkyWayLines = (
   let label: Point2D | null = null;
   let labelD = Infinity;
 
-  for (const latitude of [-MILKY_WAY_HALF_WIDTH, 0, MILKY_WAY_HALF_WIDTH]) {
+  for (const latitude of MILKY_WAY_LATITUDES) {
     const points: (Point2D | null)[] = [];
 
     for (let l = 0; l <= 360; l += 1) {
@@ -229,12 +229,15 @@ const milkyWayLines = (
       }
     }
 
-    if (points.some(inside)) {
-      milkyWay.push({ latitude, points });
-    }
+    milkyWay.push({ latitude, points });
   }
 
-  return { milkyWay, milkyWayLabel: milkyWay.length > 0 ? label : null };
+  // 사진에 걸치는 선이 하나도 없으면 그리지 않는다
+  const visible = milkyWay.some((m) => m.points.some(inside));
+
+  return visible
+    ? { milkyWay, milkyWayLabel: label }
+    : { milkyWay: [], milkyWayLabel: null };
 };
 
 const buildOverlay = (

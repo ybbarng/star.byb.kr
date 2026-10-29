@@ -44,14 +44,6 @@ export const formatExposure = (trailAngleDeg: number): string => {
     : `약 ${Math.floor(minutes / 60)}시간 ${minutes % 60}분`;
 };
 
-// "약 15분" → "약 15분으로", "약 60초" → "약 60초로" (마지막 글자 받침에 따라)
-const withEuro = (text: string): string => {
-  const code = text.charCodeAt(text.length - 1) - 0xac00;
-  const hasFinal = code >= 0 && code < 11172 && code % 28 !== 0;
-
-  return `${text}${hasFinal ? "으로" : "로"}`;
-};
-
 export const photoInfo = (input: PhotoInfoInput): PhotoInfoItem[] => {
   const items: PhotoInfoItem[] = [];
 
@@ -72,8 +64,8 @@ export const photoInfo = (input: PhotoInfoInput): PhotoInfoItem[] => {
   if (input.trailAngleDeg) {
     items.push({
       label: "별 궤적",
-      // 회전 각도는 사진의 궤적에서 잰 값이고, 노출 시간은 그 각도로 추정한 값이다
-      value: `궤적에서 잰 회전 ${input.trailAngleDeg.toFixed(1)}° → 노출 ${withEuro(formatExposure(input.trailAngleDeg))} 추정`,
+      // 회전 각도는 사진의 궤적에서 잰 값이고, 노출 시간은 그 각도로 추정한 값이다 ("약"으로 나타낸다)
+      value: `${input.trailAngleDeg.toFixed(1)}° → 노출 ${formatExposure(input.trailAngleDeg)}`,
     });
   }
 
