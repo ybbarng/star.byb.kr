@@ -2,7 +2,7 @@ import type { Point3D } from "@/scripts/hash/types";
 import type { InputStar } from "@/search/solvers";
 import type { FisheyeCamera } from "@/search/utils/fisheye";
 import type { Mat3 } from "@/search/utils/similarity";
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { resolve } from "node:path";
 import { projectFisheye } from "@/search/utils/fisheye";
 import { rankForSolving } from "@/search/utils/selectStars";
@@ -62,13 +62,14 @@ export const loadClasses = (set: string): Map<string, string> => {
     return out;
   }
 
-  const lines = readFileSync(path, "utf-8").split("\n").slice(1);
+  const [header, ...lines] = readFileSync(path, "utf-8").split("\n");
+  const col = parseCsvLine(header).indexOf("class");
 
   for (const line of lines) {
     const cells = parseCsvLine(line);
 
-    if (cells.length > 10) {
-      out.set(cells[0], cells[10].split("/")[0]);
+    if (col >= 0 && cells.length > col && cells[col]) {
+      out.set(cells[0], cells[col].split("/")[0]);
     }
   }
 
@@ -123,6 +124,40 @@ export interface RunRecord {
   fisheyeCamera?: FisheyeCamera | null; // 원형 어안 펴기·어안 blind로 풀렸으면
   trailAngleDeg?: number; // 별 궤적으로 풀렸으면 궤적이 돈 각도 (transform은 궤적 끝 순간)
 }
+
+// astrometry.net 소요 시간(ms): 로그가 만들어진 때(시작)부터 정답 WCS가 쓰인 때(끝)까지.
+// 못 풀었으면 로그를 마지막으로 쓴 때까지. 기록이 없으면 null
+export const astrometryTimeMs = (set: string, file: string): number | null => {
+  const base = resolve(
+    process.cwd(),
+    "build/validate/astrometry",
+    set,
+    file.replace(/\.[^.]+$/, ""),
+  );
+
+  if (!existsSync(`${base}.log`)) {
+    return null;
+  }
+
+  const log = statSync(`${base}.log`);
+  const end = existsSync(`${base}.wcs`)
+    ? statSync(`${base}.wcs`).mtimeMs
+    : log.mtimeMs;
+
+  return Math.max(0, end - log.birthtimeMs);
+};
+
+// astrometry.net을 돌린 적이 있는지: 로그나 정답 WCS가 있으면 돌렸다 (로그만 지워진 사진도 있다)
+export const astrometryTried = (set: string, file: string): boolean => {
+  const base = resolve(
+    process.cwd(),
+    "build/validate/astrometry",
+    set,
+    file.replace(/\.[^.]+$/, ""),
+  );
+
+  return existsSync(`${base}.log`) || existsSync(`${base}.wcs`);
+};
 
 // ─── 판정: 겹친 별 (3장) ───────────────────────────────────────────────
 // 풀이가 낸 변환으로 5등급 카탈로그를 사진에 투영하고, 앱 우선순위 검출과 겹치는 수를 우연 기대와 비교한다.

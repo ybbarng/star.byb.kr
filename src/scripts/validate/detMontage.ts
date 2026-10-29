@@ -16,7 +16,8 @@ const run = async () => {
   const classes = loadClasses(set);
   const rows = loadRun(set, name).filter(
     (r) =>
-      classes.get(r.file) === cls && (which === "found" ? r.found : !r.found),
+      (cls === "전체" || classes.get(r.file) === cls) &&
+      (which === "found" ? r.found : !r.found),
   );
   const cell = 360;
   const tiles = await Promise.all(

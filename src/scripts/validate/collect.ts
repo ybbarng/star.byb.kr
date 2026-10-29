@@ -46,7 +46,14 @@ interface Candidate {
   lat?: number;
   lon?: number;
   query: string;
+  camera?: string; // EXIF 카메라 (제조사 모델)
+  exposure?: string; // EXIF 노출 시간
+  iso?: string;
 }
+
+// 폰 카메라 (EXIF 제조사·모델)
+const PHONE =
+  /iphone|apple|galaxy|samsung|sm-|pixel|google|huawei|honor|xiaomi|redmi|poco|oneplus|oppo|vivo|realme|nokia|motorola|moto |lg-|sony xperia|xperia/i;
 
 const strip = (html?: string) =>
   (html ?? "")
@@ -86,7 +93,7 @@ const candidates = async (work: string) => {
       gsrnamespace: "6",
       gsrlimit: "50",
       prop: "imageinfo|coordinates",
-      iiprop: "url|size|mime|extmetadata",
+      iiprop: "url|size|mime|extmetadata|commonmetadata",
       iiurlwidth: "1920",
     });
     const pages = Object.values(search.query?.pages ?? {}) as {
@@ -98,6 +105,7 @@ const candidates = async (work: string) => {
         mime: string;
         descriptionurl: string;
         extmetadata?: Record<string, { value: string }>;
+        commonmetadata?: { name: string; value: unknown }[];
       }[];
       coordinates?: { lat: number; lon: number }[];
     }[];
@@ -112,6 +120,15 @@ const candidates = async (work: string) => {
         Math.min(ii.width, ii.height) < 900 ||
         SKIP.test(p.title)
       ) {
+        continue;
+      }
+
+      // EXIF 카메라 모델 (PHONE_ONLY=1이면 폰으로 찍은 사진만)
+      const exif = (key: string) =>
+        String(ii.commonmetadata?.find((m) => m.name === key)?.value ?? "");
+      const camera = `${exif("Make")} ${exif("Model")}`.trim();
+
+      if (process.env.PHONE_ONLY && !PHONE.test(camera)) {
         continue;
       }
 
@@ -130,6 +147,9 @@ const candidates = async (work: string) => {
         lat: p.coordinates?.[0]?.lat,
         lon: p.coordinates?.[0]?.lon,
         query,
+        camera,
+        exposure: exif("ExposureTime"),
+        iso: exif("ISOSpeedRatings"),
       });
     }
 

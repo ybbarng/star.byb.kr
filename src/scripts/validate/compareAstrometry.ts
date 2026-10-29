@@ -2,6 +2,8 @@ import type { Mat3 } from "@/search/utils/similarity";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import {
+  astrometryTimeMs,
+  astrometryTried,
   listPhotos,
   loadClasses,
   loadDetected,
@@ -24,6 +26,18 @@ const byClass: Record<string, typeof total> = {};
 const oursOnly: string[] = [];
 const astroOnly: string[] = [];
 const disagree: string[] = [];
+// 둘 다 푼 사진의 소요 시간 (우리 ms, astrometry ms)
+const times: [number, number][] = [];
+
+const median = (xs: number[]) => {
+  const v = [...xs].sort((a, b) => a - b);
+
+  return v.length ? v[v.length >> 1] : 0;
+};
+
+let excluded = 0;
+// astrometry를 아예 돌리지 않은 사진 (기록 없음). "못 풂"으로 세지 않는다
+const untested: string[] = [];
 
 for (const set of sets) {
   const truthPath = resolve(
@@ -39,7 +53,19 @@ for (const set of sets) {
   const classes = loadClasses(set);
 
   for (const file of listPhotos(set)) {
+    // 망원경·단망경 사진은 대상 범위가 아니다 (일반인 사진만 본다)
+    if (classes.get(file)?.includes("단망경")) {
+      excluded++;
+      continue;
+    }
+
     const r = runs.get(file);
+
+    if (!astrometryTried(set, file)) {
+      untested.push(`${set}/${file}`);
+      continue;
+    }
+
     const ours = Boolean(r?.found);
     const astro = Boolean(truth[file]);
     const cls = classes.get(file) ?? set;
@@ -58,6 +84,12 @@ for (const set of sets) {
     if (key === "ours") oursOnly.push(`${set}/${file}`);
     if (key === "astro") astroOnly.push(`${set}/${file}`);
 
+    const at = astrometryTimeMs(set, file);
+
+    if (key === "both" && r && at !== null) {
+      times.push([r.timeMs, at]);
+    }
+
     if (key === "both" && r?.center) {
       const d = loadDetected(set, file);
       const tc = d
@@ -72,6 +104,23 @@ for (const set of sets) {
       }
     }
   }
+}
+
+console.log(
+  "소요 시간 (둘 다 푼",
+  times.length,
+  "장, 중앙값): 우리",
+  (median(times.map((t) => t[0])) / 1000).toFixed(2),
+  "초 · astrometry",
+  (median(times.map((t) => t[1])) / 1000).toFixed(1),
+  "초",
+  excluded ? `· 대상 범위 밖(단망경)으로 뺀 사진 ${excluded}장` : "",
+);
+
+if (untested.length) {
+  console.log(
+    `⚠ astrometry를 돌리지 않은 사진 ${untested.length}장은 비교에서 뺐다: ${untested.slice(0, 10).join(" ")}${untested.length > 10 ? " …" : ""}`,
+  );
 }
 
 console.log(

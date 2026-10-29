@@ -99,8 +99,9 @@ const run = () => {
         else fate.dim++;
       }
 
-      // 정답 별만 넣어 풀기: 밝은 별과 겹친 검출만 (별다움 표시를 지우고 밝기 순)
-      const oracleInput = matched.map(
+      // 정답 별만 넣어 풀기: 밝은 별과 겹친 검출만 (별다움 표시를 지우고 밝기 순).
+      // 검출 하나가 카탈로그 별 둘과 겹치면 같은 점이 두 번 들어가 quad 해시가 깨지므로 한 번만 넣는다
+      const oracleInput = [...new Set(matched)].map(
         ({ aligned: _a, ringContrast: _r, ...s }) => s,
       );
       const oracle =

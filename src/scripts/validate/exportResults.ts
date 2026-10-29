@@ -2,6 +2,7 @@ import type { Mat3 } from "@/search/utils/similarity";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import {
+  astrometryTimeMs,
   judge,
   listPhotos,
   loadClasses,
@@ -57,6 +58,7 @@ const rows = [
     "overlap_verdict",
     "overlap_tail",
     "astrometry_solved",
+    "astrometry_time_s",
     "center_diff_deg",
     "diagnosis",
   ].join(","),
@@ -103,6 +105,9 @@ for (const set of sets) {
         j?.verdict,
         j?.tail.toFixed(1),
         t ? 1 : 0,
+        ((astrometryTimeMs(set, file) ?? NaN) / 1000)
+          .toFixed(1)
+          .replace("NaN", ""),
         diff?.toFixed(2),
         diagnosis.get(`${set}/${file}`),
       ]
