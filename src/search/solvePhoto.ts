@@ -20,7 +20,12 @@ import {
 import { improvedSolver } from "@/search/solvers/improved";
 import { triangleSolver } from "@/search/solvers/triangle";
 import { rankForSolving } from "@/search/utils/selectStars";
-import { mat3Mul, photoToSky, recoverCenter } from "@/search/utils/wcs";
+import {
+  mat3Mul,
+  photoToSky,
+  recoverCenter,
+  recoverFov,
+} from "@/search/utils/wcs";
 
 // 사진 한 장의 검출 별 목록을 받아 앱과 똑같은 흐름으로 푼다.
 // Worker(solverWorker)는 이 함수를 감싸기만 하고, Node 테스트도 이 함수를 그대로 쓴다.
@@ -86,6 +91,11 @@ export interface SolvePhotoOptions {
   // 확신 못 하면 남은 시간의 이 몫으로 별다움을 빼고 밝기 순으로만 다시 푼다 (0이면 끔, journey 52장).
   // 은하수 띠·별 궤적 속 밝은 별은 주변이 고르지 않아 별다움에서 밀려, 찾기에 쓰는 상위 입력에 들지 못한다
   brightFallbackShare?: number;
+  // 확신 못 하면 남은 시간의 이 몫으로 사진을 조각(가운데 → 4분의 1 → 반쪽)으로 잘라 따로 푼다 (0이면 끔, journey 53장).
+  // 이어 붙인 파노라마·가장자리가 휘는 초광각은 사진 전체로는 직선투영이 맞지 않지만 조각 하나는 맞는다
+  tileShare?: number;
+  // 어안 blind 풀이를 건너뛴다. 시간 상한을 보지 않고 끝까지 도므로, 한 사진 안에서 여러 번 부르는 풀이(조각·밝기 순 재시도의 첫 단계)에서는 끈다
+  skipFisheye?: boolean;
 }
 
 export interface SolvePhotoResult extends SolveOutcome {
@@ -508,6 +518,129 @@ const trailEndPose = (
   };
 };
 
+// ─── 조각 풀이 (journey 53장) ───────────────────────────────────────────
+// 조각 [x, y, 너비, 높이] (사진 크기 비율). 가운데 절반이 가장 많이 풀렸다 (못 푼 162장 중 60장)
+const TILES: [number, number, number, number][] = [
+  [0.25, 0.25, 0.5, 0.5],
+  [0, 0, 0.5, 0.5],
+  [0.5, 0, 0.5, 0.5],
+  [0, 0.5, 0.5, 0.5],
+  [0.5, 0.5, 0.5, 0.5],
+  [0, 0, 0.5, 1],
+  [0.5, 0, 0.5, 1],
+];
+const TILE_MIN_STARS = 20;
+// 조각을 사방 TILE_RING만큼 넓힌 띠(조각 밖)의 검출로 잰 점수가 이 이상이어야 받아들인다.
+// 조각은 별이 적고 시야가 좁아 우연에 약하다: astrometry로 확인한 조각 답 중 틀린 것은 둘레 점수 0.0~1.1, 2 이상은 모두 맞았다
+const TILE_RING = 0.25;
+// 조각 안에서는 입력을 이 크기까지만 쓴다. 풀이는 단계 사이에서만 시간을 보는데, 입력 60개 단계는 수 초가 걸려
+// 마지막 조각이 상한을 몇 초씩 넘겼다(514: 10.9초). 조각은 별이 적어 큰 입력이 필요 없다
+const TILE_MAX_INPUT = 25;
+// 남은 시간이 이보다 적으면 다음 조각을 시작하지 않는다
+const TILE_MIN_BUDGET_MS = 300;
+const TILE_MIN_RING_LOG_ODDS = 2;
+
+const solveTiles = (
+  stars: InputStar[],
+  size: ImageSize,
+  ctx: SolverContext,
+  solvers: Solver[],
+  options: SolvePhotoOptions,
+  deadline: number,
+): SolveOutcome | null => {
+  const W = size.width;
+  const H = size.height;
+  const ranked = rankForSolving(
+    stars.filter((s) => !s.trail),
+    W,
+    H,
+  );
+  const tileSolvers = solvers.map((solver) => ({
+    ...solver,
+    inputSizes: (solver.inputSizes ?? INPUT_SIZES).filter(
+      (n) => n <= TILE_MAX_INPUT,
+    ),
+  }));
+
+  for (let k = 0; k < TILES.length; k++) {
+    const left = deadline - performance.now();
+
+    if (left < TILE_MIN_BUDGET_MS) {
+      return null;
+    }
+
+    const [fx, fy, fw, fh] = TILES[k];
+    const x0 = fx * W;
+    const y0 = fy * H;
+    const w = fw * W;
+    const h = fh * H;
+    const inside = (s: { x: number; y: number }) =>
+      s.x >= x0 && s.x < x0 + w && s.y >= y0 && s.y < y0 + h;
+    const tileStars = stars
+      .filter(inside)
+      .map((s) => ({ ...s, x: s.x - x0, y: s.y - y0 }));
+
+    if (tileStars.length < TILE_MIN_STARS) {
+      continue;
+    }
+
+    const out = solvePhoto(
+      tileStars,
+      { width: w, height: h },
+      ctx,
+      tileSolvers,
+      {
+        ...options,
+        skipCircular: true,
+        skipFisheye: true,
+        tileShare: 0,
+        // 남은 조각에 시간을 고르게 나눈다 (앞 조각일수록 잘 풀려 먼저 둔다)
+        timeBudgetMs: left / (TILES.length - k),
+      },
+    );
+
+    if (!out.found || !out.transform) {
+      continue;
+    }
+
+    // 조각 좌표의 변환을 사진 전체 좌표로 (픽셀만 평행 이동)
+    const T = out.transform;
+    const full: Mat3 = [
+      [T[0][0] + x0 * T[2][0], T[0][1] + x0 * T[2][1], T[0][2] + x0 * T[2][2]],
+      [T[1][0] + y0 * T[2][0], T[1][1] + y0 * T[2][1], T[1][2] + y0 * T[2][2]],
+      [T[2][0], T[2][1], T[2][2]],
+    ];
+    const rx0 = x0 - TILE_RING * w;
+    const ry0 = y0 - TILE_RING * h;
+    const rx1 = x0 + (1 + TILE_RING) * w;
+    const ry1 = y0 + (1 + TILE_RING) * h;
+    const ring = ranked
+      .filter(
+        (s) => s.x >= rx0 && s.x < rx1 && s.y >= ry0 && s.y < ry1 && !inside(s),
+      )
+      .slice(0, POLISH_INPUT_STARS[POLISH_INPUT_STARS.length - 1])
+      .map((s): Point2D => [s.x, s.y]);
+    const ringLogOdds =
+      scorePose(full, ring, ctx.catalog, { imageWidth: W, imageHeight: H })
+        ?.logOdds ?? 0;
+
+    if (ringLogOdds < TILE_MIN_RING_LOG_ODDS) {
+      continue;
+    }
+
+    return {
+      ...out,
+      found: true,
+      transform: full,
+      centerVector: photoToSky(full, [W / 2, H / 2]),
+      fovDeg: (recoverFov(full, W, H) * 180) / Math.PI,
+      candidates: [],
+    };
+  }
+
+  return null;
+};
+
 // stars는 검출 전체를 넣어도 된다. 영역마다 우선순위(별다움 → 밝기) 순으로 필요한 만큼만 쓴다.
 export const solvePhoto = (
   stars: InputStar[],
@@ -541,14 +674,48 @@ export const solvePhoto = (
     }
   }
 
+  const tileShare = options.tileShare ?? 0;
+
+  if (tileShare > 0) {
+    const first = solvePhoto(stars, size, ctx, solvers, {
+      ...options,
+      // 원형 어안 펴기는 바깥에서 이미 했다
+      skipCircular: true,
+      skipFisheye: true,
+      tileShare: 0,
+      // 원형 어안 펴기 등 앞에서 쓴 시간을 빼고 남은 시간의 몫으로 (전체 상한 기준이면 원형 어안 사진이 11초가 걸렸다)
+      timeBudgetMs:
+        Math.max(0, budget - (performance.now() - t0)) * (1 - tileShare),
+    });
+
+    if (first.found) {
+      return { ...first, timeMs: performance.now() - t0 };
+    }
+
+    const tiled = solveTiles(stars, size, ctx, solvers, options, t0 + budget);
+
+    if (tiled) {
+      return {
+        ...tiled,
+        timedOut: false,
+        candidates: first.candidates,
+        timeMs: performance.now() - t0,
+      };
+    }
+
+    return { ...first, timeMs: performance.now() - t0 };
+  }
+
   const brightShare = options.brightFallbackShare ?? 0;
 
   if (brightShare > 0) {
     const first = solvePhoto(stars, size, ctx, solvers, {
       ...options,
       skipCircular: true,
+      skipFisheye: true,
       brightFallbackShare: 0,
-      timeBudgetMs: budget * (1 - brightShare),
+      timeBudgetMs:
+        Math.max(0, budget - (performance.now() - t0)) * (1 - brightShare),
     });
 
     if (first.found) {
@@ -668,6 +835,13 @@ export const solvePhoto = (
     // 확신은 못 했지만 유망한 후보는 그 영역의 별 더 많이로 다시 맞춰 본다. 15~25개로 잰 점수는
     // 기준 근처에서 출렁여, 정답 후보가 기준 아래(6~8.5)에 머문 채 시간 상한까지 가곤 했다
     // (인터넷 사진 200장에서 1위 후보가 이미 정답인데 못 푼 사진 5장, journey 38장).
+    // 시간 상한이 지났으면 하지 않는다: 정밀화는 별 150개로 여러 번 다시 맞춰 무겁고 시간을 보지 않아,
+    // 상한 직전에 끝난 단계 뒤에 돌면 상한을 몇 초씩 넘겼다 (journey 53장)
+    if (performance.now() >= deadline) {
+      timedOut = true;
+      break;
+    }
+
     const promoted = promoteCandidates(
       out.candidates,
       polished,
@@ -697,10 +871,17 @@ export const solvePhoto = (
     };
   }
 
-  // 직선투영으로 확신하지 못했으면 어안(초광각) blind 풀이를 시도한다.
+  // 직선투영으로 확신하지 못했으면 어안(초광각) blind 풀이를 시도한다. 이 풀이는 시간 상한을 보지 않아 시간이 남을 때만 돈다:
+  // 예전에는 상한 뒤에도 돌아 못 푼 사진이 8초가 아니라 9.5초 안팎에 끝났고, 실제 사진 625장에서 이 풀이로 확신한 것은 0장이었다
+  // (원형 어안은 앞의 원형 어안 펴기로 푼다, journey 53장)
   let fisheyeCamera = null;
 
-  if (!best && sorted.length > 0) {
+  if (
+    !best &&
+    sorted.length > 0 &&
+    !options.skipFisheye &&
+    performance.now() < deadline
+  ) {
     options.onPhase?.({ kind: "fisheye" });
 
     const fe = blindSolveFisheye(

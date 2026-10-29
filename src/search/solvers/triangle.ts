@@ -124,7 +124,9 @@ export const triangleSolver: Solver = {
     for (let t = 0; t < triangles.length; t++) {
       const [i, j, k] = triangles[t];
 
-      if (t % 16 === 0 && performance.now() >= deadline) {
+      // 삼각형마다 시간을 본다. 삼각형 하나에 시야 후보 × 짝 수십 개를 검증해, 16개마다 보던 때는 입력 60개 단계가
+      // 상한을 3초씩 넘겼다(원형 어안 사진 11장이 11초, journey 53장). 시간을 보는 비용은 검증에 비하면 없다
+      if (performance.now() >= deadline) {
         break;
       }
 

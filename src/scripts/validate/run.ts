@@ -75,6 +75,8 @@ const run = () => {
         timeBudgetMs: Number(budget),
         // BRIGHT_FALLBACK=0.3: 확신 못 하면 남은 시간의 30%로 밝기 순 재시도 (journey 52장)
         brightFallbackShare: Number(process.env.BRIGHT_FALLBACK ?? 0),
+        // TILE_SHARE=0.3: 확신 못 하면 남은 시간의 30%로 조각 풀이 (journey 53장)
+        tileShare: Number(process.env.TILE_SHARE ?? 0),
         onPhase: (p) => {
           phase =
             p.kind === "linear"
