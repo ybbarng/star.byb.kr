@@ -215,6 +215,7 @@ const run = async () => {
   });
   const rows: string[] = [];
   let tried = 0;
+  const bright = new Set<string>();
   let accepted = 0;
   let truthHits = 0;
 
@@ -468,13 +469,49 @@ const run = async () => {
             { width: W, height: H },
             { ...ctx, catalog: ctx.verifyCatalog! },
           ) >= 3;
+        // BRIGHT=1: 별다움을 무시하고 밝기 순으로 한 번 더 판정한다 (은하수 속 밝은 별이 별다움에서 밀린다, 정답 자세에서 280이 0.2 → 12.8)
+        let okBright = false;
+
+        if (process.env.BRIGHT && !(ok5 || okDeep)) {
+          const outB = polish(
+            { ...seed, transform: out.transform, confidence: 0 } as never,
+            byBright,
+            { width: W, height: H },
+            ctx,
+          );
+          const TPb = outB.transform ?? out.transform;
+          const top150b = byBright
+            .slice(0, 150)
+            .map((st): Point2D => [st.x, st.y]);
+          const localB =
+            scorePose(TPb, top150b, ctx.catalog, opts)?.logOdds ?? 0;
+          const candB = {
+            ...cand,
+            transform: TPb,
+            confidence: outB.confidence,
+            inlierCount: outB.inlierCount ?? cand.inlierCount,
+            fovDeg: outB.fovDeg ?? cand.fovDeg,
+          };
+
+          okBright =
+            isConfident({
+              inlierCount: candB.inlierCount,
+              fovDeg: candB.fovDeg,
+              logOdds: outB.confidence,
+            }) &&
+            localB >= 9 &&
+            heldOutLogOdds(candB, byBright, { width: W, height: H }, ctx) >= 3;
+
+          if (okBright) bright.add(file);
+        }
+
         const row = {
           lo: out.confidence,
           local,
           held: held5,
           deepLocal,
           TP: out.transform,
-          ok: ok5 || okDeep,
+          ok: ok5 || okDeep || okBright,
         };
 
         if (
@@ -505,6 +542,7 @@ const run = async () => {
   }
 
   console.log(rows.join("\n"));
+  console.log("밝기 순 판정으로 확신:", [...bright].join(" ") || "없음");
   console.log(
     `사진 ${tried}장 · 확신 ${accepted}장 · 정답지 2° 안 ${truthHits}장`,
   );
