@@ -1,4 +1,4 @@
-import { loadDetected } from "@/scripts/validate/common";
+import { loadClasses, loadDetected } from "@/scripts/validate/common";
 import { loadRun } from "@/scripts/validate/report";
 import { rankForSolving } from "@/search/utils/selectStars";
 import { projectVecToPhoto } from "@/search/utils/wcs";
@@ -18,9 +18,22 @@ const ringOf: number[] = [];
 const ringPushedNeighbors: number[] = [];
 const ringKeptNeighbors: number[] = [];
 
-for (const r of loadRun(set, name).filter((x) => x.found && x.transform)) {
+const onlyClass = process.argv[4];
+const classOf = loadClasses(set);
+
+for (const r of loadRun(set, name).filter(
+  (x) =>
+    x.found &&
+    x.transform &&
+    !x.trailAngleDeg &&
+    (!onlyClass || classOf.get(x.file) === onlyClass),
+)) {
   const det = loadDetected(set, r.file)!;
-  const ranked = rankForSolving(det.stars, det.width, det.height);
+  const ranked = rankForSolving(
+    det.stars.filter((s) => !s.trail),
+    det.width,
+    det.height,
+  );
   const rad = Math.hypot(det.width, det.height) * 0.006;
 
   for (const s of catalog) {
