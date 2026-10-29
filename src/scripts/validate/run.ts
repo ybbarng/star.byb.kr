@@ -64,12 +64,17 @@ const run = () => {
     }
 
     const out = solvePhoto(
-      det.stars,
+      // BRIGHT_ONLY=1: 별다움을 지워 밝기 순으로만 푼다 (은하수 실험, journey 52장)
+      process.env.BRIGHT_ONLY
+        ? det.stars.map(({ ringContrast: _r, ...s }) => s)
+        : det.stars,
       { width: det.width, height: det.height },
       ctx,
       DEFAULT_SOLVERS,
       {
         timeBudgetMs: Number(budget),
+        // BRIGHT_FALLBACK=0.3: 확신 못 하면 남은 시간의 30%로 밝기 순 재시도 (journey 52장)
+        brightFallbackShare: Number(process.env.BRIGHT_FALLBACK ?? 0),
         onPhase: (p) => {
           phase =
             p.kind === "linear"

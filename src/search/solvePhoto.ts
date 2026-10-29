@@ -83,6 +83,9 @@ export interface SolvePhotoOptions {
   timeBudgetMs?: number;
   onPhase?: (phase: SolvePhase) => void;
   skipCircular?: boolean; // 원형 어안 펴기를 하지 않는다 (편 가상 사진을 풀 때)
+  // 확신 못 하면 남은 시간의 이 몫으로 별다움을 빼고 밝기 순으로만 다시 푼다 (0이면 끔, journey 52장).
+  // 은하수 띠·별 궤적 속 밝은 별은 주변이 고르지 않아 별다움에서 밀려, 찾기에 쓰는 상위 입력에 들지 못한다
+  brightFallbackShare?: number;
 }
 
 export interface SolvePhotoResult extends SolveOutcome {
@@ -536,6 +539,45 @@ export const solvePhoto = (
     if (circular) {
       return { ...circular, timeMs: performance.now() - t0 };
     }
+  }
+
+  const brightShare = options.brightFallbackShare ?? 0;
+
+  if (brightShare > 0) {
+    const first = solvePhoto(stars, size, ctx, solvers, {
+      ...options,
+      skipCircular: true,
+      brightFallbackShare: 0,
+      timeBudgetMs: budget * (1 - brightShare),
+    });
+
+    if (first.found) {
+      return { ...first, timeMs: performance.now() - t0 };
+    }
+
+    const bright = solvePhoto(
+      stars.map(({ ringContrast: _r, ...st }) => st),
+      size,
+      ctx,
+      solvers,
+      {
+        ...options,
+        skipCircular: true,
+        brightFallbackShare: 0,
+        timeBudgetMs: Math.max(0, budget - (performance.now() - t0)),
+      },
+    );
+
+    return bright.found
+      ? { ...bright, timeMs: performance.now() - t0 }
+      : {
+          ...first,
+          candidates: mergeCandidates([
+            ...first.candidates,
+            ...bright.candidates,
+          ]),
+          timeMs: performance.now() - t0,
+        };
   }
 
   const deadline = t0 + budget;
