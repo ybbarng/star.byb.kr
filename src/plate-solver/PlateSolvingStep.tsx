@@ -7,11 +7,19 @@ import type { SolvePhase } from "@/search/solvePhoto";
 import type { SolveCandidateResult } from "@/search/solvers";
 import type { Mat3 } from "@/search/utils/similarity";
 import type { LatLon } from "@/search/whereShot";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Fragment,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { BasicsTerm } from "@/learn/basics/BasicsLinks";
 import { autoHorizon } from "@/plate-solver/autoHorizon";
 import { detectPhotoStars } from "@/plate-solver/detectPhotoStars";
 import MiniSkyMap from "@/plate-solver/MiniSkyMap";
+import { photoInfo } from "@/plate-solver/photoInfo";
 import { getSampleAnswer, matchesAnswer } from "@/plate-solver/sampleAnswers";
 import { SampleCreditLine } from "@/plate-solver/SampleCredits";
 import {
@@ -758,6 +766,21 @@ export default function PlateSolvingStep() {
                     ? `촬영 시각·장소와 지평선으로 풀었어요. ${horizonRun.message ?? ""}`
                     : `맞는 별 ${candidates[selected]?.inlierCount}개 · 화각 약 ${candidates[selected]?.fovDeg.toFixed(0)}° · ${((outcome?.timeMs ?? 0) / 1000).toFixed(1)}초`}
               </div>
+              {!horizonTP && (
+                <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-sm">
+                  {photoInfo({
+                    fovDeg: candidates[selected]?.fovDeg ?? null,
+                    fisheye: Boolean(fisheyeCamera),
+                    trailAngleDeg:
+                      selected === 0 ? outcome?.trailAngleDeg : undefined,
+                  }).map((item) => (
+                    <Fragment key={item.label}>
+                      <dt className="opacity-60">{item.label}</dt>
+                      <dd>{item.value}</dd>
+                    </Fragment>
+                  ))}
+                </dl>
+              )}
               {selectedTransform && (
                 <MiniSkyMap
                   transform={selectedTransform}

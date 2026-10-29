@@ -15,7 +15,7 @@ import { ACCEPT, dedupeBySky, isConfident } from "@/search/solvers/candidates";
 import { improvedSolver } from "@/search/solvers/improved";
 import { triangleSolver } from "@/search/solvers/triangle";
 import { rankForSolving } from "@/search/utils/selectStars";
-import { mat3Mul, photoToSky } from "@/search/utils/wcs";
+import { mat3Mul, photoToSky, recoverCenter } from "@/search/utils/wcs";
 
 // 사진 한 장의 검출 별 목록을 받아 앱과 똑같은 흐름으로 푼다.
 // Worker(solverWorker)는 이 함수를 감싸기만 하고, Node 테스트도 이 함수를 그대로 쓴다.
@@ -418,12 +418,21 @@ const solveCircular = (
 // 궤적마다 양 끝점을 하늘로 되돌려 천구 극(적도 좌표 z축) 둘레로 돈 각도를 잰다. 같은 별의 두 끝은 적위가 같아야 해서
 // 적위가 어긋나는 덩어리(나뭇가지·겹친 궤적)는 뺀다. 잘린 궤적이 많아 위쪽 분위수를 노출 각도로 본다.
 const TRAIL_MIN_CHORDS = 5;
+// 답과 광축이 이 각도 안인 후보는 같은 해로 본다 (후보 목록의 중복 제거 기준과 같다)
+const SAME_SKY_DEG = 4;
+
+const angleBetween = (a: Point3D, b: Point3D) =>
+  (Math.acos(
+    Math.max(-1, Math.min(1, a[0] * b[0] + a[1] * b[1] + a[2] * b[2])),
+  ) *
+    180) /
+  Math.PI;
 const TRAIL_ANGLE_QUANTILE = 0.75;
 
 const trailEndPose = (
   TP: Mat3,
   stars: InputStar[],
-): { transform: Mat3; angleDeg: number } | null => {
+): { transform: Mat3; rotate: Mat3; angleDeg: number } | null => {
   const angles: number[] = [];
 
   for (const s of stars) {
@@ -455,7 +464,8 @@ const trailEndPose = (
   const angle = angles[Math.floor(angles.length * TRAIL_ANGLE_QUANTILE)];
   const c = Math.cos(angle / 2);
   const s = Math.sin(angle / 2);
-  // 하늘을 천구 극 둘레로 angle/2 돌린 자세 (TP · Rz)
+  // 하늘을 천구 극 둘레로 angle/2 돌린 자세 (TP · Rz). 지구가 돌면서 별 방향은 지구에 고정된 틀에서 z축 둘레로
+  // −(각속도·시간)만큼 돈다. 그래서 가운데 순간에서 +angle/2 돌린 자세는 노출을 시작한 순간이다 (남·북반구 같다)
   const Rz: Mat3 = [
     [c, -s, 0],
     [s, c, 0],
@@ -464,6 +474,7 @@ const trailEndPose = (
 
   return {
     transform: mat3Mul(TP, Rz),
+    rotate: Rz,
     angleDeg: (angle * 180) / Math.PI,
   };
 };
@@ -611,7 +622,11 @@ export const solvePhoto = (
     : null;
 
   if (best && trailEnd) {
-    best = { ...best, transform: trailEnd.transform };
+    best = {
+      ...best,
+      transform: trailEnd.transform,
+      centerVector: recoverCenter(trailEnd.transform, size.width, size.height),
+    };
   }
 
   // 직선투영으로 확신하지 못했으면 어안(초광각) blind 풀이를 시도한다.
@@ -649,7 +664,23 @@ export const solvePhoto = (
       ...(trailEnd ? { trailAngleDeg: trailEnd.angleDeg } : {}),
       candidatesEvaluated: evaluated,
       timeMs,
-      candidates,
+      // 앱은 후보 목록으로 그린다: 답과 같은 하늘 자리의 후보도 궤적 끝 순간으로 돌린다
+      candidates:
+        trailEnd && best.centerVector
+          ? candidates.map((c) =>
+              angleBetween(c.centerVector, best!.centerVector!) < SAME_SKY_DEG
+                ? {
+                    ...c,
+                    transform: mat3Mul(c.transform, trailEnd.rotate),
+                    centerVector: recoverCenter(
+                      mat3Mul(c.transform, trailEnd.rotate),
+                      size.width,
+                      size.height,
+                    ),
+                  }
+                : c,
+            )
+          : candidates,
       fisheyeCamera,
       timedOut,
     };
