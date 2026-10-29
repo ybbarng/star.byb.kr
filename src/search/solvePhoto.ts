@@ -11,7 +11,12 @@ import type { Mat3 } from "@/search/utils/similarity";
 import { blindSolveFisheye } from "@/search/fisheyeSolve";
 import { refineSolution, scorePose } from "@/search/solveCore";
 // 비교용 전체 목록(solvers/index)은 mathjs를 쓰는 원본(baseline)까지 싣기 때문에, 앱이 쓰는 둘만 직접 불러온다
-import { ACCEPT, dedupeBySky, isConfident } from "@/search/solvers/candidates";
+import {
+  ACCEPT,
+  dedupeBySky,
+  isConfident,
+  isPlausible,
+} from "@/search/solvers/candidates";
 import { improvedSolver } from "@/search/solvers/improved";
 import { triangleSolver } from "@/search/solvers/triangle";
 import { rankForSolving } from "@/search/utils/selectStars";
@@ -305,6 +310,27 @@ const promoteCandidates = (
       heldOutLogOdds(c, stars, size, ctx) >= PROMOTE_MIN_HELD_OUT
     ) {
       return out;
+    }
+
+    // 밝은 별이 몇 개뿐인 좁은 시야는 맞는 답도 증거가 모자라 기준에 못 미친다. 어두운 별까지 투영해 같은 기준으로
+    // 다시 잰다: 맞는 답이면 그 자리에 어두운 별도 찍혀 있어 점수가 오르고, 틀린 답은 오르지 않는다 (journey 48장)
+    if (
+      ctx.verifyCatalog &&
+      isPlausible({
+        inlierCount: out.inlierCount,
+        fovDeg: out.fovDeg ?? Infinity,
+        logOdds: out.confidence,
+      })
+    ) {
+      const deep = { ...ctx, catalog: ctx.verifyCatalog };
+      const deepLogOdds = localLogOdds(out, stars, size, deep);
+
+      if (
+        deepLogOdds >= ACCEPT.minLogOdds &&
+        heldOutLogOdds(c, stars, size, deep) >= PROMOTE_MIN_HELD_OUT
+      ) {
+        return { ...out, confidence: Math.max(out.confidence, deepLogOdds) };
+      }
     }
   }
 

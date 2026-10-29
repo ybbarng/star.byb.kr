@@ -35,6 +35,8 @@ export interface SolverContext {
   triangleIndex?: TriangleIndex; // 삼각형 매칭용 (최선B)
   brightTriangleIndex?: TriangleIndex; // 밝은 별끼리만 만든 삼각형 (최선B가 함께 찾는다)
   pairIndex?: PairIndex; // 별쌍 각거리 투표용 (최선A)
+  // 검증에만 쓰는 더 어두운 별까지의 카탈로그. 찾기 인덱스에는 넣지 않는다 (조합이 폭발한다)
+  verifyCatalog?: SolveStar[];
 }
 
 // 사람이 고를 수 있도록 제시하는 후보 하나 (서로 다른 하늘 위치).

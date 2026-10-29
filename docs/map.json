@@ -53,6 +53,27 @@
       ]
     },
     {
+      "id": "solver-deep-verify",
+      "title": "검증에만 6등급 별 쓰기 (journey 48장)",
+      "parent": "solver",
+      "status": "building",
+      "size": 2,
+      "summary": "확신 기준은 그대로, 5등급으로 확신 못 한 후보만 6등급으로 다시 채점. 594장에서 +12장, 틀린 확신 0. 실험 스크립트에서만 켰다",
+      "next": "앱에 켤지와 6등급 별을 받는 방법 정하기",
+      "found": "2026-10-29",
+      "signs": [
+        {
+          "id": "deep-catalog-download",
+          "type": "fork",
+          "title": "6등급 별(약 3,450개 추가)을 앱이 받는 방법",
+          "owner": "me",
+          "options": ["처음부터 함께 받기", "확신 못 했을 때만 받기", "켜지 않기"],
+          "recommend": "확신 못 했을 때만 받기 (보통 사진은 받는 양이 그대로)",
+          "status": "open"
+        }
+      ]
+    },
+    {
       "id": "solver-fisheye",
       "title": "어안 마무리",
       "parent": "solver",
