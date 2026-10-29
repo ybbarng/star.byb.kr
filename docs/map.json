@@ -1,0 +1,142 @@
+{
+  "map": "starship-map/1",
+  "title": "별자리 찾기 (star.byb.kr)",
+  "goal": "일반인이 휴대폰·카메라로 찍은 밤하늘 사진을 브라우저에서 10초 안에, 서버 없이 풀어 사진 속 별자리를 보여 준다. 찾는 원리·하늘 읽기 기초·별 놀이터로 원리를 함께 배운다",
+  "baselineAt": "2026-10-19",
+  "updatedAt": "2026-10-29",
+  "here": "validation-astrometry",
+  "regions": [
+    {
+      "id": "solver",
+      "title": "Plate Solver 풀이",
+      "status": "building",
+      "size": 5,
+      "summary": "별 검출 → 삼각형·quad 매칭 → RANSAC 검증 → log-odds 판정. 8초 상한, 틀린 확신 0을 지킨다",
+      "links": [
+        { "label": "작업 기준", "path": "docs/project-principles.md" },
+        { "label": "시도·발견 기록", "path": "docs/experiments-journey.md" },
+        { "label": "개선 계획", "path": "docs/improvement-plan.md" }
+      ]
+    },
+    {
+      "id": "solver-reliability",
+      "title": "신뢰성 재구축 (합성 테스트·검증 코어)",
+      "parent": "solver",
+      "status": "done",
+      "size": 4,
+      "summary": "합성 사진 회귀 테스트, solveCore(RANSAC + log-odds), 판정 기준 9",
+      "since": "2026-10-19"
+    },
+    {
+      "id": "solver-night-2026-10-29",
+      "title": "인터넷 사진으로 범용 개선 (journey 38~45장)",
+      "parent": "solver",
+      "status": "done",
+      "size": 4,
+      "summary": "국소 밀도·교차 검증, 영역 풀이, 빛 총량 밝기, 별 궤적 점, 원형 어안. 세 묶음 99→128·91→133·63→100, 흔들림 111/112",
+      "since": "2026-10-29",
+      "links": [
+        { "label": "외부 검증 보고서", "path": "docs/external-validation-2026-10.md" }
+      ]
+    },
+    {
+      "id": "solver-milkyway",
+      "title": "은하수 띠 안의 밝은 별 살리기",
+      "parent": "solver",
+      "status": "building",
+      "size": 3,
+      "summary": "띠 안의 밝은 별이 별다움에서 밀린다(밀린 것의 36%). 별 모양 본은 실패(journey 47장)",
+      "next": "띠를 찾아 가리고 나머지로 푸는 방법, 손떨림 패턴을 없앤 별 모양 비교",
+      "found": "2026-10-29",
+      "signs": [
+        { "id": "milkyway-false-star", "type": "risk", "title": "작은 지상 불빛도 점이라 별다움 완화가 틀린 확신을 부를 수 있다" }
+      ]
+    },
+    {
+      "id": "solver-fisheye",
+      "title": "어안 마무리",
+      "parent": "solver",
+      "status": "fog",
+      "size": 2,
+      "summary": "원형 어안 25장 중 15장. 대각 어안·전천 사진 남음",
+      "links": [{ "label": "어안 할 일", "path": "docs/fisheye-todo.md" }]
+    },
+    {
+      "id": "solver-sky-labels",
+      "title": "천체 이름·촬영 시각·장소·방위",
+      "parent": "solver",
+      "status": "done",
+      "size": 3,
+      "summary": "딥스카이·해·달·행성, 촬영 시각 추정, 시각·장소·지평선 풀이, 어디서 찍었을까, 별 궤적 움직임·사진 정보·은하수 띠 표시"
+    },
+    {
+      "id": "validation",
+      "title": "검증·지표",
+      "status": "building",
+      "size": 4,
+      "summary": "처음 보는 일반인 사진으로 잰다. 망원경·단망경처럼 좁은 영역은 대상이 아니다",
+      "links": [{ "label": "검증 결과 모음", "path": "docs/validation/README.md" }]
+    },
+    {
+      "id": "validation-astrometry",
+      "title": "Astrometry.net과 견주기",
+      "parent": "validation",
+      "status": "building",
+      "size": 3,
+      "summary": "로컬 astrometry(인덱스 4110~4119, 한 장 2분)를 정답지로. 푼 장수·소요 시간을 지표로 쓴다",
+      "next": "빠진 133장 astrometry 결과로 숫자 바로잡기 → 보고서·사이트 숫자 고치기, 카페 묶음 넣기",
+      "since": "2026-10-29",
+      "links": [
+        { "label": "비교 보고서", "path": "docs/validation/astrometry-comparison-2026-10-29.md" },
+        { "label": "사진별 결과표", "path": "docs/validation/results-2026-10-29.csv" }
+      ],
+      "signs": [
+        { "id": "push-comparison", "type": "fork", "title": "바로잡은 비교 숫자를 사이트에 push", "owner": "me", "status": "open" }
+      ]
+    },
+    {
+      "id": "validation-cafe",
+      "title": "카페(모바일 별방) 사진 묶음",
+      "parent": "validation",
+      "status": "building",
+      "size": 2,
+      "summary": "아마추어 휴대폰 사진 39장(단망경 2장 제외), 29/37. 저장소·외부 서비스에 올리지 않는다",
+      "found": "2026-10-29"
+    },
+    {
+      "id": "validation-phone",
+      "title": "휴대폰 사진 묶음 (web-2026-10d)",
+      "parent": "validation",
+      "status": "fog",
+      "size": 2,
+      "summary": "Commons의 휴대폰 촬영 사진 후보 138장을 골라 새 확인용 묶음으로"
+    },
+    {
+      "id": "content",
+      "title": "사이트 콘텐츠",
+      "status": "done",
+      "size": 4,
+      "summary": "찾는 원리(/learn), 하늘 읽기 기초 9쪽, 별 놀이터(게임 12·둘러보기 7), 발표용 데모 embed",
+      "links": [{ "label": "게임 계획", "path": "docs/game-plans.md" }]
+    },
+    {
+      "id": "ops",
+      "title": "배포·운영",
+      "status": "done",
+      "size": 2,
+      "summary": "정적 내보내기 + Docker(byb.kr Traefik), PWA, Umami 통계, PNG 아이콘, 다운로드 0.68MB",
+      "links": [
+        { "label": "배포", "path": "docs/deployment.md" },
+        { "label": "다운로드 최적화", "path": "docs/download-optimization.md" }
+      ]
+    },
+    {
+      "id": "talks",
+      "title": "발표·테크 블로그",
+      "status": "done",
+      "size": 2,
+      "summary": "Dev Seminar 발표(v3), 테크 블로그 글과 글에 넣는 데모(src/blog)",
+      "links": [{ "label": "발표 점검", "path": "docs/presentation-review-2026-10-23.md" }]
+    }
+  ]
+}
