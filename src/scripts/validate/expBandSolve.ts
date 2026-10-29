@@ -128,16 +128,27 @@ const posesForLine = (
   const smooth = (i: number) =>
     bins[(i + 719) % 720] + bins[i] + bins[(i + 1) % 720];
   const peaks: { phi: number; votes: number }[] = [];
-  const order = Array.from({ length: 720 }, (_, i) => i).sort(
-    (a, b) => smooth(b) - smooth(a),
-  );
+  // 정렬 없이 PEAKS번 훑어 가장 큰 칸을 고른다 (이미 고른 봉우리 ±3° 안은 건너뛴다). 매번 720칸을 정렬하면 투표가 2초 넘게 걸렸다
+  const sm = new Float32Array(720);
 
-  for (const i of order) {
-    if (peaks.length >= PEAKS) break;
-    if (peaks.some((p) => Math.abs(((p.phi - i / 2 + 540) % 360) - 180) < 3))
-      continue;
+  for (let i = 0; i < 720; i++) sm[i] = smooth(i);
 
-    peaks.push({ phi: i / 2 + 0.25, votes: smooth(i) });
+  while (peaks.length < PEAKS) {
+    let bi = -1;
+
+    for (let i = 0; i < 720; i++) {
+      if (bi >= 0 && sm[i] <= sm[bi]) continue;
+      if (
+        peaks.some((pk) => Math.abs(((pk.phi - i / 2 + 540) % 360) - 180) < 3)
+      )
+        continue;
+
+      bi = i;
+    }
+
+    if (bi < 0) break;
+
+    peaks.push({ phi: bi / 2 + 0.25, votes: sm[bi] });
   }
 
   return peaks.map(({ phi, votes }) => {
@@ -346,7 +357,10 @@ const run = async () => {
       // 나. (MW_MAP이 있으면) 표 많은 3000개를 은하수 지도 대조 상관으로 600개 고른 뒤 별 점수 + 10 × 상관 순으로
       const byStar: { TP: Mat3; quick: number }[] = [];
 
-      for (const { TP } of voted.slice(0, 600)) {
+      for (const { TP } of voted.slice(
+        0,
+        Number(process.env.STAR_POOL ?? 600),
+      )) {
         const q = scorePose(TP, top150, ctx.catalog, opts);
 
         if (q) byStar.push({ TP: q.TP, quick: q.logOdds });
@@ -356,20 +370,25 @@ const run = async () => {
       cands.push(...byStar.slice(0, POLISH_TOP));
 
       if (skyMap) {
-        const pool = voted.slice(0, 3000);
-        const { glow, rows: rr } = await photoGlow(set, file);
-        const m2 = skyMaskOf(d.stars, W, H, COLS, rr);
+        // TEMPLATE_COLS: 지도 대조 칸(가로), TEMPLATE_POOL: 대조할 후보 수 (속도 조절)
+        const tc = Number(process.env.TEMPLATE_COLS ?? COLS);
+        const pool = voted.slice(0, Number(process.env.TEMPLATE_POOL ?? 3000));
+        const { glow, rows: rr } = await photoGlow(set, file, tc);
+        const m2 = skyMaskOf(d.stars, W, H, tc, rr);
         const corr = new Map(
           pool.map((v) => [
             v.TP,
-            templateCorr(skyMap, glow, COLS, rr, m2, v.TP, W, H),
+            templateCorr(skyMap, glow, tc, rr, m2, v.TP, W, H),
           ]),
         );
         const byMap: { TP: Mat3; quick: number }[] = [];
 
         pool.sort((x, y) => (corr.get(y.TP) ?? 0) - (corr.get(x.TP) ?? 0));
 
-        for (const { TP } of pool.slice(0, 600)) {
+        for (const { TP } of pool.slice(
+          0,
+          Number(process.env.MAP_PICK ?? 600),
+        )) {
           const q = scorePose(TP, top150, ctx.catalog, opts);
 
           if (q)

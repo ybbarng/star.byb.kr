@@ -200,9 +200,9 @@ export const skyMaskOf = (
   return mask;
 };
 
-export const photoGlow = async (set: string, file: string) => {
+export const photoGlow = async (set: string, file: string, cols = COLS) => {
   const { data, info } = await sharp(resolve(photoDir(set), file))
-    .resize({ width: COLS })
+    .resize({ width: cols })
     .greyscale()
     .blur(1)
     .raw()
