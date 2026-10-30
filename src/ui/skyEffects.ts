@@ -1,4 +1,4 @@
-// 사이트 배경의 움직이는 효과: 별 하나가 아주 짧게 반짝이고(밝은 별은 가는 십자 빛살이 잠깐 선다),
+// 사이트 배경의 움직이는 효과: 별 하나가 짧게 반짝이고(밝은 별은 가는 십자 빛살이 잠깐 선다),
 // 가끔 유성이 지나간다. 별 그림은 그대로 두고 위층 캔버스에만 그린다.
 // 효과가 있는 동안에만 requestAnimationFrame을 돌리고, 없으면 다음 효과까지 타이머로 기다린다.
 
@@ -189,7 +189,7 @@ export const startSkyEffects = (
     }
   };
 
-  // 화면 전체로 0.15~0.45초에 별 하나 (어느 순간에나 한두 개가 반짝이는 정도).
+  // 화면 전체로 0.3~0.9초에 별 하나가 0.5~1.2초 동안 (어느 순간에나 한두 개가 반짝이는 정도).
   // 대부분은 모든 별에서 고르게, 4번에 1번은 밝은 별(3등급보다 밝은)에서 골라 십자 빛살도 가끔 보이게 한다
   const scheduleTwinkle = () => {
     twinkleTimer = window.setTimeout(
@@ -203,13 +203,13 @@ export const startSkyEffects = (
             kind: "twinkle",
             star: pool[Math.floor(Math.random() * pool.length)],
             start: performance.now(),
-            duration: rand(200, 600),
+            duration: rand(500, 1200),
           });
         }
 
         scheduleTwinkle();
       },
-      rand(150, 450),
+      rand(300, 900),
     );
   };
 
