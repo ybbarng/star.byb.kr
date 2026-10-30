@@ -46,6 +46,9 @@ export const DEFAULT_TIME_BUDGET_MS = 8000;
 // 줄인 사진 검출(coarse)이 들어오면 원래 검출로 확신 못 했을 때 이 몫(0.64초)으로 quad 풀이를 한 번 더 한다.
 // 625장 번갈아 비교: 확신 445 → 451(얻음 7·잃음 1, 정답지와 틀림 늘지 않음, journey 54장)
 export const DEFAULT_COARSE_SHARE = 0.08;
+// 확신 못 하면 남은 시간의 이 몫으로 조각을 따로 푼다 (조각 밖 둘레 점수 2 이상만 받는다).
+// 625장 번갈아 비교: 확신 440 → 454(얻음 19·잃음 5, 조각 정답지로 확인한 9장 모두 0.8° 안, 틀림 늘지 않음, journey 55장)
+export const DEFAULT_TILE_SHARE = 0.2;
 // 쓰는 순서. 개선 quad는 빠르고 노이즈에 강하며(실제 샘플 5장 확신), 삼각형은 별이 적은
 // 사진(북두칠성)을 푼다. 서로 못 푸는 사진을 보완한다 (journey 13장).
 export const DEFAULT_SOLVERS: Solver[] = [improvedSolver, triangleSolver];
@@ -96,7 +99,7 @@ export interface SolvePhotoOptions {
   // 확신 못 하면 남은 시간의 이 몫으로 별다움을 빼고 밝기 순으로만 다시 푼다 (0이면 끔, journey 52장).
   // 은하수 띠·별 궤적 속 밝은 별은 주변이 고르지 않아 별다움에서 밀려, 찾기에 쓰는 상위 입력에 들지 못한다
   brightFallbackShare?: number;
-  // 확신 못 하면 남은 시간의 이 몫으로 사진을 조각(가운데 → 4분의 1 → 반쪽)으로 잘라 따로 푼다 (0이면 끔, journey 53장).
+  // 확신 못 하면 남은 시간의 이 몫으로 사진을 조각(가운데 → 4분의 1 → 반쪽)으로 잘라 따로 푼다 (기본 DEFAULT_TILE_SHARE, 0이면 끔, journey 53·55장).
   // 이어 붙인 파노라마·가장자리가 휘는 초광각은 사진 전체로는 직선투영이 맞지 않지만 조각 하나는 맞는다
   tileShare?: number;
   // 어안 blind 풀이를 건너뛴다. 시간 상한을 보지 않고 끝까지 도므로, 한 사진 안에서 여러 번 부르는 풀이(조각·밝기 순 재시도의 첫 단계)에서는 끈다
@@ -730,7 +733,7 @@ export const solvePhoto = (
     }
   }
 
-  const tileShare = options.tileShare ?? 0;
+  const tileShare = options.tileShare ?? DEFAULT_TILE_SHARE;
 
   if (tileShare > 0) {
     const first = solvePhoto(stars, size, ctx, solvers, {

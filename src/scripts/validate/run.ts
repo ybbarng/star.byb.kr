@@ -64,15 +64,16 @@ const run = () => {
       console.log("file", file);
     }
 
-    const coarseShare = Number(process.env.COARSE_SHARE ?? 0);
+    // 몫을 주지 않으면 앱 기본값(solvePhoto의 DEFAULT_*_SHARE)으로 푼다. 0을 주면 끈다
+    const share = (v?: string) => (v === undefined ? undefined : Number(v));
     const out = solvePhoto(
       [
         // BRIGHT_ONLY=1: 별다움을 지워 밝기 순으로만 푼다 (은하수 실험, journey 52장)
         ...(process.env.BRIGHT_ONLY
           ? det.stars.map(({ ringContrast: _r, ...s }) => s)
           : det.stars),
-        // COARSE_SHARE=0.25: 줄인 사진 검출(detect.ts COARSE=1 캐시)을 붙이고 확신 못 하면 그 몫으로 다시 푼다 (journey 54장)
-        ...(coarseShare > 0 ? loadCoarse(set, file) : []),
+        // 앱과 같이 줄인 사진 검출(detect.ts COARSE=1 캐시)을 붙인다. COARSE_SHARE=0이면 쓰지 않는다 (journey 54장)
+        ...loadCoarse(set, file),
       ],
       { width: det.width, height: det.height },
       ctx,
@@ -81,9 +82,9 @@ const run = () => {
         timeBudgetMs: Number(budget),
         // BRIGHT_FALLBACK=0.3: 확신 못 하면 남은 시간의 30%로 밝기 순 재시도 (journey 52장)
         brightFallbackShare: Number(process.env.BRIGHT_FALLBACK ?? 0),
-        // TILE_SHARE=0.3: 확신 못 하면 남은 시간의 30%로 조각 풀이 (journey 53장)
-        tileShare: Number(process.env.TILE_SHARE ?? 0),
-        coarseShare,
+        // TILE_SHARE=0.3: 확신 못 하면 남은 시간의 30%로 조각 풀이 (journey 53·55장)
+        tileShare: share(process.env.TILE_SHARE),
+        coarseShare: share(process.env.COARSE_SHARE),
         onPhase: (p) => {
           phase =
             p.kind === "linear"

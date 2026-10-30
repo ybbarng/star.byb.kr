@@ -18,10 +18,11 @@ import {
   loadHashes,
 } from "@/test/synthetic/loadCatalog";
 
-// 줄인 사진 재시도(coarseShare, journey 54장)를 기준선과 사진마다 번갈아 바로 이어 푼다.
+// 재시도 선택지 하나를 기준선(앱 기본값)과 사진마다 번갈아 바로 이어 푼다 (journey 54장).
 // 다른 작업의 부하가 오르내려도 두 방식이 거의 같은 부하를 받는다 (따로 재면 1초 안에 풀리던 사진까지 놓쳤다, 53장).
-//   npx tsx src/scripts/validate/abCoarse.ts <ms> <몫> <묶음> [조각]
-// 한 줄: 묶음/파일 분류 A(기준) B(재시도) 각각 O/x·log-odds·시간·정답지 각도
+// 기준선은 앱과 같이 줄인 사진 검출을 붙여 기본값으로 풀되 그 선택지만 끈다(0).
+//   npx tsx src/scripts/validate/abShare.ts <ms> <선택지: coarseShare|tileShare|brightFallbackShare> <몫> <묶음> [조각]
+// 한 줄: 묶음/파일 분류 A(기준) B(선택지) 각각 O/x·log-odds·시간·정답지 각도
 const angle = (a: number[], b: number[]) =>
   (Math.acos(
     Math.max(-1, Math.min(1, a[0] * b[0] + a[1] * b[1] + a[2] * b[2])),
@@ -30,7 +31,7 @@ const angle = (a: number[], b: number[]) =>
   Math.PI;
 
 const run = () => {
-  const [budget, shareArg, set, shard] = process.argv.slice(2);
+  const [budget, option, shareArg, set, shard] = process.argv.slice(2);
   const share = Number(shareArg);
   const ctx = buildSolverContext(
     contextStars(loadCatalog()),
@@ -57,13 +58,16 @@ const run = () => {
 
     const stars = [...d.stars, ...loadCoarse(set, file)];
 
-    const solve = (s: number) => {
+    const solve = (s: number | null) => {
       const out = solvePhoto(
         stars,
         { width: d.width, height: d.height },
         ctx,
         DEFAULT_SOLVERS,
-        { timeBudgetMs: Number(budget), coarseShare: s },
+        {
+          timeBudgetMs: Number(budget),
+          [option]: s ?? 0,
+        },
       );
       const t = truth[file];
       const vs =
@@ -77,11 +81,11 @@ const run = () => {
     // 순서도 번갈아 (먼저 도는 쪽이 늘 유리하거나 불리하지 않게)
     const [a, b] =
       i++ % 2 === 0
-        ? [solve(0), solve(share)]
+        ? [solve(null), solve(share)]
         : (() => {
             const bb = solve(share);
 
-            return [solve(0), bb];
+            return [solve(null), bb];
           })();
 
     console.log(`${set}/${file}\t${classes.get(file) ?? ""}\t${a}\t${b}`);
