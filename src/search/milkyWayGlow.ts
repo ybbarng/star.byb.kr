@@ -3,8 +3,8 @@
 
 // 사진 흐린 밝기 (가로 GLOW_COLS칸 회색조, 가우스 흐림 σ1). 브라우저(검출 Worker)와 검증 스크립트가 같은 함수로 만든다
 export const GLOW_COLS = 96;
-// 지도 대조는 가로 48칸으로 한다 (속도, journey 51장)
-export const TEMPLATE_COLS = 48;
+// 지도 대조 칸. 48칸이면 2.1초에 7장, 96칸(후보도 늘림)이면 4.5초에 8장 — 은하수 사진을 하나라도 더 푸는 쪽을 골랐다 (journey 57장)
+export const TEMPLATE_COLS = 96;
 
 export interface Glow {
   data: Float32Array;

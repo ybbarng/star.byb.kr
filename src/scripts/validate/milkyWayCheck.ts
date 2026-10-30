@@ -22,7 +22,7 @@ import {
 
 // 앱의 은하수 띠·지도 대조 풀이(search/milkyWaySolve)를 실험(expBandSolve)과 같은 사진에 돌려 같은 결과인지 본다.
 // 사진 흐린 밝기도 앱과 같은 함수(makeGlow)로 만든다. 못 푼 은하수 사진만 (ALL=1이면 풀린 사진도)
-//   npx tsx src/scripts/validate/milkyWayCheck.ts <풀이 이름> <묶음>...   (BUDGET=초, 기본 4)
+//   npx tsx src/scripts/validate/milkyWayCheck.ts <풀이 이름> <묶음>...   (BUDGET=초, 기본 6)
 const main = async () => {
   const [name, ...sets] = process.argv.slice(2);
   const ctx = buildSolverContext(
@@ -32,7 +32,7 @@ const main = async () => {
     loadDeepStars(),
   );
   const skyMap = loadSkyMapFile();
-  const budget = Number(process.env.BUDGET ?? 4) * 1000;
+  const budget = Number(process.env.BUDGET ?? 6) * 1000;
   let tried = 0;
   let solved = 0;
 
@@ -60,12 +60,12 @@ const main = async () => {
       const t0 = performance.now();
       const glows = {
         band: makeGlow(data, info.width, info.height, GLOW_COLS),
-        // SLOW=1: 지도 대조를 96칸으로 (51장의 느린 설정)
+        // FAST=1: 지도 대조를 48칸으로 (51장의 빠른 설정)
         map: makeGlow(
           data,
           info.width,
           info.height,
-          process.env.SLOW ? GLOW_COLS : TEMPLATE_COLS,
+          process.env.FAST ? 48 : TEMPLATE_COLS,
         ),
       };
       const tGlow = performance.now() - t0;
@@ -76,8 +76,8 @@ const main = async () => {
         glows,
         skyMap,
         performance.now() + budget,
-        process.env.SLOW
-          ? { starPool: 600, templatePool: 3000, mapPick: 600 }
+        process.env.FAST
+          ? { starPool: 300, templatePool: 1000, mapPick: 300 }
           : undefined,
       );
       const ms = Math.round(performance.now() - t0);

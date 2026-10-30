@@ -47,10 +47,12 @@ export interface MilkyWayTuning {
   mapPick: number;
 }
 
+// 별 점수로 고를 표 많은 자세 수, 지도 대조할 자세 수와 그중 고를 수. 300·1000·300(지도 48칸)이면 2.1초에 7장,
+// 600·3000·600(지도 96칸)이면 4.5초에 8장 (못 푼 은하수 76장, journey 57장)
 export const DEFAULT_MILKY_WAY_TUNING: MilkyWayTuning = {
-  starPool: 300,
-  templatePool: 1000,
-  mapPick: 300,
+  starPool: 600,
+  templatePool: 3000,
+  mapPick: 600,
 };
 const POLISH_TOP = 8;
 // 지도 대조 점수에 곱하는 무게 (별 점수 + 10 × 상관)
@@ -717,7 +719,7 @@ export const solveByMilkyWay = (
 // ─── 앱 흐름에 붙이기 ──────────────────────────────────────────
 // 기존 풀이(solvePhoto, 8초 상한)가 확신하지 못했을 때만, 그 뒤에 이 시간 동안 은하수 단계를 돌린다.
 // 지금 풀리는 사진은 그대로 풀리고, 늘어나는 시간은 못 푼 사진에만 생긴다 (journey 57장)
-export const MILKY_WAY_BUDGET_MS = 4000;
+export const MILKY_WAY_BUDGET_MS = 6000;
 
 export interface MilkyWayInput {
   glows: { band: Glow; map: Glow };
