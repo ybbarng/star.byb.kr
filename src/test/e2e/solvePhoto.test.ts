@@ -183,6 +183,59 @@ describe.skipIf(!ready)("solvePhoto: 앱의 풀이 흐름", () => {
     expect(last.kind === "linear" && last.region).toBe("사진 전체");
   });
 
+  describe("줄인 사진 검출(coarse, journey 54장)", () => {
+    // 줄인 사진의 검출을 흉내 낸다: 원래 사진 기준 좌표에 coarse 표시
+    const fakeCoarse = (seed: number) => {
+      const rng = createRng(seed);
+
+      return Array.from({ length: 40 }, (_, i) => ({
+        x: rng() * W,
+        y: rng() * H,
+        brightness: 5000 + i,
+        ringContrast: 0,
+        coarse: true,
+      }));
+    };
+
+    it("원래 검출로 확신하면 줄인 사진 검출은 풀이에 끼어들지 않는다", () => {
+      const phases: SolvePhase[] = [];
+      const out = solvePhoto(
+        [...cleanImage().stars, ...fakeCoarse(5)],
+        { width: W, height: H },
+        ctx,
+        DEFAULT_SOLVERS,
+        { onPhase: (p) => phases.push(p) },
+      );
+
+      expect(out.found).toBe(true);
+      expect(angleDeg(out.centerVector as Point3D, center)).toBeLessThan(0.5);
+      // 밝은 가짜가 끼어들었다면 첫 입력 크기에서 확신하지 못한다
+      expect(phases).toHaveLength(1);
+    });
+
+    it("원래 검출로 확신 못 하면 남은 시간의 몫으로 줄인 사진 검출만 푼다", () => {
+      const img = cleanImage();
+      const rng = createRng(11);
+      // 원래 검출은 하늘과 상관없는 점들(빛무리에 묻혀 진짜 별을 못 잡은 경우), 줄인 사진 검출이 진짜 별
+      const noise = Array.from({ length: 60 }, (_, i) => ({
+        x: rng() * W,
+        y: rng() * H,
+        brightness: 1000 - i,
+      }));
+      const coarse = img.stars.map((s) => ({ ...s, coarse: true }));
+      const out = solvePhoto(
+        [...noise, ...coarse],
+        { width: W, height: H },
+        ctx,
+        DEFAULT_SOLVERS,
+        { timeBudgetMs: 3000, coarseShare: 0.5 },
+      );
+
+      expect(out.found).toBe(true);
+      expect(angleDeg(out.centerVector as Point3D, center)).toBeLessThan(0.5);
+    });
+  });
+
   it("아래쪽에 밝은 지면 불빛이 몰려 있어도 위쪽 영역에서 찾는다", () => {
     const img = cleanImage();
     // 사진 아래 20%에 진짜 별보다 밝은 가짜 불빛 150개 (지평선 마을·가로등을 흉내).

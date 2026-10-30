@@ -24,10 +24,16 @@ export const detPath = (set: string, file: string) =>
 export const listPhotos = (set: string): string[] => {
   const classes = process.env.CLASS ? loadClasses(set) : null;
 
-  return readdirSync(photoDir(set))
-    .filter((f) => /\.(jpe?g|png|webp)$/i.test(f))
-    .filter((f) => !classes || classes.get(f) === process.env.CLASS)
-    .sort();
+  return (
+    readdirSync(photoDir(set))
+      .filter((f) => /\.(jpe?g|png|webp)$/i.test(f))
+      .filter((f) => !classes || classes.get(f) === process.env.CLASS)
+      // ONLY=web-148.jpg,web-319.jpg: 그 사진만
+      .filter(
+        (f) => !process.env.ONLY || process.env.ONLY.split(",").includes(f),
+      )
+      .sort()
+  );
 };
 
 // "0/4" → 네 조각 중 첫째 조각만
@@ -51,6 +57,16 @@ export const loadDetected = (set: string, file: string): Detected | null => {
   const path = detPath(set, file);
 
   return existsSync(path) ? JSON.parse(readFileSync(path, "utf-8")) : null;
+};
+
+// 줄인 사진 검출 캐시 (coarse 표시가 붙은 별, 좌표는 원래 사진 기준, journey 54장)
+export const coarsePath = (set: string, file: string) =>
+  resolve(outDir(set), "coarse", `${file}.json`);
+
+export const loadCoarse = (set: string, file: string): InputStar[] => {
+  const path = coarsePath(set, file);
+
+  return existsSync(path) ? JSON.parse(readFileSync(path, "utf-8")) : [];
 };
 
 // 출처표(sources.csv)의 분류 첫 단어 (은하수·오로라 …). 없으면 빈 문자열

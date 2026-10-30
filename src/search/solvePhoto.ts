@@ -43,6 +43,9 @@ export const INPUT_SIZES = [15, 25, 40, 60];
 // 일반인이 기다릴 수 있는 시간(목표 10초) 안에서 풀이를 멈춘다. 확신할 해를 못 찾으면
 // 그때까지 모은 후보만 돌려준다.
 export const DEFAULT_TIME_BUDGET_MS = 8000;
+// 줄인 사진 검출(coarse)이 들어오면 원래 검출로 확신 못 했을 때 이 몫(0.64초)으로 quad 풀이를 한 번 더 한다.
+// 625장 번갈아 비교: 확신 445 → 451(얻음 7·잃음 1, 정답지와 틀림 늘지 않음, journey 54장)
+export const DEFAULT_COARSE_SHARE = 0.08;
 // 쓰는 순서. 개선 quad는 빠르고 노이즈에 강하며(실제 샘플 5장 확신), 삼각형은 별이 적은
 // 사진(북두칠성)을 푼다. 서로 못 푸는 사진을 보완한다 (journey 13장).
 export const DEFAULT_SOLVERS: Solver[] = [improvedSolver, triangleSolver];
@@ -67,6 +70,8 @@ export const SEARCH_REGIONS: {
 ];
 // 영역 안 별이 이보다 적으면 그 영역은 건너뛴다
 const MIN_REGION_STARS = 8;
+// 줄인 사진 검출이 이보다 적으면 다시 풀지 않는다 (삼각형 풀이의 첫 입력 크기)
+const COARSE_MIN_STARS = 15;
 // 어안 blind 풀이에 넣는 별 수 (모든 검출을 넣으면 느리다)
 const FISHEYE_INPUT_STARS = 100;
 const MAX_PRESENTED_CANDIDATES = 8;
@@ -96,6 +101,9 @@ export interface SolvePhotoOptions {
   tileShare?: number;
   // 어안 blind 풀이를 건너뛴다. 시간 상한을 보지 않고 끝까지 도므로, 한 사진 안에서 여러 번 부르는 풀이(조각·밝기 순 재시도의 첫 단계)에서는 끈다
   skipFisheye?: boolean;
+  // 원래 검출로 확신 못 하면 전체 시간의 이 몫으로 줄인 사진의 검출(coarse 표시)만으로 다시 푼다 (기본 DEFAULT_COARSE_SHARE, 0이면 끔, journey 54장).
+  // 밝은 별을 부드럽게 퍼뜨린 사진은 빛무리가 검출의 흐림보다 넓어 밝은 별이 약하게 잡힌다. 줄이면 빛무리가 점이 된다
+  coarseShare?: number;
 }
 
 export interface SolvePhotoResult extends SolveOutcome {
@@ -643,7 +651,7 @@ const solveTiles = (
 
 // stars는 검출 전체를 넣어도 된다. 영역마다 우선순위(별다움 → 밝기) 순으로 필요한 만큼만 쓴다.
 export const solvePhoto = (
-  stars: InputStar[],
+  allStars: InputStar[],
   size: ImageSize,
   ctx: SolverContext,
   solvers: Solver[] = DEFAULT_SOLVERS,
@@ -651,6 +659,54 @@ export const solvePhoto = (
 ): SolvePhotoResult => {
   const t0 = performance.now();
   const budget = options.timeBudgetMs ?? DEFAULT_TIME_BUDGET_MS;
+  const stars = allStars.filter((s) => !s.coarse);
+  const coarseShare = options.coarseShare ?? DEFAULT_COARSE_SHARE;
+  const coarse =
+    coarseShare > 0 ? allStars.filter((s) => s.coarse) : ([] as InputStar[]);
+
+  if (coarse.length >= COARSE_MIN_STARS) {
+    const first = solvePhoto(stars, size, ctx, solvers, {
+      ...options,
+      coarseShare: 0,
+      // 어안 blind 풀이는 시간을 보지 않으니 마지막(줄인 사진 풀이)에서만
+      skipFisheye: true,
+      timeBudgetMs: budget * (1 - coarseShare),
+    });
+
+    if (first.found) {
+      return { ...first, timeMs: performance.now() - t0 };
+    }
+
+    // 빠른 quad 풀이 하나만: 줄인 사진으로 풀린 사진 9장 중 8장이 quad로 1초 안에 풀렸고, 실패해도 0.5초면 끝난다.
+    // 삼각형 풀이까지 돌리면 시간을 떼어 준 만큼 늦게 풀리던 사진을 잃었다(625장 25% 몫: 얻음 9·잃음 8)
+    const small = solvePhoto(
+      coarse.map(({ coarse: _c, ...s }) => s),
+      size,
+      ctx,
+      solvers.slice(0, 1),
+      {
+        ...options,
+        coarseShare: 0,
+        // 원형 어안 펴기·조각·밝기 순 재시도는 원래 검출에서 이미 했다
+        skipCircular: true,
+        tileShare: 0,
+        brightFallbackShare: 0,
+        timeBudgetMs: Math.max(0, budget - (performance.now() - t0)),
+      },
+    );
+
+    return small.found
+      ? { ...small, timeMs: performance.now() - t0 }
+      : {
+          ...first,
+          candidates: mergeCandidates([
+            ...first.candidates,
+            ...small.candidates,
+          ]),
+          timeMs: performance.now() - t0,
+        };
+  }
+
   const circle = options.skipCircular ? null : circularFisheye(stars, size);
 
   if (circle) {

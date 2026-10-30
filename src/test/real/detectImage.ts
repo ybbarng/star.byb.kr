@@ -1,8 +1,12 @@
 import type { DetectedStar } from "@/search/detectCore";
 import type { InputStar } from "@/search/solvers";
 import sharp from "sharp";
-import { detectStarsInImage } from "@/search/detectImage";
-import { mergeDetections, mergeDistancePx } from "@/search/utils/selectStars";
+import { detectCoarseStars, detectStarsInImage } from "@/search/detectImage";
+import {
+  mergeDetections,
+  mergeDistancePx,
+  rankForSolving,
+} from "@/search/utils/selectStars";
 
 // node에서 실제 사진(JPG/PNG)을 읽어 별을 검출한다. sharp로 픽셀만 풀고, 검출은 브라우저 Worker와
 // 같은 순수 JS(detectImage.ts: 회색조 → 흐림 → 차영상 → detectCore)를 쓴다.
@@ -47,4 +51,30 @@ export const detectLikeApp = async (
   );
 
   return { stars: merged, width, height };
+};
+
+// 줄인 사진에서 찾은 별을 풀이 순서로 (coarse 표시, 좌표는 원래 사진 기준, journey 54장)
+export const detectCoarseLikeApp = async (
+  path: string | Buffer,
+): Promise<InputStar[]> => {
+  const { data, info } = await sharp(path)
+    .ensureAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  const stars = detectCoarseStars(data, info.width, info.height, info.channels);
+
+  return rankForSolving(
+    mergeDetections(
+      stars.map((s) => ({
+        x: s.cx,
+        y: s.cy,
+        brightness: s.brightness,
+        ringContrast: s.ringContrast,
+        coarse: true,
+      })),
+      mergeDistancePx(info.width, info.height),
+    ),
+    info.width,
+    info.height,
+  );
 };

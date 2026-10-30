@@ -105,6 +105,15 @@
       "found": "2026-10-29"
     },
     {
+      "id": "solver-coarse",
+      "title": "줄인 사진에서 한 번 더 찾기 (journey 54장)",
+      "parent": "solver",
+      "status": "done",
+      "size": 2,
+      "summary": "빛무리가 넓은 밝은 별은 흐림(σ8)보다 넓어 약하게 잡힌다. 긴 변 480px로 줄여 다시 검출하고, 확신 못 하면 8%(0.64초)로 quad 풀이만 한 번 더. 625장 번갈아 비교 445 → 451(얻음 7·잃음 1, 틀림 늘지 않음). 앱 기본으로 켬",
+      "found": "2026-10-30"
+    },
+    {
       "id": "solver-fisheye",
       "title": "어안 마무리",
       "parent": "solver",

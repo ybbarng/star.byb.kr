@@ -77,7 +77,11 @@ export const preloadDetector = () => {
   }
 };
 
-export const detectStars = (image: ImageData): Promise<DetectedStar[]> => {
+// coarse면 줄인 사진에서 찾은 별 (좌표는 원래 사진 기준, journey 54장)
+export const detectStars = (
+  image: ImageData,
+  coarse = false,
+): Promise<DetectedStar[]> => {
   const id = nextId++;
 
   return new Promise((resolve, reject) => {
@@ -89,6 +93,7 @@ export const detectStars = (image: ImageData): Promise<DetectedStar[]> => {
         data: image.data,
         width: image.width,
         height: image.height,
+        coarse,
       });
     } catch (e) {
       // Worker를 못 띄우거나 보내지 못했다

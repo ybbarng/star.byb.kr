@@ -17,7 +17,7 @@ import {
 } from "react";
 import { BasicsTerm } from "@/learn/basics/BasicsLinks";
 import { autoHorizon } from "@/plate-solver/autoHorizon";
-import { detectPhotoStars } from "@/plate-solver/detectPhotoStars";
+import { detectPhotoStarsWithCoarse } from "@/plate-solver/detectPhotoStars";
 import MiniSkyMap from "@/plate-solver/MiniSkyMap";
 import { photoInfo } from "@/plate-solver/photoInfo";
 import { getSampleAnswer, matchesAnswer } from "@/plate-solver/sampleAnswers";
@@ -60,6 +60,7 @@ export default function PlateSolvingStep() {
   const image = useContextStore((state) => state.image);
   const fileName = useContextStore((state) => state.fileName);
   const photoStars = useContextStore((state) => state.photoStars);
+  const coarseStars = useContextStore((state) => state.coarseStars);
   const hiddenStars = useContextStore((state) => state.hiddenStars);
   const marks = useContextStore((state) => state.marks);
   const setPhotoStars = useContextStore((state) => state.setPhotoStars);
@@ -136,13 +137,13 @@ export default function PlateSolvingStep() {
     let alive = true;
     setDetecting(true);
     setDetectError(null);
-    detectPhotoStars(image)
-      .then((all) => {
+    detectPhotoStarsWithCoarse(image)
+      .then(({ stars: all, coarse }) => {
         if (!alive) {
           return;
         }
 
-        setDetections(all);
+        setDetections(all, coarse);
         setPhotoStars(
           all.slice(0, DEFAULT_DISPLAY_STARS),
           all.slice(DEFAULT_DISPLAY_STARS),
@@ -306,19 +307,29 @@ export default function PlateSolvingStep() {
     }
 
     // 화면의 별 + 화면에 안 띄운 나머지 검출(사람이 고치지 않았을 때). 풀이가 영역마다 고른다.
+    // 줄인 사진 검출은 coarse로 표시해 붙인다: 원래 검출로 확신 못 했을 때만 풀이가 쓴다 (journey 54장)
     solve(
-      [...photoStars, ...hiddenStars].map((s) => ({
-        x: s.x,
-        y: s.y,
-        brightness: s.brightness,
-        ringContrast: s.ringContrast,
-        trail: s.trail,
-        chord: s.chord,
-      })),
+      [
+        ...[...photoStars, ...hiddenStars].map((s) => ({
+          x: s.x,
+          y: s.y,
+          brightness: s.brightness,
+          ringContrast: s.ringContrast,
+          trail: s.trail,
+          chord: s.chord,
+        })),
+        ...coarseStars.map((s) => ({
+          x: s.x,
+          y: s.y,
+          brightness: s.brightness,
+          ringContrast: s.ringContrast,
+          coarse: true,
+        })),
+      ],
       image.width,
       image.height,
     );
-  }, [image, photoStars, hiddenStars, solve]);
+  }, [image, photoStars, hiddenStars, coarseStars, solve]);
 
   useEffect(() => {
     if (ready) {

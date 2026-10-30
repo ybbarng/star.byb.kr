@@ -20,6 +20,8 @@ export interface InputStar {
   trail?: boolean;
   // 별 궤적 덩어리의 양 끝점 (x1, y1, x2, y2). 풀린 뒤 궤적이 돈 각도를 재는 데 쓴다
   chord?: [number, number, number, number];
+  // 줄인 사진에서 검출한 별 (좌표는 원래 사진 기준). 원래 검출로 확신 못 했을 때만 따로 푼다 (solvePhoto coarseShare, journey 54장)
+  coarse?: boolean;
 }
 
 export interface ImageSize {

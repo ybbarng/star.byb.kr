@@ -20,10 +20,15 @@ interface ContextState {
   hiddenStars: PhotoStars[];
   // 자동 검출 전체(풀이 순서). 별 고치기에서 영역 다시 찾기·되돌리기에 쓴다. 비어 있으면 아직 검출 전이다.
   detections: DetectedStar[];
+  // 줄인 사진에서 찾은 별 (빛무리가 넓은 사진용, journey 54장). 화면에 띄우지 않고 풀이가 확신 못 했을 때만 쓴다
+  coarseStars: DetectedStar[];
   marks: EstimateMarks;
   setImage: (image: HTMLImageElement, fileName?: string) => void;
   setPhotoStars: (photoStars: PhotoStars[], hiddenStars?: PhotoStars[]) => void;
-  setDetections: (detections: DetectedStar[]) => void;
+  setDetections: (
+    detections: DetectedStar[],
+    coarseStars?: DetectedStar[],
+  ) => void;
   setMarks: (marks: EstimateMarks) => void;
   goTo: (view: SolverView, editTool?: EditTool) => void;
 }
@@ -34,6 +39,7 @@ export const useContextStore = create<ContextState>((set) => ({
   photoStars: [],
   hiddenStars: [],
   detections: [],
+  coarseStars: [],
   marks: NO_MARKS,
   // 사진이 바뀌면 별·찍은 점을 모두 지운다
   setImage: (image: HTMLImageElement, fileName?: string) =>
@@ -43,11 +49,14 @@ export const useContextStore = create<ContextState>((set) => ({
       photoStars: [],
       hiddenStars: [],
       detections: [],
+      coarseStars: [],
       marks: NO_MARKS,
     }),
   setPhotoStars: (photoStars: PhotoStars[], hiddenStars: PhotoStars[] = []) =>
     set({ photoStars, hiddenStars }),
-  setDetections: (detections: DetectedStar[]) => set({ detections }),
+  // 줄인 사진 검출을 주지 않으면(별 고치기의 되돌리기 등) 그대로 둔다
+  setDetections: (detections: DetectedStar[], coarseStars?: DetectedStar[]) =>
+    set(coarseStars ? { detections, coarseStars } : { detections }),
   setMarks: (marks: EstimateMarks) => set({ marks }),
   goTo: (view: SolverView, editTool: EditTool = "select") =>
     set({ view, editTool }),

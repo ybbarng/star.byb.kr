@@ -97,6 +97,72 @@ export const toGray = (
   return gray;
 };
 
+// 줄인 사진 검출(journey 54장): 밝은 별을 부드럽게 퍼뜨린 사진은 빛무리가 흐림(σ8)보다 넓어 밝은 별이 약하게 잡힌다.
+// 긴 변이 약 COARSE_LONG_SIDE px가 되게 정수 배로 줄이면(칸 평균) 빛무리가 점이 된다. 1920px 사진이면 4분의 1
+export const COARSE_LONG_SIDE = 480;
+
+// 회색조를 k×k 칸 평균으로 줄인다 (남는 가장자리는 버린다)
+export const shrinkGray = (
+  gray: Uint8Array,
+  width: number,
+  height: number,
+  k: number,
+): { gray: Uint8Array; width: number; height: number } => {
+  const w = Math.floor(width / k);
+  const h = Math.floor(height / k);
+  const out = new Uint8Array(w * h);
+  const area = k * k;
+
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      let acc = 0;
+
+      for (let dy = 0; dy < k; dy++) {
+        const row = (y * k + dy) * width + x * k;
+
+        for (let dx = 0; dx < k; dx++) {
+          acc += gray[row + dx];
+        }
+      }
+
+      out[y * w + x] = Math.round(acc / area);
+    }
+  }
+
+  return { gray: out, width: w, height: h };
+};
+
+// 줄인 사진에서 찾은 별 (좌표는 원래 사진 기준, 칸 가운데). 사진이 이미 작으면 빈 목록
+export const detectCoarseStars = (
+  rgba: Uint8ClampedArray | Uint8Array,
+  width: number,
+  height: number,
+  channels = 4,
+): DetectedStar[] => {
+  const k = Math.round(Math.max(width, height) / COARSE_LONG_SIDE);
+
+  if (k < 2) {
+    return [];
+  }
+
+  const small = shrinkGray(
+    toGray(rgba, width, height, channels),
+    width,
+    height,
+    k,
+  );
+
+  return detectStarsInImage(small.gray, small.width, small.height, 1)
+    .filter((s) => !s.trail)
+    .map((s) => ({
+      ...s,
+      cx: (s.cx + 0.5) * k - 0.5,
+      cy: (s.cy + 0.5) * k - 0.5,
+      radius: s.radius * k,
+      fwhm: s.fwhm * k,
+    }));
+};
+
 export const detectStarsInImage = (
   rgba: Uint8ClampedArray | Uint8Array,
   width: number,

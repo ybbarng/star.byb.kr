@@ -3,6 +3,7 @@ import { appendFileSync, mkdirSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import {
   listPhotos,
+  loadCoarse,
   loadDetected,
   outDir,
   shardOf,
@@ -63,11 +64,16 @@ const run = () => {
       console.log("file", file);
     }
 
+    const coarseShare = Number(process.env.COARSE_SHARE ?? 0);
     const out = solvePhoto(
-      // BRIGHT_ONLY=1: 별다움을 지워 밝기 순으로만 푼다 (은하수 실험, journey 52장)
-      process.env.BRIGHT_ONLY
-        ? det.stars.map(({ ringContrast: _r, ...s }) => s)
-        : det.stars,
+      [
+        // BRIGHT_ONLY=1: 별다움을 지워 밝기 순으로만 푼다 (은하수 실험, journey 52장)
+        ...(process.env.BRIGHT_ONLY
+          ? det.stars.map(({ ringContrast: _r, ...s }) => s)
+          : det.stars),
+        // COARSE_SHARE=0.25: 줄인 사진 검출(detect.ts COARSE=1 캐시)을 붙이고 확신 못 하면 그 몫으로 다시 푼다 (journey 54장)
+        ...(coarseShare > 0 ? loadCoarse(set, file) : []),
+      ],
       { width: det.width, height: det.height },
       ctx,
       DEFAULT_SOLVERS,
@@ -77,6 +83,7 @@ const run = () => {
         brightFallbackShare: Number(process.env.BRIGHT_FALLBACK ?? 0),
         // TILE_SHARE=0.3: 확신 못 하면 남은 시간의 30%로 조각 풀이 (journey 53장)
         tileShare: Number(process.env.TILE_SHARE ?? 0),
+        coarseShare,
         onPhase: (p) => {
           phase =
             p.kind === "linear"
