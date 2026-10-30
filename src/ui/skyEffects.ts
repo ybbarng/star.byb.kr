@@ -37,10 +37,19 @@ const rand = (min: number, max: number) => min + Math.random() * (max - min);
 const progress = (effect: Effect, now: number) =>
   Math.min(1, Math.max(0, (now - effect.start) / effect.duration));
 
-// 반짝임 세기 0→1→0. 빠르게 밝아지고 조금 더 천천히 돌아온다.
+// 반짝임 세기 0→1→0. 앞 15% 동안 빠르게 밝아지고, 30%까지 머문 뒤, 남은 70% 동안 꼬리를 끌며 천천히 사라진다.
+// (예전 곡선은 30% 지점에서 정점을 찍자마자 떨어져 너무 빨리 어두워졌다)
 // 색 문자열에 1e-7 같은 지수 표기가 들어가지 않게 소수 셋째 자리로 자른다
-const flash = (t: number) =>
-  Math.round(Math.pow(Math.sin(Math.PI * Math.pow(t, 0.6)), 2) * 1000) / 1000;
+const flash = (t: number) => {
+  const a =
+    t < 0.15
+      ? Math.pow(Math.sin((Math.PI / 2) * (t / 0.15)), 2)
+      : t < 0.3
+        ? 1
+        : Math.pow(1 - (t - 0.3) / 0.7, 2);
+
+  return Math.round(a * 1000) / 1000;
+};
 
 // 가운데서 바깥으로 흐려지는 가는 빛살 하나
 const spike = (
@@ -189,7 +198,8 @@ export const startSkyEffects = (
     }
   };
 
-  // 화면 전체로 0.3~0.9초에 별 하나가 0.5~1.2초 동안 (어느 순간에나 한두 개가 반짝이는 정도).
+  // 화면 전체로 평균 0.35초에 별 하나가 0.6~1.4초 동안 (어느 순간에나 두세 개가 반짝이는 정도).
+  // 간격은 지수 분포라 몇 개가 잇달아 터지기도 하고 잠깐 조용하기도 하다. 0.04~2초로 자른다.
   // 대부분은 모든 별에서 고르게, 4번에 1번은 밝은 별(3등급보다 밝은)에서 골라 십자 빛살도 가끔 보이게 한다
   const scheduleTwinkle = () => {
     twinkleTimer = window.setTimeout(
@@ -203,13 +213,13 @@ export const startSkyEffects = (
             kind: "twinkle",
             star: pool[Math.floor(Math.random() * pool.length)],
             start: performance.now(),
-            duration: rand(500, 1200),
+            duration: rand(600, 1400),
           });
         }
 
         scheduleTwinkle();
       },
-      rand(300, 900),
+      Math.min(2000, Math.max(40, -350 * Math.log(1 - Math.random()))),
     );
   };
 
