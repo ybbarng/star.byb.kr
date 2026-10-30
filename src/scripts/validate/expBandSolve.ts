@@ -193,7 +193,7 @@ const posesForLine = (
 const run = async () => {
   const [name, ...sets] = process.argv.slice(2);
   const skyMap = process.env.MW_MAP
-    ? await loadSkyMap(process.env.MW_MAP)
+    ? await loadSkyMap(process.env.MW_MAP, Number(process.env.MAP_BLUR ?? 2))
     : null;
   const ctx = buildSolverContext(
     contextStars(loadCatalog()),
