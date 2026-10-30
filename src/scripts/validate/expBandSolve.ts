@@ -18,6 +18,7 @@ import {
   fitPlaneResidual,
   trueLine,
 } from "@/scripts/validate/expBandLine";
+import { magellanSolve } from "@/scripts/validate/expLandmarkAuto";
 import {
   loadSkyMap,
   photoGlow,
@@ -26,12 +27,12 @@ import {
 } from "@/scripts/validate/expTemplate";
 import { loadRun } from "@/scripts/validate/report";
 import { galacticToEquatorial } from "@/search/hooks/useSkyOverlay";
-import { scorePose } from "@/search/solveCore";
+import { refineSolution, scorePose } from "@/search/solveCore";
 import { heldOutLogOdds, polish } from "@/search/solvePhoto";
 import { buildSolverContext } from "@/search/solverContext";
 import { isConfident } from "@/search/solvers/candidates";
 import { rankForSolving } from "@/search/utils/selectStars";
-import { photoToSky } from "@/search/utils/wcs";
+import { photoToSky, recoverFov } from "@/search/utils/wcs";
 import {
   contextStars,
   loadCatalog,
@@ -412,7 +413,38 @@ const run = async () => {
         ok: boolean;
       } | null = null;
 
+      // MAGELLAN=1: 대·소마젤란 은하 덩어리로 세운 배치(journey 57장) 상위 3개도 후보로 넣는다
+      if (process.env.MAGELLAN) {
+        const { results } = await magellanSolve(`${set}/${file}`);
+
+        for (const m of results.slice(0, 3)) {
+          cands.push({ TP: m.fit.TP, quick: m.fit.logOdds });
+        }
+      }
+
+      // REFINE400=1: polish 전에 사진 별 400개 · 5등급 카탈로그로 허용 오차를 좁혀 가며 한 번 더 다듬는다 (journey 57장)
+      const top400 = ranked.slice(0, 400).map((s): Point2D => [s.x, s.y]);
+
+      const refine400 = (TP0: Mat3): Mat3 => {
+        let TP = TP0;
+
+        for (const tolDeg of [1.5, 0.75, 0]) {
+          const pxPerDeg = W / recoverFov(TP, W, H);
+          const r = refineSolution(TP, top400, ctx.catalog, {
+            ...opts,
+            ...(tolDeg ? { tolerancePx: tolDeg * pxPerDeg } : {}),
+          });
+
+          if (!r) break;
+          TP = r.TP;
+        }
+
+        return TP;
+      };
+
       for (const c of cands) {
+        if (process.env.REFINE400) c.TP = refine400(c.TP);
+
         const centerVector = photoToSky(c.TP, [W / 2, H / 2]);
         const seed = {
           found: false,
