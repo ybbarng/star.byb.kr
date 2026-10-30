@@ -785,7 +785,9 @@ export const solvePhoto = (
       stars.map(({ ringContrast: _r, ...st }) => st),
       size,
       ctx,
-      solvers,
+      // 빠른 quad 풀이 하나만: 밝기 순으로 풀린 사진 8장이 모두 quad로 0.5초 안에 풀렸고, 실패해도 0.7초면 끝난다.
+      // 삼각형까지 30% 몫이면 조각 단계 시간을 빼앗아 얻음 8·잃음 11이었다 (journey 56장)
+      solvers.slice(0, 1),
       {
         ...options,
         skipCircular: true,
