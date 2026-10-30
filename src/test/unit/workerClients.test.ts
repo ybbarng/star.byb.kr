@@ -67,7 +67,7 @@ describe("별 찾기 Worker (detectClient)", () => {
     const b = detectStars(IMAGE as ImageData);
     const [w] = FakeWorker.created;
 
-    w.reply({ id: w.sent[1].id, stars: [{ x: 1 }] });
+    w.reply({ id: w.sent[1].id, result: [{ x: 1 }] });
     await expect(b).resolves.toEqual([{ x: 1 }]);
     w.reply({ id: w.sent[0].id, error: "검출 실패" });
     await expect(a).rejects.toThrow("검출 실패");
@@ -88,7 +88,7 @@ describe("별 찾기 Worker (detectClient)", () => {
     const second = FakeWorker.created[1];
 
     expect(FakeWorker.created).toHaveLength(2);
-    second.reply({ id: lastId(second), stars: [] });
+    second.reply({ id: lastId(second), result: [] });
     await expect(c).resolves.toEqual([]);
   });
 
@@ -113,7 +113,7 @@ describe("별 찾기 Worker (detectClient)", () => {
 
     first.crash("늦게 온 오류");
     expect(second.terminated).toBe(false);
-    second.reply({ id: lastId(second), stars: [] });
+    second.reply({ id: lastId(second), result: [] });
     await expect(b).resolves.toEqual([]);
   });
 
@@ -131,7 +131,7 @@ describe("별 찾기 Worker (detectClient)", () => {
     const a = detectStars(IMAGE as ImageData);
     const [w] = FakeWorker.created;
 
-    w.reply({ id: lastId(w), stars: [] });
+    w.reply({ id: lastId(w), result: [] });
     await expect(a).resolves.toEqual([]);
   });
 

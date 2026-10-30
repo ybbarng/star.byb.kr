@@ -1,5 +1,9 @@
 import type { DetectedStar as RawStar } from "@/search/detectCore";
-import { detectStars as detectStarsInWorker } from "@/search/detectClient";
+import type { Glow } from "@/search/milkyWayGlow";
+import {
+  detectStars as detectStarsInWorker,
+  photoGlows,
+} from "@/search/detectClient";
 import {
   mergeDetections,
   mergeDistancePx,
@@ -68,16 +72,22 @@ export const detectPhotoStars = async (
 };
 
 // 원래 검출과 줄인 사진 검출(빛무리가 넓은 사진용, journey 54장)을 함께. 줄인 사진 검출은 화면에 띄우지 않고
-// 원래 검출로 확신 못 했을 때만 풀이가 쓴다. 줄인 사진 검출이 실패해도 원래 검출은 돌려준다
+// 원래 검출로 확신 못 했을 때만 풀이가 쓴다. 은하수 띠·지도 대조에 쓸 흐린 썸네일도 함께 만든다 (journey 57장).
+// 줄인 사진 검출·썸네일이 실패해도 원래 검출은 돌려준다
 export const detectPhotoStarsWithCoarse = async (
   image: HTMLImageElement,
-): Promise<{ stars: DetectedStar[]; coarse: DetectedStar[] }> => {
+): Promise<{
+  stars: DetectedStar[];
+  coarse: DetectedStar[];
+  glows: { band: Glow; map: Glow } | null;
+}> => {
   const imageData = imageDataOf(image);
   const { width, height } = imageData;
   const stars = toRanked(await detectStarsInWorker(imageData), width, height);
   const coarse = await detectStarsInWorker(imageData, true)
     .then((raw) => toRanked(raw, width, height))
     .catch(() => []);
+  const glows = await photoGlows(imageData).catch(() => null);
 
-  return { stars, coarse };
+  return { stars, coarse, glows };
 };

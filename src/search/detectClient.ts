@@ -1,11 +1,12 @@
 import type { DetectedStar } from "@/search/detectCore";
+import type { Glow } from "@/search/milkyWayGlow";
 
 // 별 찾기 Worker를 앱 전체에서 하나만 두고 공유한다 (예전 services/cv.js 대신, OpenCV 없이).
 // Worker가 통째로 죽으면(스크립트를 못 받음·시작하다 실패·응답을 못 읽음) 기다리던 요청을 모두 실패로 끝내고
 // 다음 요청 때 새로 띄운다. 그러지 않으면 요청이 끝나지 않아 화면이 "찾는 중"에 머문다.
 
 interface Pending {
-  resolve: (stars: DetectedStar[]) => void;
+  resolve: (result: never) => void;
   reject: (error: Error) => void;
 }
 
@@ -48,7 +49,7 @@ const getWorker = (): Worker => {
     failAll(created, new Error("별 찾기 Worker의 응답을 읽지 못했습니다."));
 
   created.onmessage = (e: MessageEvent) => {
-    const { id, stars, error } = e.data;
+    const { id, result, error } = e.data;
     const request = pending.get(id);
 
     if (!request) {
@@ -60,7 +61,7 @@ const getWorker = (): Worker => {
     if (error) {
       request.reject(new Error(error));
     } else {
-      request.resolve(stars);
+      request.resolve(result as never);
     }
   };
 
@@ -77,23 +78,22 @@ export const preloadDetector = () => {
   }
 };
 
-// coarse면 줄인 사진에서 찾은 별 (좌표는 원래 사진 기준, journey 54장)
-export const detectStars = (
+const request = <T>(
   image: ImageData,
-  coarse = false,
-): Promise<DetectedStar[]> => {
+  mode: { coarse?: boolean; glow?: boolean },
+): Promise<T> => {
   const id = nextId++;
 
-  return new Promise((resolve, reject) => {
+  return new Promise<T>((resolve, reject) => {
     try {
       const target = getWorker();
-      pending.set(id, { resolve, reject });
+      pending.set(id, { resolve: resolve as Pending["resolve"], reject });
       target.postMessage({
         id,
         data: image.data,
         width: image.width,
         height: image.height,
-        coarse,
+        ...mode,
       });
     } catch (e) {
       // Worker를 못 띄우거나 보내지 못했다
@@ -102,3 +102,14 @@ export const detectStars = (
     }
   });
 };
+
+// coarse면 줄인 사진에서 찾은 별 (좌표는 원래 사진 기준, journey 54장)
+export const detectStars = (
+  image: ImageData,
+  coarse = false,
+): Promise<DetectedStar[]> => request(image, { coarse });
+
+// 은하수 띠·지도 대조에 쓸 흐린 회색조 썸네일 (journey 57장)
+export const photoGlows = (
+  image: ImageData,
+): Promise<{ band: Glow; map: Glow }> => request(image, { glow: true });

@@ -1,11 +1,13 @@
 import type { Point2D, Point3D } from "@/scripts/hash/types";
 import type { HorizonStar } from "@/search/horizonSolve";
+import type { Glow } from "@/search/milkyWayGlow";
+import type { SkyMap } from "@/search/milkyWaySolve";
 import type { SolvePhase } from "@/search/solvePhoto";
 import type { InputStar, SolverContext } from "@/search/solvers";
 import type { Observer } from "@/search/utils/ephemeris";
 import { horizonSolve } from "@/search/horizonSolve";
+import { solvePhotoWithMilkyWay } from "@/search/milkyWaySolve";
 import { generateQuadDatabase } from "@/search/quadDatabase";
-import { solvePhoto } from "@/search/solvePhoto";
 import { buildSolverContext, unpackDeepStars } from "@/search/solverContext";
 import { rankForSolving } from "@/search/utils/selectStars";
 import { koreanStarName } from "@/search/utils/starNames";
@@ -65,7 +67,25 @@ interface SolveRequest {
   stars: InputStar[];
   width: number;
   height: number;
+  glows?: { band: Glow; map: Glow } | null;
 }
+
+// 은하수 밝기 지도(360×180 회색조, 흐림까지 적용, 약 13KB 압축). 처음 필요할 때 한 번만 받는다.
+// 못 받으면 지도 없이(띠 중심선만으로) 푼다. 출처: ESO/S. Brunier (eso0932a), CC BY 4.0
+let skyMapPromise: Promise<SkyMap | null> | null = null;
+
+const loadSkyMap = (): Promise<SkyMap | null> => {
+  skyMapPromise ??= fetch("/sky/milky-way-360x180.bin")
+    .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(r.status)))
+    .then((buf) => ({ data: new Uint8Array(buf), w: 360, h: 180 }))
+    .catch(() => {
+      skyMapPromise = null;
+
+      return null;
+    });
+
+  return skyMapPromise;
+};
 
 interface HorizonSolveRequest extends SolveRequest {
   horizon: [Point2D, Point2D];
@@ -88,11 +108,17 @@ onmessage = async function (e) {
 
       case "solve": {
         const ctx = await loadDatabase();
-        const { stars, width, height } = e.data.payload as SolveRequest;
-        const result = solvePhoto(stars, { width, height }, ctx, undefined, {
-          onPhase: (phase: SolvePhase) =>
-            postMessage({ fn: "onPhase", id, payload: phase }),
-        });
+        const { stars, width, height, glows } = e.data.payload as SolveRequest;
+        const result = solvePhotoWithMilkyWay(
+          stars,
+          { width, height },
+          ctx,
+          glows ? { glows, skyMap: await loadSkyMap() } : null,
+          {
+            onPhase: (phase: SolvePhase) =>
+              postMessage({ fn: "onPhase", id, payload: phase }),
+          },
+        );
 
         postMessage({ fn: "onDone", id, payload: result });
         break;

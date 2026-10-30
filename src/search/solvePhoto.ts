@@ -90,7 +90,8 @@ export type SolvePhase =
       index: number; // 전체 직선투영 단계(solver × 영역 × 입력 크기) 중 몇 번째인지
       total: number;
     }
-  | { kind: "fisheye" };
+  | { kind: "fisheye" }
+  | { kind: "milkyWay" }; // 은하수 띠·지도 대조 (search/milkyWaySolve, journey 57장)
 
 export interface SolvePhotoOptions {
   timeBudgetMs?: number;

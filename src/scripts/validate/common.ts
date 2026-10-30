@@ -1,4 +1,5 @@
 import type { Point3D } from "@/scripts/hash/types";
+import type { Glow } from "@/search/milkyWayGlow";
 import type { InputStar } from "@/search/solvers";
 import type { FisheyeCamera } from "@/search/utils/fisheye";
 import type { Mat3 } from "@/search/utils/similarity";
@@ -58,6 +59,38 @@ export const loadDetected = (set: string, file: string): Detected | null => {
 
   return existsSync(path) ? JSON.parse(readFileSync(path, "utf-8")) : null;
 };
+
+// 은하수 띠·지도 대조용 흐린 썸네일 캐시 (glows.ts, journey 57장)
+export const glowPath = (set: string, file: string) =>
+  resolve(outDir(set), "glow", `${file}.json`);
+
+export const loadGlows = (
+  set: string,
+  file: string,
+): { band: Glow; map: Glow } | null => {
+  const path = glowPath(set, file);
+
+  if (!existsSync(path)) {
+    return null;
+  }
+
+  const raw = JSON.parse(readFileSync(path, "utf-8"));
+  const glow = (g: { data: number[]; cols: number; rows: number }): Glow => ({
+    ...g,
+    data: Float32Array.from(g.data),
+  });
+
+  return { band: glow(raw.band), map: glow(raw.map) };
+};
+
+// 은하수 밝기 지도 (앱의 풀이 Worker가 받는 것과 같은 파일)
+export const loadSkyMapFile = () => ({
+  data: new Uint8Array(
+    readFileSync(resolve(process.cwd(), "public/sky/milky-way-360x180.bin")),
+  ),
+  w: 360,
+  h: 180,
+});
 
 // 줄인 사진 검출 캐시 (coarse 표시가 붙은 별, 좌표는 원래 사진 기준, journey 54장)
 export const coarsePath = (set: string, file: string) =>

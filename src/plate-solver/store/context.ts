@@ -5,6 +5,7 @@ import type {
   PhotoStars,
   SolverView,
 } from "@/plate-solver/types";
+import type { Glow } from "@/search/milkyWayGlow";
 import { create } from "zustand";
 import { NO_MARKS } from "@/plate-solver/types";
 
@@ -22,12 +23,15 @@ interface ContextState {
   detections: DetectedStar[];
   // 줄인 사진에서 찾은 별 (빛무리가 넓은 사진용, journey 54장). 화면에 띄우지 않고 풀이가 확신 못 했을 때만 쓴다
   coarseStars: DetectedStar[];
+  // 사진의 흐린 회색조 썸네일 (은하수 띠·지도 대조용, journey 57장). 확신 못 했을 때만 풀이가 쓴다
+  glows: { band: Glow; map: Glow } | null;
   marks: EstimateMarks;
   setImage: (image: HTMLImageElement, fileName?: string) => void;
   setPhotoStars: (photoStars: PhotoStars[], hiddenStars?: PhotoStars[]) => void;
   setDetections: (
     detections: DetectedStar[],
     coarseStars?: DetectedStar[],
+    glows?: { band: Glow; map: Glow } | null,
   ) => void;
   setMarks: (marks: EstimateMarks) => void;
   goTo: (view: SolverView, editTool?: EditTool) => void;
@@ -40,6 +44,7 @@ export const useContextStore = create<ContextState>((set) => ({
   hiddenStars: [],
   detections: [],
   coarseStars: [],
+  glows: null,
   marks: NO_MARKS,
   // 사진이 바뀌면 별·찍은 점을 모두 지운다
   setImage: (image: HTMLImageElement, fileName?: string) =>
@@ -50,13 +55,22 @@ export const useContextStore = create<ContextState>((set) => ({
       hiddenStars: [],
       detections: [],
       coarseStars: [],
+      glows: null,
       marks: NO_MARKS,
     }),
   setPhotoStars: (photoStars: PhotoStars[], hiddenStars: PhotoStars[] = []) =>
     set({ photoStars, hiddenStars }),
-  // 줄인 사진 검출을 주지 않으면(별 고치기의 되돌리기 등) 그대로 둔다
-  setDetections: (detections: DetectedStar[], coarseStars?: DetectedStar[]) =>
-    set(coarseStars ? { detections, coarseStars } : { detections }),
+  // 줄인 사진 검출·썸네일을 주지 않으면(별 고치기의 되돌리기 등) 그대로 둔다
+  setDetections: (
+    detections: DetectedStar[],
+    coarseStars?: DetectedStar[],
+    glows?: { band: Glow; map: Glow } | null,
+  ) =>
+    set({
+      detections,
+      ...(coarseStars ? { coarseStars } : {}),
+      ...(glows !== undefined ? { glows } : {}),
+    }),
   setMarks: (marks: EstimateMarks) => set({ marks }),
   goTo: (view: SolverView, editTool: EditTool = "select") =>
     set({ view, editTool }),
