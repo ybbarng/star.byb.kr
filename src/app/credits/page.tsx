@@ -87,6 +87,20 @@ const DATA: Ref[] = [
     ),
     note: "별자리선과 별자리 경계 (IAU)",
   },
+  {
+    text: (
+      <>
+        ESO/S. Brunier,{" "}
+        {link(
+          "https://www.eso.org/public/images/eso0932a/",
+          "The Milky Way panorama (eso0932a)",
+        )}{" "}
+        ({link("https://creativecommons.org/licenses/by/4.0/", "CC BY 4.0")},
+        960×480으로 줄여 씀)
+      </>
+    ),
+    note: "은하수 밝기 지도: 찾는 원리의 '은하수 사진'에서 지도 대조를 체험할 때 (풀이에는 쓰지 않음)",
+  },
 ];
 
 const EPHEMERIS: Ref[] = [

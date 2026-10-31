@@ -3,6 +3,7 @@ import FindStarsDemo from "@/learn/FindStarsDemo";
 import LearnArticle, { Figure, LearnSection, Stat } from "@/learn/LearnArticle";
 import MilkyWayBandDemo from "@/learn/MilkyWayBandDemo";
 import MilkyWayCoarseDemo from "@/learn/MilkyWayCoarseDemo";
+import MilkyWayMapDemo from "@/learn/MilkyWayMapDemo";
 import { MILKY_WAY_PHOTOS } from "@/learn/milkyWayPhotos";
 import MilkyWayTileDemo from "@/learn/MilkyWayTileDemo";
 import { Callout, DataTable } from "@/learn/parts";
@@ -125,6 +126,9 @@ export default function Page() {
           겹쳐 보는 대조를 더하니, 실험에서는 못 푼 은하수 사진 66장 중 6장을
           새로 풀었어요. 지도는 360×180 회색조(13KB)로 줄여도 같은 결과였어요.
         </p>
+        <Figure caption="사진을 먼저 풀어 정답 자리를 얻고, 하늘을 은하 북극 둘레로 돌려 가며 지도에서 만든 은하수와 사진의 흐린 밝기가 얼마나 닮았는지 재요. 정답 자리(0°)에서 가장 닮아야 해요.">
+          <MilkyWayMapDemo />
+        </Figure>
         <p>
           대·소마젤란 은하도 단서로 써 봤어요. 하늘 위치를 아는 점 두 개가
           사진에 있으면 회전·크기·위치가 모두 정해져요. 이렇게 세운 배치로
