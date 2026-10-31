@@ -1,4 +1,3 @@
-import type { Glow } from "@/search/milkyWayGlow";
 import type { SolvePhase, SolvePhotoResult } from "@/search/solvePhoto";
 import type { InputStar } from "@/search/solvers";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -29,12 +28,7 @@ export default function useSolve() {
   }, []);
 
   const solve = useCallback(
-    (
-      stars: InputStar[],
-      width: number,
-      height: number,
-      glows?: { band: Glow; map: Glow } | null,
-    ) => {
+    (stars: InputStar[], width: number, height: number) => {
       const requestNo = ++latestRequestRef.current;
       const isLatest = () => requestNo === latestRequestRef.current;
 
@@ -43,13 +37,7 @@ export default function useSolve() {
       setPhase(null);
       setError(null);
 
-      solveInWorker(
-        stars,
-        width,
-        height,
-        (p) => isLatest() && setPhase(p),
-        glows,
-      )
+      solveInWorker(stars, width, height, (p) => isLatest() && setPhase(p))
         .then((result) => isLatest() && setOutcome(result))
         .catch((e: Error) => isLatest() && setError(e.message))
         .finally(() => isLatest() && setSolving(false));

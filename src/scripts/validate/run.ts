@@ -5,13 +5,11 @@ import {
   listPhotos,
   loadCoarse,
   loadDetected,
-  loadGlows,
-  loadSkyMapFile,
   outDir,
   shardOf,
 } from "@/scripts/validate/common";
 import { loadRun } from "@/scripts/validate/report";
-import { solvePhotoWithMilkyWay } from "@/search/milkyWaySolve";
+import { DEFAULT_SOLVERS, solvePhoto } from "@/search/solvePhoto";
 import { buildSolverContext } from "@/search/solverContext";
 import {
   contextStars,
@@ -20,8 +18,7 @@ import {
   loadHashes,
 } from "@/test/synthetic/loadCatalog";
 
-// 앱과 같은 흐름(solvePhoto 기본값, 확신 못 하면 은하수 띠·지도 대조)으로 묶음을 풀어 사진마다 한 줄(JSON)씩 기록한다.
-// 은하수 단계는 썸네일 캐시(glows.ts)가 있는 사진만 돈다. MILKY=0이면 끈다 (journey 57장)
+// 앱과 같은 흐름(solvePhoto 기본값)으로 묶음을 풀어 사진마다 한 줄(JSON)씩 기록한다.
 //   npx tsx src/scripts/validate/run.ts web-2026-10 8000 base [0/4]
 // → build/validate/web-2026-10/runs/base.<조각>.jsonl
 
@@ -42,8 +39,6 @@ const run = () => {
   );
   mkdirSync(dir, { recursive: true });
   writeFileSync(path, "");
-
-  const skyMap = process.env.MILKY === "0" ? null : loadSkyMapFile();
 
   // UNSOLVED=<이름>: 그 풀이 기록에서 확신 못 한 사진만 (시간 상한을 늘려 다시 볼 때)
   const skip = process.env.UNSOLVED
@@ -71,8 +66,7 @@ const run = () => {
 
     // 몫을 주지 않으면 앱 기본값(solvePhoto의 DEFAULT_*_SHARE)으로 푼다. 0을 주면 끈다
     const share = (v?: string) => (v === undefined ? undefined : Number(v));
-    const glows = skyMap ? loadGlows(set, file) : null;
-    const out = solvePhotoWithMilkyWay(
+    const out = solvePhoto(
       [
         // BRIGHT_ONLY=1: 별다움을 지워 밝기 순으로만 푼다 (은하수 실험, journey 52장)
         ...(process.env.BRIGHT_ONLY
@@ -83,7 +77,7 @@ const run = () => {
       ],
       { width: det.width, height: det.height },
       ctx,
-      glows ? { glows, skyMap } : null,
+      DEFAULT_SOLVERS,
       {
         timeBudgetMs: Number(budget),
         // BRIGHT_FALLBACK=0.3: 확신 못 하면 남은 시간의 30%로 밝기 순 재시도 (journey 52장)
@@ -95,7 +89,7 @@ const run = () => {
           phase =
             p.kind === "linear"
               ? `${p.index}:${p.solverKey}:${p.region}:${p.inputSize}`
-              : p.kind;
+              : "fisheye";
         },
       },
     );

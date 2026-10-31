@@ -1,6 +1,5 @@
 import type { Point2D } from "@/scripts/hash/types";
 import type { HorizonSolveResult } from "@/search/horizonSolve";
-import type { Glow } from "@/search/milkyWayGlow";
 import type { SolvePhase, SolvePhotoResult } from "@/search/solvePhoto";
 import type { InputStar } from "@/search/solvers";
 import type { Observer } from "@/search/utils/ephemeris";
@@ -114,16 +113,14 @@ export const preloadSolver = (): Promise<void> => {
   return readyPromise;
 };
 
-// glows(사진의 흐린 회색조 썸네일)를 주면, 확신하지 못했을 때 은하수 띠·지도 대조로 한 번 더 푼다 (journey 57장)
 export const solveInWorker = (
   stars: InputStar[],
   width: number,
   height: number,
   onPhase?: (phase: SolvePhase) => void,
-  glows?: { band: Glow; map: Glow } | null,
 ): Promise<SolvePhotoResult> =>
   request<SolvePhotoResult>(
-    { fn: "solve", payload: { stars, width, height, glows } },
+    { fn: "solve", payload: { stars, width, height } },
     { onPhase },
   );
 

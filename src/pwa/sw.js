@@ -18,9 +18,7 @@ const isRuntime = (path) =>
   path.endsWith(".woff2") ||
   path.startsWith("/samples/") ||
   path.startsWith("/home/") ||
-  path.startsWith("/icons/") ||
-  // 은하수 지도 (풀이 Worker가 처음 필요할 때 받는다, journey 57장)
-  path.startsWith("/sky/");
+  path.startsWith("/icons/");
 const isSkipped = (path) =>
   path.startsWith("/presentation/") || path.startsWith("/data/");
 

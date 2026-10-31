@@ -61,7 +61,6 @@ export default function PlateSolvingStep() {
   const fileName = useContextStore((state) => state.fileName);
   const photoStars = useContextStore((state) => state.photoStars);
   const coarseStars = useContextStore((state) => state.coarseStars);
-  const glows = useContextStore((state) => state.glows);
   const hiddenStars = useContextStore((state) => state.hiddenStars);
   const marks = useContextStore((state) => state.marks);
   const setPhotoStars = useContextStore((state) => state.setPhotoStars);
@@ -139,12 +138,12 @@ export default function PlateSolvingStep() {
     setDetecting(true);
     setDetectError(null);
     detectPhotoStarsWithCoarse(image)
-      .then(({ stars: all, coarse, glows: thumbs }) => {
+      .then(({ stars: all, coarse }) => {
         if (!alive) {
           return;
         }
 
-        setDetections(all, coarse, thumbs);
+        setDetections(all, coarse);
         setPhotoStars(
           all.slice(0, DEFAULT_DISPLAY_STARS),
           all.slice(DEFAULT_DISPLAY_STARS),
@@ -329,10 +328,8 @@ export default function PlateSolvingStep() {
       ],
       image.width,
       image.height,
-      // 확신 못 하면 은하수 띠·지도 대조로 한 번 더 (journey 57장)
-      glows,
     );
-  }, [image, photoStars, hiddenStars, coarseStars, glows, solve]);
+  }, [image, photoStars, hiddenStars, coarseStars, solve]);
 
   useEffect(() => {
     if (ready) {
@@ -1423,10 +1420,6 @@ const describePhase = (
     return "초광각 렌즈 사진으로 보고 다시 찾고 있어요";
   }
 
-  if (phase.kind === "milkyWay") {
-    return "은하수 띠의 모양으로 다시 찾고 있어요";
-  }
-
   const where = phase.region === "사진 전체" ? "" : ` (${phase.region})`;
 
   return `밝은 별 ${phase.inputSize}개의 모양을 맞춰 보는 중${where}`;
@@ -1454,12 +1447,12 @@ function SolveProgress({
     return () => clearInterval(timer);
   }, []);
 
-  // 별 찾기 10%, 직선투영 단계는 입력 크기 순서로, 어안·은하수 시도는 마지막 단계로 본다
+  // 별 찾기 10%, 직선투영 단계는 입력 크기 순서로, 어안 시도는 마지막 단계로 본다
   const progress = detecting
     ? 0.05
     : !phase
       ? 0.1
-      : phase.kind === "fisheye" || phase.kind === "milkyWay"
+      : phase.kind === "fisheye"
         ? 0.95
         : 0.1 + (0.85 * (phase.index + 0.5)) / (phase.total + 1);
 

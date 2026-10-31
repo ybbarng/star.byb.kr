@@ -1,13 +1,7 @@
 import type { DetectedStar } from "@/search/detectCore";
-import type { Glow } from "@/search/milkyWayGlow";
 import type { InputStar } from "@/search/solvers";
 import sharp from "sharp";
-import {
-  detectCoarseStars,
-  detectStarsInImage,
-  toGray,
-} from "@/search/detectImage";
-import { GLOW_COLS, makeGlow, TEMPLATE_COLS } from "@/search/milkyWayGlow";
+import { detectCoarseStars, detectStarsInImage } from "@/search/detectImage";
 import {
   mergeDetections,
   mergeDistancePx,
@@ -83,20 +77,4 @@ export const detectCoarseLikeApp = async (
     info.width,
     info.height,
   );
-};
-
-// 앱의 검출 Worker가 은하수 띠·지도 대조용으로 만드는 흐린 썸네일 두 장 (journey 57장)
-export const glowsLikeApp = async (
-  path: string | Buffer,
-): Promise<{ band: Glow; map: Glow }> => {
-  const { data, info } = await sharp(path)
-    .ensureAlpha()
-    .raw()
-    .toBuffer({ resolveWithObject: true });
-  const gray = toGray(data, info.width, info.height, info.channels);
-
-  return {
-    band: makeGlow(gray, info.width, info.height, GLOW_COLS),
-    map: makeGlow(gray, info.width, info.height, TEMPLATE_COLS),
-  };
 };
