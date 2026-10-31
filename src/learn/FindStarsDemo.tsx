@@ -11,8 +11,13 @@ import { cn } from "@/utils/cn";
 // 별 찾기 데모: 실제 샘플 사진에서 별을 찾고, "밝은 순"과 "별다운 순" 상위 30개를 비교한다.
 // 밝기만 보면 건물·가로등 불빛이 앞에 오고, 별다움(주변 고리가 고른 하늘인지)을 먼저 보면 진짜 별이 앞에 온다.
 
+export interface DemoPhoto {
+  src: string;
+  title: string;
+}
+
 // 밝은 순으로 고르면 가짜가 앞자리를 차지하는 사진들 (괄호 안: 밝은 순 → 별다운 순, 앞쪽 25개 안 진짜 별 수)
-const DEMO_PHOTOS = [
+const DEMO_PHOTOS: DemoPhoto[] = [
   // 1 → 13
   { src: "/samples/20220607-berry-seoul.jpg", title: "누각 (지붕·불빛)" },
   // 1 → 22: 조명 받은 나무 줄기
@@ -22,22 +27,37 @@ const DEMO_PHOTOS = [
   // 0 → 24
   { src: "/samples/20230904-nike-jeungseun-01.png", title: "정선 (구름·노을)" },
 ];
-const TOP = 30;
+const DEFAULT_TOP = 30;
 
 type Order = "brightness" | "priority";
 
 // 밝은 순은 빛 총량 순(별 궤적 점은 뺀다), 별다운 순은 detectPhotoStars가 돌려준 순서 그대로
-const pickTop = (stars: DetectedStar[], order: Order) =>
+const pickTop = (stars: DetectedStar[], order: Order, top: number) =>
   order === "priority"
-    ? stars.slice(0, TOP)
+    ? stars.slice(0, top)
     : stars
         .filter((s) => !s.trail)
         .sort((a, b) => b.brightness - a.brightness)
-        .slice(0, TOP);
+        .slice(0, top);
 
 // score: 발표 화면은 별다움을 클수록 별다운 점수로 보여 준다 (RingInspector)
-export default function FindStarsDemo({ score = false }: { score?: boolean }) {
-  const [photo, setPhoto] = useState(DEMO_PHOTOS[0]);
+// photos·top·captions: 다른 페이지(은하수 사진)가 사진 목록·고를 개수·설명을 바꿔 쓴다
+export default function FindStarsDemo({
+  score = false,
+  photos = DEMO_PHOTOS,
+  top = DEFAULT_TOP,
+  captions = {
+    brightness: "밝기만 보면 건물·나무 사이 불빛이 앞자리를 차지해요.",
+    priority: "주변이 고른 하늘인 점을 먼저 고르면 진짜 별이 앞으로 와요.",
+  },
+}: {
+  score?: boolean;
+  photos?: DemoPhoto[];
+  top?: number;
+  captions?: Record<Order, string>;
+}) {
+  const TOP = top;
+  const [photo, setPhoto] = useState(photos[0]);
   const [order, setOrder] = useState<Order>("brightness");
   const [image, setImage] = useState<HTMLImageElement | null>(null);
   const [stars, setStars] = useState<DetectedStar[] | null>(null);
@@ -80,7 +100,7 @@ export default function FindStarsDemo({ score = false }: { score?: boolean }) {
 
     if (!stars) return;
 
-    const picked = pickTop(stars, order);
+    const picked = pickTop(stars, order, TOP);
     const unit = Math.hypot(image.width, image.height) / 1400;
 
     context.lineWidth = 3 * unit;
@@ -100,7 +120,7 @@ export default function FindStarsDemo({ score = false }: { score?: boolean }) {
       context.arc(inspect.x, inspect.y, 22 * unit, 0, 2 * Math.PI);
       context.stroke();
     }
-  }, [image, stars, order, inspect]);
+  }, [image, stars, order, inspect, TOP]);
 
   // 누른 곳에서 가장 가까운 표시된 점을 들여다본다
   const handleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -116,7 +136,7 @@ export default function FindStarsDemo({ score = false }: { score?: boolean }) {
     const top = rect.top + (rect.height - image.height * scale) / 2;
     const x = (e.clientX - left) / scale;
     const y = (e.clientY - top) / scale;
-    const near = pickTop(stars, order).reduce<DetectedStar | null>(
+    const near = pickTop(stars, order, TOP).reduce<DetectedStar | null>(
       (best, s) =>
         !best ||
         Math.hypot(s.x - x, s.y - y) < Math.hypot(best.x - x, best.y - y)
@@ -132,7 +152,7 @@ export default function FindStarsDemo({ score = false }: { score?: boolean }) {
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-2">
         <div className="join">
-          {DEMO_PHOTOS.map((p) => (
+          {photos.map((p) => (
             <button
               key={p.src}
               className={cn(
@@ -198,10 +218,7 @@ export default function FindStarsDemo({ score = false }: { score?: boolean }) {
           <p className="min-h-[2lh] text-xs opacity-70">
             {stars && (
               <>
-                찾은 점 {stars.length}개 중 상위 {TOP}개.{" "}
-                {order === "brightness"
-                  ? "밝기만 보면 건물·나무 사이 불빛이 앞자리를 차지해요."
-                  : "주변이 고른 하늘인 점을 먼저 고르면 진짜 별이 앞으로 와요."}
+                찾은 점 {stars.length}개 중 상위 {TOP}개. {captions[order]}
               </>
             )}
           </p>

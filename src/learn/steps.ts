@@ -46,6 +46,13 @@ export const LEARN_STEPS: LearnStep[] = [
       "초광각 렌즈(아직 합성 사진에서만 풀려요), 별이 열 개 남짓인 사진, 촬영 시각 거꾸로 찾기까지.",
   },
   {
+    slug: "milky-way",
+    icon: "🌌",
+    title: "은하수 사진",
+    summary:
+      "별이 너무 많아 오히려 어려운 은하수 사진. 줄여서 보기·잘라서 보기로 늘린 것과, 은하수 자체를 단서로 써 본 실험들.",
+  },
+  {
     slug: "history",
     icon: "🧭",
     title: "걸어온 길",
