@@ -193,7 +193,7 @@ export const detectStarsFromDiff = (
       cx,
       cy,
       // 밝기는 차영상의 빛 총량(중심 둘레 창의 합)이다. 예전에는 유효 반경을 썼는데, 1920px 사진에서는
-      // 대부분 0~3px에 몰려 직녀성(0.03등급)이 832위로 밀리기도 했다 (journey 39장)
+      // 대부분 0~3px에 몰려 베가(0.03등급)가 832위로 밀리기도 했다 (journey 39장)
       brightness: sumW,
       radius: star.effectiveRadius,
       elongation,

@@ -277,12 +277,7 @@ const BETWEEN: [string, string, string, string][] = [
     "용자리",
     "용이 두 곰 사이를 굽이쳐 감싸고 있어요.",
   ],
-  [
-    "거문고자리",
-    "헤르쿨레스자리",
-    "용자리",
-    "용의 머리는 직녀성 바로 곁이에요.",
-  ],
+  ["거문고자리", "헤르쿨레스자리", "용자리", "용의 머리는 베가 바로 곁이에요."],
 ];
 
 const betweenQuestions = (rng: () => number): RelationQuestion[] => {
@@ -426,13 +421,13 @@ const HOPS: {
   },
   {
     key: "h:vega",
-    prompt: "견우성에서 은하수 건너 마주 본 직녀성을 눌러요",
+    prompt: "알타이르에서 은하수 건너 마주 본 베가를 눌러요",
     marks: [{ kind: "star", hr: "7557" }, { kind: "milkyWay" }],
     target: { hr: "7001" },
     tolDeg: 3,
     reveal: [{ kind: "asterism", id: "summer-triangle" }],
     explain:
-      "견우와 직녀 사이로 은하수가 흘러요. 데네브와 함께 여름철 대삼각형이에요.",
+      "칠월칠석 이야기의 견우별(알타이르)과 직녀별(베가) 사이로 은하수가 흘러요. 데네브와 함께 여름철 대삼각형이에요.",
   },
   {
     key: "h:galactic-center",

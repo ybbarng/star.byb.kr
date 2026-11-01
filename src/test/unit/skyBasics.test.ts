@@ -188,7 +188,7 @@ describe("지구 위의 좌표", () => {
 });
 
 describe("하늘의 좌표", () => {
-  it("서울에서 직녀성은 89°, 시리우스는 36°까지 뜬다", () => {
+  it("서울에서 베가는 89°, 시리우스는 36°까지 뜬다", () => {
     const dec = (n: string) => vectorToRaDec(byLatin(n).vector).decDeg;
     expect(maxAltitudeDeg(SEOUL.latDeg, dec("Vega"))).toBeCloseTo(88.8, 0);
     expect(maxAltitudeDeg(SEOUL.latDeg, dec("Sirius"))).toBeCloseTo(35.7, 0);

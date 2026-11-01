@@ -15,8 +15,8 @@ describe("별 한글 이름", () => {
     const byLatin = (n: string) => STARS.find((s) => s.latinName === n)?.name;
 
     expect(byLatin("Polaris")).toBe("북극성");
-    expect(byLatin("Vega")).toBe("직녀성");
-    expect(byLatin("Altair")).toBe("견우성");
+    expect(byLatin("Vega")).toBe("베가");
+    expect(byLatin("Altair")).toBe("알타이르");
     expect(byLatin("Sirius")).toBe("시리우스");
   });
 });

@@ -44,7 +44,7 @@ const ERAS: { latin: string; year: number; note: string }[] = [
   { latin: "Errai", year: 4100, note: "" },
   { latin: "Alderamin", year: 7500, note: "" },
   { latin: "Deneb", year: 10200, note: "" },
-  { latin: "Vega", year: 13800, note: "다시 직녀성" },
+  { latin: "Vega", year: 13800, note: "다시 베가" },
 ];
 
 const POLARIS = STARS.find((s) => s.latinName === "Polaris")!;

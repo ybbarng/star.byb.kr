@@ -400,7 +400,7 @@ function LessonPlayer({
             lightPollution={step.sky?.lightPollution ?? lesson.lightPollution}
             marks={marks}
             // 찾기 문제 동안 정답 표시를 숨겨도 카메라는 단계 전체(숨긴 표시·찾을 자리 포함)를 본다.
-            // 숨긴 표시로만 이루어진 단계(머리 위 직녀성)가 기본 방향(남쪽)을 보지 않게
+            // 숨긴 표시로만 이루어진 단계(머리 위 베가)가 기본 방향(남쪽)을 보지 않게
             aim={aimFallback(lesson, stepIdx) ?? stepVectors(step)}
             look={step.view}
             aimKey={`${lesson.id}-${stepIdx}`}

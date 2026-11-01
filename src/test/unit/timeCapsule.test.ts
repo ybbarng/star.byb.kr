@@ -17,8 +17,8 @@ const hrOf = (name: string) => STARS.find((s) => s.name === name)!.hr;
 describe("별까지 거리", () => {
   it.each([
     ["시리우스", 8.6],
-    ["직녀성", 25],
-    ["견우성", 16.7],
+    ["베가", 25],
+    ["알타이르", 16.7],
     ["아크투루스", 36.7],
   ])("%s: 약 %f광년 (15% 안)", (name, ly) => {
     const d = distanceOf(hrOf(name as string))!;
@@ -46,8 +46,8 @@ describe("빛이 출발한 해", () => {
 });
 
 describe("내 나이 별", () => {
-  it("25살이면 직녀성(약 25광년)이 나온다", () => {
-    expect(ageStars(25).map((s) => s.name)).toContain("직녀성");
+  it("25살이면 베가(약 25광년)가 나온다", () => {
+    expect(ageStars(25).map((s) => s.name)).toContain("베가");
   });
 
   it("시리우스(적경 6.75시)는 1~2월 저녁에 잘 보인다", () => {

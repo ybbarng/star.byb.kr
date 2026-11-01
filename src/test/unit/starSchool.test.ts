@@ -146,7 +146,7 @@ describe("길잡이 모양", () => {
     });
   });
 
-  it("여름철 대삼각형의 변: 직녀–견우 약 34°, 견우–데네브 약 38°, 데네브–직녀 약 24°", () => {
+  it("여름철 대삼각형의 변: 베가–알타이르 약 34°, 알타이르–데네브 약 38°, 데네브–베가 약 24°", () => {
     const [vega, altair, deneb] =
       asterismById("summer-triangle").vertices.map(hrVector);
 

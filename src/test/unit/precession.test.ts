@@ -63,7 +63,7 @@ describe("북극성의 시대", () => {
     expect(sepDeg).toBeLessThan(1);
   });
 
-  it("약 12,000년 뒤에는 직녀성(베가)이 5° 안", () => {
+  it("약 12,000년 뒤에는 베가가 5° 안", () => {
     const { star, sepDeg } = nearestPoleStar(14000, STARS);
 
     expect(star.latinName).toBe("Vega");

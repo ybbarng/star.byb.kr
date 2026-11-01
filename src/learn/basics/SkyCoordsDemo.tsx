@@ -21,7 +21,7 @@ import { cn } from "@/utils/cn";
 // 지방 항성시 = 지금 남쪽 자오선을 지나는 적경. 시간각 = 항성시 − 적경 (0이면 남중)
 
 const PICKS = [
-  { latin: "Vega", label: "직녀성" },
+  { latin: "Vega", label: "베가" },
   { latin: "Sirius", label: "시리우스" },
   { latin: "Betelgeuse", label: "베텔게우스" },
   { latin: "Arcturus", label: "아크투루스" },

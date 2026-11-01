@@ -91,7 +91,7 @@ const byFilename: Record<string, SampleAnswer> = {
     fovDeg: 52.6,
     name: "카시오페이아·북극성",
   },
-  // 오로라 아래 직녀성·데네브·Sadr (견우성은 지면 아래 자리)
+  // 오로라 아래 베가·데네브·Sadr (알타이르는 지면 아래 자리)
   "20250117-carl-aurora-04.jpg": {
     centerRaDeg: 278.1,
     centerDecDeg: 41.6,
@@ -106,7 +106,7 @@ const byFilename: Record<string, SampleAnswer> = {
     fovDeg: 55,
     name: "카시오페이아·북극성",
   },
-  // 여름의 대삼각형(직녀성·데네브·견우성)·백조자리 Sadr. 어두운 사진이라 log-odds 9.7로 기준을 간신히 넘음
+  // 여름의 대삼각형(베가·데네브·알타이르)·백조자리 Sadr. 어두운 사진이라 log-odds 9.7로 기준을 간신히 넘음
   "20230904-nike-jeungseun-04.png": {
     centerRaDeg: 289.5,
     centerDecDeg: 29,
@@ -157,7 +157,7 @@ const byFilename: Record<string, SampleAnswer> = {
     fovDeg: 51.4,
     name: "전갈·센타우루스·이리",
   },
-  // 데네브·직녀성·견우성 (해 진 뒤 서쪽으로 지는 여름의 대삼각형)
+  // 데네브·베가·알타이르 (해 진 뒤 서쪽으로 지는 여름의 대삼각형)
   "iau-snow-tree-summer-triangle.jpg": {
     centerRaDeg: 292.4,
     centerDecDeg: 26.9,
