@@ -3,7 +3,6 @@ import { GAMES } from "@/game/hub";
 import { LEARN_STEPS, learnHref } from "@/learn/steps";
 import GameCarousel from "@/ui/GameCarousel";
 import SiteShell from "@/ui/SiteShell";
-import SkyNowNote from "@/ui/SkyNowNote";
 
 // 첫 화면: 무엇을 하는 곳인지 풀린 사진 한 장으로 보여 주고, 찾는 원리 세 단계와 별 놀이터를 소개한다.
 // 위쪽 길잡이와 겹치지 않게 버튼은 "별 찾으러 가기" 하나만 둔다.
@@ -93,38 +92,6 @@ export default function Page() {
           </p>
           <GameCarousel games={games} />
         </section>
-
-        <footer className="flex flex-col items-center gap-2 text-center text-xs opacity-50">
-          <SkyNowNote />
-          <div className="flex flex-wrap justify-center gap-x-4 gap-y-1">
-            <span>
-              만든 이{" "}
-              <a
-                className="link link-hover"
-                href="https://github.com/ybbarng"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                ybbarng
-              </a>{" "}
-              with{" "}
-              <a
-                className="link link-hover"
-                href="https://www.claude.com/product/claude-code"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Claude Code
-              </a>
-            </span>
-            <a className="link link-hover" href="/presentation/v3.html">
-              발표 자료 V3
-            </a>
-            <Link href="/credits" className="link link-hover">
-              출처와 참고 자료
-            </Link>
-          </div>
-        </footer>
       </div>
     </SiteShell>
   );
